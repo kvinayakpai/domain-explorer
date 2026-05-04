@@ -28,8 +28,15 @@ venv/
 target/
 dbt_packages/
 logs/
+
+# DuckDB databases — regenerate locally via `python synthetic-data/generate_all.py --seed 42`
+# (also too large for GitHub's recommended 50MB limit)
 *.duckdb
 *.duckdb.wal
+
+# Synthetic-data CSV/parquet outputs — regenerated deterministically at seed=42
+# Run `pwsh ./demo-prep.ps1` (or `python synthetic-data/generate_all.py --seed 42`) to recreate.
+synthetic-data/output/
 
 # OS
 .DS_Store
@@ -47,3 +54,19 @@ desktop.ini
 coverage/
 .coverage
 htmlcov/
+
+# Build artefacts and runtime detritus
+.next/
+**/.next/
+node_modules/
+**/node_modules/
+domain-explorer.duckdb.wal
+.cache/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+**/__pycache__/
+
+# Local Python venvs
+.venv/
+_tmp_*

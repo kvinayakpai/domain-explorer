@@ -33,7 +33,7 @@ export default function KpiPage({ params }: { params: { id: string } }) {
         <div className="flex flex-wrap gap-2">
           <Badge>{k.unit}</Badge>
           <Badge>{k.direction.replace(/_/g, " ")}</Badge>
-          {"vertical" in k && k.vertical ? <Badge>{k.vertical}</Badge> : null}
+          {"vertical" in k && k.vertical ? <Badge>{String((k as any).vertical)}</Badge> : null}
           {owningSub ? <Badge>{owningSub.name}</Badge> : null}
         </div>
       </header>

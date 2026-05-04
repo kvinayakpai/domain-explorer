@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { registry, VERTICALS } from "@/lib/registry";
+import { getSnapshot } from "@/lib/snapshots";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,8 @@ import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 export function generateStaticParams() {
   return registry().subdomains.map((s) => ({ subdomain: s.id }));
 }
+
+export const dynamic = "force-static";
 
 interface SectionProps {
   title: string;
@@ -23,10 +26,11 @@ function Section({ title, children }: SectionProps) {
   );
 }
 
-export default function SubdomainPage({ params }: { params: { subdomain: string } }) {
+export default async function SubdomainPage({ params }: { params: { subdomain: string } }) {
   const s = registry().subdomains.find((x) => x.id === params.subdomain);
   if (!s) notFound();
   const vert = VERTICALS.find((v) => v.slug === s.vertical);
+  const snapshot = await getSnapshot(s.id);
   return (
     <div className="space-y-8">
       <Breadcrumb
@@ -42,7 +46,27 @@ export default function SubdomainPage({ params }: { params: { subdomain: string 
         <p className="max-w-3xl text-muted-foreground">{s.oneLiner}</p>
       </header>
 
-      {/* 1. Personas */}
+      {snapshot && snapshot.length > 0 ? (
+        <Section title="Live data snapshot">
+          <p className="text-xs text-muted-foreground">
+            Computed live from <code>domain-explorer.duckdb</code> — seeded synthetic data, deterministic at <code>seed=42</code>.
+          </p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {snapshot.map((stat) => (
+              <Card key={stat.label}>
+                <CardHeader>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{stat.label}</p>
+                  <CardTitle className="text-xl">{stat.value}</CardTitle>
+                </CardHeader>
+                {stat.hint ? (
+                  <CardContent className="pt-0 text-xs text-muted-foreground">{stat.hint}</CardContent>
+                ) : null}
+              </Card>
+            ))}
+          </div>
+        </Section>
+      ) : null}
+
       <Section title="Personas">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {s.personas.map((p) => (
@@ -56,7 +80,6 @@ export default function SubdomainPage({ params }: { params: { subdomain: string 
         </div>
       </Section>
 
-      {/* 2. Decisions */}
       <Section title="Decisions supported">
         <ul className="list-disc space-y-2 pl-6 text-sm">
           {s.decisions.map((d) => (
@@ -67,7 +90,6 @@ export default function SubdomainPage({ params }: { params: { subdomain: string 
         </ul>
       </Section>
 
-      {/* 3. KPIs */}
       <Section title="KPIs">
         <Card>
           <CardContent className="p-0">
@@ -99,7 +121,6 @@ export default function SubdomainPage({ params }: { params: { subdomain: string 
         </Card>
       </Section>
 
-      {/* 4. Data model */}
       <Section title="Data model — entities">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {s.dataModel.entities.map((e) => (
@@ -119,7 +140,6 @@ export default function SubdomainPage({ params }: { params: { subdomain: string 
         </div>
       </Section>
 
-      {/* 5. Source systems */}
       <Section title="Source systems">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {s.sourceSystems.map((src) => (
@@ -135,7 +155,6 @@ export default function SubdomainPage({ params }: { params: { subdomain: string 
         </div>
       </Section>
 
-      {/* 6. Connectors */}
       <Section title="Connectors">
         <Card>
           <CardContent className="p-0">
@@ -161,7 +180,6 @@ export default function SubdomainPage({ params }: { params: { subdomain: string 
         </Card>
       </Section>
 
-      {/* 7. Ingestion challenges */}
       <Section title="Ingestion challenges">
         <ul className="list-disc space-y-1 pl-6 text-sm">
           {s.ingestionChallenges.map((c, i) => (
@@ -170,7 +188,6 @@ export default function SubdomainPage({ params }: { params: { subdomain: string 
         </ul>
       </Section>
 
-      {/* 8. Integration challenges */}
       <Section title="Integration challenges">
         <ul className="list-disc space-y-1 pl-6 text-sm">
           {s.integrationChallenges.map((c, i) => (
@@ -179,7 +196,6 @@ export default function SubdomainPage({ params }: { params: { subdomain: string 
         </ul>
       </Section>
 
-      {/* 9. Vertical context */}
       <Section title="Vertical context">
         <p className="text-sm text-muted-foreground">
           Part of <Link className="underline" href={`/v/${s.vertical}`}>{vert?.label ?? s.vertical}</Link>.

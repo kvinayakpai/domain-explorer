@@ -29,25 +29,31 @@ domain-explorer/
 └── .github/workflows/      # CI: node + python lint/typecheck
 ```
 
-## Quick start (after extracting and running `bootstrap.ps1`)
+## Quick start
 
-Prerequisites: Node 20+, pnpm 9+, Python 3.11+, [uv](https://docs.astral.sh/uv/).
+Prerequisites: Node 20+, pnpm 9+, Python 3.10+ (uv optional).
 
 ```bash
-# install JS deps
+# 1. Generate the synthetic data layer (~4M rows, ~90MB DuckDB).
+#    This is intentionally NOT in git — kept under GitHub's size limit.
+#    Windows / PowerShell:
+pwsh ./demo-prep.ps1
+#    macOS / Linux:
+./demo-prep.sh
+
+# 2. Install JS deps and run the web app
 pnpm install
-
-# install Python deps
-uv sync
-
-# run the web app
 pnpm --filter explorer-web dev
 
-# run the API
+# 3. (optional) Run the API
 uv run uvicorn app.main:app --reload --app-dir services/api
 ```
 
-Then open <http://localhost:3000>.
+Then open <http://localhost:3000>. The subdomain pages will show live numbers from the regenerated DuckDB.
+
+### Why is the data regenerated and not committed?
+
+The full `domain-explorer.duckdb` is ~91MB and the CSV/parquet sidecars push the total over GitHub's 50MB recommended file size. Since the data is fully deterministic (`--seed 42`), it's cheaper to regenerate on first clone than to host it. The local copy is untouched — you only run `demo-prep` on a fresh clone or to refresh a specific subdomain.
 
 ## How the metadata-driven model works
 
