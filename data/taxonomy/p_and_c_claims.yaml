@@ -1,0 +1,81 @@
+id: p_and_c_claims
+name: P&C Claims
+vertical: Insurance
+oneLiner: First-notice-of-loss through adjudication, payout, and recovery for property & casualty claims.
+
+personas:
+  - { name: Chief Claims Officer, title: Chief Claims Officer, level: C-suite }
+  - { name: FNOL Manager, title: FNOL Operations Manager, level: Manager }
+  - { name: Adjuster, title: Senior Claims Adjuster, level: IC }
+  - { name: SIU Lead, title: Special Investigations Unit Lead, level: Director }
+
+decisions:
+  - { id: pcc.d.assign, statement: Auto-assign claim to adjuster vs SIU based on risk score. }
+  - { id: pcc.d.reserve, statement: Set initial reserve amount given loss type and severity. }
+  - { id: pcc.d.fast_track, statement: Fast-track low-complexity claims to settlement. }
+
+kpis:
+  - id: pcc.kpi.cycle_time
+    name: Claim Cycle Time
+    formula: avg(closed_ts - fnol_ts)
+    unit: days
+    direction: lower_is_better
+    decisionsSupported: [pcc.d.fast_track]
+  - id: pcc.kpi.leakage
+    name: Claims Leakage
+    formula: sum(avoidable_paid) / sum(paid)
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [pcc.d.assign]
+  - id: pcc.kpi.severity
+    name: Severity
+    formula: sum(paid) / count(claims)
+    unit: USD
+    direction: lower_is_better
+  - id: pcc.kpi.frequency
+    name: Frequency
+    formula: count(claims) / earned_exposure
+    unit: per 100 policies
+    direction: lower_is_better
+  - id: pcc.kpi.lae_ratio
+    name: LAE Ratio
+    formula: loss_adjustment_expense / paid_losses
+    unit: "%"
+    direction: lower_is_better
+  - id: pcc.kpi.nps
+    name: Claims NPS
+    formula: promoters_pct - detractors_pct
+    unit: NPS
+    direction: higher_is_better
+
+dataModel:
+  entities:
+    - name: Policy
+      keys: [policy_id]
+    - name: Claim
+      keys: [claim_id]
+    - name: ClaimNote
+      keys: [note_id]
+    - name: Payout
+      keys: [payout_id]
+    - name: Reserve
+      keys: [reserve_id]
+
+sourceSystems:
+  - { vendor: Guidewire, product: ClaimCenter, category: Claims Platform }
+  - { vendor: Duck Creek, product: Claims, category: Claims Platform }
+  - { vendor: Salesforce, product: Financial Services Cloud, category: Customer 360 }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: JMS, protocol: JMS, auth: Mutual TLS }
+  - { type: EDI, protocol: AS2, auth: PKI }
+  - { type: Snowflake share, protocol: Snowflake, auth: IAM }
+
+ingestionChallenges:
+  - Unstructured FNOL artifacts (photos, voice, PDFs) requiring OCR/NLU.
+  - Reserve revisions need bitemporal tracking (system vs business effective).
+
+integrationChallenges:
+  - Claims platform customizations vary by carrier; field mappings drift.
+  - Strict regulatory reporting cadence (state DOIs, NAIC) on top of operational data.

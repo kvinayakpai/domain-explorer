@@ -1,0 +1,93 @@
+id: payments
+name: Payments
+vertical: BFSI
+oneLiner: End-to-end money movement across rails (cards, ACH, wires, real-time) with auth, clearing, settlement, and dispute handling.
+
+personas:
+  - { name: Head of Payments, title: Head of Payments, level: VP }
+  - { name: Payments Ops Lead, title: Payments Operations Lead, level: Director }
+  - { name: Fraud/Risk Lead, title: Head of Payment Fraud & Risk, level: Director }
+  - { name: CFO, title: Chief Financial Officer, level: C-suite }
+
+decisions:
+  - { id: pay.d.rail, statement: Choose the cheapest reliable rail per transaction profile. }
+  - { id: pay.d.fraud_threshold, statement: Tune fraud auth thresholds to balance false positives vs loss. }
+  - { id: pay.d.dispute_invest, statement: Decide whether to contest or refund a chargeback. }
+  - { id: pay.d.partner_mix, statement: Rebalance acquirer/processor mix by region and MCC. }
+
+kpis:
+  - id: pay.kpi.stp_rate
+    name: STP Rate
+    formula: straight_through_count / total_count
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [pay.d.partner_mix]
+  - id: pay.kpi.settlement_latency
+    name: Settlement Latency
+    formula: avg(settlement_ts - auth_ts)
+    unit: hours
+    direction: lower_is_better
+    decisionsSupported: [pay.d.rail]
+  - id: pay.kpi.chargeback_ratio
+    name: Chargeback Ratio
+    formula: chargebacks / sales_count
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [pay.d.dispute_invest, pay.d.fraud_threshold]
+  - id: pay.kpi.afr
+    name: Auth Failure Rate (AFR)
+    formula: failed_auths / total_auths
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [pay.d.fraud_threshold]
+  - id: pay.kpi.interchange_revenue
+    name: Interchange Revenue
+    formula: sum(interchange_amount)
+    unit: USD
+    direction: higher_is_better
+    decisionsSupported: [pay.d.partner_mix]
+  - id: pay.kpi.dispute_resolution_time
+    name: Dispute Resolution Time
+    formula: avg(resolved_ts - opened_ts)
+    unit: days
+    direction: lower_is_better
+    decisionsSupported: [pay.d.dispute_invest]
+
+dataModel:
+  entities:
+    - name: Transaction
+      keys: [transaction_id]
+      description: Authoritative payment event across rails.
+    - name: Authorization
+      keys: [auth_id]
+    - name: Settlement
+      keys: [settlement_id]
+    - name: Dispute
+      keys: [dispute_id]
+    - name: Counterparty
+      keys: [counterparty_id]
+
+sourceSystems:
+  - { vendor: Temenos, product: Transact, category: Core Banking }
+  - { vendor: FIS, product: Profile, category: Core Banking }
+  - { vendor: Finastra, product: Fusion, category: Payments Hub }
+  - { vendor: ACI Worldwide, product: Enterprise Payments Platform, category: Payments Hub }
+  - { vendor: SWIFT, product: Alliance, category: Messaging Network }
+  - { vendor: Stripe, product: Payments, category: Acquirer/PSP }
+
+connectors:
+  - { type: SWIFT MT/ISO20022, protocol: MQ/file, auth: PKI }
+  - { type: ACH/NACHA file, protocol: SFTP, auth: SSH key }
+  - { type: REST/Webhook, protocol: HTTPS, auth: OAuth2/HMAC }
+  - { type: ISO8583, protocol: TCP, auth: PKI/MAC }
+  - { type: SAP RFC, protocol: RFC, auth: SAP user }
+
+ingestionChallenges:
+  - High-volume real-time event firehose with strict ordering guarantees per account.
+  - Dual writes between core ledger and acquirer feeds requiring reconciliation.
+  - Late-arriving settlement files that retroactively change daily totals.
+
+integrationChallenges:
+  - Heterogeneous message standards (ISO20022, ISO8583, NACHA, proprietary).
+  - "PII/PCI scope: tokenization required before data leaves the secure zone."
+  - Strict idempotency required across retries on every rail.

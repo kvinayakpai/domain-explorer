@@ -1,0 +1,57 @@
+sources:
+  # BFSI / Payments
+  - { id: src.temenos_transact, vendor: Temenos, product: Transact, category: Core Banking, primaryConnectors: [conn.swift_iso20022, conn.rest, conn.file_sftp] }
+  - { id: src.fis_profile, vendor: FIS, product: Profile, category: Core Banking, primaryConnectors: [conn.iso8583, conn.file_sftp] }
+  - { id: src.finastra_fusion, vendor: Finastra, product: Fusion, category: Payments Hub, primaryConnectors: [conn.swift_iso20022, conn.rest] }
+  - { id: src.aci_eps, vendor: ACI Worldwide, product: Enterprise Payments Platform, category: Payments Hub, primaryConnectors: [conn.iso8583, conn.rest, conn.jms] }
+  - { id: src.swift_alliance, vendor: SWIFT, product: Alliance, category: Messaging Network, primaryConnectors: [conn.swift_iso20022] }
+  - { id: src.stripe_payments, vendor: Stripe, product: Payments, category: Acquirer/PSP, primaryConnectors: [conn.rest, conn.webhook] }
+
+  # Insurance
+  - { id: src.gw_claimcenter, vendor: Guidewire, product: ClaimCenter, category: Claims Platform, primaryConnectors: [conn.rest, conn.jms] }
+  - { id: src.duck_creek_claims, vendor: Duck Creek, product: Claims, category: Claims Platform, primaryConnectors: [conn.rest, conn.file_sftp] }
+  - { id: src.sf_fsc, vendor: Salesforce, product: Financial Services Cloud, category: Customer 360, primaryConnectors: [conn.rest, conn.cdc_kafka] }
+
+  # Retail / RCG
+  - { id: src.oracle_rms, vendor: Oracle, product: Retail Merchandising System, category: MMS, primaryConnectors: [conn.file_sftp, conn.rest] }
+  - { id: src.sap_isretail, vendor: SAP, product: IS-Retail, category: ERP, primaryConnectors: [conn.sap_idoc, conn.sap_rfc] }
+  - { id: src.manhattan_active, vendor: Manhattan Associates, product: Active Omni, category: OMS, primaryConnectors: [conn.rest, conn.cdc_kafka] }
+  - { id: src.blue_yonder_planning, vendor: Blue Yonder, product: Retail Planning, category: Planning, primaryConnectors: [conn.rest, conn.file_sftp] }
+
+  # CPG planning
+  - { id: src.sap_ibp, vendor: SAP, product: Integrated Business Planning, category: Demand Planning, primaryConnectors: [conn.sap_rfc, conn.rest] }
+  - { id: src.kinaxis_rr, vendor: Kinaxis, product: RapidResponse, category: Concurrent Planning, primaryConnectors: [conn.rest, conn.file_sftp] }
+  - { id: src.o9_brain, vendor: o9 Solutions, product: Digital Brain, category: Planning, primaryConnectors: [conn.rest] }
+  - { id: src.anaplan, vendor: Anaplan, product: Connected Planning, category: Planning, primaryConnectors: [conn.rest] }
+
+  # TTH
+  - { id: src.opera_pms, vendor: Oracle, product: Opera PMS, category: PMS, primaryConnectors: [conn.htng, conn.rest] }
+  - { id: src.amadeus_rms, vendor: Amadeus, product: HotSOS / RMS, category: GDS/RMS, primaryConnectors: [conn.htng, conn.rest] }
+  - { id: src.ideas_rms, vendor: IDeaS, product: G3 RMS, category: RMS, primaryConnectors: [conn.rest, conn.file_sftp] }
+
+  # Manufacturing
+  - { id: src.siemens_opcenter, vendor: Siemens, product: Opcenter Execution, category: MES, primaryConnectors: [conn.opc_ua, conn.mqtt, conn.sap_rfc] }
+  - { id: src.rockwell_ftpc, vendor: Rockwell, product: FactoryTalk ProductionCentre, category: MES, primaryConnectors: [conn.opc_ua, conn.mqtt] }
+  - { id: src.ge_proficy, vendor: GE Digital, product: Proficy Plant Applications, category: MES, primaryConnectors: [conn.opc_ua, conn.sparkplug_b] }
+  - { id: src.sap_dm, vendor: SAP, product: Digital Manufacturing, category: MES, primaryConnectors: [conn.sap_rfc, conn.opc_ua] }
+
+  # Life Sciences
+  - { id: src.oracle_argus, vendor: Oracle, product: Argus Safety, category: Safety Database, primaryConnectors: [conn.e2b_r3, conn.sftp_secure] }
+  - { id: src.aris_lifesphere, vendor: ArisGlobal, product: LifeSphere Safety, category: Safety Database, primaryConnectors: [conn.e2b_r3, conn.rest] }
+  - { id: src.veeva_vault_safety, vendor: Veeva, product: Vault Safety, category: Safety Database, primaryConnectors: [conn.rest, conn.sftp_secure] }
+
+  # Telecom
+  - { id: src.nokia_netact, vendor: Nokia, product: NetAct, category: NMS, primaryConnectors: [conn.snmp, conn.netconf_yang, conn.cdc_kafka] }
+  - { id: src.ericsson_enm, vendor: Ericsson, product: ENM, category: NMS, primaryConnectors: [conn.netconf_yang, conn.cdc_kafka] }
+  - { id: src.cisco_crosswork, vendor: Cisco, product: Crosswork, category: Network Automation, primaryConnectors: [conn.rest, conn.netconf_yang] }
+  - { id: src.servicenow_itsm, vendor: ServiceNow, product: ITSM, category: ITSM, primaryConnectors: [conn.rest] }
+
+  # Energy / Utilities
+  - { id: src.itron_ee, vendor: Itron, product: Enterprise Edition, category: Head-end / MDM, primaryConnectors: [conn.multispeak, conn.cim_61968, conn.file_sftp] }
+  - { id: src.landis_gridstream, vendor: Landis+Gyr, product: Gridstream, category: Head-end, primaryConnectors: [conn.mqtt, conn.cim_61968] }
+  - { id: src.oracle_mdm, vendor: Oracle, product: Utilities Meter Data Management, category: MDM, primaryConnectors: [conn.cim_61968, conn.rest] }
+
+  # Public Sector
+  - { id: src.sap_trm, vendor: SAP, product: Tax & Revenue Management, category: Tax Platform, primaryConnectors: [conn.sap_rfc, conn.rest] }
+  - { id: src.gentax, vendor: Fast Enterprises, product: GenTax, category: Tax Platform, primaryConnectors: [conn.soap, conn.rest] }
+  - { id: src.legacy_mainframe, vendor: In-house, product: Mainframe COBOL, category: Legacy, primaryConnectors: [conn.ibm_mq, conn.file_sftp] }

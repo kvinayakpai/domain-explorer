@@ -1,0 +1,9 @@
+# Local DuckDB profile — copy this into ~/.dbt/profiles.yml or use dbt-core's
+# DBT_PROFILES_DIR env var pointing at modeling/dbt/.
+domain_explorer:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ./target/domain_explorer.duckdb
+      threads: 4

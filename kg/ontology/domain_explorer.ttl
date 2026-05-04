@@ -1,0 +1,34 @@
+# Domain Explorer ontology — initial sketch.
+# Aligned with the metadata schema in packages/metadata.
+@prefix : <https://domain-explorer.dev/ontology#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://domain-explorer.dev/ontology> a owl:Ontology ;
+    rdfs:label "Domain Explorer Ontology"@en ;
+    rdfs:comment "Top-level ontology for verticals, subdomains, KPIs, source systems, and connectors."@en .
+
+# Classes
+:Vertical          a owl:Class .
+:Subdomain         a owl:Class .
+:Persona           a owl:Class .
+:Decision          a owl:Class .
+:Kpi               a owl:Class .
+:Entity            a owl:Class .
+:SourceSystem      a owl:Class .
+:Connector         a owl:Class .
+
+# Object properties
+:hasSubdomain      a owl:ObjectProperty ; rdfs:domain :Vertical    ; rdfs:range :Subdomain .
+:hasPersona        a owl:ObjectProperty ; rdfs:domain :Subdomain   ; rdfs:range :Persona .
+:hasKpi            a owl:ObjectProperty ; rdfs:domain :Subdomain   ; rdfs:range :Kpi .
+:supportsDecision  a owl:ObjectProperty ; rdfs:domain :Kpi         ; rdfs:range :Decision .
+:landsIn           a owl:ObjectProperty ; rdfs:domain :SourceSystem ; rdfs:range :Subdomain .
+:reachedBy         a owl:ObjectProperty ; rdfs:domain :SourceSystem ; rdfs:range :Connector .
+
+# Datatype properties
+:formula           a owl:DatatypeProperty ; rdfs:domain :Kpi ; rdfs:range xsd:string .
+:unit              a owl:DatatypeProperty ; rdfs:domain :Kpi ; rdfs:range xsd:string .
+:direction         a owl:DatatypeProperty ; rdfs:domain :Kpi ; rdfs:range xsd:string .

@@ -1,0 +1,69 @@
+id: pharmacovigilance
+name: Pharmacovigilance
+vertical: LifeSciences
+oneLiner: Detect, assess, and report adverse events for marketed and clinical-stage products.
+
+personas:
+  - { name: Chief Safety Officer, title: Chief Safety Officer, level: C-suite }
+  - { name: PV Scientist, title: Pharmacovigilance Scientist, level: IC }
+  - { name: Medical Reviewer, title: Medical Reviewer, level: Manager }
+
+decisions:
+  - { id: pv.d.signal, statement: Promote a disproportionality signal to formal review. }
+  - { id: pv.d.expedited, statement: File expedited (15-day) report vs periodic. }
+  - { id: pv.d.label, statement: Recommend label change based on accumulating evidence. }
+
+kpis:
+  - id: pv.kpi.case_processing_time
+    name: Case Processing Time
+    formula: avg(closed_ts - intake_ts)
+    unit: days
+    direction: lower_is_better
+    decisionsSupported: [pv.d.expedited]
+  - id: pv.kpi.signal_latency
+    name: Signal Detection Latency
+    formula: avg(signal_flagged_ts - first_event_ts)
+    unit: days
+    direction: lower_is_better
+    decisionsSupported: [pv.d.signal]
+  - id: pv.kpi.submission_timeliness
+    name: Regulatory Submission Timeliness
+    formula: on_time_submissions / total_submissions
+    unit: "%"
+    direction: higher_is_better
+  - id: pv.kpi.icsr_volume
+    name: ICSR Volume
+    formula: count(ICSRs)
+    unit: cases
+    direction: target_band
+  - id: pv.kpi.ae_pt_accuracy
+    name: AE-to-PT Mapping Accuracy
+    formula: correct_PT_codings / sampled_codings
+    unit: "%"
+    direction: higher_is_better
+
+dataModel:
+  entities:
+    - { name: AdverseEvent, keys: [ae_id] }
+    - { name: ICSR, keys: [icsr_id] }
+    - { name: Product, keys: [product_id] }
+    - { name: Patient, keys: [patient_id] }
+
+sourceSystems:
+  - { vendor: Oracle, product: Argus Safety, category: Safety Database }
+  - { vendor: ArisGlobal, product: LifeSphere Safety, category: Safety Database }
+  - { vendor: Veeva, product: Vault Safety, category: Safety Database }
+
+connectors:
+  - { type: E2B(R3), protocol: HL7 XML, auth: AS2/SFTP }
+  - { type: MedDRA, protocol: file, auth: license }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: Secure file transfer, protocol: SFTP, auth: SSH key }
+
+ingestionChallenges:
+  - Regulator-specific submission schemas evolve (FDA, EMA, PMDA).
+  - Free-text narrative requires NLP for term harmonization.
+
+integrationChallenges:
+  - 21 CFR Part 11 audit trails on every transformation.
+  - PII/PHI handling across regions (HIPAA, GDPR).

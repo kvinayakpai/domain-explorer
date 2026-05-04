@@ -1,0 +1,70 @@
+id: smart_metering
+name: Smart Metering
+vertical: Energy
+oneLiner: AMI head-end + meter data management for billing, outage, and grid analytics.
+
+personas:
+  - { name: Head of AMI, title: Head of Advanced Metering Infrastructure, level: Director }
+  - { name: Meter Data Manager, title: Meter Data Manager, level: Manager }
+  - { name: Field Ops Lead, title: Field Operations Lead, level: Manager }
+
+decisions:
+  - { id: ami.d.estimate, statement: Replace missing reads with estimates vs re-read. }
+  - { id: ami.d.truck_roll, statement: Schedule truck roll for read failures vs OTA fix. }
+  - { id: ami.d.ntl_invest, statement: Investigate non-technical loss anomaly. }
+
+kpis:
+  - id: ami.kpi.read_success
+    name: Meter Read Success %
+    formula: successful_reads / scheduled_reads
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [ami.d.estimate]
+  - id: ami.kpi.billing_accuracy
+    name: Billing Accuracy %
+    formula: bills_with_no_adjust / total_bills
+    unit: "%"
+    direction: higher_is_better
+  - id: ami.kpi.ntl
+    name: Non-Technical Loss %
+    formula: (energy_billed - energy_delivered) / energy_delivered
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [ami.d.ntl_invest]
+  - id: ami.kpi.truck_rolls
+    name: Field Truck Rolls
+    formula: count(field_dispatches)
+    unit: dispatches
+    direction: lower_is_better
+    decisionsSupported: [ami.d.truck_roll]
+  - id: ami.kpi.ami_uptime
+    name: AMI Uptime
+    formula: head_end_uptime / total_time
+    unit: "%"
+    direction: higher_is_better
+
+dataModel:
+  entities:
+    - { name: Meter, keys: [meter_id] }
+    - { name: IntervalRead, keys: [meter_id, interval_start] }
+    - { name: Outage, keys: [outage_id] }
+    - { name: ServiceOrder, keys: [so_id] }
+
+sourceSystems:
+  - { vendor: Itron, product: Enterprise Edition, category: Head-end / MDM }
+  - { vendor: Landis+Gyr, product: Gridstream, category: Head-end }
+  - { vendor: Oracle, product: Utilities Meter Data Management, category: MDM }
+
+connectors:
+  - { type: MultiSpeak, protocol: SOAP, auth: WS-Security }
+  - { type: CIM/IEC 61968, protocol: XML/JMS, auth: PKI }
+  - { type: MQTT, protocol: MQTT, auth: TLS + cred }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }
+
+ingestionChallenges:
+  - 96 interval reads/day/meter at millions of meter scale.
+  - Late-arriving reads across 72-hour window.
+
+integrationChallenges:
+  - Mesh/cellular network reliability variance by geography.
+  - Regulatory data privacy (consumer usage profiles).

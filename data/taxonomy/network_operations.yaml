@@ -1,0 +1,70 @@
+id: network_operations
+name: Network Operations
+vertical: Telecom
+oneLiner: Monitor, assure, and remediate carrier network elements end-to-end across RAN, transport, and core.
+
+personas:
+  - { name: NOC Manager, title: NOC Manager, level: Manager }
+  - { name: Network Engineer, title: Senior Network Engineer, level: IC }
+  - { name: Service Assurance Lead, title: Service Assurance Lead, level: Director }
+
+decisions:
+  - { id: net.d.dispatch, statement: Dispatch field tech vs remote-fix a fault. }
+  - { id: net.d.priority, statement: Re-prioritize incidents based on customer impact. }
+  - { id: net.d.capex, statement: Trigger capacity augment for cells exceeding utilization. }
+
+kpis:
+  - id: net.kpi.availability
+    name: Network Availability %
+    formula: uptime / total_time
+    unit: "%"
+    direction: higher_is_better
+  - id: net.kpi.mttr
+    name: MTTR
+    formula: avg(restore_ts - detect_ts)
+    unit: minutes
+    direction: lower_is_better
+    decisionsSupported: [net.d.dispatch]
+  - id: net.kpi.packet_loss
+    name: Packet Loss %
+    formula: lost_packets / sent_packets
+    unit: "%"
+    direction: lower_is_better
+  - id: net.kpi.jitter
+    name: Jitter
+    formula: stddev(packet_interarrival)
+    unit: ms
+    direction: lower_is_better
+  - id: net.kpi.cust_impact_incidents
+    name: Customer-Affecting Incidents
+    formula: count(incidents where customer_impact)
+    unit: incidents
+    direction: lower_is_better
+    decisionsSupported: [net.d.priority]
+
+dataModel:
+  entities:
+    - { name: NetworkElement, keys: [ne_id] }
+    - { name: Alarm, keys: [alarm_id] }
+    - { name: Incident, keys: [incident_id] }
+    - { name: PerformanceMetric, keys: [ne_id, metric, ts] }
+
+sourceSystems:
+  - { vendor: Nokia, product: NetAct, category: NMS }
+  - { vendor: Ericsson, product: ENM, category: NMS }
+  - { vendor: Cisco, product: Crosswork, category: Network Automation }
+  - { vendor: ServiceNow, product: ITSM, category: ITSM }
+
+connectors:
+  - { type: SNMP, protocol: SNMP, auth: community/v3 }
+  - { type: NetConf/YANG, protocol: NetConf, auth: SSH }
+  - { type: Kafka, protocol: Kafka, auth: SASL/SCRAM }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+
+ingestionChallenges:
+  - Alarm storms during outages overwhelm correlation engines.
+  - Vendor-specific PM counters; semantic harmonization needed.
+
+integrationChallenges:
+  - Multi-vendor RAN/transport/core stitching for service paths.
+  - Closed-loop automation requires tight ITSM <-> NMS integration.

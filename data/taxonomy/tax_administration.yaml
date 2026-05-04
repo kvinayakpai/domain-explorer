@@ -1,0 +1,70 @@
+id: tax_administration
+name: Tax Administration
+vertical: PublicSector
+oneLiner: Citizen and business tax filing, audit selection, refund processing, and compliance enforcement.
+
+personas:
+  - { name: Commissioner, title: Tax Commissioner, level: C-suite }
+  - { name: Compliance Director, title: Director of Compliance, level: Director }
+  - { name: Audit Lead, title: Audit Lead, level: Manager }
+
+decisions:
+  - { id: tax.d.audit_select, statement: Select returns for audit using risk score. }
+  - { id: tax.d.refund_release, statement: Release refund vs hold for review. }
+  - { id: tax.d.outreach, statement: Trigger taxpayer outreach for delinquency. }
+
+kpis:
+  - id: tax.kpi.voluntary_compliance
+    name: Voluntary Compliance Rate
+    formula: voluntary_paid / total_owed
+    unit: "%"
+    direction: higher_is_better
+  - id: tax.kpi.collection_efficiency
+    name: Collection Efficiency
+    formula: collected / assessed
+    unit: "%"
+    direction: higher_is_better
+  - id: tax.kpi.refund_cycle_time
+    name: Refund Cycle Time
+    formula: avg(refund_ts - filed_ts)
+    unit: days
+    direction: lower_is_better
+    decisionsSupported: [tax.d.refund_release]
+  - id: tax.kpi.fraud_detection
+    name: Fraud Detection Rate
+    formula: fraud_caught / fraud_attempted
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [tax.d.audit_select]
+  - id: tax.kpi.taxpayer_sat
+    name: Taxpayer Satisfaction
+    formula: csat_score
+    unit: index
+    direction: higher_is_better
+
+dataModel:
+  entities:
+    - { name: Taxpayer, keys: [taxpayer_id] }
+    - { name: Return, keys: [return_id] }
+    - { name: Assessment, keys: [assessment_id] }
+    - { name: Refund, keys: [refund_id] }
+    - { name: Audit, keys: [audit_id] }
+
+sourceSystems:
+  - { vendor: SAP, product: Tax & Revenue Management, category: Tax Platform }
+  - { vendor: Fast Enterprises, product: GenTax, category: Tax Platform }
+  - { vendor: In-house, product: Mainframe COBOL, category: Legacy }
+
+connectors:
+  - { type: SOAP, protocol: HTTPS, auth: WS-Security }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }
+  - { type: IBM MQ, protocol: MQ, auth: SSL + cert }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+
+ingestionChallenges:
+  - Filings spike massively at deadlines; system must autoscale.
+  - Mainframe extracts in EBCDIC require conversion and field-level validation.
+
+integrationChallenges:
+  - Cross-agency data sharing under strict privacy controls.
+  - Long-lived legacy mainframe + modern API stacks need durable bridging.

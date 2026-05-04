@@ -1,0 +1,30 @@
+[project]
+name = "domain-explorer"
+version = "0.1.0"
+description = "Metadata-driven explorer monorepo (Python workspace root)."
+requires-python = ">=3.11"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Vinayak Pai", email = "kvinayakpai@gmail.com" }]
+
+[tool.uv.workspace]
+members = [
+  "services/api",
+  "synthetic-data",
+  "packages/metadata/python",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["modeling/dbt/target", "**/.venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+exclude = ["modeling/dbt/target", ".venv"]

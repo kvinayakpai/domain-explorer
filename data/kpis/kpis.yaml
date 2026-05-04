@@ -1,0 +1,61 @@
+# Curated cross-vertical KPI registry. Subdomain YAMLs may also define their
+# own KPIs locally; these are the ones we want surfaced as first-class entries
+# even outside a subdomain context.
+kpis:
+  # BFSI — Payments
+  - { id: pay.kpi.stp_rate, name: STP Rate, formula: straight_through_count / total_count, unit: "%", direction: higher_is_better, vertical: BFSI }
+  - { id: pay.kpi.settlement_latency, name: Settlement Latency, formula: avg(settlement_ts - auth_ts), unit: hours, direction: lower_is_better, vertical: BFSI }
+  - { id: pay.kpi.chargeback_ratio, name: Chargeback Ratio, formula: chargebacks / sales_count, unit: "%", direction: lower_is_better, vertical: BFSI }
+  - { id: pay.kpi.afr, name: Auth Failure Rate, formula: failed_auths / total_auths, unit: "%", direction: lower_is_better, vertical: BFSI }
+  - { id: pay.kpi.dispute_resolution_time, name: Dispute Resolution Time, formula: avg(resolved_ts - opened_ts), unit: days, direction: lower_is_better, vertical: BFSI }
+
+  # Insurance — P&C Claims
+  - { id: pcc.kpi.cycle_time, name: Claim Cycle Time, formula: avg(closed_ts - fnol_ts), unit: days, direction: lower_is_better, vertical: Insurance }
+  - { id: pcc.kpi.leakage, name: Claims Leakage, formula: sum(avoidable_paid) / sum(paid), unit: "%", direction: lower_is_better, vertical: Insurance }
+  - { id: pcc.kpi.severity, name: Severity, formula: sum(paid) / count(claims), unit: USD, direction: lower_is_better, vertical: Insurance }
+  - { id: pcc.kpi.frequency, name: Frequency, formula: count(claims) / earned_exposure, unit: per 100 policies, direction: lower_is_better, vertical: Insurance }
+
+  # Retail — Merchandising
+  - { id: mer.kpi.sell_through, name: Sell-through %, formula: units_sold / units_received, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: mer.kpi.gmroi, name: GMROI, formula: gross_margin / avg_inventory_cost, unit: ratio, direction: higher_is_better, vertical: Retail }
+  - { id: mer.kpi.markdown_pct, name: Markdown %, formula: markdown_dollars / sales_dollars, unit: "%", direction: lower_is_better, vertical: Retail }
+  - { id: mer.kpi.inventory_turn, name: Inventory Turn, formula: cogs / avg_inventory, unit: turns/yr, direction: higher_is_better, vertical: Retail }
+  - { id: mer.kpi.oos, name: Out-of-Stock Rate, formula: oos_skus / total_skus, unit: "%", direction: lower_is_better, vertical: Retail }
+
+  # CPG — Demand Planning
+  - { id: dem.kpi.mape, name: Forecast MAPE, formula: mean(abs(actual - forecast)/actual), unit: "%", direction: lower_is_better, vertical: CPG }
+  - { id: dem.kpi.bias, name: Forecast Bias, formula: mean(forecast - actual), unit: units, direction: target_band, vertical: CPG }
+  - { id: dem.kpi.fill_rate, name: Fill Rate, formula: lines_filled / lines_ordered, unit: "%", direction: higher_is_better, vertical: CPG }
+  - { id: dem.kpi.otif, name: OTIF, formula: orders_on_time_in_full / orders, unit: "%", direction: higher_is_better, vertical: CPG }
+
+  # TTH — Hotel RM
+  - { id: hrm.kpi.revpar, name: RevPAR, formula: total_room_revenue / available_room_nights, unit: USD, direction: higher_is_better, vertical: TTH }
+  - { id: hrm.kpi.adr, name: ADR, formula: total_room_revenue / occupied_rooms, unit: USD, direction: higher_is_better, vertical: TTH }
+  - { id: hrm.kpi.occupancy, name: Occupancy, formula: occupied_rooms / available_rooms, unit: "%", direction: target_band, vertical: TTH }
+  - { id: hrm.kpi.rgi, name: RGI, formula: revpar_property / revpar_compset, unit: index, direction: higher_is_better, vertical: TTH }
+
+  # Manufacturing — MES/Quality
+  - { id: mes.kpi.oee, name: OEE, formula: availability * performance * quality, unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: mes.kpi.fpy, name: First Pass Yield, formula: good_first_try / total_started, unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: mes.kpi.scrap, name: Scrap Rate, formula: scrap_units / total_units, unit: "%", direction: lower_is_better, vertical: Manufacturing }
+  - { id: mes.kpi.mtbf, name: MTBF, formula: total_operational_time / failure_count, unit: hours, direction: higher_is_better, vertical: Manufacturing }
+
+  # Life Sciences — Pharmacovigilance
+  - { id: pv.kpi.case_processing_time, name: Case Processing Time, formula: avg(closed_ts - intake_ts), unit: days, direction: lower_is_better, vertical: LifeSciences }
+  - { id: pv.kpi.signal_latency, name: Signal Detection Latency, formula: avg(signal_ts - first_event_ts), unit: days, direction: lower_is_better, vertical: LifeSciences }
+  - { id: pv.kpi.submission_timeliness, name: Submission Timeliness, formula: on_time / total_submissions, unit: "%", direction: higher_is_better, vertical: LifeSciences }
+
+  # Telecom — Network Ops
+  - { id: net.kpi.availability, name: Network Availability, formula: uptime / total_time, unit: "%", direction: higher_is_better, vertical: Telecom }
+  - { id: net.kpi.mttr, name: MTTR, formula: avg(restore_ts - detect_ts), unit: minutes, direction: lower_is_better, vertical: Telecom }
+  - { id: net.kpi.packet_loss, name: Packet Loss, formula: lost / sent, unit: "%", direction: lower_is_better, vertical: Telecom }
+
+  # Energy — Smart Metering
+  - { id: ami.kpi.read_success, name: Meter Read Success, formula: successful_reads / scheduled_reads, unit: "%", direction: higher_is_better, vertical: Energy }
+  - { id: ami.kpi.billing_accuracy, name: Billing Accuracy, formula: bills_no_adjust / total_bills, unit: "%", direction: higher_is_better, vertical: Energy }
+  - { id: ami.kpi.ntl, name: Non-Technical Loss, formula: (billed - delivered) / delivered, unit: "%", direction: lower_is_better, vertical: Energy }
+
+  # Public Sector — Tax
+  - { id: tax.kpi.voluntary_compliance, name: Voluntary Compliance Rate, formula: voluntary_paid / total_owed, unit: "%", direction: higher_is_better, vertical: PublicSector }
+  - { id: tax.kpi.refund_cycle_time, name: Refund Cycle Time, formula: avg(refund_ts - filed_ts), unit: days, direction: lower_is_better, vertical: PublicSector }
+  - { id: tax.kpi.fraud_detection, name: Fraud Detection Rate, formula: fraud_caught / fraud_attempted, unit: "%", direction: higher_is_better, vertical: PublicSector }

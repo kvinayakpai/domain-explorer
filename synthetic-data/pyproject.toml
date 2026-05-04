@@ -1,0 +1,20 @@
+[project]
+name = "domain-explorer-synthetic-data"
+version = "0.1.0"
+description = "Synthetic data generators for Domain Explorer subdomains."
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+  "pydantic>=2.7",
+  "domain-explorer-metadata",
+]
+
+[tool.uv.sources]
+domain-explorer-metadata = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["synthetic_data"]

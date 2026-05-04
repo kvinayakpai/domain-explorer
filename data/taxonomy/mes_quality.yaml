@@ -1,0 +1,77 @@
+id: mes_quality
+name: MES & Quality
+vertical: Manufacturing
+oneLiner: Real-time shop-floor execution, traceability, and quality control linked to ERP-level orders.
+
+personas:
+  - { name: Plant Manager, title: Plant Manager, level: Director }
+  - { name: Quality Director, title: Director of Quality, level: Director }
+  - { name: OT Engineer, title: Operational Technology Engineer, level: IC }
+
+decisions:
+  - { id: mes.d.line_balance, statement: Rebalance line staffing and tact time given OEE drift. }
+  - { id: mes.d.scrap_root_cause, statement: Stop the line vs continue when scrap exceeds threshold. }
+  - { id: mes.d.maintenance, statement: Trigger predictive maintenance on a tool given MTBF trend. }
+
+kpis:
+  - id: mes.kpi.oee
+    name: OEE
+    formula: availability * performance * quality
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [mes.d.line_balance]
+  - id: mes.kpi.fpy
+    name: First Pass Yield
+    formula: good_units_first_try / total_started
+    unit: "%"
+    direction: higher_is_better
+  - id: mes.kpi.scrap
+    name: Scrap Rate
+    formula: scrap_units / total_units
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [mes.d.scrap_root_cause]
+  - id: mes.kpi.mtbf
+    name: MTBF
+    formula: total_operational_time / failure_count
+    unit: hours
+    direction: higher_is_better
+    decisionsSupported: [mes.d.maintenance]
+  - id: mes.kpi.mttr
+    name: MTTR
+    formula: total_repair_time / failure_count
+    unit: hours
+    direction: lower_is_better
+  - id: mes.kpi.cpk
+    name: CpK
+    formula: min((USL-mu)/(3*sigma), (mu-LSL)/(3*sigma))
+    unit: index
+    direction: higher_is_better
+
+dataModel:
+  entities:
+    - { name: WorkOrder, keys: [wo_id] }
+    - { name: Operation, keys: [op_id] }
+    - { name: SensorReading, keys: [tag, ts] }
+    - { name: QualityCheck, keys: [check_id] }
+    - { name: NonConformance, keys: [nc_id] }
+
+sourceSystems:
+  - { vendor: Siemens, product: Opcenter Execution, category: MES }
+  - { vendor: Rockwell, product: FactoryTalk ProductionCentre, category: MES }
+  - { vendor: GE Digital, product: Proficy Plant Applications, category: MES }
+  - { vendor: SAP, product: Digital Manufacturing, category: MES }
+
+connectors:
+  - { type: OPC UA, protocol: OPC UA, auth: PKI }
+  - { type: MQTT, protocol: MQTT, auth: TLS + cred }
+  - { type: SAP RFC, protocol: RFC, auth: SAP user }
+  - { type: Sparkplug B, protocol: MQTT, auth: TLS + cred }
+
+ingestionChallenges:
+  - High-frequency sensor data (kHz) needs edge aggregation before cloud landing.
+  - Time sync drift between PLCs and IT clocks distorts batch context.
+
+integrationChallenges:
+  - "OT/IT boundary: industrial firewalls and DMZs limit pull patterns."
+  - Tag naming inconsistent across plants; semantic layer required.

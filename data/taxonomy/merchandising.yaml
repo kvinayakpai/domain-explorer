@@ -1,0 +1,77 @@
+id: merchandising
+name: Merchandising
+vertical: Retail
+oneLiner: Assortment, pricing, allocation, and replenishment decisions across stores and channels.
+
+personas:
+  - { name: CMO, title: Chief Merchandising Officer, level: C-suite }
+  - { name: Buyer, title: Buyer, level: Manager }
+  - { name: Planner, title: Merchandise Planner, level: Manager }
+  - { name: Category Manager, title: Category Manager, level: Manager }
+
+decisions:
+  - { id: mer.d.markdown, statement: When and how deep to mark down slow-moving SKUs. }
+  - { id: mer.d.assortment, statement: Add/drop SKUs in next assortment review. }
+  - { id: mer.d.allocation, statement: Allocate inbound inventory across stores. }
+
+kpis:
+  - id: mer.kpi.sell_through
+    name: Sell-through %
+    formula: units_sold / units_received
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [mer.d.markdown, mer.d.assortment]
+  - id: mer.kpi.gmroi
+    name: GMROI
+    formula: gross_margin / avg_inventory_cost
+    unit: ratio
+    direction: higher_is_better
+  - id: mer.kpi.markdown_pct
+    name: Markdown %
+    formula: markdown_dollars / sales_dollars
+    unit: "%"
+    direction: lower_is_better
+  - id: mer.kpi.inventory_turn
+    name: Inventory Turn
+    formula: cogs / avg_inventory
+    unit: turns/yr
+    direction: higher_is_better
+  - id: mer.kpi.oos
+    name: Out-of-Stock Rate
+    formula: oos_skus / total_skus
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [mer.d.allocation]
+  - id: mer.kpi.share_of_shelf
+    name: Share of Shelf
+    formula: facings_brand / total_facings
+    unit: "%"
+    direction: higher_is_better
+
+dataModel:
+  entities:
+    - { name: SKU, keys: [sku_id] }
+    - { name: Store, keys: [store_id] }
+    - { name: SalesTransaction, keys: [tx_id] }
+    - { name: InventoryPosition, keys: [sku_id, store_id, day] }
+    - { name: PromotionEvent, keys: [promo_id] }
+
+sourceSystems:
+  - { vendor: Oracle, product: Retail Merchandising System, category: MMS }
+  - { vendor: SAP, product: IS-Retail, category: ERP }
+  - { vendor: Manhattan Associates, product: Active Omni, category: OMS }
+  - { vendor: Blue Yonder, product: Retail Planning, category: Planning }
+
+connectors:
+  - { type: SAP IDoc, protocol: RFC/file, auth: SAP user }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }
+  - { type: EDI 852/810, protocol: AS2, auth: PKI }
+
+ingestionChallenges:
+  - Tens of millions of POS lines/day with late returns/voids.
+  - Promo calendars overlap and require attribution back to baseline demand.
+
+integrationChallenges:
+  - Planning system master data drifts from ERP master data.
+  - Multi-channel inventory visibility across stores, DCs, and 3PLs.

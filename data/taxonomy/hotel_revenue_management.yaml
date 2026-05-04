@@ -1,0 +1,79 @@
+id: hotel_revenue_management
+name: Hotel Revenue Management
+vertical: TTH
+oneLiner: Dynamic pricing and inventory controls across rate classes and channels to maximize RevPAR.
+
+personas:
+  - { name: Director of Revenue Management, title: Director of Revenue Management, level: Director }
+  - { name: RM Analyst, title: Revenue Management Analyst, level: IC }
+  - { name: GM, title: General Manager, level: Director }
+
+decisions:
+  - { id: hrm.d.bar, statement: Set Best Available Rate by date and segment. }
+  - { id: hrm.d.overbooking, statement: Set overbooking limit by night and room class. }
+  - { id: hrm.d.length_of_stay, statement: Apply minimum/maximum length-of-stay restrictions. }
+
+kpis:
+  - id: hrm.kpi.revpar
+    name: RevPAR
+    formula: total_room_revenue / available_room_nights
+    unit: USD
+    direction: higher_is_better
+    decisionsSupported: [hrm.d.bar]
+  - id: hrm.kpi.adr
+    name: ADR
+    formula: total_room_revenue / occupied_rooms
+    unit: USD
+    direction: higher_is_better
+  - id: hrm.kpi.occupancy
+    name: Occupancy
+    formula: occupied_rooms / available_rooms
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [hrm.d.overbooking]
+  - id: hrm.kpi.mpi
+    name: Market Penetration Index (MPI)
+    formula: occupancy_property / occupancy_compset
+    unit: index
+    direction: higher_is_better
+  - id: hrm.kpi.ari
+    name: Average Rate Index (ARI)
+    formula: adr_property / adr_compset
+    unit: index
+    direction: higher_is_better
+  - id: hrm.kpi.rgi
+    name: Revenue Generation Index (RGI)
+    formula: revpar_property / revpar_compset
+    unit: index
+    direction: higher_is_better
+  - id: hrm.kpi.bar_variance
+    name: BAR Variance
+    formula: avg(actual_bar - planned_bar)
+    unit: USD
+    direction: target_band
+
+dataModel:
+  entities:
+    - { name: Reservation, keys: [reservation_id] }
+    - { name: RatePlan, keys: [rate_plan_id] }
+    - { name: RoomNight, keys: [property_id, room_id, night] }
+    - { name: ChannelBooking, keys: [booking_id] }
+
+sourceSystems:
+  - { vendor: Oracle, product: Opera PMS, category: PMS }
+  - { vendor: Amadeus, product: HotSOS / RMS, category: GDS/RMS }
+  - { vendor: IDeaS, product: G3 RMS, category: RMS }
+  - { vendor: Duetto, product: GameChanger, category: RMS }
+
+connectors:
+  - { type: HTNG, protocol: SOAP/XML, auth: WS-Security }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }
+
+ingestionChallenges:
+  - Channel manager pushes asynchronous updates that conflict with PMS state.
+  - Compset benchmarking (STR) arrives weekly with delays.
+
+integrationChallenges:
+  - Property-level customization of rate codes; mapping to chain codes is fragile.
+  - Currency, tax, and packaging rules vary by jurisdiction and brand.

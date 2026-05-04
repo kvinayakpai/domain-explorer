@@ -1,0 +1,74 @@
+id: demand_planning
+name: Demand Planning
+vertical: CPG
+oneLiner: Statistical + consensus forecasting feeding S&OP, replenishment, and capacity planning.
+
+personas:
+  - { name: VP Supply Chain, title: VP Supply Chain, level: VP }
+  - { name: Demand Planner, title: Demand Planner, level: IC }
+  - { name: S&OP Lead, title: S&OP Lead, level: Director }
+
+decisions:
+  - { id: dem.d.consensus, statement: Reconcile statistical baseline with sales overrides. }
+  - { id: dem.d.safety_stock, statement: Set safety stock by SKU/location given service target. }
+  - { id: dem.d.npi, statement: Phase in/out new products and cannibalization assumptions. }
+
+kpis:
+  - id: dem.kpi.mape
+    name: Forecast Accuracy (MAPE)
+    formula: mean(abs(actual - forecast)/actual)
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [dem.d.consensus]
+  - id: dem.kpi.bias
+    name: Forecast Bias
+    formula: mean(forecast - actual)
+    unit: units
+    direction: target_band
+  - id: dem.kpi.fill_rate
+    name: Fill Rate
+    formula: lines_filled / lines_ordered
+    unit: "%"
+    direction: higher_is_better
+  - id: dem.kpi.otif
+    name: OTIF
+    formula: orders_on_time_in_full / orders
+    unit: "%"
+    direction: higher_is_better
+  - id: dem.kpi.inventory_days
+    name: Inventory Days
+    formula: avg_inventory / daily_cogs
+    unit: days
+    direction: lower_is_better
+  - id: dem.kpi.safety_stock_days
+    name: Safety Stock Days
+    formula: safety_stock_units / daily_demand
+    unit: days
+    direction: target_band
+    decisionsSupported: [dem.d.safety_stock]
+
+dataModel:
+  entities:
+    - { name: Forecast, keys: [sku_id, location_id, period] }
+    - { name: Shipment, keys: [shipment_id] }
+    - { name: SalesOrder, keys: [order_id] }
+    - { name: PromotionEvent, keys: [promo_id] }
+
+sourceSystems:
+  - { vendor: SAP, product: Integrated Business Planning, category: Demand Planning }
+  - { vendor: Kinaxis, product: RapidResponse, category: Concurrent Planning }
+  - { vendor: o9 Solutions, product: Digital Brain, category: Planning }
+  - { vendor: Anaplan, product: Connected Planning, category: Planning }
+
+connectors:
+  - { type: SAP RFC/IDoc, protocol: RFC, auth: SAP user }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: ETL files, protocol: SFTP, auth: SSH key }
+
+ingestionChallenges:
+  - Hierarchies (product, customer, location) reshuffle every quarter.
+  - Promo lift overrides arrive in spreadsheets, not signed APIs.
+
+integrationChallenges:
+  - Multiple planning systems coexist; reconciliation needed at S&OP cycle.
+  - Master data harmonization across ERPs in different regions.
