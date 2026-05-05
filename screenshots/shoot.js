@@ -6,13 +6,18 @@ const ROUTES = [
   ['index', '/'],
   ['v_bfsi', '/v/BFSI'],
   ['d_payments', '/d/payments'],
-  ['d_mes_quality', '/d/mes_quality'],
-  ['kpi_pay_stp_rate', '/kpi/pay.kpi.stp_rate'],
-  ['source_stripe', '/source/src.stripe_payments'],
+  ['governance', '/governance'],
+  ['glossary', '/glossary'],
+  ['catalog', '/catalog'],
+  ['lineage', '/lineage'],
+  ['dq', '/dq'],
+  ['kg', '/kg'],
   ['assistant', '/assistant'],
+  ['demo', '/demo'],
+  ['demo_bfsi', '/demo/BFSI'],
 ];
 
-const OUT = process.argv[2] || '/sessions/clever-affectionate-tesla/mnt/domain-explorer/screenshots';
+const OUT = process.argv[2] || path.join(__dirname);
 const BASE = 'http://127.0.0.1:3000';
 
 async function shoot(profile, viewport, deviceScaleFactor) {
@@ -23,11 +28,11 @@ async function shoot(profile, viewport, deviceScaleFactor) {
     const dest = path.join(OUT, profile, `${name}.png`);
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     try {
-      await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 15000 });
+      await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 20000 });
     } catch (e) {
       console.error(`nav ${profile} ${route}:`, e.message);
     }
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(500);
     await page.screenshot({ path: dest, fullPage: true });
     console.log(`  ${profile}/${name}.png  (${route})`);
   }
