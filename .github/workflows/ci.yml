@@ -8,7 +8,7 @@ on:
 
 jobs:
   node:
-    name: Node — lint + typecheck
+    name: Node — lint + typecheck + vitest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,8 +33,11 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Vitest
+        run: pnpm --filter explorer-web test
+
   python:
-    name: Python — ruff + mypy
+    name: Python — ruff + mypy + pytest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,8 +55,14 @@ jobs:
       - name: uv sync
         run: uv sync --all-extras --dev
 
+      - name: Install test deps
+        run: uv pip install pytest networkx pyarrow faker mimesis
+
       - name: ruff check
         run: uv run ruff check .
 
       - name: mypy
         run: uv run mypy services/api/app packages/metadata/python/metadata
+
+      - name: pytest
+        run: uv run pytest

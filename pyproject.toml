@@ -28,3 +28,20 @@ python_version = "3.11"
 strict = true
 ignore_missing_imports = true
 exclude = ["modeling/dbt/target", ".venv"]
+
+[tool.pytest.ini_options]
+testpaths = [
+  "packages/metadata/python/tests",
+  "services/api/tests",
+  "synthetic-data/tests",
+]
+pythonpath = [
+  "packages/metadata/python",
+  "services/api",
+  "synthetic-data",
+  ".",
+]
+addopts = "-q --color=yes -m 'not slow' --import-mode=importlib"
+markers = [
+  "slow: long-running synthetic-data generator runs",
+]
