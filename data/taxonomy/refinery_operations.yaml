@@ -1,0 +1,28 @@
+id: refinery_operations
+name: Refinery Operations
+vertical: Energy
+oneLiner: Crude scheduling, blending, unit yields, and turnaround planning across downstream refining.
+
+personas:
+  - { name: VP Refining, title: VP Refining Operations, level: VP }
+  - { name: Process Engineer, title: Senior Process Engineer, level: Manager }
+  - { name: Blending Coordinator, title: Product Blending Coordinator, level: Manager }
+
+kpis:
+  - { id: ref.kpi.utilization, name: Refinery Utilization, formula: throughput / nameplate, unit: "%", direction: higher_is_better }
+  - { id: ref.kpi.distillate_yield, name: Distillate Yield, formula: distillate_bbl / crude_bbl, unit: "%", direction: higher_is_better }
+  - { id: ref.kpi.energy_intensity, name: Energy Intensity Index, formula: actual_energy / standard_energy, unit: index, direction: lower_is_better }
+  - { id: ref.kpi.giveaway, name: Blend Giveaway, formula: avg(spec_giveaway_pct), unit: "%", direction: lower_is_better }
+  - { id: ref.kpi.turnaround_overrun, name: Turnaround Schedule Overrun, formula: actual_days - planned_days, unit: days, direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Aspen Technology, product: aspenONE, category: Process Optimisation }
+  - { vendor: Honeywell, product: Experion PKS, category: DCS }
+  - { vendor: Yokogawa, product: CENTUM VP, category: DCS }
+  - { vendor: AVEVA, product: PI System, category: Historian }
+  - { vendor: Emerson, product: DeltaV, category: DCS }
+
+connectors:
+  - { type: OPC UA, protocol: TCP, auth: x509 }
+  - { type: PI Web API, protocol: HTTPS, auth: Kerberos }
+  - { type: Modbus TCP, protocol: TCP, auth: VPN }

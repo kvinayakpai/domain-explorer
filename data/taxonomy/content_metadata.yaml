@@ -1,0 +1,28 @@
+id: content_metadata
+name: Content Metadata
+vertical: Media
+oneLiner: Asset descriptors, taxonomies, rights windows, and identifiers across the content supply chain.
+
+personas:
+  - { name: Head of Metadata, title: Head of Content Metadata, level: Director }
+  - { name: Rights Mgmt Lead, title: Rights & Clearance Manager, level: Manager }
+  - { name: Taxonomy Steward, title: Content Taxonomy Steward, level: Manager }
+
+kpis:
+  - { id: cmeta.kpi.completeness, name: Metadata Completeness, formula: filled_fields / required_fields, unit: "%", direction: higher_is_better }
+  - { id: cmeta.kpi.discovery_lift, name: Discovery Lift, formula: streams_with_meta / streams_baseline, unit: ratio, direction: higher_is_better }
+  - { id: cmeta.kpi.rights_breaches, name: Rights Window Breaches, formula: breaches_per_month, unit: count, direction: lower_is_better }
+  - { id: cmeta.kpi.id_match_rate, name: External ID Match Rate, formula: matched / total_assets, unit: "%", direction: higher_is_better }
+  - { id: cmeta.kpi.title_dupes, name: Title Duplicate Rate, formula: dupes / total_titles, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Gracenote, product: Video Data, category: Metadata Provider }
+  - { vendor: IMDb, product: IMDbPro, category: Metadata Provider }
+  - { vendor: Vubiquity, product: Metadata Services, category: Metadata Provider }
+  - { vendor: Avid, product: MediaCentral, category: MAM }
+  - { vendor: Mediagenix, product: WHATS'ON, category: Scheduling/Rights }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: EIDR API, protocol: HTTPS, auth: APIKey }
+  - { type: XML feed, protocol: HTTPS, auth: APIKey }

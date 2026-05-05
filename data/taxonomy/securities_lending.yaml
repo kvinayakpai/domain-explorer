@@ -1,0 +1,28 @@
+id: securities_lending
+name: Securities Lending
+vertical: BFSI
+oneLiner: Loans of securities to short-sellers and prime brokers — collateral, fees, and recall management.
+
+personas:
+  - { name: Head of Sec Lending, title: Head of Securities Lending, level: VP }
+  - { name: Collateral Manager, title: Collateral Optimisation Manager, level: Director }
+  - { name: Sec Lending Trader, title: Securities Lending Trader, level: Manager }
+
+kpis:
+  - { id: sl.kpi.utilization, name: Utilization Rate, formula: on_loan_value / lendable_value, unit: "%", direction: higher_is_better }
+  - { id: sl.kpi.avg_fee, name: Average Lending Fee, formula: weighted_avg_fee_bps, unit: bps, direction: higher_is_better }
+  - { id: sl.kpi.recall_failure, name: Recall Failure Rate, formula: failed_recalls / total_recalls, unit: "%", direction: lower_is_better }
+  - { id: sl.kpi.collateral_haircut, name: Avg Collateral Haircut, formula: haircut_weighted_avg, unit: "%", direction: target_band }
+  - { id: sl.kpi.specials_revenue, name: Specials Revenue Share, formula: specials_revenue / total_revenue, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Equilend, product: NGT, category: SecLending Trading }
+  - { vendor: Pirum, product: CCMS, category: Collateral Mgmt }
+  - { vendor: Broadridge, product: SecuritiesFinanceHub, category: Post-trade Platform }
+  - { vendor: Calypso, product: Calypso Securities Finance, category: Post-trade Platform }
+  - { vendor: FIS, product: Apex Collateral, category: Collateral Mgmt }
+
+connectors:
+  - { type: FIX, protocol: TCP, auth: TLS }
+  - { type: SWIFT MT54x, protocol: MQ, auth: PKI }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }

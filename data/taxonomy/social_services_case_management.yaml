@@ -1,0 +1,28 @@
+id: social_services_case_management
+name: Social Services Case Management
+vertical: PublicSector
+oneLiner: Intake, eligibility, services delivery, and outcomes tracking across child welfare, TANF, SNAP, and housing.
+
+personas:
+  - { name: Director Human Services, title: "Director, Health & Human Services", level: Director }
+  - { name: Child Welfare Manager, title: Child Welfare Program Manager, level: Manager }
+  - { name: Eligibility Worker Lead, title: Lead Eligibility Worker, level: Manager }
+
+kpis:
+  - { id: ssc.kpi.eligibility_cycle, name: Eligibility Determination Cycle, formula: avg(decision_dt - app_dt), unit: days, direction: lower_is_better }
+  - { id: ssc.kpi.timely_recerts, name: Timely Recertifications, formula: on_time_recerts / due_recerts, unit: "%", direction: higher_is_better }
+  - { id: ssc.kpi.improper_payments, name: Improper Payment Rate, formula: improper_paid / total_paid, unit: "%", direction: lower_is_better }
+  - { id: ssc.kpi.case_load, name: Caseworker Load, formula: open_cases / caseworker_fte, unit: cases/fte, direction: lower_is_better }
+  - { id: ssc.kpi.outcome_attainment, name: Service Outcome Attainment, formula: attained / planned, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Northwoods, product: Compass, category: Social Services }
+  - { vendor: Deloitte, product: HHS Connect, category: HHS Platform }
+  - { vendor: Salesforce, product: Public Sector Solutions, category: CRM }
+  - { vendor: Cúram, product: IBM Cúram Social Program Mgmt, category: SPM }
+  - { vendor: KPMG, product: HSP, category: HHS Platform }
+
+connectors:
+  - { type: NIEM HSP-EM, protocol: HTTPS, auth: mTLS }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: SFTP, protocol: SFTP, auth: SSH key }

@@ -1,0 +1,28 @@
+id: court_records
+name: Court Records & Case Management
+vertical: PublicSector
+oneLiner: Civil and criminal case filing, docketing, scheduling, and disposition across court systems.
+
+personas:
+  - { name: Clerk of Court, title: Clerk of the Court, level: Director }
+  - { name: Court Tech Director, title: Court Technology Director, level: Director }
+  - { name: Docketing Lead, title: Docketing Supervisor, level: Manager }
+
+kpis:
+  - { id: ct.kpi.case_clear_rate, name: Case Clearance Rate, formula: dispositions / filings, unit: "%", direction: higher_is_better }
+  - { id: ct.kpi.time_to_disposition, name: Time-to-Disposition, formula: avg(disposed_dt - filed_dt), unit: days, direction: lower_is_better }
+  - { id: ct.kpi.efile_share, name: E-File Share, formula: efiled / total_filings, unit: "%", direction: higher_is_better }
+  - { id: ct.kpi.bench_warrant_rate, name: Bench Warrant Rate, formula: bench_warrants / hearings, unit: "%", direction: lower_is_better }
+  - { id: ct.kpi.fees_collected, name: Court Fees Collected, formula: collected_usd, unit: USD, direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Tyler Technologies, product: Odyssey, category: Court Case Mgmt }
+  - { vendor: Journal Technologies, product: eCourt, category: Court Case Mgmt }
+  - { vendor: Thomson Reuters, product: Westlaw, category: Legal Research }
+  - { vendor: Equivant, product: Courtview, category: Court Case Mgmt }
+  - { vendor: NCSC, product: NIEM Justice, category: Standards }
+
+connectors:
+  - { type: NIEM/EFM XML, protocol: HTTPS, auth: mTLS }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: SFTP, protocol: SFTP, auth: SSH key }

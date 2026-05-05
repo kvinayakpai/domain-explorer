@@ -1,0 +1,28 @@
+id: cloud_finops
+name: Cloud FinOps
+vertical: HiTech
+oneLiner: Cloud cost visibility, allocation, optimisation, and unit economics across AWS, Azure, and GCP.
+
+personas:
+  - { name: Head of FinOps, title: Head of Cloud FinOps, level: Director }
+  - { name: Cloud Economist, title: Senior Cloud Economist, level: Manager }
+  - { name: Engineering Cost Owner, title: Engineering Cost Champion, level: Manager }
+
+kpis:
+  - { id: fo.kpi.unit_cost, name: Cost per Active User, formula: cloud_spend / mau, unit: USD, direction: lower_is_better }
+  - { id: fo.kpi.tag_coverage, name: Resource Tag Coverage, formula: tagged / total_resources, unit: "%", direction: higher_is_better }
+  - { id: fo.kpi.savings_plan_coverage, name: Reserved/Savings Coverage, formula: covered_hours / on_demand_hours, unit: "%", direction: higher_is_better }
+  - { id: fo.kpi.idle_spend, name: Idle Resource Spend, formula: idle_cost / total_cost, unit: "%", direction: lower_is_better }
+  - { id: fo.kpi.budget_variance, name: Budget Variance, formula: actual / forecast - 1, unit: "%", direction: target_band }
+
+sourceSystems:
+  - { vendor: AWS, product: Cost & Usage Report, category: Cloud Billing }
+  - { vendor: Microsoft, product: Azure Cost Mgmt, category: Cloud Billing }
+  - { vendor: Google, product: GCP Billing Export, category: Cloud Billing }
+  - { vendor: Apptio, product: IBM Cloudability, category: FinOps Platform }
+  - { vendor: CloudHealth, product: VMware Tanzu, category: FinOps Platform }
+
+connectors:
+  - { type: S3 export, protocol: HTTPS, auth: IAM }
+  - { type: BigQuery export, protocol: HTTPS, auth: ServiceAccount }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }

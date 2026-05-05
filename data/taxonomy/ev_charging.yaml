@@ -1,0 +1,28 @@
+id: ev_charging
+name: EV Charging Operations
+vertical: Energy
+oneLiner: Public and fleet EV charge point operations — sessions, pricing, demand response, and uptime.
+
+personas:
+  - { name: VP eMobility, title: VP eMobility, level: VP }
+  - { name: Charging Network Manager, title: Charging Network Manager, level: Director }
+  - { name: Field Service Lead, title: EV Charger Field Service Lead, level: Manager }
+
+kpis:
+  - { id: ev.kpi.uptime, name: Charger Uptime, formula: in_service_hours / total_hours, unit: "%", direction: higher_is_better }
+  - { id: ev.kpi.utilization, name: Connector Utilization, formula: charging_minutes / available_minutes, unit: "%", direction: higher_is_better }
+  - { id: ev.kpi.kwh_per_session, name: kWh per Session, formula: total_kwh / sessions, unit: kWh, direction: higher_is_better }
+  - { id: ev.kpi.ttr, name: Time-to-Repair Faulted Stations, formula: avg(repair_dt - fault_dt), unit: hours, direction: lower_is_better }
+  - { id: ev.kpi.payment_failure, name: Payment Failure Rate, formula: failed / attempts, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: ChargePoint, product: ChargePoint Network, category: CPO Platform }
+  - { vendor: ABB, product: e-mobility, category: Hardware/CPO }
+  - { vendor: Driivz, product: EV Mgmt, category: CPO Platform }
+  - { vendor: AMPECO, product: Charge Point Mgmt, category: CPO Platform }
+  - { vendor: Hubject, product: intercharge, category: Roaming Hub }
+
+connectors:
+  - { type: OCPP 1.6/2.0.1, protocol: WebSocket, auth: TLS-cert }
+  - { type: OCPI, protocol: HTTPS, auth: APIKey }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }

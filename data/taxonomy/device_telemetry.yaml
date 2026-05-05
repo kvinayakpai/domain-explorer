@@ -1,0 +1,28 @@
+id: device_telemetry
+name: Device Telemetry
+vertical: HiTech
+oneLiner: Connected device event, crash, and feature-usage pipelines feeding product, support, and reliability.
+
+personas:
+  - { name: VP Product Analytics, title: VP Product Analytics, level: VP }
+  - { name: Telemetry Platform Lead, title: Telemetry Platform Engineering Lead, level: Director }
+  - { name: SRE Lead, title: Reliability & Observability Lead, level: Manager }
+
+kpis:
+  - { id: dt.kpi.event_lag, name: Event Pipeline Lag P95, formula: p95(received_ts - event_ts), unit: seconds, direction: lower_is_better }
+  - { id: dt.kpi.opt_in_rate, name: Telemetry Opt-In Rate, formula: opted_in_devices / total_devices, unit: "%", direction: higher_is_better }
+  - { id: dt.kpi.crash_free_session, name: Crash-Free Session Rate, formula: clean_sessions / total_sessions, unit: "%", direction: higher_is_better }
+  - { id: dt.kpi.event_volume, name: Daily Event Volume, formula: events_per_day, unit: count, direction: target_band }
+  - { id: dt.kpi.dq_pass_rate, name: Schema Conformance, formula: valid / total_events, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Datadog, product: Observability, category: Observability }
+  - { vendor: Snowflake, product: Snowpipe Streaming, category: Cloud Warehouse }
+  - { vendor: Confluent, product: Cloud, category: Streaming }
+  - { vendor: Amplitude, product: Analytics, category: Product Analytics }
+  - { vendor: Sentry, product: Application Monitoring, category: Crash Reporting }
+
+connectors:
+  - { type: Kafka, protocol: TCP, auth: SASL }
+  - { type: HTTP/JSON, protocol: HTTPS, auth: APIKey }
+  - { type: gRPC OTLP, protocol: HTTP/2, auth: mTLS }

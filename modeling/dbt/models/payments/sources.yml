@@ -1,0 +1,60 @@
+version: 2
+
+sources:
+  - name: payments
+    description: |
+      Real Payments source schema in the populated domain-explorer.duckdb.
+      Mirror of what an acquirer/core-banking operational data store would land
+      after CDC. All ten tables are populated by the synthetic-data generator.
+    schema: payments
+    tables:
+      - name: customers
+        description: One row per customer enrolled with the bank/PSP.
+        columns:
+          - name: customer_id
+            tests: [unique, not_null]
+      - name: accounts
+        description: Customer-owned accounts that source/receive funds.
+        columns:
+          - name: account_id
+            tests: [unique, not_null]
+          - name: customer_id
+            tests: [not_null]
+      - name: payment_instructions
+        description: Originator-side instructions before they hit the rail.
+        columns:
+          - name: instruction_id
+            tests: [unique, not_null]
+      - name: payments
+        description: Authoritative payment events across rails.
+        columns:
+          - name: payment_id
+            tests: [unique, not_null]
+          - name: instruction_id
+            tests: [not_null]
+      - name: settlements
+        description: Settlement records tying payments to clearing batches.
+        columns:
+          - name: settlement_id
+            tests: [unique, not_null]
+          - name: payment_id
+            tests: [not_null]
+      - name: chargebacks
+        description: Inbound dispute notifications from issuers.
+        columns:
+          - name: chargeback_id
+            tests: [unique, not_null]
+      - name: disputes
+        description: Issuer or customer disputes attached to chargebacks.
+      - name: fraud_alerts
+        description: Real-time fraud model and rule alerts on payments.
+      - name: mcc_codes
+        description: ISO Merchant Category Code reference list.
+        columns:
+          - name: mcc
+            tests: [unique, not_null]
+      - name: merchants
+        description: Merchant master file with MCC and country.
+        columns:
+          - name: merchant_id
+            tests: [unique, not_null]

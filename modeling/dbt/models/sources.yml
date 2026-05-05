@@ -1,25 +1,5 @@
+# NOTE: source declarations live under their domain folder now.
+# Real source declarations for the populated DuckDB are under
+# models/payments/sources.yml. This top-level file is kept as a placeholder.
 version: 2
-
-sources:
-  - name: payments_raw
-    description: Raw event tables landed from the payments hub.
-    tables:
-      - name: authorizations
-        description: One row per auth attempt — populated from acquirer feed.
-      - name: settlements
-        description: Settlement net file per merchant per day.
-      - name: chargebacks
-        description: Inbound dispute notifications.
-
-  - name: claims_raw
-    description: Raw extracts from Guidewire ClaimCenter.
-    tables:
-      - name: claims
-      - name: claim_notes
-      - name: payouts
-
-  - name: retail_raw
-    description: Raw POS + RMS extracts.
-    tables:
-      - name: pos_lines
-      - name: inventory_positions
+sources: []

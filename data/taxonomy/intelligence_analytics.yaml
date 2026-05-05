@@ -1,0 +1,28 @@
+id: intelligence_analytics
+name: Intelligence Analytics
+vertical: PublicSector
+oneLiner: Multi-source fusion (SIGINT, OSINT, HUMINT) for analyst tradecraft, link analysis, and reporting.
+
+personas:
+  - { name: Director All-Source, title: "Director, All-Source Analysis", level: Director }
+  - { name: Targeting Officer, title: Senior Targeting Officer, level: Manager }
+  - { name: Data Tradecraft Lead, title: Data Tradecraft Lead, level: Manager }
+
+kpis:
+  - { id: int.kpi.report_cycle, name: Report Production Cycle, formula: avg(publish_dt - tasking_dt), unit: hours, direction: lower_is_better }
+  - { id: int.kpi.source_coverage, name: Tasked Source Coverage, formula: tasks_with_collection / tasks_open, unit: "%", direction: higher_is_better }
+  - { id: int.kpi.indicator_recall, name: Indicator Recall, formula: detected_iocs / known_iocs, unit: "%", direction: higher_is_better }
+  - { id: int.kpi.consumer_value, name: Consumer Value Score, formula: avg(consumer_rating), unit: score, direction: higher_is_better }
+  - { id: int.kpi.tearline_share, name: Tearline Sharing Rate, formula: shareable_reports / total_reports, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Palantir, product: Gotham, category: Analytical Platform }
+  - { vendor: Maxar, product: SecureWatch, category: GEOINT }
+  - { vendor: BAE, product: GXP, category: GEOINT }
+  - { vendor: Recorded Future, product: Intelligence Cloud, category: OSINT }
+  - { vendor: Babel Street, product: Babel X, category: OSINT }
+
+connectors:
+  - { type: STIX/TAXII, protocol: HTTPS, auth: APIKey }
+  - { type: REST, protocol: HTTPS, auth: PIV/CAC }
+  - { type: NiFi flowfile, protocol: HTTPS, auth: mTLS }

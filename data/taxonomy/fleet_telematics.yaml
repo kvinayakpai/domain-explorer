@@ -1,0 +1,28 @@
+id: fleet_telematics
+name: Fleet Telematics
+vertical: TTH
+oneLiner: Vehicle GPS, ELD compliance, fuel, and driver behaviour analytics for commercial fleets.
+
+personas:
+  - { name: Fleet Director, title: Director of Fleet Operations, level: Director }
+  - { name: Safety Manager, title: Driver Safety Manager, level: Manager }
+  - { name: Maintenance Lead, title: Fleet Maintenance Lead, level: Manager }
+
+kpis:
+  - { id: ftel.kpi.fuel_efficiency, name: Fuel Efficiency (MPG), formula: miles / gallons, unit: mpg, direction: higher_is_better }
+  - { id: ftel.kpi.harsh_events, name: Harsh Events per 100mi, formula: harsh_events / miles_100, unit: count, direction: lower_is_better }
+  - { id: ftel.kpi.idle_time_pct, name: Idle Time %, formula: idle_minutes / engine_on_minutes, unit: "%", direction: lower_is_better }
+  - { id: ftel.kpi.hos_violations, name: HOS Violations, formula: hos_violations_per_week, unit: count, direction: lower_is_better }
+  - { id: ftel.kpi.unscheduled_downtime, name: Unscheduled Downtime, formula: downtime_hours / available_hours, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Samsara, product: Connected Operations, category: Telematics }
+  - { vendor: Geotab, product: MyGeotab, category: Telematics }
+  - { vendor: Verizon, product: Connect Reveal, category: Telematics }
+  - { vendor: Trimble, product: TMW, category: TMS }
+  - { vendor: Fleetio, product: Fleet Mgmt, category: Maintenance }
+
+connectors:
+  - { type: MQTT, protocol: TCP, auth: TLS-cert }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: CSV via SFTP, protocol: SFTP, auth: SSH key }

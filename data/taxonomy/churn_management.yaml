@@ -1,0 +1,28 @@
+id: churn_management
+name: Churn Management
+vertical: Telecom
+oneLiner: Predict, prevent, and recover voluntary and involuntary churn across the subscriber base.
+
+personas:
+  - { name: Head of Retention, title: Head of Customer Retention, level: VP }
+  - { name: Win-back Lead, title: Win-back & Save Desk Lead, level: Manager }
+  - { name: Churn Data Scientist, title: Churn Data Scientist, level: IC }
+
+kpis:
+  - { id: chrn.kpi.monthly_churn, name: Monthly Churn Rate, formula: churners / starting_subs, unit: "%", direction: lower_is_better }
+  - { id: chrn.kpi.win_back, name: Win-back Rate, formula: regained / churned, unit: "%", direction: higher_is_better }
+  - { id: chrn.kpi.save_offer_take, name: Save Offer Acceptance, formula: accepted_offers / made_offers, unit: "%", direction: higher_is_better }
+  - { id: chrn.kpi.involuntary_churn, name: Involuntary Churn Share, formula: payment_failure_churn / total_churn, unit: "%", direction: lower_is_better }
+  - { id: chrn.kpi.lifetime_months, name: Avg Subscriber Lifetime, formula: 1 / monthly_churn_rate, unit: months, direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Salesforce, product: Service Cloud, category: CRM }
+  - { vendor: Pegasystems, product: Customer Decision Hub, category: CDH }
+  - { vendor: SAS, product: Customer Intelligence, category: Analytics }
+  - { vendor: Adobe, product: Customer Journey Analytics, category: Journey Analytics }
+  - { vendor: Snowflake, product: Cortex ML, category: Cloud Warehouse }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: Reverse ETL, protocol: HTTPS, auth: OAuth2 }
+  - { type: Webhook, protocol: HTTPS, auth: HMAC }

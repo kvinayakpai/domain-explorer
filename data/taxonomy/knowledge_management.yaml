@@ -1,0 +1,28 @@
+id: knowledge_management
+name: Knowledge Management
+vertical: ProfessionalServices
+oneLiner: Capture, curate, and surface methodologies, deliverables, and case studies across the firm.
+
+personas:
+  - { name: CKO, title: Chief Knowledge Officer, level: C-suite }
+  - { name: Knowledge Manager, title: Knowledge Manager, level: Manager }
+  - { name: Methodology Steward, title: Methodology Steward, level: Manager }
+
+kpis:
+  - { id: km.kpi.contribution_rate, name: Contribution Rate, formula: contributors / billable_fte, unit: "%", direction: higher_is_better }
+  - { id: km.kpi.reuse_rate, name: Asset Reuse Rate, formula: reused_assets / new_engagements, unit: ratio, direction: higher_is_better }
+  - { id: km.kpi.search_success, name: Knowledge Search Success, formula: clicked_results / searches, unit: "%", direction: higher_is_better }
+  - { id: km.kpi.aged_content, name: Aged Content > 24mo, formula: aged_articles / total, unit: "%", direction: lower_is_better }
+  - { id: km.kpi.expert_response_time, name: Expert Response Time, formula: avg(reply_ts - ask_ts), unit: hours, direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Microsoft, product: SharePoint Online, category: ECM }
+  - { vendor: Atlassian, product: Confluence, category: Wiki/KM }
+  - { vendor: Bloomfire, product: Knowledge Mgmt, category: KM SaaS }
+  - { vendor: Notion, product: Notion AI, category: Wiki/KM }
+  - { vendor: Glean, product: Work AI, category: Enterprise Search }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: Graph API, protocol: HTTPS, auth: OAuth2 }
+  - { type: Webhook, protocol: HTTPS, auth: HMAC }

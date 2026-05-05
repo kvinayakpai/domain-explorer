@@ -1,0 +1,28 @@
+id: expense_management
+name: Expense Management
+vertical: ProfessionalServices
+oneLiner: T&E capture, policy compliance, approvals, and reimbursement across the consultant base.
+
+personas:
+  - { name: Controller, title: Corporate Controller, level: VP }
+  - { name: T&E Policy Lead, title: Travel & Expense Policy Lead, level: Manager }
+  - { name: AP Manager, title: Accounts Payable Manager, level: Manager }
+
+kpis:
+  - { id: ex.kpi.policy_compliance, name: Policy Compliance Rate, formula: compliant / submitted, unit: "%", direction: higher_is_better }
+  - { id: ex.kpi.reimburse_cycle, name: Reimbursement Cycle, formula: avg(reimbursed_dt - submitted_dt), unit: days, direction: lower_is_better }
+  - { id: ex.kpi.client_billable_share, name: Client-Billable Expense Share, formula: billable_expenses / total_expenses, unit: "%", direction: higher_is_better }
+  - { id: ex.kpi.duplicate_rate, name: Duplicate Submission Rate, formula: duplicates / submissions, unit: "%", direction: lower_is_better }
+  - { id: ex.kpi.cards_capture, name: Corporate Card Capture Rate, formula: card_txns_in_report / card_txns, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: SAP, product: Concur Expense, category: T&E SaaS }
+  - { vendor: Coupa, product: Expenses, category: T&E SaaS }
+  - { vendor: Expensify, product: Expensify, category: T&E SaaS }
+  - { vendor: Brex, product: Empower, category: Spend Mgmt }
+  - { vendor: Ramp, product: Ramp Expense, category: Spend Mgmt }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: Visa/Amex feed, protocol: SFTP, auth: SSH key }
+  - { type: Webhook, protocol: HTTPS, auth: HMAC }

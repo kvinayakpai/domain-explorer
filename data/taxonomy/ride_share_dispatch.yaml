@@ -1,0 +1,28 @@
+id: ride_share_dispatch
+name: Ride-Share Dispatch
+vertical: TTH
+oneLiner: Match riders and drivers in real time with surge pricing, ETA prediction, and supply rebalancing.
+
+personas:
+  - { name: Director Marketplace, title: "Director, Marketplace Operations", level: Director }
+  - { name: Pricing Scientist, title: Pricing & Surge Lead, level: Manager }
+  - { name: City Ops Manager, title: City Operations Manager, level: Manager }
+
+kpis:
+  - { id: rs.kpi.eta_p90, name: ETA P90 Accuracy, formula: pct_within_2min, unit: "%", direction: higher_is_better }
+  - { id: rs.kpi.match_rate, name: Match Rate, formula: matched_requests / total_requests, unit: "%", direction: higher_is_better }
+  - { id: rs.kpi.surge_minutes, name: Surge Minutes per Day, formula: minutes_with_surge_active, unit: minutes, direction: target_band }
+  - { id: rs.kpi.driver_utilization, name: Driver Utilization, formula: paid_minutes / online_minutes, unit: "%", direction: higher_is_better }
+  - { id: rs.kpi.cancellation_rate, name: Rider Cancellation Rate, formula: cancellations / requests, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Mapbox, product: Navigation, category: Mapping }
+  - { vendor: Google, product: Maps Platform, category: Mapping }
+  - { vendor: Twilio, product: Programmable Messaging, category: Comms }
+  - { vendor: Stripe, product: Connect, category: Payouts }
+  - { vendor: Kafka, product: Apache Kafka, category: Streaming }
+
+connectors:
+  - { type: gRPC, protocol: HTTP/2, auth: mTLS }
+  - { type: Webhook, protocol: HTTPS, auth: HMAC }
+  - { type: Kafka, protocol: TCP, auth: SASL }

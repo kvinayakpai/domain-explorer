@@ -1,0 +1,28 @@
+id: defense_logistics
+name: Defense Logistics
+vertical: PublicSector
+oneLiner: Sustainment of weapons systems — supply, maintenance, transportation, and readiness reporting.
+
+personas:
+  - { name: J4 Logistics Director, title: J4 Logistics Director, level: Director }
+  - { name: Materiel Manager, title: Materiel Management Lead, level: Manager }
+  - { name: Readiness Analyst, title: Readiness & Sustainment Analyst, level: IC }
+
+kpis:
+  - { id: dl.kpi.mission_capable, name: Mission Capable Rate, formula: mc_hours / possessed_hours, unit: "%", direction: higher_is_better }
+  - { id: dl.kpi.fmc, name: Fully Mission Capable Rate, formula: fmc_hours / possessed_hours, unit: "%", direction: higher_is_better }
+  - { id: dl.kpi.bo_lead_time, name: Backorder Lead Time, formula: avg(closed_dt - opened_dt), unit: days, direction: lower_is_better }
+  - { id: dl.kpi.fill_rate, name: Requisition Fill Rate, formula: filled / requisitions, unit: "%", direction: higher_is_better }
+  - { id: dl.kpi.stockout, name: Stockout Rate, formula: zero_balance_skus / total_skus, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: DLA, product: EBS, category: Defense ERP }
+  - { vendor: SAP, product: NS2 ERP, category: Defense ERP }
+  - { vendor: Oracle, product: Federal SCM, category: Defense ERP }
+  - { vendor: GCSS-Army, product: GCSS-A, category: Logistics System }
+  - { vendor: Palantir, product: Foundry for Defense, category: Analytics }
+
+connectors:
+  - { type: EDIFACT/MILSTRIP, protocol: AS2, auth: PKI }
+  - { type: REST, protocol: HTTPS, auth: PIV/CAC }
+  - { type: SFTP, protocol: SFTP, auth: SSH key }

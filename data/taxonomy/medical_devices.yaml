@@ -1,0 +1,28 @@
+id: medical_devices
+name: Medical Devices
+vertical: LifeSciences
+oneLiner: Device design history, post-market surveillance, complaints, and field corrections under FDA/MDR.
+
+personas:
+  - { name: VP Quality, title: VP Quality & Regulatory Devices, level: VP }
+  - { name: Complaint Investigator, title: Complaint Handling Lead, level: Manager }
+  - { name: Post-Market Surveillance Lead, title: PMS Manager, level: Director }
+
+kpis:
+  - { id: med.kpi.complaint_cycle, name: Complaint Cycle Time, formula: avg(close_dt - open_dt), unit: days, direction: lower_is_better }
+  - { id: med.kpi.mdr_on_time, name: MDR/IMDRF On-Time Filing, formula: on_time_filings / required, unit: "%", direction: higher_is_better }
+  - { id: med.kpi.field_action_close, name: Field Action Close Rate, formula: closed_actions / opened_actions, unit: "%", direction: higher_is_better }
+  - { id: med.kpi.capa_aging, name: CAPA Aging > 90d, formula: capa_over_90d / open_capa, unit: "%", direction: lower_is_better }
+  - { id: med.kpi.return_rate, name: Device Return Rate, formula: returns / sold, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Sparta Systems, product: TrackWise, category: QMS }
+  - { vendor: Veeva, product: Quality Vault, category: QMS }
+  - { vendor: MasterControl, product: Quality Excellence, category: QMS }
+  - { vendor: Greenlight Guru, product: MedTech QMS, category: QMS }
+  - { vendor: FDA, product: FAERS/MAUDE, category: Reg Database }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: SFTP, protocol: SFTP, auth: SSH key }
+  - { type: HL7 ICSR/E2B, protocol: HTTPS, auth: mTLS }

@@ -1,0 +1,28 @@
+id: asset_health_monitoring
+name: Asset Health Monitoring
+vertical: Utilities
+oneLiner: Predictive analytics on transformers, breakers, and lines to drive condition-based maintenance and capex.
+
+personas:
+  - { name: Asset Manager, title: Director of Asset Management, level: Director }
+  - { name: Reliability Engineer, title: Senior Reliability Engineer, level: Manager }
+  - { name: T&D Asset Strategy Lead, title: T&D Asset Strategy Lead, level: Manager }
+
+kpis:
+  - { id: ahm.kpi.health_index, name: Asset Health Index Avg, formula: weighted_avg(asset_health), unit: index, direction: higher_is_better }
+  - { id: ahm.kpi.failure_predict, name: Predicted Failure Hit Rate, formula: true_positives / predictions, unit: "%", direction: higher_is_better }
+  - { id: ahm.kpi.cm_to_pm_ratio, name: Corrective vs Preventive Ratio, formula: corrective_wo / preventive_wo, unit: ratio, direction: lower_is_better }
+  - { id: ahm.kpi.deferred_capex, name: Deferred Capex Value, formula: sum(deferred_capex_usd), unit: USD, direction: higher_is_better }
+  - { id: ahm.kpi.uptime, name: Critical Asset Uptime, formula: uptime_minutes / total_minutes, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: GE Digital, product: APM, category: Asset Performance Mgmt }
+  - { vendor: AVEVA, product: Asset Performance, category: APM }
+  - { vendor: Bentley, product: AssetWise, category: APM }
+  - { vendor: IBM, product: Maximo APM, category: EAM/APM }
+  - { vendor: SAP, product: Asset Intelligence Network, category: AIN }
+
+connectors:
+  - { type: OPC UA, protocol: TCP, auth: x509 }
+  - { type: MQTT, protocol: TCP, auth: TLS-cert }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }

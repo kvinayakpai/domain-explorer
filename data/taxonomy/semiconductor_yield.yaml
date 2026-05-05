@@ -1,0 +1,28 @@
+id: semiconductor_yield
+name: Semiconductor Yield
+vertical: HiTech
+oneLiner: Wafer test, defect classification, parametric drift, and yield engineering across fabs and OSATs.
+
+personas:
+  - { name: Yield Engineer, title: Senior Yield Engineer, level: Manager }
+  - { name: Process Integration Lead, title: Process Integration Lead, level: Director }
+  - { name: Test Engineering Manager, title: Test Engineering Manager, level: Manager }
+
+kpis:
+  - { id: yld.kpi.die_yield, name: Die Yield, formula: good_die / gross_die, unit: "%", direction: higher_is_better }
+  - { id: yld.kpi.parametric_yield, name: Parametric Yield, formula: parametric_pass / tested, unit: "%", direction: higher_is_better }
+  - { id: yld.kpi.defect_density, name: Defect Density, formula: defects_per_cm2, unit: "1/cm^2", direction: lower_is_better }
+  - { id: yld.kpi.line_yield, name: Line Yield, formula: completed_wafers / started_wafers, unit: "%", direction: higher_is_better }
+  - { id: yld.kpi.cycle_time, name: Wafer Cycle Time, formula: avg(out_dt - start_dt), unit: days, direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: KLA, product: K-Klarity, category: Defect Inspection }
+  - { vendor: Applied Materials, product: SmartFactory, category: MES }
+  - { vendor: PDF Solutions, product: Exensio, category: Yield Mgmt }
+  - { vendor: Synopsys, product: Yield Explorer, category: Yield Mgmt }
+  - { vendor: Advantest, product: Test Cell, category: ATE }
+
+connectors:
+  - { type: SECS/GEM, protocol: SECS-II, auth: VPN }
+  - { type: STDF file, protocol: SFTP, auth: SSH key }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }

@@ -1,0 +1,28 @@
+id: airline_disruption
+name: Airline Disruption Management
+vertical: TTH
+oneLiner: Detect, reaccommodate, and recover passengers and crew from cancellations, delays, and IROPs.
+
+personas:
+  - { name: OCC Manager, title: Operations Control Center Manager, level: Director }
+  - { name: Customer Recovery Lead, title: Disruption & Customer Recovery Lead, level: Manager }
+  - { name: Crew Scheduling Lead, title: Crew Recovery Specialist, level: Manager }
+
+kpis:
+  - { id: dsr.kpi.d0_completion, name: D-0 Completion Factor, formula: flights_operated / scheduled, unit: "%", direction: higher_is_better }
+  - { id: dsr.kpi.misconnect_rate, name: Misconnect Rate, formula: misconnects / connecting_passengers, unit: "%", direction: lower_is_better }
+  - { id: dsr.kpi.eu261_payouts, name: EU261/DOT Compensation Paid, formula: sum(comp_payouts), unit: USD, direction: lower_is_better }
+  - { id: dsr.kpi.reaccommodation_time, name: Reaccommodation Time, formula: avg(rebook_ts - disrupt_ts), unit: minutes, direction: lower_is_better }
+  - { id: dsr.kpi.crew_legality_breaks, name: Crew Legality Breaks, formula: crew_legality_violations, unit: count, direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Sabre, product: Movement Manager, category: Ops Control }
+  - { vendor: AIMS, product: AIMS Crew, category: Crew Mgmt }
+  - { vendor: Lufthansa Systems, product: NetLine/Ops, category: Ops Control }
+  - { vendor: Amadeus, product: Altea Departure Control, category: DCS }
+  - { vendor: 15below, product: Notify, category: Customer Comms }
+
+connectors:
+  - { type: Type B Teletype, protocol: SITA, auth: VPN }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: Webhook, protocol: HTTPS, auth: HMAC }

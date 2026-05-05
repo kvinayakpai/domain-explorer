@@ -1,0 +1,28 @@
+id: licensing_permits
+name: Licensing & Permits
+vertical: PublicSector
+oneLiner: Issue, renew, and inspect citizen and business licenses and permits across regulated activities.
+
+personas:
+  - { name: Licensing Director, title: Director of Licensing, level: Director }
+  - { name: Inspections Lead, title: Inspections Supervisor, level: Manager }
+  - { name: Permit Tech Lead, title: Permit Technology Lead, level: Manager }
+
+kpis:
+  - { id: lic.kpi.cycle_time, name: Permit Cycle Time, formula: avg(issued_dt - submitted_dt), unit: days, direction: lower_is_better }
+  - { id: lic.kpi.online_share, name: Online Submission Share, formula: online_apps / total_apps, unit: "%", direction: higher_is_better }
+  - { id: lic.kpi.first_pass_approval, name: First-Pass Approval Rate, formula: approved_no_rfa / total, unit: "%", direction: higher_is_better }
+  - { id: lic.kpi.inspection_compliance, name: Inspection Compliance Rate, formula: passed / inspections, unit: "%", direction: higher_is_better }
+  - { id: lic.kpi.fee_collection, name: Fee Collection Rate, formula: collected / billed, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Tyler Technologies, product: EnerGov, category: Permitting }
+  - { vendor: Accela, product: Civic Platform, category: Permitting }
+  - { vendor: OpenGov, product: Permitting & Licensing, category: GovTech SaaS }
+  - { vendor: Granicus, product: govAccess, category: Citizen Portal }
+  - { vendor: Salesforce, product: Public Sector Solutions, category: CRM }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: NIEM XML, protocol: HTTPS, auth: PKI }
+  - { type: SFTP, protocol: SFTP, auth: SSH key }

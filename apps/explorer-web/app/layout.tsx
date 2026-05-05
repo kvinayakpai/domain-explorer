@@ -16,6 +16,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     (v) => ({ label: v.label, href: `/v/${v.slug}` }),
   );
   const paletteItems = [
+    { id: "nav-governance", label: "Governance", href: "/governance", group: "Governance" },
+    { id: "nav-catalog", label: "Catalog", href: "/catalog", group: "Governance" },
+    { id: "nav-glossary", label: "Glossary", href: "/glossary", group: "Governance" },
+    { id: "nav-lineage", label: "Lineage (Payments)", href: "/lineage", group: "Governance" },
     ...reg.subdomains.map((s) => ({
       id: `sd-${s.id}`,
       label: s.name,
@@ -34,18 +38,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       href: `/source/${s.id}`,
       group: "Source systems",
     })),
+    ...reg.glossary.map((t) => ({
+      id: `g-${t.name}`,
+      label: t.name,
+      href: `/glossary#letter-${(/[A-Z]/i.test(t.name[0] ?? "") ? t.name[0]!.toUpperCase() : "#")}`,
+      group: "Glossary",
+    })),
   ];
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-background text-foreground antialiased">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <NavBar verticals={verticals} paletteItems={paletteItems} />
-          <main className="container py-8">{children}</main>
-          <footer className="container py-8 text-xs text-muted-foreground">
-            <p>Domain Explorer · MIT · {VERTICALS.length} verticals · {reg.subdomains.length} subdomains seeded</p>
-          </footer>
-        </ThemeProvider>
-      </body>
-    </html>
-  );
-}
+      <body cl

@@ -1,0 +1,28 @@
+id: customer_analytics
+name: Customer Analytics
+vertical: Retail
+oneLiner: Unified customer profile, segmentation, lifetime value, and journey analytics across channels.
+
+personas:
+  - { name: VP Customer Insights, title: VP Customer Insights & Analytics, level: VP }
+  - { name: CDP Lead, title: Head of Customer Data Platform, level: Director }
+  - { name: Segmentation Analyst, title: Customer Segmentation Analyst, level: Manager }
+
+kpis:
+  - { id: cust.kpi.clv, name: Customer Lifetime Value, formula: discounted_future_revenue_per_customer, unit: USD, direction: higher_is_better }
+  - { id: cust.kpi.repeat_rate, name: Repeat Purchase Rate, formula: repeat_buyers / total_buyers, unit: "%", direction: higher_is_better }
+  - { id: cust.kpi.identity_match_rate, name: Identity Match Rate, formula: matched_records / total_records, unit: "%", direction: higher_is_better }
+  - { id: cust.kpi.churn_30d, name: 30-Day Churn, formula: churned / active_30d_ago, unit: "%", direction: lower_is_better }
+  - { id: cust.kpi.nps, name: Net Promoter Score, formula: promoters - detractors, unit: score, direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Segment, product: Customer Data Platform, category: CDP }
+  - { vendor: Adobe, product: Real-Time CDP, category: CDP }
+  - { vendor: Treasure Data, product: CDP, category: CDP }
+  - { vendor: Salesforce, product: Data Cloud, category: CDP }
+  - { vendor: Snowflake, product: Cortex Customer 360, category: Cloud Warehouse }
+
+connectors:
+  - { type: Webhook, protocol: HTTPS, auth: HMAC }
+  - { type: Reverse ETL, protocol: HTTPS, auth: OAuth2 }
+  - { type: Snowpipe, protocol: HTTPS, auth: KeyPair }

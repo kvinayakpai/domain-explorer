@@ -1,0 +1,28 @@
+id: hotel_distribution
+name: Hotel Distribution
+vertical: TTH
+oneLiner: Channel mix across direct, GDS, OTA, and wholesale to optimise reach versus commission cost.
+
+personas:
+  - { name: VP Distribution, title: VP Distribution & Commercial, level: VP }
+  - { name: Channel Manager, title: Channel Manager, level: Manager }
+  - { name: Connectivity Lead, title: GDS/OTA Connectivity Lead, level: Manager }
+
+kpis:
+  - { id: hdist.kpi.direct_share, name: Direct Booking Share, formula: direct_bookings / total_bookings, unit: "%", direction: higher_is_better }
+  - { id: hdist.kpi.commission_cost, name: Channel Commission %, formula: commissions / room_revenue, unit: "%", direction: lower_is_better }
+  - { id: hdist.kpi.parity_breaks, name: Rate Parity Breaks, formula: parity_violations / shop_checks, unit: "%", direction: lower_is_better }
+  - { id: hdist.kpi.lead_time, name: Avg Booking Lead Time, formula: avg(checkin_dt - book_dt), unit: days, direction: target_band }
+  - { id: hdist.kpi.cancellation_rate, name: Cancellation Rate, formula: cancellations / bookings, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Sabre, product: SynXis, category: CRS }
+  - { vendor: Amadeus, product: Hospitality, category: CRS }
+  - { vendor: Booking.com, product: Connectivity API, category: OTA }
+  - { vendor: Expedia, product: EQC, category: OTA }
+  - { vendor: SiteMinder, product: Channel Manager, category: Channel Mgmt }
+
+connectors:
+  - { type: OTA XML, protocol: HTTPS, auth: Basic }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: GDS, protocol: SITA, auth: VPN }

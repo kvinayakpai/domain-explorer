@@ -1,0 +1,28 @@
+id: contract_management
+name: Contract Lifecycle Management
+vertical: ProfessionalServices
+oneLiner: Authoring, negotiation, e-sign, repository, and obligation management for client and vendor contracts.
+
+personas:
+  - { name: GC, title: General Counsel, level: C-suite }
+  - { name: CLM Admin, title: Head of Contract Operations, level: Director }
+  - { name: Commercial Lead, title: Commercial Operations Lead, level: Manager }
+
+kpis:
+  - { id: clm.kpi.cycle_time, name: Contract Cycle Time, formula: avg(signed_dt - draft_dt), unit: days, direction: lower_is_better }
+  - { id: clm.kpi.fallback_use, name: Fallback Clause Use Rate, formula: fallback_used / negotiated, unit: "%", direction: lower_is_better }
+  - { id: clm.kpi.auto_renew_capture, name: Auto-Renewal Captured, formula: captured / due, unit: "%", direction: higher_is_better }
+  - { id: clm.kpi.obligation_compliance, name: Obligation On-Time Rate, formula: completed_on_time / due_obligations, unit: "%", direction: higher_is_better }
+  - { id: clm.kpi.template_use, name: Template Adoption, formula: template_contracts / total, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Ironclad, product: CLM, category: CLM }
+  - { vendor: DocuSign, product: CLM, category: CLM }
+  - { vendor: SAP, product: Ariba Contracts, category: CLM }
+  - { vendor: Icertis, product: CLM, category: CLM }
+  - { vendor: Conga, product: CLM, category: CLM }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: Webhook, protocol: HTTPS, auth: HMAC }
+  - { type: SFTP, protocol: SFTP, auth: SSH key }

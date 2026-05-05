@@ -1,0 +1,28 @@
+id: ehs
+name: Environment, Health & Safety
+vertical: Manufacturing
+oneLiner: Incident reporting, hazard control, and regulatory EHS compliance across operating sites.
+
+personas:
+  - { name: VP EHS, title: "VP Environment, Health & Safety", level: VP }
+  - { name: Plant Safety Manager, title: Plant Safety Manager, level: Manager }
+  - { name: Sustainability Lead, title: Sustainability & ESG Lead, level: Director }
+
+kpis:
+  - { id: ehs.kpi.trir, name: Total Recordable Incident Rate, formula: 200000 * recordables / hours_worked, unit: per 100 FTEs, direction: lower_is_better }
+  - { id: ehs.kpi.ltir, name: Lost-Time Incident Rate, formula: 200000 * lti / hours_worked, unit: per 100 FTEs, direction: lower_is_better }
+  - { id: ehs.kpi.near_miss_ratio, name: Near-Miss to Recordable Ratio, formula: near_misses / recordables, unit: ratio, direction: higher_is_better }
+  - { id: ehs.kpi.scope1_2_emissions, name: Scope 1+2 Emissions, formula: tCO2e_scope1_plus_2, unit: tCO2e, direction: lower_is_better }
+  - { id: ehs.kpi.audit_close_rate, name: EHS Audit Action Close Rate, formula: closed_actions / total_actions, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Sphera, product: EHS, category: EHS Platform }
+  - { vendor: Intelex, product: EHSQ, category: EHS Platform }
+  - { vendor: Enablon, product: EHS, category: EHS Platform }
+  - { vendor: Cority, product: EHSQ Cloud, category: EHS Platform }
+  - { vendor: SAP, product: EHS Mgmt, category: ERP }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: SFTP, protocol: SFTP, auth: SSH key }
+  - { type: SOAP, protocol: HTTPS, auth: WS-Security }

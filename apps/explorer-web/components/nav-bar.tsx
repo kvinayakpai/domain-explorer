@@ -51,21 +51,16 @@ export function NavBar({
                   </Link>
                 ))}
               </nav>
-            </SheetContent>
-          </Sheet>
-          <Link href="/" className="text-base font-semibold tracking-tight">
-            Domain Explorer
-          </Link>
-        </div>
-        <nav className="hidden md:flex items-center gap-1 text-sm">
-          <Link href="/" className="rounded-md px-3 py-1.5 hover:bg-accent">Verticals</Link>
-          <Link href="/assistant" className="rounded-md px-3 py-1.5 hover:bg-accent">Assistant</Link>
-        </nav>
-        <div className="flex items-center gap-2">
-          <CommandPalette items={paletteItems} />
-          <ThemeToggle />
-        </div>
-      </div>
-    </header>
-  );
-}
+              <h2 className="mb-2 mt-6 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Governance
+              </h2>
+              <nav className="flex flex-col gap-1">
+                <Link href="/governance" className="rounded-md px-2 py-1.5 text-sm hover:bg-accent">
+                  Overview
+                </Link>
+                <Link href="/catalog" className="rounded-md px-2 py-1.5 text-sm hover:bg-accent">
+                  Catalog
+                </Link>
+                <Link href="/glossary" className="rounded-md px-2 py-1.5 text-sm hover:bg-accent">
+                  Glossary
+    

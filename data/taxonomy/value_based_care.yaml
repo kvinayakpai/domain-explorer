@@ -1,0 +1,28 @@
+id: value_based_care
+name: Value-Based Care
+vertical: Healthcare
+oneLiner: Population health, risk adjustment, and quality measure attainment under risk-bearing contracts.
+
+personas:
+  - { name: VP VBC, title: VP Value-Based Care, level: VP }
+  - { name: Pop Health Director, title: Director of Population Health, level: Director }
+  - { name: Quality Measure Lead, title: HEDIS/Stars Lead, level: Manager }
+
+kpis:
+  - { id: vbc.kpi.raf_capture, name: RAF Score Capture, formula: captured_raf / expected_raf, unit: "%", direction: higher_is_better }
+  - { id: vbc.kpi.hedis_stars, name: HEDIS/Stars Composite, formula: weighted_avg(measure_pct), unit: stars, direction: higher_is_better }
+  - { id: vbc.kpi.acute_admits_per_k, name: Acute Admits / 1k Members, formula: 1000 * admits / members, unit: per 1k, direction: lower_is_better }
+  - { id: vbc.kpi.readmit_30, name: 30-Day Readmit Rate, formula: readmits / discharges, unit: "%", direction: lower_is_better }
+  - { id: vbc.kpi.shared_savings, name: Shared Savings Capture, formula: actual_savings / target_savings, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Innovaccer, product: Health Cloud, category: Pop Health }
+  - { vendor: Arcadia, product: Arcadia Analytics, category: Pop Health }
+  - { vendor: Health Catalyst, product: Data OS, category: Healthcare DW }
+  - { vendor: CMS, product: CCLF/CCW, category: Payer Data }
+  - { vendor: Optum, product: Performance Analytics, category: Pop Health }
+
+connectors:
+  - { type: X12 837/834, protocol: AS2, auth: PKI }
+  - { type: FHIR Bulk Data, protocol: HTTPS, auth: SMART-OAuth2 }
+  - { type: SFTP, protocol: SFTP, auth: SSH key }

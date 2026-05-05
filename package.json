@@ -10,15 +10,6 @@
     "lint": "pnpm -r --filter \"./apps/*\" --filter \"./packages/*\" lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
     "typecheck": "pnpm -r --filter \"./apps/*\" --filter \"./packages/*\" typecheck",
-    "test": "pnpm -r --filter \"./apps/*\" --filter \"./packages/*\" test"
-  },
-  "devDependencies": {
-    "prettier": "^3.3.3",
-    "typescript": "^5.5.4"
-  },
-  "packageManager": "pnpm@9.7.0",
-  "engines": {
-    "node": ">=20",
-    "pnpm": ">=9"
-  }
-}
+    "test": "pnpm -r --filter \"./apps/*\" --filter \"./packages/*\" test",
+    "dbt:deps": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt deps",
+    "dbt:build": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt deps && DBT_PROFILES_DIR=. dbt run --select payments

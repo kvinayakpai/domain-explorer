@@ -1,0 +1,28 @@
+id: shop_floor_iot
+name: Shop-Floor IoT
+vertical: Manufacturing
+oneLiner: Real-time machine, sensor, and edge data acquisition feeding OEE, energy, and predictive analytics.
+
+personas:
+  - { name: IIoT Architect, title: Industrial IoT Architect, level: Director }
+  - { name: OT Engineer, title: OT Systems Engineer, level: Manager }
+  - { name: Data Historian Admin, title: Plant Data Historian Admin, level: Manager }
+
+kpis:
+  - { id: iiot.kpi.oee, name: Overall Equipment Effectiveness, formula: availability * performance * quality, unit: "%", direction: higher_is_better }
+  - { id: iiot.kpi.mttr, name: Mean Time to Repair, formula: avg(repair_minutes), unit: minutes, direction: lower_is_better }
+  - { id: iiot.kpi.mtbf, name: Mean Time Between Failure, formula: uptime_minutes / failures, unit: hours, direction: higher_is_better }
+  - { id: iiot.kpi.energy_per_unit, name: Energy per Unit Produced, formula: kwh / units_produced, unit: kWh/unit, direction: lower_is_better }
+  - { id: iiot.kpi.tag_uptime, name: Tag Stream Uptime, formula: minutes_streaming / total_minutes, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: AVEVA, product: PI System, category: Historian }
+  - { vendor: Rockwell, product: FactoryTalk, category: SCADA/MES }
+  - { vendor: Siemens, product: WinCC, category: SCADA }
+  - { vendor: GE Digital, product: Proficy, category: Historian/MES }
+  - { vendor: AWS, product: SiteWise, category: IIoT Cloud }
+
+connectors:
+  - { type: OPC UA, protocol: TCP, auth: x509 }
+  - { type: MQTT, protocol: TCP, auth: TLS-cert }
+  - { type: Kafka, protocol: TCP, auth: SASL }

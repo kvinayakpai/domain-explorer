@@ -3,12 +3,14 @@ import { join, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
 import {
   ConnectorPattern,
+  GlossaryTerm,
   KpiRegistryEntry,
   SourceSystemEntry,
   Subdomain,
 } from "./schema";
 import type {
   ConnectorPattern as ConnectorPatternT,
+  GlossaryTerm as GlossaryTermT,
   KpiRegistryEntry as KpiRegistryEntryT,
   SourceSystemEntry as SourceSystemEntryT,
   Subdomain as SubdomainT,
@@ -33,6 +35,7 @@ export interface Registry {
   kpis: KpiRegistryEntryT[];
   sourceSystems: SourceSystemEntryT[];
   connectors: ConnectorPatternT[];
+  glossary: GlossaryTermT[];
 }
 
 export function loadRegistry(dataRoot: string = DATA_ROOT): Registry {
@@ -55,7 +58,11 @@ export function loadRegistry(dataRoot: string = DATA_ROOT): Registry {
       return list.map((c) => ConnectorPattern.parse(c));
     },
   );
-  return { subdomains, kpis, sourceSystems, connectors };
+  const glossary = readYamlDir(join(dataRoot, "glossary")).flatMap((raw) => {
+    const list = (raw as { terms?: unknown[] } | null)?.terms ?? [];
+    return list.map((t) => GlossaryTerm.parse(t));
+  });
+  return { subdomains, kpis, sourceSystems, connectors, glossary };
 }
 
 export function getSubdomain(
@@ -72,16 +79,4 @@ export function getSubdomainsByVertical(
   return registry.subdomains.filter((s) => s.vertical === vertical);
 }
 
-export function getKpi(
-  registry: Registry,
-  id: string,
-): KpiRegistryEntryT | undefined {
-  return registry.kpis.find((k) => k.id === id);
-}
-
-export function getSourceSystem(
-  registry: Registry,
-  id: string,
-): SourceSystemEntryT | undefined {
-  return registry.sourceSystems.find((s) => s.id === id);
-}
+export function getK

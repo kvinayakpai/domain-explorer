@@ -1,0 +1,28 @@
+id: subscriber_billing
+name: Subscriber Billing
+vertical: Telecom
+oneLiner: Rate, charge, invoice, and dunning for prepaid and postpaid telecom and broadband subscribers.
+
+personas:
+  - { name: Head of Billing Ops, title: Head of Billing Operations, level: VP }
+  - { name: Revenue Assurance Lead, title: Revenue Assurance Manager, level: Director }
+  - { name: Dunning Manager, title: Collections & Dunning Manager, level: Manager }
+
+kpis:
+  - { id: bill.kpi.bill_accuracy, name: Bill Accuracy, formula: clean_bills / total_bills, unit: "%", direction: higher_is_better }
+  - { id: bill.kpi.invoice_dispute_rate, name: Invoice Dispute Rate, formula: disputed / issued, unit: "%", direction: lower_is_better }
+  - { id: bill.kpi.dso, name: Days Sales Outstanding, formula: ar / daily_revenue, unit: days, direction: lower_is_better }
+  - { id: bill.kpi.rev_leakage, name: Revenue Leakage, formula: unbilled_usage / total_usage, unit: "%", direction: lower_is_better }
+  - { id: bill.kpi.bad_debt, name: Bad Debt Write-off, formula: writeoffs / revenue, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Amdocs, product: Charging, category: Billing/Charging }
+  - { vendor: Ericsson, product: BSCS iX, category: Billing }
+  - { vendor: Oracle, product: BRM, category: Billing }
+  - { vendor: Netcracker, product: Revenue Mgmt, category: BSS }
+  - { vendor: CSG, product: Singleview, category: Billing }
+
+connectors:
+  - { type: 3GPP Diameter, protocol: TCP, auth: TLS }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: CDR file, protocol: SFTP, auth: SSH key }

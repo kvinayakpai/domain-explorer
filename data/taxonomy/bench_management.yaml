@@ -1,0 +1,28 @@
+id: bench_management
+name: Bench Management
+vertical: ProfessionalServices
+oneLiner: Allocate consultants and engineers to billable engagements while minimising idle "bench" time.
+
+personas:
+  - { name: Resource Director, title: Director of Resource Management, level: Director }
+  - { name: Practice Lead, title: Practice Lead, level: VP }
+  - { name: Workforce Planner, title: Workforce Planning Analyst, level: Manager }
+
+kpis:
+  - { id: bench.kpi.utilization, name: Billable Utilization, formula: billable_hours / available_hours, unit: "%", direction: higher_is_better }
+  - { id: bench.kpi.bench_pct, name: Bench %, formula: bench_fte / total_fte, unit: "%", direction: lower_is_better }
+  - { id: bench.kpi.staffing_lag, name: Time-to-Staff, formula: avg(staffed_dt - request_dt), unit: days, direction: lower_is_better }
+  - { id: bench.kpi.skill_match, name: Skill Match Score, formula: avg(match_score), unit: score, direction: higher_is_better }
+  - { id: bench.kpi.realization, name: Rate Realization, formula: realized_rate / list_rate, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Workday, product: Professional Services Automation, category: PSA }
+  - { vendor: Kantata, product: Mavenlink, category: PSA }
+  - { vendor: FinancialForce, product: PSA, category: PSA }
+  - { vendor: Microsoft, product: Dynamics 365 Project Ops, category: PSA }
+  - { vendor: Replicon, product: PSA, category: PSA }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: SCIM, protocol: HTTPS, auth: OAuth2 }
+  - { type: SFTP, protocol: SFTP, auth: SSH key }

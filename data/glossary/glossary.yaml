@@ -1,0 +1,495 @@
+# Enterprise data glossary — common business, KPI, and regulatory terms.
+# Each term is cross-linked to subdomains where it is most relevant.
+terms:
+  - name: ACH
+    aliases: [Automated Clearing House, NACHA]
+    definition: U.S. electronic network for batch credit and debit transfers between bank accounts, governed by NACHA rules.
+    related_subdomains: [payments, treasury]
+    related_kpis: [pay.kpi.settlement_latency, tre.kpi.cash_forecast_accuracy]
+    steward: Head of Payments
+  - name: Active Member %
+    aliases: [Engaged Member Rate]
+    definition: Share of enrolled loyalty or subscription members who transacted in the last 90 days.
+    related_subdomains: [loyalty, churn_management]
+    related_kpis: [loy.kpi.active_member_pct]
+    steward: VP CRM
+  - name: ADT Event
+    aliases: [Admit-Discharge-Transfer]
+    definition: HL7 messaging family carrying patient movement events; backbone of EHR-to-downstream integration.
+    related_subdomains: [ehr_integrations, payer_provider]
+    related_kpis: [ehr.kpi.adt_lag]
+    steward: Director Clinical IT
+  - name: AFR
+    aliases: [Auth Failure Rate]
+    definition: Share of card authorisation attempts that are declined for any reason.
+    related_subdomains: [payments, cards, fraud]
+    related_kpis: [pay.kpi.afr]
+    steward: Fraud/Risk Lead
+  - name: ARR
+    aliases: [Annual Recurring Revenue]
+    definition: Annualised value of active subscriptions on a normalised basis, excluding one-time fees.
+    related_subdomains: [saas_metrics]
+    related_kpis: []
+    steward: CFO
+  - name: BOM
+    aliases: [Bill of Materials]
+    definition: Hierarchical list of components, sub-assemblies, and quantities needed to build or service a finished good.
+    related_subdomains: [bill_of_materials, mes_quality, warranty]
+    related_kpis: [bom.kpi.bom_accuracy]
+    steward: Engineering Manager
+  - name: CAIDI
+    aliases: []
+    definition: Customer Average Interruption Duration Index — minutes off per interruption experienced.
+    related_subdomains: [outage_management, grid_ops]
+    related_kpis: [out.kpi.caidi]
+    steward: Outage Manager
+  - name: CAPA
+    aliases: [Corrective and Preventive Action]
+    definition: Quality system process for investigating, correcting, and preventing recurrence of defects or non-conformances.
+    related_subdomains: [medical_devices, supplier_quality, mes_quality]
+    related_kpis: [med.kpi.capa_aging]
+    steward: VP Quality
+  - name: Cash Forecast Accuracy
+    aliases: []
+    definition: One minus the mean absolute percentage error of treasury cash forecasts versus actuals.
+    related_subdomains: [treasury]
+    related_kpis: [tre.kpi.cash_forecast_accuracy]
+    steward: Group Treasurer
+  - name: CCAR
+    aliases: [Comprehensive Capital Analysis and Review]
+    definition: U.S. Federal Reserve supervisory exercise assessing capital adequacy of large bank holding companies.
+    related_subdomains: [regulatory_reporting, capital_markets, treasury]
+    related_kpis: [reg.kpi.on_time_filings]
+    steward: Head of Reg Reporting
+  - name: Chargeback Ratio
+    aliases: []
+    definition: Card disputes raised by issuers as a share of total card sales over a window.
+    related_subdomains: [payments, cards]
+    related_kpis: [pay.kpi.chargeback_ratio]
+    steward: Payments Ops Lead
+  - name: CLV
+    aliases: [Customer Lifetime Value]
+    definition: Discounted future revenue (or margin) attributable to a customer over the relationship.
+    related_subdomains: [customer_analytics, loyalty, churn_management]
+    related_kpis: [cust.kpi.clv]
+    steward: VP Customer Insights
+  - name: Cohort
+    aliases: []
+    definition: Group of patients, customers, or assets sharing a defined characteristic and tracked over time.
+    related_subdomains: [real_world_evidence, customer_analytics]
+    related_kpis: [rwe.kpi.cohort_match]
+    steward: Epidemiologist
+  - name: CPM
+    aliases: [Cost per Mille]
+    definition: Ad price per thousand impressions; benchmark for digital and linear inventory monetisation.
+    related_subdomains: [ad_inventory, ad_tech]
+    related_kpis: [adi.kpi.ecpm]
+    steward: VP Yield
+  - name: D-0 Completion Factor
+    aliases: []
+    definition: Share of scheduled flights operated on the day of departure, net of cancellations.
+    related_subdomains: [airline_disruption, airline_revenue_management]
+    related_kpis: [dsr.kpi.d0_completion]
+    steward: OCC Manager
+  - name: Defect PPM
+    aliases: [Parts per Million]
+    definition: Defective units detected per million received from a supplier — quality scorecard input.
+    related_subdomains: [supplier_quality, mes_quality]
+    related_kpis: [sq.kpi.ppm]
+    steward: SQE
+  - name: Denial Rate
+    aliases: []
+    definition: Share of submitted healthcare claims rejected by payers on first adjudication.
+    related_subdomains: [revenue_cycle, payer_provider]
+    related_kpis: [rcm.kpi.denial_rate]
+    steward: Denials Manager
+  - name: Direct Booking Share
+    aliases: []
+    definition: Share of hotel bookings transacted on the brand's own channels rather than via OTAs or GDS.
+    related_subdomains: [hotel_distribution, hotel_revenue_management]
+    related_kpis: [hdist.kpi.direct_share]
+    steward: VP Distribution
+  - name: DSO
+    aliases: [Days Sales Outstanding]
+    definition: Average days between invoice issuance and cash collection.
+    related_subdomains: [subscriber_billing, time_and_billing, revenue_cycle]
+    related_kpis: [bill.kpi.dso, rcm.kpi.dso_ar]
+    steward: Controller
+  - name: EHR
+    aliases: [Electronic Health Record]
+    definition: System of record for clinical patient data — orders, notes, results, encounters.
+    related_subdomains: [ehr_integrations, payer_provider, value_based_care]
+    related_kpis: []
+    steward: Director Clinical IT
+  - name: ELD
+    aliases: [Electronic Logging Device]
+    definition: Federally mandated device that records driver hours-of-service for commercial fleets.
+    related_subdomains: [fleet_telematics]
+    related_kpis: [ftel.kpi.hos_violations]
+    steward: Safety Manager
+  - name: ESG
+    aliases: [Environmental, Social, Governance]
+    definition: Reporting framework covering environmental impact, social performance, and governance practices.
+    related_subdomains: [ehs, regulatory_reporting]
+    related_kpis: [ehs.kpi.scope1_2_emissions]
+    steward: Sustainability Lead
+  - name: FCF
+    aliases: [Free Cash Flow]
+    definition: Operating cash flow less capex; primary measure of corporate liquidity generation.
+    related_subdomains: [treasury, time_and_billing]
+    related_kpis: []
+    steward: CFO
+  - name: FHIR
+    aliases: [Fast Healthcare Interoperability Resources]
+    definition: HL7 standard for exchanging healthcare information using RESTful resources.
+    related_subdomains: [ehr_integrations, value_based_care]
+    related_kpis: [ehr.kpi.fhir_latency]
+    steward: FHIR Architect
+  - name: First-Pass Yield
+    aliases: []
+    definition: Units passing all quality checks on the first attempt as a share of units started.
+    related_subdomains: [supplier_quality, mes_quality, semiconductor_yield]
+    related_kpis: [sq.kpi.first_pass_yield]
+    steward: SQE
+  - name: GMV
+    aliases: [Gross Merchandise Value]
+    definition: Total value of goods sold through a marketplace before take rate, returns, or discounts.
+    related_subdomains: [marketplace_operations, ecommerce]
+    related_kpis: [mp.kpi.gmv]
+    steward: Marketplace GM
+  - name: HEDIS
+    aliases: [Healthcare Effectiveness Data and Information Set]
+    definition: NCQA quality-of-care measure set widely used by U.S. health plans.
+    related_subdomains: [value_based_care, payer_provider]
+    related_kpis: [vbc.kpi.hedis_stars]
+    steward: Quality Measure Lead
+  - name: HOS
+    aliases: [Hours of Service]
+    definition: U.S. DOT/FMCSA rules limiting driving hours for commercial motor vehicle operators.
+    related_subdomains: [fleet_telematics, last_mile_logistics]
+    related_kpis: [ftel.kpi.hos_violations]
+    steward: Safety Manager
+  - name: IROPS
+    aliases: [Irregular Operations]
+    definition: Airline schedule disruptions including cancellations, delays, and diversions.
+    related_subdomains: [airline_disruption]
+    related_kpis: [dsr.kpi.misconnect_rate]
+    steward: OCC Manager
+  - name: ISO 20022
+    aliases: []
+    definition: Global XML/JSON message standard for financial communications, replacing legacy SWIFT MT.
+    related_subdomains: [payments, settlement_clearing, regulatory_reporting]
+    related_kpis: []
+    steward: Head of Payments
+  - name: Idle Cash
+    aliases: []
+    definition: Cash held in non-yielding accounts above operating buffer — opportunity-cost target for treasury.
+    related_subdomains: [treasury]
+    related_kpis: [tre.kpi.idle_cash]
+    steward: Cash Manager
+  - name: Interchange
+    aliases: []
+    definition: Fee paid by merchants' acquirers to card issuers for processing card transactions.
+    related_subdomains: [payments, cards]
+    related_kpis: [pay.kpi.interchange_revenue]
+    steward: Head of Cards
+  - name: KYC
+    aliases: [Know Your Customer]
+    definition: Customer identification, verification, and risk-rating program required of regulated financial institutions.
+    related_subdomains: [kyc_aml, lending]
+    related_kpis: []
+    steward: KYC Lead
+  - name: LCR
+    aliases: [Liquidity Coverage Ratio]
+    definition: HQLA divided by 30-day net stressed cash outflows; Basel III liquidity standard.
+    related_subdomains: [treasury, regulatory_reporting]
+    related_kpis: [tre.kpi.lcr]
+    steward: ALM Lead
+  - name: Lockup
+    aliases: [Lockup Days]
+    definition: Combined work-in-process plus AR days — key cash-tied-up metric in professional services.
+    related_subdomains: [time_and_billing, bench_management]
+    related_kpis: [tb.kpi.lockup]
+    steward: Billing Director
+  - name: MCC
+    aliases: [Merchant Category Code]
+    definition: 4-digit ISO classification of merchants by business type, used for routing and pricing.
+    related_subdomains: [payments, cards]
+    related_kpis: []
+    steward: Card Portfolio Manager
+  - name: MDM
+    aliases: [Master Data Management]
+    definition: Discipline and platform for governing canonical reference and master entities across systems.
+    related_subdomains: [customer_analytics, content_metadata, ehr_integrations]
+    related_kpis: []
+    steward: Data Lineage Steward
+  - name: MISMO
+    aliases: []
+    definition: Mortgage Industry Standards Maintenance Organization XML formats used in origination and servicing.
+    related_subdomains: [lending, mortgage_servicing]
+    related_kpis: []
+    steward: Investor Reporting Lead
+  - name: NSFR
+    aliases: [Net Stable Funding Ratio]
+    definition: Available stable funding divided by required stable funding; Basel III long-term liquidity rule.
+    related_subdomains: [treasury, regulatory_reporting]
+    related_kpis: [tre.kpi.nsfr]
+    steward: ALM Lead
+  - name: OEE
+    aliases: [Overall Equipment Effectiveness]
+    definition: Availability multiplied by performance multiplied by quality — composite manufacturing productivity score.
+    related_subdomains: [shop_floor_iot, mes_quality, maintenance]
+    related_kpis: [iiot.kpi.oee]
+    steward: IIoT Architect
+  - name: OMOP CDM
+    aliases: [Observational Medical Outcomes Partnership Common Data Model]
+    definition: Standardised analytics-ready schema for observational healthcare data used in RWE.
+    related_subdomains: [real_world_evidence]
+    related_kpis: []
+    steward: Data Acquisition Lead
+  - name: On-Time Delivery
+    aliases: [OTD]
+    definition: Customer orders shipped or received by the committed date as a share of total orders.
+    related_subdomains: [production_scheduling, supply_chain, last_mile_logistics]
+    related_kpis: [psch.kpi.otd]
+    steward: Plant Scheduler
+  - name: OTA
+    aliases: [Online Travel Agency]
+    definition: Third-party travel reseller (e.g. Expedia, Booking.com) that distributes hotel and air inventory.
+    related_subdomains: [hotel_distribution, hotel_revenue_management]
+    related_kpis: [hdist.kpi.commission_cost]
+    steward: Channel Manager
+  - name: P95 Latency
+    aliases: []
+    definition: 95th-percentile end-to-end response time; common SLO benchmark for APIs and pipelines.
+    related_subdomains: [device_telemetry, ehr_integrations]
+    related_kpis: [dt.kpi.event_lag, ehr.kpi.fhir_latency]
+    steward: SRE Lead
+  - name: Parametric Yield
+    aliases: []
+    definition: Share of tested die that pass parametric (electrical performance) tests.
+    related_subdomains: [semiconductor_yield]
+    related_kpis: [yld.kpi.parametric_yield]
+    steward: Yield Engineer
+  - name: PCI DSS
+    aliases: []
+    definition: Payment Card Industry Data Security Standard governing handling of cardholder data.
+    related_subdomains: [payments, cards, fraud]
+    related_kpis: []
+    steward: Payments Ops Lead
+  - name: PHI
+    aliases: [Protected Health Information]
+    definition: Health information that identifies an individual; subject to HIPAA Privacy & Security Rules.
+    related_subdomains: [ehr_integrations, revenue_cycle, value_based_care]
+    related_kpis: []
+    steward: Director Clinical IT
+  - name: RAF Score
+    aliases: [Risk Adjustment Factor]
+    definition: CMS-derived score reflecting expected medical cost based on member demographics and HCCs.
+    related_subdomains: [value_based_care, payer_provider]
+    related_kpis: [vbc.kpi.raf_capture]
+    steward: Pop Health Director
+  - name: Reconciliation Break
+    aliases: [Recon Break]
+    definition: Mismatch between two records (e.g., trade vs custody) that requires investigation and adjustment.
+    related_subdomains: [settlement_clearing, treasury]
+    related_kpis: [stl.kpi.recon_break_count]
+    steward: Recon Lead
+  - name: Refund Cycle Time
+    aliases: []
+    definition: Hours between receipt of a return and credit issuance to the customer.
+    related_subdomains: [returns_management, ecommerce]
+    related_kpis: [ret.kpi.refund_cycle_time]
+    steward: Returns Ops Director
+  - name: Renewal Rate
+    aliases: [Retention Rate]
+    definition: Share of subscription contracts due for renewal that successfully renew.
+    related_subdomains: [saas_metrics, license_management, churn_management]
+    related_kpis: [lic.kpi.renewal_rate]
+    steward: License Compliance Lead
+  - name: RevPAR
+    aliases: [Revenue per Available Room]
+    definition: Hotel performance metric — room revenue divided by total available room nights.
+    related_subdomains: [hotel_revenue_management, hotel_distribution]
+    related_kpis: []
+    steward: VP Distribution
+  - name: SAIDI
+    aliases: []
+    definition: System Average Interruption Duration Index — outage minutes per customer served.
+    related_subdomains: [outage_management, grid_ops]
+    related_kpis: [out.kpi.saidi]
+    steward: Outage Manager
+  - name: SAIFI
+    aliases: []
+    definition: System Average Interruption Frequency Index — interruptions per customer served.
+    related_subdomains: [outage_management, grid_ops]
+    related_kpis: [out.kpi.saifi]
+    steward: Outage Manager
+  - name: SAR
+    aliases: [Suspicious Activity Report]
+    definition: Regulatory filing made by a financial institution to report potentially illicit activity.
+    related_subdomains: [kyc_aml, fraud]
+    related_kpis: []
+    steward: KYC Lead
+  - name: Schedule Adherence
+    aliases: []
+    definition: Share of planned production volume actually produced on the planned line and shift.
+    related_subdomains: [production_scheduling, mes_quality]
+    related_kpis: [psch.kpi.schedule_adherence]
+    steward: Plant Scheduler
+  - name: Scope 1 & 2 Emissions
+    aliases: []
+    definition: Direct (owned) plus indirect (purchased energy) greenhouse gas emissions for a reporting entity.
+    related_subdomains: [ehs, regulatory_reporting]
+    related_kpis: [ehs.kpi.scope1_2_emissions]
+    steward: Sustainability Lead
+  - name: SCD Type 2
+    aliases: [Slowly Changing Dimension]
+    definition: Dimensional modeling pattern that preserves history of attribute changes by adding rows with effective dates.
+    related_subdomains: [customer_analytics, content_metadata]
+    related_kpis: []
+    steward: Data Lineage Steward
+  - name: Settlement Latency
+    aliases: []
+    definition: Average elapsed time between transaction authorisation and final settlement to the merchant.
+    related_subdomains: [payments, settlement_clearing]
+    related_kpis: [pay.kpi.settlement_latency]
+    steward: Head of Payments
+  - name: Stars Rating
+    aliases: [CMS Star Ratings]
+    definition: CMS aggregate rating (1–5) of Medicare Advantage plan quality and member experience.
+    related_subdomains: [value_based_care, payer_provider]
+    related_kpis: [vbc.kpi.hedis_stars]
+    steward: Quality Measure Lead
+  - name: STP Rate
+    aliases: [Straight-Through Processing]
+    definition: Share of transactions processed end-to-end without manual intervention.
+    related_subdomains: [payments, settlement_clearing, kyc_aml]
+    related_kpis: [pay.kpi.stp_rate]
+    steward: Head of Payments
+  - name: Surge Pricing
+    aliases: []
+    definition: Dynamic uplift on base price applied to balance demand and supply in real time.
+    related_subdomains: [ride_share_dispatch]
+    related_kpis: [rs.kpi.surge_minutes]
+    steward: Pricing Scientist
+  - name: Take Rate
+    aliases: [Marketplace Commission]
+    definition: Marketplace revenue divided by GMV — the platform's share of transaction value.
+    related_subdomains: [marketplace_operations]
+    related_kpis: [mp.kpi.take_rate]
+    steward: Marketplace GM
+  - name: Tag Coverage
+    aliases: [Resource Tag Coverage]
+    definition: Share of cloud resources carrying mandatory cost-allocation and ownership tags.
+    related_subdomains: [cloud_finops]
+    related_kpis: [fo.kpi.tag_coverage]
+    steward: Head of FinOps
+  - name: Telemetry Opt-In
+    aliases: []
+    definition: Share of devices or users actively allowing collection of usage and reliability telemetry.
+    related_subdomains: [device_telemetry]
+    related_kpis: [dt.kpi.opt_in_rate]
+    steward: VP Product Analytics
+  - name: Time-to-Disposition
+    aliases: []
+    definition: Days from case filing to final court disposition.
+    related_subdomains: [court_records]
+    related_kpis: [ct.kpi.time_to_disposition]
+    steward: Clerk of Court
+  - name: TRIR
+    aliases: [Total Recordable Incident Rate]
+    definition: 200,000 multiplied by recordable incidents divided by hours worked — OSHA safety benchmark.
+    related_subdomains: [ehs]
+    related_kpis: [ehs.kpi.trir]
+    steward: VP EHS
+  - name: True-Up
+    aliases: []
+    definition: Periodic reconciliation of consumed versus contracted units, often resulting in additional billing.
+    related_subdomains: [license_management, cloud_finops]
+    related_kpis: [lic.kpi.true_up_recovery]
+    steward: License Compliance Lead
+  - name: Underwriting Decision
+    aliases: []
+    definition: Approve, decline, or counter-offer outcome on a loan or insurance application.
+    related_subdomains: [lending, p_and_c_claims]
+    related_kpis: []
+    steward: Default Manager
+  - name: Unit Economics
+    aliases: []
+    definition: Per-unit (customer, ride, transaction) revenue and cost analysis used to assess scaling viability.
+    related_subdomains: [cloud_finops, ride_share_dispatch, marketplace_operations]
+    related_kpis: [fo.kpi.unit_cost]
+    steward: Cloud Economist
+  - name: Utilization (Billable)
+    aliases: []
+    definition: Billable hours divided by available hours for consultants and engineers.
+    related_subdomains: [bench_management, time_and_billing]
+    related_kpis: [bench.kpi.utilization]
+    steward: Resource Director
+  - name: Utilization (Network)
+    aliases: []
+    definition: Average traffic carried as a share of capacity on a telecom transport or RAN element.
+    related_subdomains: [network_operations, bss_oss]
+    related_kpis: []
+    steward: NOC Lead
+  - name: VAST
+    aliases: [Video Ad Serving Template]
+    definition: IAB standard XML format for delivering video ads to player clients.
+    related_subdomains: [ad_inventory, ad_tech]
+    related_kpis: []
+    steward: Trafficking Lead
+  - name: Wafer Cycle Time
+    aliases: []
+    definition: Calendar days from wafer start to completion across the fab process flow.
+    related_subdomains: [semiconductor_yield]
+    related_kpis: [yld.kpi.cycle_time]
+    steward: Yield Engineer
+  - name: Win-back Rate
+    aliases: []
+    definition: Share of churned customers reactivated within a specified window.
+    related_subdomains: [churn_management]
+    related_kpis: [chrn.kpi.win_back]
+    steward: Win-back Lead
+  - name: WIP
+    aliases: [Work in Process]
+    definition: Inventory of goods that have entered production but not yet been completed.
+    related_subdomains: [production_scheduling, mes_quality]
+    related_kpis: [psch.kpi.wip]
+    steward: Plant Scheduler
+  - name: XBRL
+    aliases: [eXtensible Business Reporting Language]
+    definition: XML-based standard for tagging business and financial data; mandated for many regulatory filings.
+    related_subdomains: [regulatory_reporting]
+    related_kpis: []
+    steward: Reporting PM
+  - name: 30-Day Readmit
+    aliases: []
+    definition: Acute inpatient discharge followed by another inpatient admission within 30 days.
+    related_subdomains: [value_based_care, payer_provider]
+    related_kpis: [vbc.kpi.readmit_30]
+    steward: Pop Health Director
+  - name: 30+ DPD
+    aliases: [30+ Days Past Due]
+    definition: Loan or card balance more than 30 days past its scheduled payment date.
+    related_subdomains: [cards, lending, mortgage_servicing]
+    related_kpis: [card.kpi.delinquency_30]
+    steward: Card Portfolio Manager
+  - name: 3DS
+    aliases: [3-D Secure]
+    definition: Authentication protocol layered onto card transactions to shift liability for fraud.
+    related_subdomains: [payments, cards, fraud]
+    related_kpis: [pay.kpi.afr]
+    steward: Fraud/Risk Lead
+  - name: 837 Claim
+    aliases: [X12 837]
+    definition: HIPAA standard format for electronic submission of healthcare claims to payers.
+    related_subdomains: [revenue_cycle, payer_provider]
+    related_kpis: []
+    steward: Coding Lead
+  - name: Acquirer
+    aliases: []
+    definition: Bank or processor that contracts with merchants to accept card payments.
+    related_subdomains: [payments, cards]
+    related_kpis: []
+    steward: Head of Payments

@@ -1,0 +1,28 @@
+id: production_scheduling
+name: Production Scheduling
+vertical: Manufacturing
+oneLiner: Finite-capacity sequencing of work orders across lines and resources to hit due dates and minimise changeovers.
+
+personas:
+  - { name: Plant Scheduler, title: Plant Production Scheduler, level: Manager }
+  - { name: VP Plant Ops, title: VP Plant Operations, level: VP }
+  - { name: Materials Planner, title: Senior Materials Planner, level: Manager }
+
+kpis:
+  - { id: psch.kpi.otd, name: On-Time Delivery, formula: on_time_orders / total_orders, unit: "%", direction: higher_is_better }
+  - { id: psch.kpi.schedule_adherence, name: Schedule Adherence, formula: produced_on_plan / planned, unit: "%", direction: higher_is_better }
+  - { id: psch.kpi.changeover_loss, name: Changeover Loss Hours, formula: sum(changeover_minutes) / 60, unit: hours, direction: lower_is_better }
+  - { id: psch.kpi.wip, name: Work-in-Process Inventory, formula: avg(wip_value), unit: USD, direction: lower_is_better }
+  - { id: psch.kpi.expedites, name: Expedite Order Rate, formula: expedited_orders / total_orders, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: SAP, product: S/4HANA PP/DS, category: APS }
+  - { vendor: Siemens, product: Opcenter APS, category: APS }
+  - { vendor: Oracle, product: Cloud SCM Planning, category: APS }
+  - { vendor: Kinaxis, product: RapidResponse, category: Supply Chain Planning }
+  - { vendor: o9, product: Solutions, category: Planning Platform }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: IDoc, protocol: RFC, auth: SAP user }
+  - { type: OPC UA, protocol: TCP, auth: x509 }

@@ -1,0 +1,28 @@
+id: regulatory_reporting
+name: Regulatory Reporting
+vertical: BFSI
+oneLiner: Sourcing, transforming, and lodging supervisory reports (CCAR, COREP, MAS, etc.) with full lineage.
+
+personas:
+  - { name: Head of Reg Reporting, title: Head of Regulatory Reporting, level: VP }
+  - { name: Reporting PM, title: Regulatory Reporting Program Manager, level: Director }
+  - { name: Data Lineage Steward, title: Reg Data Steward, level: Manager }
+
+kpis:
+  - { id: reg.kpi.on_time_filings, name: On-Time Filings, formula: filings_on_time / total_filings, unit: "%", direction: higher_is_better }
+  - { id: reg.kpi.restatements, name: Filing Restatements, formula: restated_reports / submitted_reports, unit: "%", direction: lower_is_better }
+  - { id: reg.kpi.adjustments_per_filing, name: Manual Adjustments per Filing, formula: adjustments / filings, unit: count, direction: lower_is_better }
+  - { id: reg.kpi.lineage_coverage, name: Data Lineage Coverage, formula: data_elements_with_lineage / total, unit: "%", direction: higher_is_better }
+  - { id: reg.kpi.findings_open, name: Open Reg Findings, formula: open_findings_eom, unit: count, direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: AxiomSL, product: ControllerView, category: Reg Reporting }
+  - { vendor: Wolters Kluwer, product: OneSumX, category: Reg Reporting }
+  - { vendor: Moody's, product: RiskAuthority, category: Capital & Liquidity }
+  - { vendor: SAP, product: S/4HANA, category: ERP }
+  - { vendor: Oracle, product: OFSAA, category: Risk & Finance }
+
+connectors:
+  - { type: XBRL/XML feed, protocol: HTTPS, auth: PKI }
+  - { type: SFTP file, protocol: SFTP, auth: SSH key }
+  - { type: JDBC pull, protocol: JDBC, auth: Kerberos }

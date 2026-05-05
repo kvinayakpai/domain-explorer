@@ -1,0 +1,28 @@
+id: ehr_integrations
+name: EHR Integrations
+vertical: Healthcare
+oneLiner: Bidirectional clinical data flow between EHRs (Epic, Cerner) and downstream analytics, payer, and engagement systems.
+
+personas:
+  - { name: Director Clinical IT, title: "Director, Clinical Informatics", level: Director }
+  - { name: Interface Engineer, title: Senior Interface Engineer, level: Manager }
+  - { name: FHIR Architect, title: FHIR Integration Architect, level: Director }
+
+kpis:
+  - { id: ehr.kpi.message_success, name: HL7 Message Success, formula: acked / sent, unit: "%", direction: higher_is_better }
+  - { id: ehr.kpi.fhir_latency, name: FHIR API Latency P95, formula: p95(fhir_response_ms), unit: ms, direction: lower_is_better }
+  - { id: ehr.kpi.dq_match_rate, name: Patient Match Rate, formula: matched / total, unit: "%", direction: higher_is_better }
+  - { id: ehr.kpi.adt_lag, name: ADT Event Lag, formula: avg(received_ts - event_ts), unit: minutes, direction: lower_is_better }
+  - { id: ehr.kpi.usable_obs, name: Usable Observation Rate, formula: structured_codes / observations, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Epic, product: EpicCare, category: EHR }
+  - { vendor: Oracle Health, product: Cerner Millennium, category: EHR }
+  - { vendor: athenahealth, product: athenaClinicals, category: EHR }
+  - { vendor: Redox, product: Redox Engine, category: Integration Engine }
+  - { vendor: InterSystems, product: HealthShare, category: Integration Engine }
+
+connectors:
+  - { type: HL7v2, protocol: MLLP, auth: VPN }
+  - { type: FHIR R4, protocol: HTTPS, auth: SMART-OAuth2 }
+  - { type: C-CDA, protocol: HTTPS, auth: mTLS }

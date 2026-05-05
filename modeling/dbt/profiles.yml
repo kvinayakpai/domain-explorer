@@ -1,9 +1,11 @@
-# Local DuckDB profile — copy this into ~/.dbt/profiles.yml or use dbt-core's
-# DBT_PROFILES_DIR env var pointing at modeling/dbt/.
+# Local DuckDB profile.
+# Either set DOMAIN_EXPLORER_DUCKDB to an absolute path to the populated
+# `domain-explorer.duckdb`, or rely on the default (../../domain-explorer.duckdb)
+# which works when running from modeling/dbt/.
 domain_explorer:
   target: dev
   outputs:
     dev:
       type: duckdb
-      path: ./target/domain_explorer.duckdb
+      path: "{{ env_var('DOMAIN_EXPLORER_DUCKDB', '../../domain-explorer.duckdb') }}"
       threads: 4

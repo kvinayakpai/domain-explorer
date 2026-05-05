@@ -16,6 +16,8 @@ export const Vertical = z.enum([
   "Energy",
   "Utilities",
   "PublicSector",
+  "HiTech",
+  "ProfessionalServices",
 ]);
 export type Vertical = z.infer<typeof Vertical>;
 
@@ -113,4 +115,4 @@ export const ConnectorPattern = z.object({
   latency: z.enum(["realtime", "near-realtime", "batch"]),
   modes: z.array(z.enum(["push", "pull", "stream", "file"])).default([]),
 });
-export type ConnectorPattern = z.infer<typeof ConnectorPattern>;
+export type ConnectorPatter

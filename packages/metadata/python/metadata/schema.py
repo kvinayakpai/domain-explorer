@@ -3,10 +3,8 @@
 The shapes mirror packages/metadata/src/schema.ts (Zod) so the same YAML
 files validate identically in both ecosystems.
 """
-from __future__ import annotations
-
 from enum import Enum
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -26,6 +24,8 @@ class Vertical(str, Enum):
     ENERGY = "Energy"
     UTILITIES = "Utilities"
     PUBLIC_SECTOR = "PublicSector"
+    HI_TECH = "HiTech"
+    PROFESSIONAL_SERVICES = "ProfessionalServices"
 
 
 KpiDirection = Literal["higher_is_better", "lower_is_better", "target_band"]
@@ -60,7 +60,7 @@ class Kpi(_Strict):
 
 class Entity(_Strict):
     name: str = Field(..., min_length=1)
-    description: str | None = None
+    description: Optional[str] = None
     keys: list[str] = Field(default_factory=list)
 
 

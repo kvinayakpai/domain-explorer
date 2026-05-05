@@ -1,0 +1,28 @@
+id: settlement_clearing
+name: Settlement & Clearing
+vertical: BFSI
+oneLiner: Net settlement, multilateral clearing, and reconciliation across CSDs, ACHs, and CCPs.
+
+personas:
+  - { name: Head of Settlements, title: Head of Settlements & Clearing, level: VP }
+  - { name: Recon Lead, title: Reconciliations Manager, level: Manager }
+  - { name: Treasury Liaison, title: Treasury Operations Lead, level: Director }
+
+kpis:
+  - { id: stl.kpi.same_day_settle, name: Same-Day Settlement Rate, formula: same_day_settled / total_trades, unit: "%", direction: higher_is_better }
+  - { id: stl.kpi.fail_rate, name: Settlement Fail Rate, formula: failed / total_settlements, unit: "%", direction: lower_is_better }
+  - { id: stl.kpi.recon_break_count, name: Recon Break Count, formula: open_breaks_eod, unit: count, direction: lower_is_better }
+  - { id: stl.kpi.aging_breaks, name: Aging Breaks > 5d, formula: breaks_over_5d / total_breaks, unit: "%", direction: lower_is_better }
+  - { id: stl.kpi.intraday_liquidity_use, name: Intraday Liquidity Usage, formula: peak_intraday / committed_facility, unit: "%", direction: target_band }
+
+sourceSystems:
+  - { vendor: DTCC, product: NSCC/CNS, category: CCP }
+  - { vendor: Euroclear, product: Settlement, category: CSD }
+  - { vendor: Broadridge, product: Impact, category: Post-trade Platform }
+  - { vendor: Calypso, product: Calypso, category: Post-trade Platform }
+  - { vendor: SWIFT, product: gpi, category: Messaging Network }
+
+connectors:
+  - { type: SWIFT MT/MX, protocol: MQ, auth: PKI }
+  - { type: ISO20022, protocol: MQ/file, auth: PKI }
+  - { type: SFTP file feed, protocol: SFTP, auth: SSH key }

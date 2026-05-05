@@ -1,0 +1,28 @@
+id: time_and_billing
+name: Time & Billing
+vertical: ProfessionalServices
+oneLiner: Capture billable hours, apply rates and discounts, generate invoices, and shorten lockup.
+
+personas:
+  - { name: CFO, title: Chief Financial Officer, level: C-suite }
+  - { name: Billing Director, title: Director of Billing & Collections, level: Director }
+  - { name: Engagement Manager, title: Engagement Manager, level: Manager }
+
+kpis:
+  - { id: tb.kpi.lockup, name: Lockup Days, formula: wip_days + ar_days, unit: days, direction: lower_is_better }
+  - { id: tb.kpi.write_off, name: Write-Off Rate, formula: written_off / billed, unit: "%", direction: lower_is_better }
+  - { id: tb.kpi.timesheet_compliance, name: Timesheet On-Time, formula: on_time / required, unit: "%", direction: higher_is_better }
+  - { id: tb.kpi.realization_rate, name: Realization Rate, formula: collected / standard, unit: "%", direction: higher_is_better }
+  - { id: tb.kpi.invoice_dispute, name: Invoice Dispute Rate, formula: disputes / invoices, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Aderant, product: Expert, category: Legal Practice Mgmt }
+  - { vendor: Thomson Reuters, product: Elite 3E, category: Legal Practice Mgmt }
+  - { vendor: Workday, product: PSA, category: PSA }
+  - { vendor: Intuit, product: QuickBooks Online, category: ERP/Accounting }
+  - { vendor: Sage, product: Intacct, category: ERP/Accounting }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: SOAP, protocol: HTTPS, auth: WS-Security }
+  - { type: SFTP, protocol: SFTP, auth: SSH key }

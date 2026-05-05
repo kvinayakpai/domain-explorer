@@ -1,0 +1,28 @@
+id: treasury
+name: Treasury Management
+vertical: BFSI
+oneLiner: Cash, liquidity, FX, and funding across the banking book to balance yield, capital, and resilience.
+
+personas:
+  - { name: Group Treasurer, title: Group Treasurer, level: C-suite }
+  - { name: ALM Lead, title: Head of Asset-Liability Management, level: VP }
+  - { name: Cash Manager, title: Cash & Liquidity Manager, level: Director }
+
+kpis:
+  - { id: tre.kpi.lcr, name: Liquidity Coverage Ratio, formula: hqla / net_outflows_30d, unit: "%", direction: higher_is_better }
+  - { id: tre.kpi.nsfr, name: Net Stable Funding Ratio, formula: asf / rsf, unit: "%", direction: higher_is_better }
+  - { id: tre.kpi.cash_forecast_accuracy, name: Cash Forecast Accuracy, formula: 1 - mape, unit: "%", direction: higher_is_better }
+  - { id: tre.kpi.idle_cash, name: Idle Cash Balance, formula: avg(uninvested_cash), unit: USD, direction: lower_is_better }
+  - { id: tre.kpi.funding_cost, name: Average Funding Cost, formula: interest_expense / liabilities, unit: bps, direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: FIS, product: Quantum, category: Treasury Mgmt }
+  - { vendor: Kyriba, product: Kyriba, category: Treasury Mgmt }
+  - { vendor: Bloomberg, product: AIM, category: Front Office }
+  - { vendor: Murex, product: MX.3, category: Trading Platform }
+  - { vendor: SAP, product: S/4HANA Treasury, category: ERP Treasury }
+
+connectors:
+  - { type: SWIFT MT940/942, protocol: MQ, auth: PKI }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: FIX, protocol: TCP, auth: TLS }

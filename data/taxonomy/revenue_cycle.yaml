@@ -1,0 +1,28 @@
+id: revenue_cycle
+name: Revenue Cycle Management
+vertical: Healthcare
+oneLiner: Patient access, coding, claims, denials, and collections to convert care delivered into cash.
+
+personas:
+  - { name: VP RCM, title: VP Revenue Cycle Management, level: VP }
+  - { name: Denials Manager, title: Denials Management Lead, level: Director }
+  - { name: Coding Lead, title: HIM Coding Manager, level: Manager }
+
+kpis:
+  - { id: rcm.kpi.dnfb, name: Discharged Not Final Billed (days), formula: dnfb_dollars / daily_billing, unit: days, direction: lower_is_better }
+  - { id: rcm.kpi.first_pass_paid, name: First-Pass Paid %, formula: paid_no_resub / claims, unit: "%", direction: higher_is_better }
+  - { id: rcm.kpi.denial_rate, name: Denial Rate, formula: denied_claims / submitted, unit: "%", direction: lower_is_better }
+  - { id: rcm.kpi.dso_ar, name: Days in AR, formula: ar / daily_revenue, unit: days, direction: lower_is_better }
+  - { id: rcm.kpi.cost_to_collect, name: Cost to Collect, formula: rcm_opex / collected_revenue, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Epic, product: Resolute, category: PFS }
+  - { vendor: Oracle Health, product: Cerner Soarian Financials, category: PFS }
+  - { vendor: Change Healthcare, product: Assurance, category: Clearinghouse }
+  - { vendor: Waystar, product: Healthcare Payments, category: Clearinghouse }
+  - { vendor: R1 RCM, product: R1 Platform, category: RCM Services }
+
+connectors:
+  - { type: X12 837/835, protocol: AS2, auth: PKI }
+  - { type: FHIR Claim, protocol: HTTPS, auth: SMART-OAuth2 }
+  - { type: SFTP, protocol: SFTP, auth: SSH key }

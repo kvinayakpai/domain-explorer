@@ -1,0 +1,28 @@
+id: real_world_evidence
+name: Real-World Evidence
+vertical: LifeSciences
+oneLiner: Curated EHR, claims, and registry data for outcomes research, label expansion, and HEOR studies.
+
+personas:
+  - { name: Head of RWE, title: Head of Real-World Evidence, level: VP }
+  - { name: Epidemiologist, title: Senior Epidemiologist, level: Director }
+  - { name: Data Acquisition Lead, title: RWD Acquisition Lead, level: Manager }
+
+kpis:
+  - { id: rwe.kpi.cohort_match, name: Cohort Match Rate, formula: matched_patients / target, unit: "%", direction: higher_is_better }
+  - { id: rwe.kpi.data_freshness, name: Data Freshness, formula: avg(today - latest_record_dt), unit: days, direction: lower_is_better }
+  - { id: rwe.kpi.linkage_rate, name: Cross-Source Linkage Rate, formula: linked / total, unit: "%", direction: higher_is_better }
+  - { id: rwe.kpi.publication_count, name: Peer-Reviewed Publications, formula: publications_yoy, unit: count, direction: higher_is_better }
+  - { id: rwe.kpi.regulatory_acceptance, name: Reg Submission Acceptance, formula: accepted / submitted, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: IQVIA, product: PharMetrics Plus, category: RWD }
+  - { vendor: Optum, product: Clinformatics, category: RWD }
+  - { vendor: Flatiron Health, product: OncoEMR, category: Oncology RWD }
+  - { vendor: Komodo, product: Healthcare Map, category: RWD Platform }
+  - { vendor: TriNetX, product: Live Platform, category: RWD Network }
+
+connectors:
+  - { type: SFTP, protocol: SFTP, auth: SSH key }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: OMOP CDM export, protocol: file, auth: SFTP }

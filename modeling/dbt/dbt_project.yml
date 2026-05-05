@@ -18,7 +18,11 @@ clean-targets:
 
 models:
   domain_explorer:
-    staging:
-      +materialized: view
-    marts:
-      +materialized: table
+    +schema: dbt
+    payments:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table

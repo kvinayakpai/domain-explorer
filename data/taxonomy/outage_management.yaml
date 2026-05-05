@@ -1,0 +1,28 @@
+id: outage_management
+name: Outage Management
+vertical: Utilities
+oneLiner: Detect, locate, and restore power outages with crew dispatch and customer communications.
+
+personas:
+  - { name: Outage Manager, title: Outage Management Manager, level: Director }
+  - { name: Distribution Ops Supervisor, title: Distribution Ops Supervisor, level: Manager }
+  - { name: Customer Comms Lead, title: Outage Customer Comms Lead, level: Manager }
+
+kpis:
+  - { id: out.kpi.saidi, name: SAIDI, formula: total_minutes_off / customers_served, unit: minutes, direction: lower_is_better }
+  - { id: out.kpi.saifi, name: SAIFI, formula: customer_interruptions / customers_served, unit: interruptions, direction: lower_is_better }
+  - { id: out.kpi.caidi, name: CAIDI, formula: saidi / saifi, unit: minutes, direction: lower_is_better }
+  - { id: out.kpi.eta_accuracy, name: ETR Accuracy, formula: pct_within_30min, unit: "%", direction: higher_is_better }
+  - { id: out.kpi.crew_dispatch_time, name: Crew Dispatch Time, formula: avg(dispatch_ts - alarm_ts), unit: minutes, direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: GE Digital, product: PowerOn Restore, category: OMS }
+  - { vendor: Oracle, product: Network Mgmt for Utilities, category: OMS }
+  - { vendor: Schneider Electric, product: ArcFM, category: GIS/OMS }
+  - { vendor: Esri, product: ArcGIS Utility Network, category: GIS }
+  - { vendor: Itron, product: Outage Mgmt, category: OMS }
+
+connectors:
+  - { type: ICCP, protocol: TCP, auth: x509 }
+  - { type: SCADA OPC, protocol: TCP, auth: x509 }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }

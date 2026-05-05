@@ -1,0 +1,28 @@
+id: ad_inventory
+name: Ad Inventory & Yield
+vertical: Media
+oneLiner: Forecast, package, and price linear and digital ad inventory to maximise sell-through and CPM.
+
+personas:
+  - { name: VP Yield, title: VP Yield Management, level: VP }
+  - { name: Inventory Planner, title: Ad Inventory Planner, level: Manager }
+  - { name: Trafficking Lead, title: Ad Trafficking Lead, level: Manager }
+
+kpis:
+  - { id: adi.kpi.sell_through, name: Sell-Through Rate, formula: sold_impressions / forecast_impressions, unit: "%", direction: higher_is_better }
+  - { id: adi.kpi.fill_rate, name: Fill Rate, formula: filled / requested, unit: "%", direction: higher_is_better }
+  - { id: adi.kpi.ecpm, name: Avg eCPM, formula: revenue / (impressions / 1000), unit: USD, direction: higher_is_better }
+  - { id: adi.kpi.makegood_rate, name: Makegood Rate, formula: makegood_imps / delivered_imps, unit: "%", direction: lower_is_better }
+  - { id: adi.kpi.unsold_inventory, name: Unsold Inventory %, formula: unsold / total, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Google, product: Ad Manager 360, category: Ad Server }
+  - { vendor: FreeWheel, product: MRM, category: Video Ad Server }
+  - { vendor: Operative, product: AOS, category: Order Mgmt }
+  - { vendor: WideOrbit, product: WO Traffic, category: Linear Ad Mgmt }
+  - { vendor: Magnite, product: SpringServe, category: SSP }
+
+connectors:
+  - { type: VAST/VPAID, protocol: HTTPS, auth: APIKey }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: Prebid, protocol: HTTPS, auth: APIKey }

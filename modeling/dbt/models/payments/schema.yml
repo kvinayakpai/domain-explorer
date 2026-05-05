@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: stg_payments__payments
+    description: Lightly typed view over the source payments table; adds settlement_latency_hours.
+    columns:
+      - name: payment_id
+        tests: [unique, not_null]
+  - name: dim_customer
+    description: Customer dimension keyed by md5(customer_id).
+    columns:
+      - name: customer_key
+        tests: [unique, not_null]
+      - name: customer_id
+        tests: [unique, not_null]
+  - name: dim_merchant
+    description: Merchant dimension joined to MCC reference data.
+    columns:
+      - name: merchant_key
+        tests: [unique, not_null]
+      - name: merchant_id
+        tests: [unique, not_null]
+  - name: dim_date
+    description: Conformed daily date dimension.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+  - name: fct_payments
+    description: Grain = one row per payment, with FKs to dim_customer/dim_merchant and an auth_date_key.
+    columns:
+      - name: payment_key
+        tests: [unique, not_null]
+      - name: payment_id
+        tests: [unique, not_null]
+  - name: fct_settlements
+    description: Grain = one row per settlement record.
+    columns:
+      - name: settlement_id
+        tests: [unique, not_null]
+  - name: fct_chargebacks
+    description: Grain = one row per chargeback, with optional dispute resolution metadata.
+    columns:
+      - name: chargeback_id
+        tests: [unique, not_null]

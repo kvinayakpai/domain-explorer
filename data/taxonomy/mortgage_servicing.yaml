@@ -1,0 +1,28 @@
+id: mortgage_servicing
+name: Mortgage Servicing
+vertical: BFSI
+oneLiner: Post-close loan administration — payments, escrow, default management, and investor reporting.
+
+personas:
+  - { name: Head of Servicing, title: Head of Mortgage Servicing, level: VP }
+  - { name: Default Manager, title: Default & Loss Mitigation Manager, level: Director }
+  - { name: Investor Reporting Lead, title: Investor Reporting Lead, level: Manager }
+
+kpis:
+  - { id: msrv.kpi.delinquency_60, name: 60+ DPD Delinquency, formula: balance_60dpd / total_unpaid_principal, unit: "%", direction: lower_is_better }
+  - { id: msrv.kpi.cure_rate, name: Cure Rate, formula: cured_loans / delinquent_loans, unit: "%", direction: higher_is_better }
+  - { id: msrv.kpi.escrow_shortage, name: Escrow Shortage Rate, formula: shortage_loans / total_loans, unit: "%", direction: lower_is_better }
+  - { id: msrv.kpi.cost_to_service, name: Cost to Service per Loan, formula: opex / loans_serviced, unit: USD, direction: lower_is_better }
+  - { id: msrv.kpi.investor_remit_accuracy, name: Investor Remit Accuracy, formula: clean_remits / total_remits, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Black Knight, product: MSP, category: Servicing Platform }
+  - { vendor: ICE Mortgage Tech, product: Encompass, category: LOS/Servicing }
+  - { vendor: Sagent, product: LoanServ, category: Servicing Platform }
+  - { vendor: Fannie Mae, product: Loan Quality Connect, category: Investor System }
+  - { vendor: Freddie Mac, product: Loan Servicing Data Utility, category: Investor System }
+
+connectors:
+  - { type: MISMO XML, protocol: HTTPS, auth: mTLS }
+  - { type: SFTP file, protocol: SFTP, auth: SSH key }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }

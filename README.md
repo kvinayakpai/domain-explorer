@@ -12,12 +12,13 @@ domain-explorer/
 │   ├── metadata/           # Zod (TS) + Pydantic v2 (Py) schemas, YAML loader
 │   └── shared-types/       # generated TS types
 ├── data/
-│   ├── taxonomy/           # subdomain configs (10 anchors + breadth pass)
+│   ├── taxonomy/           # subdomain configs (~80 across 10 verticals)
+│   ├── glossary/           # business / KPI / regulatory term glossary
 │   ├── kpis/               # starter KPI registry
 │   ├── source-systems/     # source system registry
 │   └── connectors/         # 23 connector patterns
 ├── modeling/
-│   ├── dbt/                # dbt-core skeleton (DuckDB profile)
+│   ├── dbt/                # dbt-core models for Payments (DuckDB)
 │   └── ddl/                # 3NF / Vault / dim DDL excerpts (all 7 anchors)
 ├── kg/
 │   ├── ontology/           # OWL/Turtle stubs
@@ -67,8 +68,4 @@ The full `domain-explorer.duckdb` is ~91MB and the CSV/parquet sidecars push the
 3. The Next.js app reads the typed registry at build/request time and renders the 9-attribute template for every subdomain — no per-page code.
 4. The FastAPI service exposes the same registry over HTTP for downstream tools.
 
-To add a new subdomain: drop a YAML file in `data/taxonomy/` matching the schema. That's it.
-
-## License
-
-MIT — see `LICENSE`.
+To add a new subdomain: drop a YAML file in `dat

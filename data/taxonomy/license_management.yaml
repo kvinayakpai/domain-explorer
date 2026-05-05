@@ -1,0 +1,28 @@
+id: license_management
+name: License Management
+vertical: HiTech
+oneLiner: Entitlements, activation, usage metering, and compliance across software and cloud licenses.
+
+personas:
+  - { name: VP Monetization, title: VP Software Monetization, level: VP }
+  - { name: License Compliance Lead, title: License Compliance Manager, level: Director }
+  - { name: Entitlement Engineer, title: Entitlement Platform Engineer, level: Manager }
+
+kpis:
+  - { id: lic.kpi.activation_rate, name: License Activation Rate, formula: activated / shipped, unit: "%", direction: higher_is_better }
+  - { id: lic.kpi.utilization, name: Seat Utilization, formula: active_seats / purchased_seats, unit: "%", direction: target_band }
+  - { id: lic.kpi.unauthorized_use, name: Unauthorized Use Detected, formula: unauthorized_instances, unit: count, direction: lower_is_better }
+  - { id: lic.kpi.true_up_recovery, name: True-Up Recovery, formula: collected_overuse_usd, unit: USD, direction: higher_is_better }
+  - { id: lic.kpi.renewal_rate, name: Renewal Rate, formula: renewed / due_renewals, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Flexera, product: FlexNet Operations, category: License Mgmt }
+  - { vendor: Revenera, product: Software Monetization, category: License Mgmt }
+  - { vendor: Cisco, product: Smart Licensing, category: License Mgmt }
+  - { vendor: Salesforce, product: Sales Cloud, category: CRM }
+  - { vendor: Snowflake, product: Account Usage, category: Cloud Warehouse }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: SOAP, protocol: HTTPS, auth: WS-Security }
+  - { type: Webhook, protocol: HTTPS, auth: HMAC }

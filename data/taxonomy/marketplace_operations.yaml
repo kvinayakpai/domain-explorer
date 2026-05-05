@@ -1,0 +1,28 @@
+id: marketplace_operations
+name: Marketplace Operations
+vertical: HiTech
+oneLiner: Two-sided marketplace ops — seller onboarding, listings, trust & safety, payouts, and disputes.
+
+personas:
+  - { name: Marketplace GM, title: "General Manager, Marketplace", level: VP }
+  - { name: Trust & Safety Lead, title: Head of Trust & Safety, level: Director }
+  - { name: Seller Ops Manager, title: Seller Operations Manager, level: Manager }
+
+kpis:
+  - { id: mp.kpi.gmv, name: Gross Merchandise Value, formula: sum(order_value), unit: USD, direction: higher_is_better }
+  - { id: mp.kpi.take_rate, name: Marketplace Take Rate, formula: revenue / gmv, unit: "%", direction: target_band }
+  - { id: mp.kpi.bad_actor_rate, name: Bad Actor Rate, formula: removed_actors / total_actors, unit: "%", direction: lower_is_better }
+  - { id: mp.kpi.dispute_rate, name: Order Dispute Rate, formula: disputes / orders, unit: "%", direction: lower_is_better }
+  - { id: mp.kpi.payout_latency, name: Seller Payout Latency, formula: avg(payout_ts - order_complete_ts), unit: hours, direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Stripe, product: Connect, category: Payouts }
+  - { vendor: Mirakl, product: Marketplace Platform, category: Marketplace SaaS }
+  - { vendor: Forter, product: Trust Platform, category: Fraud }
+  - { vendor: Shopify, product: Shopify Plus, category: Commerce }
+  - { vendor: Sift, product: Digital Trust & Safety, category: Trust & Safety }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: Webhook, protocol: HTTPS, auth: HMAC }
+  - { type: GraphQL, protocol: HTTPS, auth: OAuth2 }

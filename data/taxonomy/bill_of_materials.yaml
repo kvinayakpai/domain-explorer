@@ -1,0 +1,28 @@
+id: bill_of_materials
+name: Bill of Materials
+vertical: Manufacturing
+oneLiner: Engineering, manufacturing, and service BOM management with effectivity, ECN, and where-used.
+
+personas:
+  - { name: Engineering Manager, title: Engineering Mgmt Lead, level: Manager }
+  - { name: PLM Admin, title: PLM Administrator, level: Manager }
+  - { name: Manufacturing Engineer, title: Manufacturing Engineer, level: IC }
+
+kpis:
+  - { id: bom.kpi.bom_accuracy, name: BOM Accuracy, formula: matched / sampled, unit: "%", direction: higher_is_better }
+  - { id: bom.kpi.ecn_lead_time, name: ECN Lead Time, formula: avg(close_dt - open_dt), unit: days, direction: lower_is_better }
+  - { id: bom.kpi.part_reuse, name: Part Reuse %, formula: reused_parts / new_parts, unit: "%", direction: higher_is_better }
+  - { id: bom.kpi.obsolete_parts, name: Active Obsolete Parts, formula: obsolete_in_active_boms, unit: count, direction: lower_is_better }
+  - { id: bom.kpi.eng_to_mfg_diff, name: E-BOM to M-BOM Variance, formula: variance_items / total_items, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: PTC, product: Windchill, category: PLM }
+  - { vendor: Siemens, product: Teamcenter, category: PLM }
+  - { vendor: Dassault, product: ENOVIA, category: PLM }
+  - { vendor: SAP, product: PLM, category: PLM }
+  - { vendor: Arena, product: Arena PLM, category: PLM Cloud }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: STEP/JT export, protocol: file, auth: SFTP }
+  - { type: SOAP, protocol: HTTPS, auth: WS-Security }

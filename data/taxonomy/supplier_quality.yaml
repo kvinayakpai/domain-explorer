@@ -1,0 +1,28 @@
+id: supplier_quality
+name: Supplier Quality
+vertical: Manufacturing
+oneLiner: Incoming inspection, NCRs, supplier scorecards, and corrective actions across the supplier base.
+
+personas:
+  - { name: Head of Supplier Quality, title: Head of Supplier Quality, level: VP }
+  - { name: SQE, title: Supplier Quality Engineer, level: Manager }
+  - { name: Procurement Quality Lead, title: Procurement Quality Lead, level: Director }
+
+kpis:
+  - { id: sq.kpi.first_pass_yield, name: Incoming First-Pass Yield, formula: passed / inspected, unit: "%", direction: higher_is_better }
+  - { id: sq.kpi.ppm, name: Defect PPM, formula: defects * 1e6 / received_qty, unit: ppm, direction: lower_is_better }
+  - { id: sq.kpi.car_close_time, name: CAR Close Time, formula: avg(closed_dt - opened_dt), unit: days, direction: lower_is_better }
+  - { id: sq.kpi.scorecard_avg, name: Avg Supplier Scorecard, formula: avg(scorecard_pts), unit: score, direction: higher_is_better }
+  - { id: sq.kpi.cost_of_poor_quality, name: Cost of Poor Quality, formula: scrap_cost + rework_cost + warranty_cost, unit: USD, direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: SAP, product: QM, category: Quality Mgmt }
+  - { vendor: ETQ, product: Reliance, category: QMS }
+  - { vendor: MasterControl, product: Quality Excellence, category: QMS }
+  - { vendor: Coupa, product: Source-to-Pay, category: Procurement }
+  - { vendor: Plex, product: Smart Manufacturing, category: ERP/MES }
+
+connectors:
+  - { type: EDI 861, protocol: AS2, auth: PKI }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: SFTP, protocol: SFTP, auth: SSH key }

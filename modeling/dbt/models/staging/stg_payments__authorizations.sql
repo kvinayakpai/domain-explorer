@@ -1,12 +1,5 @@
--- Staging model: lightly typed, renamed view of payments_raw.authorizations.
-{{ config(materialized='view') }}
-
-select
-    cast(auth_id as varchar)        as auth_id,
-    cast(transaction_id as varchar) as transaction_id,
-    cast(merchant_id as varchar)    as merchant_id,
-    cast(amount_minor as bigint)    as amount_minor,
-    upper(currency)                 as currency,
-    cast(approved as boolean)       as approved,
-    cast(auth_ts as timestamp)      as auth_ts
-from {{ source('payments_raw', 'authorizations') }}
+-- Superseded by models/payments/staging/stg_payments__payments.sql against
+-- the real `payments` schema in domain-explorer.duckdb. Disabled so dbt does
+-- not try to compile it against the no-longer-defined `payments_raw` source.
+{{ config(materialized='view', enabled=false) }}
+select 1 as auth_id where 1 = 0

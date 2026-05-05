@@ -1,9 +1,3 @@
--- Stub merchant dimension — wire to source after MDM is in place.
-{{ config(materialized='table') }}
-
-select distinct
-    merchant_id,
-    cast(null as varchar) as merchant_name,
-    cast(null as varchar) as mcc,
-    cast(null as varchar) as country
-from {{ ref('stg_payments__authorizations') }}
+-- Superseded by models/payments/marts/dim_merchant.sql.
+{{ config(materialized='table', enabled=false) }}
+select 1 as merchant_id where 1 = 0

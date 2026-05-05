@@ -1,13 +1,12 @@
-# dbt skeleton
+# dbt — Payments models
 
-DuckDB-backed dbt-core skeleton. Real models will be added per subdomain in later phases.
+DuckDB-backed dbt project. The Payments anchor is fully wired against the
+populated `domain-explorer.duckdb` at the repo root; other subdomains are still
+documentation-only DDL under `modeling/ddl/`.
 
-## Usage
+## Layout
 
-```bash
-# from repo root, point dbt at this profile dir
-DBT_PROFILES_DIR=modeling/dbt dbt deps --project-dir modeling/dbt
-DBT_PROFILES_DIR=modeling/dbt dbt build --project-dir modeling/dbt
 ```
-
-The DuckDB file lands in `modeling/dbt/target/domain_explorer.duckdb`.
+modeling/dbt/
+  dbt_project.yml             # materialisation defaults per layer
+  profiles.yml                # local DuckDB profile (uses
