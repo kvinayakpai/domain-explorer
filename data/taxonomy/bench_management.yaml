@@ -15,6 +15,14 @@ kpis:
   - { id: bench.kpi.skill_match, name: Skill Match Score, formula: avg(match_score), unit: score, direction: higher_is_better }
   - { id: bench.kpi.realization, name: Rate Realization, formula: realized_rate / list_rate, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Consultant, description: 'Consulting employee' }
+    - { name: Engagement, description: 'Client engagement' }
+    - { name: Allocation, description: 'Consultant-to-engagement allocation' }
+    - { name: BenchPeriod, description: 'Period of unbillable bench time' }
+    - { name: SkillProfile, description: 'Consultant skill profile' }
+
 sourceSystems:
   - { vendor: Workday, product: Professional Services Automation, category: PSA }
   - { vendor: Kantata, product: Mavenlink, category: PSA }

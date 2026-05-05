@@ -15,6 +15,14 @@ kpis:
   - { id: sl.kpi.collateral_haircut, name: Avg Collateral Haircut, formula: haircut_weighted_avg, unit: "%", direction: target_band }
   - { id: sl.kpi.specials_revenue, name: Specials Revenue Share, formula: specials_revenue / total_revenue, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Loan, description: 'Securities loan' }
+    - { name: Collateral, description: 'Posted collateral' }
+    - { name: Recall, description: 'Recall instruction' }
+    - { name: Rebate, description: 'Rebate calculation' }
+    - { name: Counterparty, description: 'Borrower counterparty' }
+
 sourceSystems:
   - { vendor: Equilend, product: NGT, category: SecLending Trading }
   - { vendor: Pirum, product: CCMS, category: Collateral Mgmt }

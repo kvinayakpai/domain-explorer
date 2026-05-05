@@ -1,0 +1,36 @@
+id: gas_distribution
+name: Gas Distribution
+vertical: Utilities
+oneLiner: Natural gas distribution, leak detection, odorization, and customer service.
+
+personas:
+  - { name: 'Head of Gas Distribution', title: 'Head of Gas Distribution', level: VP }
+  - { name: 'Pipeline Integrity Lead', title: 'Pipeline Integrity Manager', level: Manager }
+  - { name: 'Field Ops Supervisor', title: 'Field Operations Supervisor', level: Manager }
+
+kpis:
+  - { id: gd.kpi.leak_response_time, name: 'Leak Response Time', formula: 'avg(arrival - reported)', unit: 'minutes', direction: lower_is_better }
+  - { id: gd.kpi.lost_unaccounted, name: 'Lost & Unaccounted For', formula: 'unaccounted / sent_out', unit: '%', direction: lower_is_better }
+  - { id: gd.kpi.dimp_compliance, name: 'DIMP Compliance', formula: 'compliant_segments / total', unit: '%', direction: higher_is_better }
+  - { id: gd.kpi.odorization_failures, name: 'Odorization Failures', formula: 'fail_count', unit: 'incidents', direction: lower_is_better }
+  - { id: gd.kpi.locate_tickets, name: 'Locate Tickets Closed On Time', formula: 'on_time / total', unit: '%', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: PipelineSegment, description: 'Distribution pipeline segment' }
+    - { name: LeakReport, description: 'Reported leak' }
+    - { name: InspectionRecord, description: 'Pipeline inspection record' }
+    - { name: ServiceOrder, description: 'Customer service order' }
+    - { name: OdorizationReading, description: 'Odorant level reading' }
+
+sourceSystems:
+  - { vendor: 'Schneider', product: 'ClearSCADA', category: 'SCADA' }
+  - { vendor: 'Itron', product: 'Endpoint', category: 'Gas Meter' }
+  - { vendor: 'Esri', product: 'Utility Network', category: 'GIS' }
+  - { vendor: 'Picarro', product: 'Surveyor', category: 'Leak Detection' }
+  - { vendor: 'OpenText', product: 'Damage Prevention', category: 'Locate Tickets' }
+
+connectors:
+  - { type: 'DNP3', protocol: 'TCP', auth: 'Mutual Auth' }
+  - { type: 'Modbus', protocol: 'TCP', auth: 'Cert' }
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }

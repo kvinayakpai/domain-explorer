@@ -1,0 +1,36 @@
+id: pharma_supply_chain
+name: Pharma Supply Chain
+vertical: LifeSciences
+oneLiner: Cold-chain, serialization, and DSCSA-compliant supply chain for pharmaceuticals.
+
+personas:
+  - { name: 'Head of Pharma SC', title: 'Head of Pharma Supply Chain', level: VP }
+  - { name: 'Cold Chain Manager', title: 'Cold Chain Manager', level: Manager }
+  - { name: 'Serialization Lead', title: 'Serialization Compliance Lead', level: Manager }
+
+kpis:
+  - { id: psc.kpi.cold_chain_excursions, name: 'Cold Chain Excursions', formula: 'excursions / shipments', unit: '%', direction: lower_is_better }
+  - { id: psc.kpi.dscsa_coverage, name: 'DSCSA Coverage', formula: 'compliant / total_units', unit: '%', direction: higher_is_better }
+  - { id: psc.kpi.lot_recall_time, name: 'Lot Recall Time', formula: 'avg(quarantine - issued)', unit: 'hours', direction: lower_is_better }
+  - { id: psc.kpi.fillrate, name: 'Customer Order Fill Rate', formula: 'filled / ordered', unit: '%', direction: higher_is_better }
+  - { id: psc.kpi.scrap_rate, name: 'Scrap Rate', formula: 'scrapped / produced', unit: '%', direction: lower_is_better }
+
+dataModel:
+  entities:
+    - { name: Lot, description: 'Manufactured lot' }
+    - { name: Serial, description: 'Serialized unit' }
+    - { name: ColdChainReading, description: 'Temperature reading' }
+    - { name: Shipment, description: 'Pharma shipment' }
+    - { name: Recall, description: 'Lot recall record' }
+
+sourceSystems:
+  - { vendor: 'SAP', product: 'S/4HANA', category: 'ERP' }
+  - { vendor: 'Oracle', product: 'SCM', category: 'Supply Chain' }
+  - { vendor: 'TraceLink', product: 'Network', category: 'Serialization' }
+  - { vendor: 'Sensitech', product: 'TempTale', category: 'Cold Chain Loggers' }
+  - { vendor: 'Antares Vision', product: 'Track & Trace', category: 'Serialization' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'EPCIS', protocol: 'HTTPS', auth: 'mTLS' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }

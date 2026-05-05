@@ -15,6 +15,15 @@ kpis:
   - { id: msrv.kpi.cost_to_service, name: Cost to Service per Loan, formula: opex / loans_serviced, unit: USD, direction: lower_is_better }
   - { id: msrv.kpi.investor_remit_accuracy, name: Investor Remit Accuracy, formula: clean_remits / total_remits, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Loan, description: 'Mortgage loan' }
+    - { name: Borrower, description: 'Borrower party' }
+    - { name: Payment, description: 'Mortgage payment' }
+    - { name: Escrow, description: 'Escrow account' }
+    - { name: Delinquency, description: 'Delinquency event' }
+    - { name: Modification, description: 'Loan modification' }
+
 sourceSystems:
   - { vendor: Black Knight, product: MSP, category: Servicing Platform }
   - { vendor: ICE Mortgage Tech, product: Encompass, category: LOS/Servicing }

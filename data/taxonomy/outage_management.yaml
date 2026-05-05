@@ -15,6 +15,14 @@ kpis:
   - { id: out.kpi.eta_accuracy, name: ETR Accuracy, formula: pct_within_30min, unit: "%", direction: higher_is_better }
   - { id: out.kpi.crew_dispatch_time, name: Crew Dispatch Time, formula: avg(dispatch_ts - alarm_ts), unit: minutes, direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Outage, description: 'Distribution outage' }
+    - { name: Crew, description: 'Field crew' }
+    - { name: Restoration, description: 'Restoration step' }
+    - { name: CallReport, description: 'Customer outage call' }
+    - { name: CauseCode, description: 'Outage cause code' }
+
 sourceSystems:
   - { vendor: GE Digital, product: PowerOn Restore, category: OMS }
   - { vendor: Oracle, product: Network Mgmt for Utilities, category: OMS }

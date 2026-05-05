@@ -15,6 +15,14 @@ kpis:
   - { id: reg.kpi.lineage_coverage, name: Data Lineage Coverage, formula: data_elements_with_lineage / total, unit: "%", direction: higher_is_better }
   - { id: reg.kpi.findings_open, name: Open Reg Findings, formula: open_findings_eom, unit: count, direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Report, description: 'Regulatory report' }
+    - { name: Filing, description: 'Submitted filing' }
+    - { name: Threshold, description: 'Reporting threshold' }
+    - { name: Lineage, description: 'Report-to-source lineage' }
+    - { name: Exception, description: 'Reporting exception' }
+
 sourceSystems:
   - { vendor: AxiomSL, product: ControllerView, category: Reg Reporting }
   - { vendor: Wolters Kluwer, product: OneSumX, category: Reg Reporting }

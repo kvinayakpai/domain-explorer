@@ -1,0 +1,36 @@
+id: retail_execution
+name: Retail Execution
+vertical: CPG
+oneLiner: 'In-store execution at the retailer: planograms, OSA, perfect store, and field rep activity.'
+
+personas:
+  - { name: 'VP Field Sales', title: 'VP Field Sales', level: VP }
+  - { name: 'KAM', title: 'Key Account Manager', level: Manager }
+  - { name: 'Field Rep', title: 'Territory Sales Rep', level: IC }
+
+kpis:
+  - { id: rex.kpi.osa, name: 'On-Shelf Availability', formula: 'instock / audited', unit: '%', direction: higher_is_better }
+  - { id: rex.kpi.planogram_compliance, name: 'Planogram Compliance', formula: 'compliant / audited', unit: '%', direction: higher_is_better }
+  - { id: rex.kpi.perfect_store, name: 'Perfect Store Score', formula: 'weighted_compliance', unit: '%', direction: higher_is_better }
+  - { id: rex.kpi.visit_completion, name: 'Visit Completion', formula: 'completed / planned', unit: '%', direction: higher_is_better }
+  - { id: rex.kpi.share_of_shelf, name: 'Share of Shelf', formula: 'brand_facings / total', unit: '%', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: Outlet, description: 'Retail outlet' }
+    - { name: Visit, description: 'Sales rep store visit' }
+    - { name: Audit, description: 'Shelf audit observation' }
+    - { name: Planogram, description: 'Planogram definition' }
+    - { name: FieldRep, description: 'Sales representative' }
+
+sourceSystems:
+  - { vendor: 'Salesforce', product: 'Consumer Goods Cloud', category: 'SFA' }
+  - { vendor: 'Trax', product: 'Computer Vision', category: 'Image Recognition' }
+  - { vendor: 'Repsly', product: 'Field App', category: 'Mobile Field App' }
+  - { vendor: 'StayinFront', product: 'TouchCG', category: 'SFA' }
+  - { vendor: 'Pepsico', product: 'CrunchTime', category: 'Field Rep App' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'Image upload', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }

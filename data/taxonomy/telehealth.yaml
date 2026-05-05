@@ -1,0 +1,36 @@
+id: telehealth
+name: Telehealth
+vertical: Healthcare
+oneLiner: 'Virtual care delivery: scheduling, video visits, e-prescribing, and remote monitoring.'
+
+personas:
+  - { name: 'Head of Virtual Care', title: 'Head of Virtual Care', level: VP }
+  - { name: 'Clinical Operations Lead', title: 'Clinical Operations Lead', level: Director }
+  - { name: 'Patient Experience Manager', title: 'Patient Experience Manager', level: Manager }
+
+kpis:
+  - { id: th.kpi.visit_volume, name: 'Virtual Visit Volume', formula: 'count(visits)', unit: 'visits', direction: higher_is_better }
+  - { id: th.kpi.no_show, name: 'No-Show Rate', formula: 'no_show / scheduled', unit: '%', direction: lower_is_better }
+  - { id: th.kpi.first_call_resolution, name: 'First Visit Resolution', formula: 'resolved_in_one / total', unit: '%', direction: higher_is_better }
+  - { id: th.kpi.connection_quality, name: 'Video Connection Quality', formula: 'good_calls / total', unit: '%', direction: higher_is_better }
+  - { id: th.kpi.csat, name: 'Patient CSAT', formula: 'positive / responses', unit: '%', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: Visit, description: 'Telehealth visit' }
+    - { name: Patient, description: 'Patient profile' }
+    - { name: Provider, description: 'Provider profile' }
+    - { name: Schedule, description: 'Provider schedule slot' }
+    - { name: Prescription, description: 'E-prescription order' }
+
+sourceSystems:
+  - { vendor: 'Teladoc', product: 'Platform', category: 'Telehealth' }
+  - { vendor: 'Amwell', product: 'Platform', category: 'Telehealth' }
+  - { vendor: 'Doxy.me', product: 'Telemedicine', category: 'Telehealth' }
+  - { vendor: 'Epic', product: 'Telehealth', category: 'EHR Module' }
+  - { vendor: 'Twilio', product: 'Programmable Video', category: 'CPaaS' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'FHIR', protocol: 'HTTPS', auth: 'SMART on FHIR' }
+  - { type: 'Webhook', protocol: 'HTTPS', auth: 'HMAC' }

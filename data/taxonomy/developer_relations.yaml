@@ -1,0 +1,36 @@
+id: developer_relations
+name: Developer Relations
+vertical: HiTech
+oneLiner: 'Developer engagement: docs, SDKs, sample apps, and community programs to drive adoption.'
+
+personas:
+  - { name: 'Head of DevRel', title: 'Head of Developer Relations', level: Director }
+  - { name: 'Docs Lead', title: 'Developer Docs Lead', level: Manager }
+  - { name: 'Developer Advocate', title: 'Developer Advocate', level: IC }
+
+kpis:
+  - { id: dr.kpi.active_devs, name: 'Monthly Active Developers', formula: 'unique_active_devs', unit: 'devs', direction: higher_is_better }
+  - { id: dr.kpi.api_call_growth, name: 'API Call Growth (MoM)', formula: 'this_month / last_month - 1', unit: '%', direction: higher_is_better }
+  - { id: dr.kpi.docs_satisfaction, name: 'Docs Satisfaction', formula: 'positive / responses', unit: '%', direction: higher_is_better }
+  - { id: dr.kpi.time_to_first_call, name: 'Time to First API Call', formula: 'avg(first_call - signup)', unit: 'minutes', direction: lower_is_better }
+  - { id: dr.kpi.community_resolution, name: 'Community Question Resolution', formula: 'resolved / asked', unit: '%', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: Developer, description: 'Registered developer' }
+    - { name: ApiKey, description: 'Issued API key' }
+    - { name: ApiCall, description: 'API call event' }
+    - { name: DocsPage, description: 'Documentation page' }
+    - { name: CommunityThread, description: 'Community thread' }
+
+sourceSystems:
+  - { vendor: 'GitHub', product: 'Discussions', category: 'Community' }
+  - { vendor: 'Discourse', product: 'Forum', category: 'Community' }
+  - { vendor: 'Algolia', product: 'DocSearch', category: 'Docs Search' }
+  - { vendor: 'Mixpanel', product: 'Product Analytics', category: 'Analytics' }
+  - { vendor: 'Stripe', product: 'API Reference', category: 'Docs Pattern' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'Webhook', protocol: 'HTTPS', auth: 'HMAC' }
+  - { type: 'S3 export', protocol: 'HTTPS', auth: 'IAM' }

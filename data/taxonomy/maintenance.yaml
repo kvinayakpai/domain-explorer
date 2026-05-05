@@ -15,6 +15,14 @@ kpis:
   - { id: maint.kpi.maintenance_cost_per_unit, name: Maintenance Cost per Unit Produced, formula: maint_cost / units_produced, unit: USD, direction: lower_is_better }
   - { id: maint.kpi.wrench_time, name: Wrench Time, formula: wrench_hours / labor_hours, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Asset, description: 'Maintainable asset' }
+    - { name: WorkOrder, description: 'Maintenance work order' }
+    - { name: Task, description: 'Work order task' }
+    - { name: Inspection, description: 'Inspection record' }
+    - { name: PartsConsumption, description: 'Spare parts consumed' }
+
 sourceSystems:
   - { vendor: IBM, product: Maximo, category: EAM/CMMS }
   - { vendor: SAP, product: PM/EAM, category: EAM }

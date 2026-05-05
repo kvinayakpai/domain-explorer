@@ -15,6 +15,14 @@ kpis:
   - { id: iiot.kpi.energy_per_unit, name: Energy per Unit Produced, formula: kwh / units_produced, unit: kWh/unit, direction: lower_is_better }
   - { id: iiot.kpi.tag_uptime, name: Tag Stream Uptime, formula: minutes_streaming / total_minutes, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Machine, description: 'Production machine' }
+    - { name: Sensor, description: 'Attached sensor' }
+    - { name: Reading, description: 'Sensor reading' }
+    - { name: Event, description: 'Machine event' }
+    - { name: OeeMeasurement, description: 'OEE measurement window' }
+
 sourceSystems:
   - { vendor: AVEVA, product: PI System, category: Historian }
   - { vendor: Rockwell, product: FactoryTalk, category: SCADA/MES }

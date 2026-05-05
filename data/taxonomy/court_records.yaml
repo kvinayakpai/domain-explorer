@@ -15,6 +15,14 @@ kpis:
   - { id: ct.kpi.bench_warrant_rate, name: Bench Warrant Rate, formula: bench_warrants / hearings, unit: "%", direction: lower_is_better }
   - { id: ct.kpi.fees_collected, name: Court Fees Collected, formula: collected_usd, unit: USD, direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Case, description: 'Court case' }
+    - { name: Filing, description: 'Court filing' }
+    - { name: Hearing, description: 'Scheduled hearing' }
+    - { name: Party, description: 'Case party' }
+    - { name: Ruling, description: 'Judicial ruling' }
+
 sourceSystems:
   - { vendor: Tyler Technologies, product: Odyssey, category: Court Case Mgmt }
   - { vendor: Journal Technologies, product: eCourt, category: Court Case Mgmt }

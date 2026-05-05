@@ -1,0 +1,36 @@
+id: brand_marketing
+name: Brand Marketing
+vertical: CPG
+oneLiner: Brand health tracking, integrated marketing communications, and ROI of brand investments.
+
+personas:
+  - { name: 'CMO', title: 'Chief Marketing Officer', level: C-suite }
+  - { name: 'Brand Director', title: 'Brand Director', level: Director }
+  - { name: 'Insights Manager', title: 'Consumer Insights Manager', level: Manager }
+
+kpis:
+  - { id: bm.kpi.brand_awareness, name: 'Aided Brand Awareness', formula: 'aided / surveyed', unit: '%', direction: higher_is_better }
+  - { id: bm.kpi.share_of_voice, name: 'Share of Voice', formula: 'brand_impressions / category', unit: '%', direction: higher_is_better }
+  - { id: bm.kpi.media_roi, name: 'Media ROI', formula: 'incremental_sales / spend', unit: 'ratio', direction: higher_is_better }
+  - { id: bm.kpi.npi_velocity, name: 'NPI Sales Velocity', formula: 'sales / store_week', unit: 'USD', direction: higher_is_better }
+  - { id: bm.kpi.brand_equity_idx, name: 'Brand Equity Index', formula: 'composite', unit: 'idx', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: Campaign, description: 'Marketing campaign' }
+    - { name: Channel, description: 'Media channel' }
+    - { name: Spend, description: 'Channel-level media spend' }
+    - { name: BrandTrackerWave, description: 'Periodic survey wave' }
+    - { name: Reach, description: 'Audience reach' }
+
+sourceSystems:
+  - { vendor: 'Nielsen', product: 'BrandScape', category: 'Brand Tracker' }
+  - { vendor: 'Kantar', product: 'Brand Tracking', category: 'Brand Tracker' }
+  - { vendor: 'Meta', product: 'Ads Manager', category: 'DSP' }
+  - { vendor: 'Google', product: 'Ads', category: 'DSP' }
+  - { vendor: 'Salesforce', product: 'Marketing Cloud', category: 'Campaign Mgmt' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }
+  - { type: 'Webhook', protocol: 'HTTPS', auth: 'HMAC' }

@@ -1,0 +1,36 @@
+id: video_streaming_qoe
+name: Video Streaming QoE
+vertical: Telecom
+oneLiner: 'Quality of experience for OTT video: rebuffering, startup time, and bitrate adaptation.'
+
+personas:
+  - { name: 'Head of Video QoE', title: 'Head of Video QoE', level: Director }
+  - { name: 'CDN Architect', title: 'CDN Architect', level: Manager }
+  - { name: 'Player Engineer', title: 'Senior Player Engineer', level: IC }
+
+kpis:
+  - { id: qoe.kpi.rebuffer_ratio, name: 'Rebuffer Ratio', formula: 'rebuffer_time / play_time', unit: '%', direction: lower_is_better }
+  - { id: qoe.kpi.startup_time, name: 'Startup Time', formula: 'avg(first_frame - request)', unit: 'ms', direction: lower_is_better }
+  - { id: qoe.kpi.avg_bitrate, name: 'Average Bitrate', formula: 'sum(bytes) / play_time', unit: 'kbps', direction: higher_is_better }
+  - { id: qoe.kpi.failure_rate, name: 'Playback Failure Rate', formula: 'failed / attempted', unit: '%', direction: lower_is_better }
+  - { id: qoe.kpi.exit_before_start, name: 'Exit Before Start', formula: 'exits / starts', unit: '%', direction: lower_is_better }
+
+dataModel:
+  entities:
+    - { name: Session, description: 'Playback session' }
+    - { name: PlaybackEvent, description: 'Player event' }
+    - { name: CdnPop, description: 'CDN edge point' }
+    - { name: Asset, description: 'Video asset' }
+    - { name: Device, description: 'Playback device' }
+
+sourceSystems:
+  - { vendor: 'Conviva', product: 'Pulse', category: 'QoE Analytics' }
+  - { vendor: 'NPAW', product: 'YouMonitor', category: 'QoE Analytics' }
+  - { vendor: 'Akamai', product: 'CDN', category: 'CDN' }
+  - { vendor: 'Fastly', product: 'CDN', category: 'CDN' }
+  - { vendor: 'Mux', product: 'Data', category: 'Video Analytics' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'Beacon', protocol: 'HTTPS', auth: 'Token' }
+  - { type: 'Webhook', protocol: 'HTTPS', auth: 'HMAC' }

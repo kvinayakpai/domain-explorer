@@ -15,6 +15,14 @@ kpis:
   - { id: med.kpi.capa_aging, name: CAPA Aging > 90d, formula: capa_over_90d / open_capa, unit: "%", direction: lower_is_better }
   - { id: med.kpi.return_rate, name: Device Return Rate, formula: returns / sold, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Device, description: 'Medical device' }
+    - { name: Complaint, description: 'Device complaint' }
+    - { name: Servicing, description: 'Servicing event' }
+    - { name: Calibration, description: 'Calibration record' }
+    - { name: UDI, description: 'Unique device identifier' }
+
 sourceSystems:
   - { vendor: Sparta Systems, product: TrackWise, category: QMS }
   - { vendor: Veeva, product: Quality Vault, category: QMS }

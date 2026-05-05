@@ -15,6 +15,14 @@ kpis:
   - { id: ops.kpi.checkout_wait, name: Avg Checkout Wait, formula: avg(wait_time), unit: seconds, direction: lower_is_better }
   - { id: ops.kpi.scheduled_vs_worked, name: Schedule Adherence, formula: scheduled_hours / worked_hours, unit: "%", direction: target_band }
 
+dataModel:
+  entities:
+    - { name: Store, description: 'Retail store' }
+    - { name: Shift, description: 'Employee shift' }
+    - { name: LaborSchedule, description: 'Labor schedule' }
+    - { name: Task, description: 'Store task' }
+    - { name: Audit, description: 'Store ops audit' }
+
 sourceSystems:
   - { vendor: NCR, product: Voyix POS, category: POS }
   - { vendor: Toshiba, product: TCx Elevate, category: POS }

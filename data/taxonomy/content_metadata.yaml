@@ -15,6 +15,14 @@ kpis:
   - { id: cmeta.kpi.id_match_rate, name: External ID Match Rate, formula: matched / total_assets, unit: "%", direction: higher_is_better }
   - { id: cmeta.kpi.title_dupes, name: Title Duplicate Rate, formula: dupes / total_titles, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Title, description: 'Content title / programme' }
+    - { name: Episode, description: 'Episode within a series' }
+    - { name: Asset, description: 'Encoded video asset' }
+    - { name: Right, description: 'Acquired/licensed right' }
+    - { name: MetadataRecord, description: 'Descriptive metadata' }
+
 sourceSystems:
   - { vendor: Gracenote, product: Video Data, category: Metadata Provider }
   - { vendor: IMDb, product: IMDbPro, category: Metadata Provider }

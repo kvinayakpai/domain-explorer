@@ -1,0 +1,36 @@
+id: medical_imaging
+name: Medical Imaging
+vertical: Healthcare
+oneLiner: 'Radiology and imaging operations: PACS, RIS, AI triage, and reporting workflow.'
+
+personas:
+  - { name: 'Chief of Radiology', title: 'Chief of Radiology', level: C-suite }
+  - { name: 'PACS Administrator', title: 'PACS Administrator', level: Manager }
+  - { name: 'Modality Tech Lead', title: 'Modality Tech Lead', level: IC }
+
+kpis:
+  - { id: mi.kpi.report_tat, name: 'Report Turnaround', formula: 'avg(read - acquired)', unit: 'minutes', direction: lower_is_better }
+  - { id: mi.kpi.repeat_rate, name: 'Repeat Imaging Rate', formula: 'repeats / studies', unit: '%', direction: lower_is_better }
+  - { id: mi.kpi.modality_utilisation, name: 'Modality Utilisation', formula: 'scan_minutes / available', unit: '%', direction: higher_is_better }
+  - { id: mi.kpi.discrepancy_rate, name: 'Read Discrepancy Rate', formula: 'discrepant / peer_reviewed', unit: '%', direction: lower_is_better }
+  - { id: mi.kpi.ai_triage_lift, name: 'AI Triage Lift', formula: 'critical_caught_by_ai', unit: '%', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: Study, description: 'Imaging study' }
+    - { name: Series, description: 'Series within a study' }
+    - { name: Modality, description: 'Imaging modality (CT/MRI/etc.)' }
+    - { name: Report, description: 'Radiology report' }
+    - { name: AiFinding, description: 'AI-detected finding' }
+
+sourceSystems:
+  - { vendor: 'Sectra', product: 'PACS', category: 'PACS' }
+  - { vendor: 'GE', product: 'Centricity', category: 'RIS/PACS' }
+  - { vendor: 'Philips', product: 'IntelliSpace', category: 'PACS' }
+  - { vendor: 'Aidoc', product: 'Triage AI', category: 'AI Triage' }
+  - { vendor: 'Nuance', product: 'PowerScribe', category: 'Reporting' }
+
+connectors:
+  - { type: 'DICOM', protocol: 'DIMSE', auth: 'TLS' }
+  - { type: 'HL7v2', protocol: 'MLLP', auth: 'TLS' }
+  - { type: 'FHIR', protocol: 'HTTPS', auth: 'SMART on FHIR' }

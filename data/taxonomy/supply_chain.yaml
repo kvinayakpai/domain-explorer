@@ -15,6 +15,14 @@ kpis:
   - { id: sc.kpi.on_time_delivery, name: On-Time Delivery, formula: on_time_deliveries / total_deliveries, unit: "%", direction: higher_is_better }
   - { id: sc.kpi.inventory_accuracy, name: Inventory Accuracy, formula: counted_matches / counted_total, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: PurchaseOrder, description: 'Purchase order to supplier' }
+    - { name: Shipment, description: 'Inbound/outbound shipment' }
+    - { name: InventoryPosition, description: 'Inventory position by node' }
+    - { name: Demand, description: 'Aggregated demand' }
+    - { name: Forecast, description: 'Demand forecast' }
+
 sourceSystems:
   - { vendor: Manhattan Associates, product: Active WM, category: WMS }
   - { vendor: SAP, product: EWM, category: WMS }

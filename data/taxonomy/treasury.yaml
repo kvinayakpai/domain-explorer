@@ -15,6 +15,14 @@ kpis:
   - { id: tre.kpi.idle_cash, name: Idle Cash Balance, formula: avg(uninvested_cash), unit: USD, direction: lower_is_better }
   - { id: tre.kpi.funding_cost, name: Average Funding Cost, formula: interest_expense / liabilities, unit: bps, direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: CashPosition, description: 'Cash position by account' }
+    - { name: FxTrade, description: 'FX trade' }
+    - { name: LiquidityForecast, description: 'Liquidity forecast' }
+    - { name: BankAccount, description: 'Bank account' }
+    - { name: Funding, description: 'Intra-day funding action' }
+
 sourceSystems:
   - { vendor: FIS, product: Quantum, category: Treasury Mgmt }
   - { vendor: Kyriba, product: Kyriba, category: Treasury Mgmt }

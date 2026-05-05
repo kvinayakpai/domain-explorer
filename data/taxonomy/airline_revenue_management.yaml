@@ -15,6 +15,14 @@ kpis:
   - { id: arm.kpi.spill_rate, name: Spill Rate, formula: refused_pax / requested_pax, unit: "%", direction: lower_is_better }
   - { id: arm.kpi.no_show_rate, name: No-Show Rate, formula: no_shows / booked_pax, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Fare, description: 'Filed fare' }
+    - { name: BookingClass, description: 'Inventory booking class' }
+    - { name: Demand, description: 'Demand forecast' }
+    - { name: OD, description: 'Origin-destination market' }
+    - { name: RevenueOpportunity, description: 'Spill / spoilage record' }
+
 sourceSystems:
   - { vendor: Sabre, product: AirVision Revenue Optimizer, category: RM System }
   - { vendor: Amadeus, product: Altea NDC, category: PSS }

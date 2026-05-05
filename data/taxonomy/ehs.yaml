@@ -15,6 +15,14 @@ kpis:
   - { id: ehs.kpi.scope1_2_emissions, name: Scope 1+2 Emissions, formula: tCO2e_scope1_plus_2, unit: tCO2e, direction: lower_is_better }
   - { id: ehs.kpi.audit_close_rate, name: EHS Audit Action Close Rate, formula: closed_actions / total_actions, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Incident, description: 'Safety incident' }
+    - { name: NearMiss, description: 'Near-miss report' }
+    - { name: InspectionRecord, description: 'EHS inspection' }
+    - { name: PermitToWork, description: 'Issued permit-to-work' }
+    - { name: Hazard, description: 'Logged hazard' }
+
 sourceSystems:
   - { vendor: Sphera, product: EHS, category: EHS Platform }
   - { vendor: Intelex, product: EHSQ, category: EHS Platform }

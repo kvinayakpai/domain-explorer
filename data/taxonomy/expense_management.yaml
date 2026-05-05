@@ -15,6 +15,14 @@ kpis:
   - { id: ex.kpi.duplicate_rate, name: Duplicate Submission Rate, formula: duplicates / submissions, unit: "%", direction: lower_is_better }
   - { id: ex.kpi.cards_capture, name: Corporate Card Capture Rate, formula: card_txns_in_report / card_txns, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Report, description: 'Expense report' }
+    - { name: ExpenseLine, description: 'Individual line item' }
+    - { name: Receipt, description: 'Captured receipt' }
+    - { name: Approval, description: 'Approval step' }
+    - { name: Reimbursement, description: 'Reimbursement payout' }
+
 sourceSystems:
   - { vendor: SAP, product: Concur Expense, category: T&E SaaS }
   - { vendor: Coupa, product: Expenses, category: T&E SaaS }

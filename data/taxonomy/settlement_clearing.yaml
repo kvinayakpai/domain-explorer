@@ -15,6 +15,14 @@ kpis:
   - { id: stl.kpi.aging_breaks, name: Aging Breaks > 5d, formula: breaks_over_5d / total_breaks, unit: "%", direction: lower_is_better }
   - { id: stl.kpi.intraday_liquidity_use, name: Intraday Liquidity Usage, formula: peak_intraday / committed_facility, unit: "%", direction: target_band }
 
+dataModel:
+  entities:
+    - { name: Trade, description: 'Trade pending settlement' }
+    - { name: Allocation, description: 'Allocation to underlying account' }
+    - { name: Confirmation, description: 'Trade confirmation' }
+    - { name: Settlement, description: 'Settlement record' }
+    - { name: Fail, description: 'Settlement fail event' }
+
 sourceSystems:
   - { vendor: DTCC, product: NSCC/CNS, category: CCP }
   - { vendor: Euroclear, product: Settlement, category: CSD }

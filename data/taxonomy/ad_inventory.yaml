@@ -15,6 +15,14 @@ kpis:
   - { id: adi.kpi.makegood_rate, name: Makegood Rate, formula: makegood_imps / delivered_imps, unit: "%", direction: lower_is_better }
   - { id: adi.kpi.unsold_inventory, name: Unsold Inventory %, formula: unsold / total, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: AdSlot, description: 'Inventory unit on a page or surface' }
+    - { name: Placement, description: 'Configured placement targeting' }
+    - { name: Impression, description: 'Served ad impression' }
+    - { name: Forecast, description: 'Inventory availability forecast' }
+    - { name: AdBreak, description: 'Video ad break definition' }
+
 sourceSystems:
   - { vendor: Google, product: Ad Manager 360, category: Ad Server }
   - { vendor: FreeWheel, product: MRM, category: Video Ad Server }

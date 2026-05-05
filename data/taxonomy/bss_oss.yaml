@@ -15,6 +15,15 @@ kpis:
   - { id: bss.kpi.revenue_leakage, name: Revenue Leakage, formula: leakage_amount / billed_amount, unit: "%", direction: lower_is_better }
   - { id: bss.kpi.dso, name: Days Sales Outstanding, formula: receivables / daily_revenue, unit: days, direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Customer, description: 'Telecom customer' }
+    - { name: ProductInstance, description: 'Provisioned service instance' }
+    - { name: Order, description: 'Service order' }
+    - { name: Inventory, description: 'Network resource inventory' }
+    - { name: Trouble, description: 'Trouble ticket' }
+    - { name: Bill, description: 'Customer bill' }
+
 sourceSystems:
   - { vendor: Amdocs, product: CES, category: BSS Suite }
   - { vendor: Netcracker, product: Digital BSS/OSS, category: BSS/OSS }

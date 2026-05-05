@@ -15,6 +15,14 @@ kpis:
   - { id: ftel.kpi.hos_violations, name: HOS Violations, formula: hos_violations_per_week, unit: count, direction: lower_is_better }
   - { id: ftel.kpi.unscheduled_downtime, name: Unscheduled Downtime, formula: downtime_hours / available_hours, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Vehicle, description: 'Tracked vehicle' }
+    - { name: TripEvent, description: 'Trip event' }
+    - { name: DriverEvent, description: 'Driver behaviour event' }
+    - { name: FuelTransaction, description: 'Fuel purchase' }
+    - { name: MaintenanceAlert, description: 'Maintenance alert' }
+
 sourceSystems:
   - { vendor: Samsara, product: Connected Operations, category: Telematics }
   - { vendor: Geotab, product: MyGeotab, category: Telematics }

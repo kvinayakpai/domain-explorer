@@ -1,0 +1,290 @@
+# Data Quality rules executed against the populated DuckDB at the repo root.
+# Each rule's `sql` returns a single integer count of "failing rows" — zero means pass.
+# Use this convention so /dq/run can uniformly classify pass/fail and surface failure counts.
+
+rules:
+  # ---------- payments (BFSI) ----------
+  - id: dq_payments_001
+    subdomain: payments
+    table: payments.payments
+    column: amount
+    rule_type: not_null
+    expectation: "amount must be non-null on every payment"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM payments.payments WHERE amount IS NULL"
+
+  - id: dq_payments_002
+    subdomain: payments
+    table: payments.payments
+    column: payment_id
+    rule_type: uniqueness
+    expectation: "payment_id is unique across the payments table"
+    severity: critical
+    sql: "SELECT (SELECT COUNT(*) FROM payments.payments) - (SELECT COUNT(DISTINCT payment_id) FROM payments.payments)"
+
+  - id: dq_payments_003
+    subdomain: payments
+    table: payments.payments
+    column: amount
+    rule_type: range
+    expectation: "amount strictly positive for completed payments"
+    severity: high
+    sql: "SELECT COUNT(*) FROM payments.payments WHERE amount <= 0"
+
+  - id: dq_payments_004
+    subdomain: payments
+    table: payments.payments
+    column: rail
+    rule_type: distribution
+    expectation: "rail values are in the allowed enum {card, ach, wire, rtp} — flags drift e.g. SEPA volume"
+    severity: high
+    sql: "SELECT COUNT(*) FROM payments.payments WHERE rail NOT IN ('card','ach','wire','rtp')"
+
+  - id: dq_payments_005
+    subdomain: payments
+    table: payments.payments
+    column: merchant_id
+    rule_type: foreign_key
+    expectation: "every payments.merchant_id resolves in payments.merchants"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM payments.payments p LEFT JOIN payments.merchants m ON p.merchant_id = m.merchant_id WHERE p.merchant_id IS NOT NULL AND m.merchant_id IS NULL"
+
+  - id: dq_payments_006
+    subdomain: payments
+    table: payments.settlements
+    column: settled_at
+    rule_type: freshness
+    expectation: "no settlements dated in the future relative to most-recent auth"
+    severity: high
+    sql: "SELECT COUNT(*) FROM payments.settlements WHERE settled_at > (SELECT MAX(auth_ts) + INTERVAL '7 days' FROM payments.payments)"
+
+  - id: dq_payments_007
+    subdomain: payments
+    table: payments.disputes
+    column: amount
+    rule_type: not_null
+    expectation: "dispute amount captured for every dispute"
+    severity: high
+    sql: "SELECT COUNT(*) FROM payments.disputes WHERE amount IS NULL"
+
+  # ---------- p_and_c_claims (Insurance) ----------
+  - id: dq_claims_001
+    subdomain: p_and_c_claims
+    table: p_and_c_claims.claims
+    column: claim_id
+    rule_type: uniqueness
+    expectation: "claim_id is unique"
+    severity: critical
+    sql: "SELECT (SELECT COUNT(*) FROM p_and_c_claims.claims) - (SELECT COUNT(DISTINCT claim_id) FROM p_and_c_claims.claims)"
+
+  - id: dq_claims_002
+    subdomain: p_and_c_claims
+    table: p_and_c_claims.claims
+    column: incurred_amount
+    rule_type: range
+    expectation: "incurred amount must be non-negative"
+    severity: high
+    sql: "SELECT COUNT(*) FROM p_and_c_claims.claims WHERE incurred_amount < 0"
+
+  - id: dq_claims_003
+    subdomain: p_and_c_claims
+    table: p_and_c_claims.claims
+    column: policy_id
+    rule_type: foreign_key
+    expectation: "every claim has a resolvable policy"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM p_and_c_claims.claims c LEFT JOIN p_and_c_claims.policies p ON c.policy_id = p.policy_id WHERE p.policy_id IS NULL"
+
+  - id: dq_claims_004
+    subdomain: p_and_c_claims
+    table: p_and_c_claims.claims
+    column: status
+    rule_type: distribution
+    expectation: "claim status is in {open, closed_paid, closed_denied, in_litigation}"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM p_and_c_claims.claims WHERE status NOT IN ('open','closed_paid','closed_denied','in_litigation')"
+
+  - id: dq_claims_005
+    subdomain: p_and_c_claims
+    table: p_and_c_claims.claims
+    column: loss_date
+    rule_type: freshness
+    expectation: "loss_date no more than 1 day in the future"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM p_and_c_claims.claims WHERE loss_date > CURRENT_DATE + INTERVAL '1 day'"
+
+  # ---------- demand_planning (CPG) ----------
+  - id: dq_demand_001
+    subdomain: demand_planning
+    table: demand_planning.forecasts
+    column: forecast_qty
+    rule_type: range
+    expectation: "forecast_qty non-negative"
+    severity: high
+    sql: "SELECT COUNT(*) FROM demand_planning.forecasts WHERE forecast_qty < 0"
+
+  - id: dq_demand_002
+    subdomain: demand_planning
+    table: demand_planning.forecasts
+    column: forecast_id
+    rule_type: uniqueness
+    expectation: "forecast_id is unique"
+    severity: critical
+    sql: "SELECT (SELECT COUNT(*) FROM demand_planning.forecasts) - (SELECT COUNT(DISTINCT forecast_id) FROM demand_planning.forecasts)"
+
+  - id: dq_demand_003
+    subdomain: demand_planning
+    table: demand_planning.forecast_errors
+    column: forecast_id
+    rule_type: foreign_key
+    expectation: "every error row points to a real forecast"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM demand_planning.forecast_errors e LEFT JOIN demand_planning.forecasts f ON e.forecast_id = f.forecast_id WHERE f.forecast_id IS NULL"
+
+  - id: dq_demand_004
+    subdomain: demand_planning
+    table: demand_planning.historical_demand
+    column: quantity
+    rule_type: range
+    expectation: "historical quantity non-negative"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM demand_planning.historical_demand WHERE quantity < 0"
+
+  # ---------- hotel_revenue_management (TTH) ----------
+  - id: dq_hotel_001
+    subdomain: hotel_revenue_management
+    table: hotel_revenue_management.reservations
+    column: arrival_date
+    rule_type: not_null
+    expectation: "arrival_date populated for every reservation"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM hotel_revenue_management.reservations WHERE arrival_date IS NULL"
+
+  - id: dq_hotel_002
+    subdomain: hotel_revenue_management
+    table: hotel_revenue_management.reservations
+    column: nights
+    rule_type: range
+    expectation: "nights between 1 and 90 inclusive"
+    severity: high
+    sql: "SELECT COUNT(*) FROM hotel_revenue_management.reservations WHERE nights < 1 OR nights > 90"
+
+  - id: dq_hotel_003
+    subdomain: hotel_revenue_management
+    table: hotel_revenue_management.daily_pricing
+    column: rate
+    rule_type: range
+    expectation: "daily rate strictly positive"
+    severity: high
+    sql: "SELECT COUNT(*) FROM hotel_revenue_management.daily_pricing WHERE rate <= 0"
+
+  - id: dq_hotel_004
+    subdomain: hotel_revenue_management
+    table: hotel_revenue_management.reservations
+    column: rate_plan_id
+    rule_type: foreign_key
+    expectation: "rate_plan_id resolves in rate_plans"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM hotel_revenue_management.reservations r LEFT JOIN hotel_revenue_management.rate_plans rp ON r.rate_plan_id = rp.rate_plan_id WHERE rp.rate_plan_id IS NULL"
+
+  # ---------- merchandising (Retail) ----------
+  - id: dq_merch_001
+    subdomain: merchandising
+    table: merchandising.sales_lines
+    column: extended_amount
+    rule_type: range
+    expectation: "extended_amount non-negative"
+    severity: high
+    sql: "SELECT COUNT(*) FROM merchandising.sales_lines WHERE extended_amount < 0"
+
+  - id: dq_merch_002
+    subdomain: merchandising
+    table: merchandising.products
+    column: sku
+    rule_type: uniqueness
+    expectation: "sku is unique in products"
+    severity: critical
+    sql: "SELECT (SELECT COUNT(*) FROM merchandising.products) - (SELECT COUNT(DISTINCT sku) FROM merchandising.products)"
+
+  - id: dq_merch_003
+    subdomain: merchandising
+    table: merchandising.sales_lines
+    column: sku
+    rule_type: foreign_key
+    expectation: "every sale resolves to a product"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM merchandising.sales_lines s LEFT JOIN merchandising.products p ON s.sku = p.sku WHERE p.sku IS NULL"
+
+  - id: dq_merch_004
+    subdomain: merchandising
+    table: merchandising.prices
+    column: list_price
+    rule_type: range
+    expectation: "list_price strictly positive"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM merchandising.prices WHERE list_price <= 0"
+
+  # ---------- mes_quality (Manufacturing) ----------
+  - id: dq_mes_001
+    subdomain: mes_quality
+    table: mes_quality.work_orders
+    column: qty_produced
+    rule_type: range
+    expectation: "qty_produced does not exceed qty_planned by more than 10%"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM mes_quality.work_orders WHERE qty_produced > qty_planned * 1.1"
+
+  - id: dq_mes_002
+    subdomain: mes_quality
+    table: mes_quality.sensor_readings
+    column: value
+    rule_type: not_null
+    expectation: "sensor reading value populated"
+    severity: high
+    sql: "SELECT COUNT(*) FROM mes_quality.sensor_readings WHERE value IS NULL"
+
+  - id: dq_mes_003
+    subdomain: mes_quality
+    table: mes_quality.defects
+    column: severity
+    rule_type: distribution
+    expectation: "defect severity is in {minor, major, critical}"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM mes_quality.defects WHERE severity NOT IN ('minor','major','critical')"
+
+  # ---------- pharmacovigilance (LifeSciences) ----------
+  - id: dq_pv_001
+    subdomain: pharmacovigilance
+    table: pharmacovigilance.cases
+    column: case_id
+    rule_type: uniqueness
+    expectation: "case_id is unique"
+    severity: critical
+    sql: "SELECT (SELECT COUNT(*) FROM pharmacovigilance.cases) - (SELECT COUNT(DISTINCT case_id) FROM pharmacovigilance.cases)"
+
+  - id: dq_pv_002
+    subdomain: pharmacovigilance
+    table: pharmacovigilance.cases
+    column: seriousness
+    rule_type: distribution
+    expectation: "seriousness in {serious, non_serious, life_threatening, death}"
+    severity: high
+    sql: "SELECT COUNT(*) FROM pharmacovigilance.cases WHERE seriousness NOT IN ('serious','non_serious','life_threatening','death')"
+
+  - id: dq_pv_003
+    subdomain: pharmacovigilance
+    table: pharmacovigilance.adverse_events
+    column: case_id
+    rule_type: foreign_key
+    expectation: "every adverse event maps to a case"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM pharmacovigilance.adverse_events ae LEFT JOIN pharmacovigilance.cases c ON ae.case_id = c.case_id WHERE c.case_id IS NULL"
+
+  - id: dq_pv_004
+    subdomain: pharmacovigilance
+    table: pharmacovigilance.cases
+    column: received_at
+    rule_type: freshness
+    expectation: "received_at not in the future"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM pharmacovigilance.cases WHERE received_at > CAST(CURRENT_TIMESTAMP AS TIMESTAMP)"

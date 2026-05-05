@@ -15,6 +15,14 @@ kpis:
   - { id: dt.kpi.event_volume, name: Daily Event Volume, formula: events_per_day, unit: count, direction: target_band }
   - { id: dt.kpi.dq_pass_rate, name: Schema Conformance, formula: valid / total_events, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Device, description: 'Connected device' }
+    - { name: Telemetry, description: 'Device telemetry sample' }
+    - { name: Event, description: 'Device event' }
+    - { name: Firmware, description: 'Firmware version' }
+    - { name: Cohort, description: 'Telemetry cohort' }
+
 sourceSystems:
   - { vendor: Datadog, product: Observability, category: Observability }
   - { vendor: Snowflake, product: Snowpipe Streaming, category: Cloud Warehouse }

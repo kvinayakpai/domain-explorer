@@ -15,6 +15,14 @@ kpis:
   - { id: saas.kpi.cac_payback, name: CAC Payback, formula: cac / monthly_gross_margin, unit: months, direction: lower_is_better }
   - { id: saas.kpi.ltv_cac, name: LTV / CAC, formula: ltv / cac, unit: ratio, direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Account, description: 'Tenant account' }
+    - { name: Subscription, description: 'Active subscription' }
+    - { name: MrrMovement, description: 'MRR movement event' }
+    - { name: Churn, description: 'Churn event' }
+    - { name: UsageMetric, description: 'Usage metric reading' }
+
 sourceSystems:
   - { vendor: Salesforce, product: Sales Cloud, category: CRM }
   - { vendor: HubSpot, product: Sales Hub, category: CRM }

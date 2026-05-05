@@ -1,0 +1,36 @@
+id: prepaid_cards
+name: Prepaid Cards
+vertical: BFSI
+oneLiner: Open and closed-loop prepaid card programs spanning gift, payroll, and benefits.
+
+personas:
+  - { name: 'Head of Prepaid', title: 'Head of Prepaid', level: VP }
+  - { name: 'Program Manager', title: 'Program Manager', level: Manager }
+  - { name: 'Compliance Officer', title: 'Compliance Officer', level: Manager }
+
+kpis:
+  - { id: pp.kpi.load_volume, name: 'Load Volume', formula: 'sum(loads)', unit: 'USD', direction: higher_is_better }
+  - { id: pp.kpi.breakage, name: 'Breakage Rate', formula: 'unspent / loaded', unit: '%', direction: target_band }
+  - { id: pp.kpi.activation_rate, name: 'Activation Rate', formula: 'activated / issued', unit: '%', direction: higher_is_better }
+  - { id: pp.kpi.fraud_loss_bps, name: 'Fraud Loss BPS', formula: 'fraud_loss / spend', unit: 'bps', direction: lower_is_better }
+  - { id: pp.kpi.cards_in_force, name: 'Cards In Force', formula: 'count(active_cards)', unit: 'cards', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: PrepaidCard, description: 'Prepaid card account' }
+    - { name: Load, description: 'Funding load event' }
+    - { name: Spend, description: 'Authorized spend' }
+    - { name: Program, description: 'Issuer program definition' }
+    - { name: KycResult, description: 'KYC outcome on cardholder' }
+
+sourceSystems:
+  - { vendor: 'Galileo', product: 'Processing', category: 'Card Processor' }
+  - { vendor: 'Marqeta', product: 'Platform', category: 'Card Processor' }
+  - { vendor: 'i2c', product: 'Issuer Processing', category: 'Card Processor' }
+  - { vendor: 'Visa', product: 'DPS', category: 'Scheme Network' }
+  - { vendor: 'Mastercard', product: 'Send', category: 'Disbursement Rail' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'ISO8583', protocol: 'TCP', auth: 'PKI/MAC' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }

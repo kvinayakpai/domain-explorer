@@ -1,0 +1,36 @@
+id: network_slicing_5g
+name: 5G Network Slicing
+vertical: Telecom
+oneLiner: Lifecycle management of 5G network slices for enterprise SLAs and consumer use cases.
+
+personas:
+  - { name: 'Head of 5G', title: 'Head of 5G Programs', level: VP }
+  - { name: 'Slice Architect', title: '5G Slice Architect', level: Director }
+  - { name: 'SLA Operations', title: 'SLA Operations Lead', level: Manager }
+
+kpis:
+  - { id: ns.kpi.active_slices, name: 'Active Slices', formula: 'count(active_slices)', unit: 'slices', direction: higher_is_better }
+  - { id: ns.kpi.slice_sla_met, name: 'Slice SLA Compliance', formula: 'compliant / total', unit: '%', direction: higher_is_better }
+  - { id: ns.kpi.provision_time, name: 'Slice Provision Time', formula: 'avg(provisioned - requested)', unit: 'minutes', direction: lower_is_better }
+  - { id: ns.kpi.slice_arpu, name: 'Slice ARPU', formula: 'slice_revenue / slices', unit: 'USD', direction: higher_is_better }
+  - { id: ns.kpi.contention, name: 'Slice Contention', formula: 'contention_events', unit: 'events', direction: lower_is_better }
+
+dataModel:
+  entities:
+    - { name: Slice, description: '5G network slice' }
+    - { name: SliceTemplate, description: 'Slice template definition' }
+    - { name: EnterpriseTenant, description: 'Slice consumer' }
+    - { name: SlaContract, description: 'Slice SLA contract' }
+    - { name: SliceMetric, description: 'Per-slice metric' }
+
+sourceSystems:
+  - { vendor: 'Ericsson', product: 'Dynamic Orchestration', category: '5G Core' }
+  - { vendor: 'Nokia', product: 'CloudBand', category: '5G Core' }
+  - { vendor: 'Mavenir', product: 'MAVCore', category: '5G Core' }
+  - { vendor: 'Cisco', product: 'Crosswork', category: 'Network Automation' }
+  - { vendor: 'Red Hat', product: 'OpenShift', category: 'Cloud-Native Platform' }
+
+connectors:
+  - { type: '3GPP REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'NetConf/YANG', protocol: 'NetConf', auth: 'SSH' }
+  - { type: 'Kafka', protocol: 'Kafka', auth: 'SASL/SCRAM' }

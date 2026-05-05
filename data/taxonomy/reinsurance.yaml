@@ -1,0 +1,37 @@
+id: reinsurance
+name: Reinsurance
+vertical: Insurance
+oneLiner: Treaty and facultative reinsurance ceded to balance net retention and capital.
+
+personas:
+  - { name: 'Head of Reinsurance', title: 'Head of Reinsurance', level: VP }
+  - { name: 'Treaty Manager', title: 'Treaty Manager', level: Director }
+  - { name: 'Cedent Accountant', title: 'Reinsurance Accountant', level: Manager }
+
+kpis:
+  - { id: re.kpi.ceded_ratio, name: 'Ceded Premium Ratio', formula: 'ceded / gross_premium', unit: '%', direction: target_band }
+  - { id: re.kpi.recoverables, name: 'Reinsurance Recoverables', formula: 'sum(recoverable)', unit: 'USD', direction: higher_is_better }
+  - { id: re.kpi.commission_ratio, name: 'Ceding Commission Ratio', formula: 'commission / ceded_premium', unit: '%', direction: target_band }
+  - { id: re.kpi.dso, name: 'Reinsurer DSO', formula: 'avg(days_outstanding)', unit: 'days', direction: lower_is_better }
+  - { id: re.kpi.cat_concentration, name: 'CAT Concentration', formula: 'largest_treaty / total', unit: '%', direction: lower_is_better }
+
+dataModel:
+  entities:
+    - { name: Treaty, description: 'Reinsurance treaty contract' }
+    - { name: Cession, description: 'Premium cession by treaty' }
+    - { name: Recovery, description: 'Reinsurance recovery on a claim' }
+    - { name: Reinsurer, description: 'Counterparty reinsurer' }
+    - { name: Layer, description: 'Reinsurance layer with attachment and limit' }
+    - { name: Bordereau, description: 'Periodic statement of cessions' }
+
+sourceSystems:
+  - { vendor: 'SAP', product: 'FS-RI', category: 'Reinsurance' }
+  - { vendor: 'DXC', product: 'SICS', category: 'Reinsurance' }
+  - { vendor: 'Sapiens', product: 'ReinsuranceMaster', category: 'Reinsurance' }
+  - { vendor: 'Bermuda Stat', product: 'Filings', category: 'Regulatory' }
+  - { vendor: 'AIR Worldwide', product: 'Touchstone', category: 'CAT Modeling' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }
+  - { type: 'EDI', protocol: 'SFTP', auth: 'SSH key' }

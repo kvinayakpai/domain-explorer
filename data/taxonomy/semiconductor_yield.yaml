@@ -15,6 +15,14 @@ kpis:
   - { id: yld.kpi.line_yield, name: Line Yield, formula: completed_wafers / started_wafers, unit: "%", direction: higher_is_better }
   - { id: yld.kpi.cycle_time, name: Wafer Cycle Time, formula: avg(out_dt - start_dt), unit: days, direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Wafer, description: 'Manufactured wafer' }
+    - { name: Die, description: 'Individual die' }
+    - { name: TestRun, description: 'Wafer/die test run' }
+    - { name: DefectMap, description: 'Defect map' }
+    - { name: ProcessStep, description: 'Fab process step' }
+
 sourceSystems:
   - { vendor: KLA, product: K-Klarity, category: Defect Inspection }
   - { vendor: Applied Materials, product: SmartFactory, category: MES }

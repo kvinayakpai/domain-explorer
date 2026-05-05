@@ -1,0 +1,37 @@
+id: asset_management
+name: Asset Management
+vertical: BFSI
+oneLiner: 'Institutional and retail asset management: portfolios, IBOR, performance, and fees.'
+
+personas:
+  - { name: 'CIO', title: 'Chief Investment Officer', level: C-suite }
+  - { name: 'Head of Performance', title: 'Head of Performance', level: Director }
+  - { name: 'Portfolio Manager', title: 'Senior Portfolio Manager', level: Manager }
+
+kpis:
+  - { id: am.kpi.aum, name: 'Assets Under Management', formula: 'sum(market_value)', unit: 'USD', direction: higher_is_better }
+  - { id: am.kpi.alpha, name: 'Alpha vs Benchmark', formula: 'return - benchmark', unit: 'bps', direction: higher_is_better }
+  - { id: am.kpi.sharpe, name: 'Sharpe Ratio', formula: '(return-rf)/stddev', unit: 'ratio', direction: higher_is_better }
+  - { id: am.kpi.te, name: 'Tracking Error', formula: 'stddev(return - benchmark)', unit: 'bps', direction: target_band }
+  - { id: am.kpi.fee_yield, name: 'Fee Yield', formula: 'fees / aum', unit: 'bps', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: Portfolio, description: 'Managed portfolio' }
+    - { name: Holding, description: 'Position in an instrument' }
+    - { name: Trade, description: 'Buy/sell instruction' }
+    - { name: Benchmark, description: 'Reference benchmark' }
+    - { name: Performance, description: 'Daily performance metrics' }
+    - { name: Mandate, description: 'Investment mandate definition' }
+
+sourceSystems:
+  - { vendor: 'BlackRock', product: 'Aladdin', category: 'Investment Platform' }
+  - { vendor: 'SimCorp', product: 'Dimension', category: 'IBOR' }
+  - { vendor: 'Charles River', product: 'CRD', category: 'OMS' }
+  - { vendor: 'FactSet', product: 'Workstation', category: 'Analytics' }
+  - { vendor: 'Bloomberg', product: 'AIM', category: 'Order Mgmt' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'FIX', protocol: 'TCP', auth: 'TLS' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }

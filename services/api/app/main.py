@@ -16,6 +16,8 @@ from metadata import (
 )
 from pydantic import BaseModel
 
+from .dq import router as dq_router
+
 app = FastAPI(
     title="Domain Explorer API",
     version="0.1.0",
@@ -129,6 +131,4 @@ def kg_query(req: KgQueryRequest) -> KgQueryResponse:
     """Stub — returns an empty result set with a note. Wire to Neo4j later."""
     return KgQueryResponse(
         rows=[],
-        note="KG backend not yet wired. Requested cypher echoed: "
-        + req.cypher[:200],
-    )
+        note="KG backend not yet wired. Requested cypher echoed:

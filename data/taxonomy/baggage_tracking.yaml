@@ -1,0 +1,36 @@
+id: baggage_tracking
+name: Baggage Tracking
+vertical: TTH
+oneLiner: End-to-end baggage handling and tracking for airlines and ground handlers.
+
+personas:
+  - { name: 'Head of Ground Ops', title: 'Head of Ground Operations', level: Director }
+  - { name: 'Baggage Services Manager', title: 'Baggage Services Manager', level: Manager }
+  - { name: 'Lost & Found Lead', title: 'Lost & Found Lead', level: Manager }
+
+kpis:
+  - { id: bg.kpi.mishandled_rate, name: 'Mishandled Baggage Rate', formula: 'mishandled / 1000_pax', unit: 'per_mille', direction: lower_is_better }
+  - { id: bg.kpi.delivery_time, name: 'Bag Delivery Time', formula: 'avg(delivered - landed)', unit: 'minutes', direction: lower_is_better }
+  - { id: bg.kpi.lost_rate, name: 'Lost Baggage Rate', formula: 'lost / total', unit: '%', direction: lower_is_better }
+  - { id: bg.kpi.scan_coverage, name: 'Bag Scan Coverage', formula: 'scanned / handled', unit: '%', direction: higher_is_better }
+  - { id: bg.kpi.transfer_success, name: 'Transfer Success', formula: 'made_connection / transfers', unit: '%', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: Baggage, description: 'Tagged baggage item' }
+    - { name: ScanEvent, description: 'Bag scan at a touchpoint' }
+    - { name: Flight, description: 'Inbound or outbound flight' }
+    - { name: PnrLink, description: 'Bag - PNR linkage' }
+    - { name: MissingBagFile, description: 'WorldTracer file' }
+
+sourceSystems:
+  - { vendor: 'SITA', product: 'WorldTracer', category: 'Baggage Tracing' }
+  - { vendor: 'Amadeus', product: 'Altea', category: 'DCS' }
+  - { vendor: 'Sabre', product: 'SabreSonic', category: 'DCS' }
+  - { vendor: 'BagsID', product: 'Bag Recognition', category: 'Computer Vision' }
+  - { vendor: 'IATA', product: 'Resolution 753', category: 'Standards' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'Type B', protocol: 'Messaging', auth: 'SITA TYPE B' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }

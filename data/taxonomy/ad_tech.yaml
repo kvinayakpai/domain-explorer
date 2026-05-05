@@ -15,6 +15,14 @@ kpis:
   - { id: ad.kpi.iva_rate, name: Invalid Traffic Rate, formula: ivt_impressions / total_impressions, unit: "%", direction: lower_is_better }
   - { id: ad.kpi.attributed_conversions, name: Attributed Conversions, formula: count(attributed_conversions), unit: conversions, direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Campaign, description: 'Advertiser campaign' }
+    - { name: Creative, description: 'Creative asset' }
+    - { name: Audience, description: 'Targeting audience segment' }
+    - { name: Conversion, description: 'Tracked conversion event' }
+    - { name: Bid, description: 'Bid price/decision record' }
+
 sourceSystems:
   - { vendor: Google, product: Ad Manager, category: SSP/Ad Server }
   - { vendor: The Trade Desk, product: TTD Platform, category: DSP }

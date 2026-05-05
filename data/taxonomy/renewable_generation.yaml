@@ -1,0 +1,36 @@
+id: renewable_generation
+name: Renewable Generation
+vertical: Energy
+oneLiner: 'Wind, solar, and hybrid generation: forecasting, dispatch, and curtailment.'
+
+personas:
+  - { name: 'Head of Renewables', title: 'Head of Renewables', level: VP }
+  - { name: 'Forecasting Lead', title: 'Forecasting Lead', level: Manager }
+  - { name: 'Plant Operations', title: 'Plant Operations Manager', level: Manager }
+
+kpis:
+  - { id: rg.kpi.capacity_factor, name: 'Capacity Factor', formula: 'actual_mwh / nameplate_max', unit: '%', direction: higher_is_better }
+  - { id: rg.kpi.forecast_mape, name: 'Forecast MAPE', formula: 'avg(|actual-forecast|/actual)', unit: '%', direction: lower_is_better }
+  - { id: rg.kpi.curtailment, name: 'Curtailment Volume', formula: 'sum(curtailed_mwh)', unit: 'MWh', direction: lower_is_better }
+  - { id: rg.kpi.availability, name: 'Plant Availability', formula: 'up_hours / total_hours', unit: '%', direction: higher_is_better }
+  - { id: rg.kpi.lcoe, name: 'Levelised Cost of Energy', formula: 'cost / mwh', unit: 'USD/MWh', direction: lower_is_better }
+
+dataModel:
+  entities:
+    - { name: GenerationAsset, description: 'Wind/solar asset' }
+    - { name: ProductionReading, description: 'Generation telemetry' }
+    - { name: Forecast, description: 'Hourly generation forecast' }
+    - { name: CurtailmentEvent, description: 'Curtailment instruction' }
+    - { name: Weather, description: 'Weather observation' }
+
+sourceSystems:
+  - { vendor: 'GE', product: 'Renewable Hybrid', category: 'SCADA' }
+  - { vendor: 'Vestas', product: 'CMS', category: 'Wind SCADA' }
+  - { vendor: 'AVEVA', product: 'PI System', category: 'Historian' }
+  - { vendor: 'DNV', product: 'WindFarmer', category: 'Forecasting' }
+  - { vendor: 'Vaisala', product: 'Forecast', category: 'Weather Data' }
+
+connectors:
+  - { type: 'OPC-UA', protocol: 'TCP', auth: 'Cert' }
+  - { type: 'DNP3', protocol: 'TCP', auth: 'Mutual Auth' }
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }

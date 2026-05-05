@@ -15,6 +15,14 @@ kpis:
   - { id: clm.kpi.obligation_compliance, name: Obligation On-Time Rate, formula: completed_on_time / due_obligations, unit: "%", direction: higher_is_better }
   - { id: clm.kpi.template_use, name: Template Adoption, formula: template_contracts / total, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Contract, description: 'Master contract record' }
+    - { name: Clause, description: 'Reusable clause' }
+    - { name: Obligation, description: 'Contractual obligation' }
+    - { name: Renewal, description: 'Contract renewal' }
+    - { name: Counterparty, description: 'Contracting counterparty' }
+
 sourceSystems:
   - { vendor: Ironclad, product: CLM, category: CLM }
   - { vendor: DocuSign, product: CLM, category: CLM }

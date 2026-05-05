@@ -15,6 +15,14 @@ kpis:
   - { id: mp.kpi.dispute_rate, name: Order Dispute Rate, formula: disputes / orders, unit: "%", direction: lower_is_better }
   - { id: mp.kpi.payout_latency, name: Seller Payout Latency, formula: avg(payout_ts - order_complete_ts), unit: hours, direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Seller, description: 'Marketplace seller' }
+    - { name: Listing, description: 'Product listing' }
+    - { name: Order, description: 'Marketplace order' }
+    - { name: Payout, description: 'Seller payout' }
+    - { name: Dispute, description: 'Buyer-seller dispute' }
+
 sourceSystems:
   - { vendor: Stripe, product: Connect, category: Payouts }
   - { vendor: Mirakl, product: Marketplace Platform, category: Marketplace SaaS }

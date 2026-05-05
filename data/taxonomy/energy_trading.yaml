@@ -15,6 +15,14 @@ kpis:
   - { id: et.kpi.position_limit_breaches, name: Position Limit Breaches, formula: count(breach_events), unit: events, direction: lower_is_better }
   - { id: et.kpi.imbalance_cost, name: Imbalance Cost, formula: imbalance_volume * imbalance_price, unit: USD, direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Trade, description: 'Energy trade' }
+    - { name: Position, description: 'Net position' }
+    - { name: Schedule, description: 'Delivery schedule' }
+    - { name: MarketPrice, description: 'Market price tick' }
+    - { name: RiskMeasure, description: 'Calculated risk measure' }
+
 sourceSystems:
   - { vendor: ION, product: Allegro CTRM, category: CTRM }
   - { vendor: Openlink, product: Endur, category: CTRM }

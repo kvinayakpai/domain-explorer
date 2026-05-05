@@ -15,6 +15,15 @@ kpis:
   - { id: aml.kpi.kyc_refresh_overdue, name: KYC Refresh Overdue, formula: overdue / total_customers, unit: "%", direction: lower_is_better }
   - { id: aml.kpi.true_positive_rate, name: Sanctions True Positive Rate, formula: true_hits / total_hits, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: CustomerDueDiligence, description: 'CDD record' }
+    - { name: SanctionsHit, description: 'Sanctions screening hit' }
+    - { name: PepScreening, description: 'Politically exposed person screening' }
+    - { name: TransactionAlert, description: 'Transaction monitoring alert' }
+    - { name: SAR, description: 'Suspicious activity report' }
+    - { name: KycRefresh, description: 'Periodic KYC refresh' }
+
 sourceSystems:
   - { vendor: NICE Actimize, product: SAM, category: Transaction Monitoring }
   - { vendor: Oracle, product: Financial Crime and Compliance, category: AML Platform }

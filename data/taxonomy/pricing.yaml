@@ -15,6 +15,14 @@ kpis:
   - { id: pric.kpi.margin_pct, name: Margin %, formula: gross_margin / net_sales, unit: "%", direction: higher_is_better }
   - { id: pric.kpi.promo_lift, name: Promo Lift, formula: (promo_units - baseline_units) / baseline_units, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Product, description: 'Priced product / SKU' }
+    - { name: PriceList, description: 'Active price list' }
+    - { name: Promotion, description: 'Promotion or markdown' }
+    - { name: CompetitorPrice, description: 'Observed competitor price' }
+    - { name: PriceChange, description: 'Price change event' }
+
 sourceSystems:
   - { vendor: PROS, product: Smart Price Optimization, category: Pricing }
   - { vendor: Vendavo, product: Profit Analyzer, category: Pricing }

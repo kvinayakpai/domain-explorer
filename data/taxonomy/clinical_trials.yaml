@@ -15,6 +15,15 @@ kpis:
   - { id: ct.kpi.query_resolution_time, name: Data Query Resolution Time, formula: avg(closed_ts - opened_ts), unit: days, direction: lower_is_better }
   - { id: ct.kpi.dropout_rate, name: Patient Dropout Rate, formula: dropouts / enrolled, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Trial, description: 'Clinical trial' }
+    - { name: Site, description: 'Investigator site' }
+    - { name: Subject, description: 'Enrolled subject' }
+    - { name: Visit, description: 'Trial visit' }
+    - { name: AdverseEvent, description: 'Reported adverse event' }
+    - { name: EDCForm, description: 'Electronic data capture form' }
+
 sourceSystems:
   - { vendor: Veeva, product: Vault Clinical, category: eClinical Suite }
   - { vendor: Medidata, product: Rave EDC, category: EDC }

@@ -15,6 +15,15 @@ kpis:
   - { id: wm.kpi.fee_compression, name: Fee Compression, formula: avg_fee_bps_qoq_delta, unit: bps, direction: target_band }
   - { id: wm.kpi.client_attrition, name: Client Attrition, formula: lost_clients / total_clients, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Client, description: 'Wealth client / household' }
+    - { name: Account, description: 'Investment account' }
+    - { name: Holding, description: 'Account holding' }
+    - { name: Plan, description: 'Financial plan' }
+    - { name: Goal, description: 'Client goal' }
+    - { name: AdvisorReview, description: 'Advisor review record' }
+
 sourceSystems:
   - { vendor: SS&C, product: Black Diamond, category: Portfolio Management }
   - { vendor: Envestnet, product: Tamarac, category: Wealth Platform }

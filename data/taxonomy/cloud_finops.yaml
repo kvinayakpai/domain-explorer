@@ -15,6 +15,15 @@ kpis:
   - { id: fo.kpi.idle_spend, name: Idle Resource Spend, formula: idle_cost / total_cost, unit: "%", direction: lower_is_better }
   - { id: fo.kpi.budget_variance, name: Budget Variance, formula: actual / forecast - 1, unit: "%", direction: target_band }
 
+dataModel:
+  entities:
+    - { name: Account, description: 'Cloud billing account' }
+    - { name: Resource, description: 'Tagged cloud resource' }
+    - { name: CostLineItem, description: 'CUR/billing line item' }
+    - { name: Budget, description: 'Configured budget' }
+    - { name: Anomaly, description: 'Spend anomaly' }
+    - { name: Commitment, description: 'Reserved/savings commitment' }
+
 sourceSystems:
   - { vendor: AWS, product: Cost & Usage Report, category: Cloud Billing }
   - { vendor: Microsoft, product: Azure Cost Mgmt, category: Cloud Billing }

@@ -1,0 +1,36 @@
+id: transit_operations
+name: Transit Operations
+vertical: PublicSector
+oneLiner: 'Public transit operations: scheduling, real-time vehicle telemetry, and service alerts.'
+
+personas:
+  - { name: 'Director of Transit Operations', title: 'Director of Transit Operations', level: Director }
+  - { name: 'Service Planning Lead', title: 'Service Planning Lead', level: Manager }
+  - { name: 'Operations Control Center', title: 'OCC Supervisor', level: Manager }
+
+kpis:
+  - { id: to.kpi.on_time, name: 'On-Time Performance', formula: 'on_time / arrivals', unit: '%', direction: higher_is_better }
+  - { id: to.kpi.headway_adherence, name: 'Headway Adherence', formula: 'within_band / observations', unit: '%', direction: higher_is_better }
+  - { id: to.kpi.ridership, name: 'Daily Ridership', formula: 'sum(boardings)', unit: 'passengers', direction: higher_is_better }
+  - { id: to.kpi.miles_per_breakdown, name: 'Miles per Breakdown', formula: 'miles / breakdowns', unit: 'miles', direction: higher_is_better }
+  - { id: to.kpi.crowding, name: 'Vehicle Crowding', formula: 'crowded_trips / trips', unit: '%', direction: lower_is_better }
+
+dataModel:
+  entities:
+    - { name: Route, description: 'Transit route' }
+    - { name: Trip, description: 'Scheduled trip' }
+    - { name: Vehicle, description: 'Transit vehicle' }
+    - { name: Stop, description: 'Boarding stop' }
+    - { name: StopEvent, description: 'Vehicle arrival/departure event' }
+
+sourceSystems:
+  - { vendor: 'Trapeze', product: 'FX', category: 'Scheduling' }
+  - { vendor: 'INIT', product: 'MOBILE', category: 'ITS' }
+  - { vendor: 'Cubic', product: 'NextBus', category: 'Real-time Info' }
+  - { vendor: 'Conduent', product: 'Fare', category: 'Fare Collection' }
+  - { vendor: 'Swiftly', product: 'Transit', category: 'Transit Analytics' }
+
+connectors:
+  - { type: 'GTFS-RT', protocol: 'HTTPS', auth: 'Token' }
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'Kafka', protocol: 'Kafka', auth: 'SASL/SCRAM' }

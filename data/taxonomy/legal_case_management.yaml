@@ -1,0 +1,36 @@
+id: legal_case_management
+name: Legal Case Management
+vertical: ProfessionalServices
+oneLiner: 'Matter management for law firms and legal departments: intake, conflicts, and time capture.'
+
+personas:
+  - { name: 'Managing Partner', title: 'Managing Partner', level: C-suite }
+  - { name: 'General Counsel', title: 'General Counsel', level: VP }
+  - { name: 'Practice Group Lead', title: 'Practice Group Lead', level: Director }
+
+kpis:
+  - { id: lcm.kpi.realisation, name: 'Realisation Rate', formula: 'collected / standard_billable', unit: '%', direction: higher_is_better }
+  - { id: lcm.kpi.utilisation, name: 'Lawyer Utilisation', formula: 'billable_hours / available', unit: '%', direction: higher_is_better }
+  - { id: lcm.kpi.cycle_time, name: 'Matter Cycle Time', formula: 'avg(closed - opened)', unit: 'days', direction: lower_is_better }
+  - { id: lcm.kpi.wip, name: 'Work in Progress', formula: 'sum(unbilled)', unit: 'USD', direction: target_band }
+  - { id: lcm.kpi.nps, name: 'Client NPS', formula: 'promoters - detractors', unit: 'NPS', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: Matter, description: 'Legal matter' }
+    - { name: Client, description: 'Client party' }
+    - { name: TimeEntry, description: 'Billable time entry' }
+    - { name: Document, description: 'Linked document' }
+    - { name: ConflictCheck, description: 'Conflict-check result' }
+
+sourceSystems:
+  - { vendor: 'Aderant', product: 'Expert', category: 'Legal PMS' }
+  - { vendor: 'Elite', product: '3E', category: 'Legal PMS' }
+  - { vendor: 'iManage', product: 'Work', category: 'Document Mgmt' }
+  - { vendor: 'NetDocuments', product: 'NetDocs', category: 'Document Mgmt' }
+  - { vendor: 'Intapp', product: 'Open', category: 'Conflicts/Risk' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }
+  - { type: 'ODBC', protocol: 'TCP', auth: 'DB cred' }

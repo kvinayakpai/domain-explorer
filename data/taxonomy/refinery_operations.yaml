@@ -15,6 +15,14 @@ kpis:
   - { id: ref.kpi.giveaway, name: Blend Giveaway, formula: avg(spec_giveaway_pct), unit: "%", direction: lower_is_better }
   - { id: ref.kpi.turnaround_overrun, name: Turnaround Schedule Overrun, formula: actual_days - planned_days, unit: days, direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Unit, description: 'Process unit' }
+    - { name: Stream, description: 'Hydrocarbon stream' }
+    - { name: Yield, description: 'Yield record' }
+    - { name: LabSample, description: 'Lab sample analysis' }
+    - { name: ShutdownEvent, description: 'Planned/unplanned shutdown' }
+
 sourceSystems:
   - { vendor: Aspen Technology, product: aspenONE, category: Process Optimisation }
   - { vendor: Honeywell, product: Experion PKS, category: DCS }

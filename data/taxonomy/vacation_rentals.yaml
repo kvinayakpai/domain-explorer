@@ -1,0 +1,36 @@
+id: vacation_rentals
+name: Vacation Rentals
+vertical: TTH
+oneLiner: Short-term rental marketplace operations for hosts, guests, and property managers.
+
+personas:
+  - { name: 'Head of STR', title: 'Head of Short-Term Rentals', level: VP }
+  - { name: 'Property Manager', title: 'Property Manager', level: Manager }
+  - { name: 'Trust & Safety Lead', title: 'Trust & Safety Lead', level: Manager }
+
+kpis:
+  - { id: vr.kpi.adr, name: 'Average Daily Rate', formula: 'revenue / nights_sold', unit: 'USD', direction: higher_is_better }
+  - { id: vr.kpi.occupancy, name: 'Occupancy', formula: 'nights_sold / nights_available', unit: '%', direction: higher_is_better }
+  - { id: vr.kpi.revpar, name: 'RevPAR', formula: 'revenue / nights_available', unit: 'USD', direction: higher_is_better }
+  - { id: vr.kpi.cancel_rate, name: 'Cancellation Rate', formula: 'cancelled / booked', unit: '%', direction: lower_is_better }
+  - { id: vr.kpi.host_rating, name: 'Host Rating', formula: 'avg(rating)', unit: 'stars', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: Listing, description: 'Rental listing' }
+    - { name: Reservation, description: 'Guest reservation' }
+    - { name: Host, description: 'Property host' }
+    - { name: Guest, description: 'Guest profile' }
+    - { name: Review, description: 'Post-stay review' }
+
+sourceSystems:
+  - { vendor: 'Airbnb', product: 'Host API', category: 'Marketplace' }
+  - { vendor: 'VRBO', product: 'Partner API', category: 'Marketplace' }
+  - { vendor: 'Booking.com', product: 'Connectivity', category: 'OTA' }
+  - { vendor: 'Guesty', product: 'PMS', category: 'Property Mgmt' }
+  - { vendor: 'Hostfully', product: 'PMS', category: 'Property Mgmt' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'Webhook', protocol: 'HTTPS', auth: 'HMAC' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }

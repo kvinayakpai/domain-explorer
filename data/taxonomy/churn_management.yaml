@@ -15,6 +15,14 @@ kpis:
   - { id: chrn.kpi.involuntary_churn, name: Involuntary Churn Share, formula: payment_failure_churn / total_churn, unit: "%", direction: lower_is_better }
   - { id: chrn.kpi.lifetime_months, name: Avg Subscriber Lifetime, formula: 1 / monthly_churn_rate, unit: months, direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Subscriber, description: 'Service subscriber' }
+    - { name: ChurnSignal, description: 'Predictive churn signal' }
+    - { name: Save, description: 'Retention save event' }
+    - { name: Offer, description: 'Retention offer' }
+    - { name: LifecycleEvent, description: 'Lifecycle stage event' }
+
 sourceSystems:
   - { vendor: Salesforce, product: Service Cloud, category: CRM }
   - { vendor: Pegasystems, product: Customer Decision Hub, category: CDH }

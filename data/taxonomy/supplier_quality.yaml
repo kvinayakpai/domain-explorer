@@ -15,6 +15,14 @@ kpis:
   - { id: sq.kpi.scorecard_avg, name: Avg Supplier Scorecard, formula: avg(scorecard_pts), unit: score, direction: higher_is_better }
   - { id: sq.kpi.cost_of_poor_quality, name: Cost of Poor Quality, formula: scrap_cost + rework_cost + warranty_cost, unit: USD, direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Supplier, description: 'Material supplier' }
+    - { name: Inspection, description: 'Receiving inspection' }
+    - { name: Defect, description: 'Detected defect' }
+    - { name: CapaAction, description: 'Corrective/preventive action' }
+    - { name: Scorecard, description: 'Supplier scorecard' }
+
 sourceSystems:
   - { vendor: SAP, product: QM, category: Quality Mgmt }
   - { vendor: ETQ, product: Reliance, category: QMS }

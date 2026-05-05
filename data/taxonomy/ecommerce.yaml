@@ -15,6 +15,15 @@ kpis:
   - { id: ecom.kpi.cac, name: Customer Acquisition Cost, formula: marketing_spend / new_customers, unit: USD, direction: lower_is_better }
   - { id: ecom.kpi.return_rate, name: Online Return Rate, formula: returned_units / shipped_units, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Order, description: 'Customer order' }
+    - { name: Cart, description: 'Shopping cart' }
+    - { name: Product, description: 'Product / SKU' }
+    - { name: Customer, description: 'Shopper' }
+    - { name: Inventory, description: 'Inventory snapshot' }
+    - { name: Promotion, description: 'Applied promotion' }
+
 sourceSystems:
   - { vendor: Salesforce, product: Commerce Cloud, category: Ecommerce }
   - { vendor: Adobe, product: Commerce (Magento), category: Ecommerce }

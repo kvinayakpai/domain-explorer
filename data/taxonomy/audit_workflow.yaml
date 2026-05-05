@@ -1,0 +1,36 @@
+id: audit_workflow
+name: Audit Workflow
+vertical: ProfessionalServices
+oneLiner: External and internal audit engagements with risk assessment, sampling, and reporting.
+
+personas:
+  - { name: 'Audit Partner', title: 'Audit Partner', level: C-suite }
+  - { name: 'Audit Manager', title: 'Audit Engagement Manager', level: Manager }
+  - { name: 'Senior Auditor', title: 'Senior Auditor', level: IC }
+
+kpis:
+  - { id: aw.kpi.engagement_realisation, name: 'Engagement Realisation', formula: 'collected / budget', unit: '%', direction: higher_is_better }
+  - { id: aw.kpi.sample_coverage, name: 'Sample Coverage', formula: 'sampled / population_in_scope', unit: '%', direction: higher_is_better }
+  - { id: aw.kpi.findings_density, name: 'Findings per Engagement', formula: 'findings / engagements', unit: 'findings', direction: target_band }
+  - { id: aw.kpi.timeliness, name: 'Audit Timeliness', formula: 'on_time / total', unit: '%', direction: higher_is_better }
+  - { id: aw.kpi.review_notes, name: 'Review Notes Per Engagement', formula: 'review_notes / engagements', unit: 'notes', direction: target_band }
+
+dataModel:
+  entities:
+    - { name: Engagement, description: 'Audit engagement' }
+    - { name: Workpaper, description: 'Audit workpaper' }
+    - { name: Finding, description: 'Audit finding' }
+    - { name: Sample, description: 'Sampled item' }
+    - { name: Risk, description: 'Risk register entry' }
+
+sourceSystems:
+  - { vendor: 'Wolters Kluwer', product: 'CCH Axcess', category: 'Audit Suite' }
+  - { vendor: 'Thomson Reuters', product: 'AdvanceFlow', category: 'Audit Suite' }
+  - { vendor: 'Deloitte', product: 'Omnia', category: 'Audit Suite' }
+  - { vendor: 'MindBridge', product: 'AI Auditor', category: 'Anomaly Detection' }
+  - { vendor: 'Caseware', product: 'Cloud', category: 'Audit Suite' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }
+  - { type: 'ODBC', protocol: 'TCP', auth: 'DB cred' }

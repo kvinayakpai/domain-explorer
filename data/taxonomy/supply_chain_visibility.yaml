@@ -1,0 +1,36 @@
+id: supply_chain_visibility
+name: Supply Chain Visibility
+vertical: Manufacturing
+oneLiner: End-to-end shipment, inventory, and ETA visibility across multi-tier supplier networks.
+
+personas:
+  - { name: 'Head of SCV', title: 'Head of Supply Chain Visibility', level: Director }
+  - { name: 'Logistics Manager', title: 'Logistics Manager', level: Manager }
+  - { name: 'Supplier Collaboration Lead', title: 'Supplier Collaboration Lead', level: Manager }
+
+kpis:
+  - { id: scv.kpi.eta_accuracy, name: 'ETA Accuracy', formula: 'abs(actual - eta) <= 1d', unit: '%', direction: higher_is_better }
+  - { id: scv.kpi.in_transit, name: 'In-Transit Inventory', formula: 'sum(in_transit_value)', unit: 'USD', direction: target_band }
+  - { id: scv.kpi.exception_rate, name: 'Exception Rate', formula: 'exceptions / shipments', unit: '%', direction: lower_is_better }
+  - { id: scv.kpi.dwell_time, name: 'Dwell Time', formula: 'avg(dwell)', unit: 'hours', direction: lower_is_better }
+  - { id: scv.kpi.tier2_visibility, name: 'Tier-2 Visibility', formula: 'tier2_known / total', unit: '%', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: Shipment, description: 'Inbound or outbound shipment' }
+    - { name: Milestone, description: 'Shipment milestone event' }
+    - { name: PurchaseOrder, description: 'Linked PO' }
+    - { name: Carrier, description: 'Carrier party' }
+    - { name: Site, description: 'Origin/destination site' }
+
+sourceSystems:
+  - { vendor: 'project44', product: 'Movement', category: 'Real-time Visibility' }
+  - { vendor: 'FourKites', product: 'Tracking', category: 'Real-time Visibility' }
+  - { vendor: 'E2open', product: 'Harmony', category: 'Multi-enterprise' }
+  - { vendor: 'SAP', product: 'IBP', category: 'Supply Chain' }
+  - { vendor: 'Oracle', product: 'SCM', category: 'Supply Chain' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'EDI 214', protocol: 'SFTP', auth: 'SSH key' }
+  - { type: 'Webhook', protocol: 'HTTPS', auth: 'HMAC' }

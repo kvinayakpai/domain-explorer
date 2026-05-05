@@ -1,0 +1,36 @@
+id: cross_border_payments
+name: Cross-Border Payments
+vertical: BFSI
+oneLiner: FX-aware international remittances using SWIFT, RTP, and stablecoin rails.
+
+personas:
+  - { name: 'Head of Global Payments', title: 'Head of Global Payments', level: VP }
+  - { name: 'FX Operations Lead', title: 'FX Operations Lead', level: Director }
+  - { name: 'Correspondent Banking Manager', title: 'Correspondent Banking Manager', level: Manager }
+
+kpis:
+  - { id: xb.kpi.straight_through, name: 'Cross-Border STP', formula: 'stp_count / total', unit: '%', direction: higher_is_better }
+  - { id: xb.kpi.fx_spread, name: 'FX Spread Captured', formula: 'spread_bps', unit: 'bps', direction: higher_is_better }
+  - { id: xb.kpi.settlement_time, name: 'Cross-Border Settlement Time', formula: 'avg(settled - sent)', unit: 'hours', direction: lower_is_better }
+  - { id: xb.kpi.repair_rate, name: 'Repair Rate', formula: 'repaired / total', unit: '%', direction: lower_is_better }
+  - { id: xb.kpi.compliance_holds, name: 'Compliance Holds', formula: 'held / sent', unit: '%', direction: lower_is_better }
+
+dataModel:
+  entities:
+    - { name: Remittance, description: 'Cross-border payment instruction' }
+    - { name: CorrespondentBank, description: 'Nostro/vostro counterparty' }
+    - { name: FxRate, description: 'Reference and dealt rate' }
+    - { name: ComplianceHold, description: 'OFAC/sanctions hold record' }
+    - { name: NostroBalance, description: 'Nostro account balance' }
+
+sourceSystems:
+  - { vendor: 'SWIFT', product: 'gpi', category: 'Messaging Network' }
+  - { vendor: 'Wise', product: 'Wise Platform', category: 'Payment Provider' }
+  - { vendor: 'Citi', product: 'WorldLink', category: 'Correspondent Banking' }
+  - { vendor: 'JPM', product: 'Coin', category: 'Tokenized Settlement' }
+  - { vendor: 'Currencycloud', product: 'Platform', category: 'FX & Remittance' }
+
+connectors:
+  - { type: 'SWIFT MT/ISO20022', protocol: 'MQ/file', auth: 'PKI' }
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }

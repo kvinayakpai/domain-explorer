@@ -15,6 +15,14 @@ kpis:
   - { id: fraud.kpi.time_to_disposition, name: Time to Disposition, formula: avg(disposition_ts - alert_ts), unit: minutes, direction: lower_is_better }
   - { id: fraud.kpi.recovery_rate, name: Loss Recovery Rate, formula: recovered / gross_loss, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: FraudCase, description: 'Investigated fraud case' }
+    - { name: Alert, description: 'Fraud detection alert' }
+    - { name: RuleHit, description: 'Rule firing record' }
+    - { name: ModelScore, description: 'ML model score' }
+    - { name: Disposition, description: 'Case disposition' }
+
 sourceSystems:
   - { vendor: SAS, product: Fraud Management, category: Fraud Platform }
   - { vendor: FICO, product: Falcon, category: Fraud Platform }

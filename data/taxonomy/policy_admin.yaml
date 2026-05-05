@@ -1,0 +1,37 @@
+id: policy_admin
+name: Policy Administration
+vertical: Insurance
+oneLiner: 'Core policy lifecycle: issuance, billing, endorsements, renewals, and cancellations across LOBs.'
+
+personas:
+  - { name: 'Head of Policy Admin', title: 'Head of Policy Admin', level: VP }
+  - { name: 'Billing Operations Lead', title: 'Billing Operations Lead', level: Manager }
+  - { name: 'Renewals Manager', title: 'Renewals Manager', level: Manager }
+
+kpis:
+  - { id: pa.kpi.renewal_retention, name: 'Renewal Retention', formula: 'renewed / eligible', unit: '%', direction: higher_is_better }
+  - { id: pa.kpi.billing_dso, name: 'Billing DSO', formula: 'avg(days_outstanding)', unit: 'days', direction: lower_is_better }
+  - { id: pa.kpi.policy_count, name: 'Policies-in-Force', formula: 'count(active_policies)', unit: 'policies', direction: higher_is_better }
+  - { id: pa.kpi.endorsement_volume, name: 'Endorsement Volume', formula: 'count(endorsements)', unit: 'endorsements', direction: target_band }
+  - { id: pa.kpi.cancellation_rate, name: 'Cancellation Rate', formula: 'cancelled / in_force', unit: '%', direction: lower_is_better }
+
+dataModel:
+  entities:
+    - { name: Policy, description: 'Active policy contract' }
+    - { name: Endorsement, description: 'Mid-term change to policy' }
+    - { name: Renewal, description: 'Renewal offer and outcome' }
+    - { name: Invoice, description: 'Premium invoice' }
+    - { name: Payment, description: 'Premium payment' }
+    - { name: Cancellation, description: 'Cancellation event' }
+
+sourceSystems:
+  - { vendor: 'Guidewire', product: 'PolicyCenter', category: 'Policy Admin' }
+  - { vendor: 'Duck Creek', product: 'Policy', category: 'Policy Admin' }
+  - { vendor: 'Majesco', product: 'P&C Suite', category: 'Policy Admin' }
+  - { vendor: 'Insurity', product: 'Policy Decisions', category: 'Policy Admin' }
+  - { vendor: 'Stripe', product: 'Billing', category: 'Billing Platform' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'SOAP', protocol: 'HTTPS', auth: 'WS-Security' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }

@@ -1,0 +1,37 @@
+id: merchant_acquiring
+name: Merchant Acquiring
+vertical: BFSI
+oneLiner: Onboarding, underwriting, and settlement of card-accepting merchants across MCCs.
+
+personas:
+  - { name: 'Head of Acquiring', title: 'Head of Acquiring', level: VP }
+  - { name: 'Risk & Underwriting Lead', title: 'Merchant Risk Lead', level: Director }
+  - { name: 'Settlement Operations', title: 'Settlement Operations Lead', level: Manager }
+
+kpis:
+  - { id: ma.kpi.processed_volume, name: 'Processed Volume', formula: 'sum(amount)', unit: 'USD', direction: higher_is_better }
+  - { id: ma.kpi.attrition, name: 'Merchant Attrition', formula: 'churned / active', unit: '%', direction: lower_is_better }
+  - { id: ma.kpi.chargeback_ratio, name: 'Chargeback Ratio', formula: 'chargebacks / sales', unit: '%', direction: lower_is_better }
+  - { id: ma.kpi.merchant_mdr, name: 'Merchant Discount Rate', formula: 'fees / volume', unit: 'bps', direction: target_band }
+  - { id: ma.kpi.boarding_tat, name: 'Merchant Boarding TAT', formula: 'avg(approved - applied)', unit: 'hours', direction: lower_is_better }
+
+dataModel:
+  entities:
+    - { name: Merchant, description: 'Merchant master record' }
+    - { name: Mid, description: 'Merchant identification number' }
+    - { name: MerchantTransaction, description: 'Authorized/cleared sale or refund' }
+    - { name: Chargeback, description: 'Chargeback case' }
+    - { name: Settlement, description: 'Daily settlement to merchant' }
+    - { name: RiskScore, description: 'Merchant risk score over time' }
+
+sourceSystems:
+  - { vendor: 'First Data', product: 'Omaha', category: 'Acquirer Processor' }
+  - { vendor: 'Worldpay', product: 'WPG', category: 'Acquirer Processor' }
+  - { vendor: 'Chase', product: 'Paymentech', category: 'Acquirer Processor' }
+  - { vendor: 'Adyen', product: 'Acquiring', category: 'Global Acquirer' }
+  - { vendor: 'Stripe', product: 'Connect', category: 'Marketplace Acquiring' }
+
+connectors:
+  - { type: 'ISO8583', protocol: 'TCP', auth: 'PKI/MAC' }
+  - { type: 'REST/Webhook', protocol: 'HTTPS', auth: 'OAuth2/HMAC' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }

@@ -15,6 +15,14 @@ kpis:
   - { id: grid.kpi.feeder_loading, name: Feeder Loading at Peak, formula: peak_load / nameplate, unit: "%", direction: target_band }
   - { id: grid.kpi.der_curtailment, name: DER Curtailment, formula: curtailed_mwh / scheduled_mwh, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Substation, description: 'Grid substation' }
+    - { name: Feeder, description: 'Distribution feeder' }
+    - { name: Switch, description: 'Distribution switch' }
+    - { name: DispatchOrder, description: 'Dispatch instruction' }
+    - { name: Telemetry, description: 'SCADA telemetry' }
+
 sourceSystems:
   - { vendor: GE Digital, product: ADMS, category: ADMS }
   - { vendor: Schneider Electric, product: EcoStruxure ADMS, category: ADMS }

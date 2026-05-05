@@ -15,6 +15,14 @@ kpis:
   - { id: ahm.kpi.deferred_capex, name: Deferred Capex Value, formula: sum(deferred_capex_usd), unit: USD, direction: higher_is_better }
   - { id: ahm.kpi.uptime, name: Critical Asset Uptime, formula: uptime_minutes / total_minutes, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Asset, description: 'Monitored asset' }
+    - { name: HealthScore, description: 'Calculated health score' }
+    - { name: SensorReading, description: 'Telemetry reading' }
+    - { name: Anomaly, description: 'Detected anomaly' }
+    - { name: MaintenanceEvent, description: 'Linked maintenance event' }
+
 sourceSystems:
   - { vendor: GE Digital, product: APM, category: Asset Performance Mgmt }
   - { vendor: AVEVA, product: Asset Performance, category: APM }

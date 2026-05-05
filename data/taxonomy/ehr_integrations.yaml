@@ -15,6 +15,14 @@ kpis:
   - { id: ehr.kpi.adt_lag, name: ADT Event Lag, formula: avg(received_ts - event_ts), unit: minutes, direction: lower_is_better }
   - { id: ehr.kpi.usable_obs, name: Usable Observation Rate, formula: structured_codes / observations, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Patient, description: 'Patient record' }
+    - { name: Encounter, description: 'Clinical encounter' }
+    - { name: Observation, description: 'FHIR observation' }
+    - { name: MedicationOrder, description: 'Medication order' }
+    - { name: LabResult, description: 'Laboratory result' }
+
 sourceSystems:
   - { vendor: Epic, product: EpicCare, category: EHR }
   - { vendor: Oracle Health, product: Cerner Millennium, category: EHR }

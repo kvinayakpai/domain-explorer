@@ -15,6 +15,14 @@ kpis:
   - { id: care.kpi.containment_rate, name: Self-Service Containment, formula: contained_self_serve / attempted_self_serve, unit: "%", direction: higher_is_better }
   - { id: care.kpi.churn, name: Subscriber Churn, formula: disconnects / avg_subscribers, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Case, description: 'Care case / ticket' }
+    - { name: Contact, description: 'Customer contact attempt' }
+    - { name: KnowledgeArticle, description: 'Knowledge article' }
+    - { name: SLA, description: 'Linked SLA target' }
+    - { name: Survey, description: 'Post-contact survey' }
+
 sourceSystems:
   - { vendor: NICE, product: CXone, category: CCaaS }
   - { vendor: Genesys, product: Cloud CX, category: CCaaS }

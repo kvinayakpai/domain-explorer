@@ -15,6 +15,14 @@ kpis:
   - { id: rwe.kpi.publication_count, name: Peer-Reviewed Publications, formula: publications_yoy, unit: count, direction: higher_is_better }
   - { id: rwe.kpi.regulatory_acceptance, name: Reg Submission Acceptance, formula: accepted / submitted, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Patient, description: 'RWE patient cohort member' }
+    - { name: ClaimsRecord, description: 'Linked claims record' }
+    - { name: EhrRecord, description: 'Linked EHR record' }
+    - { name: Cohort, description: 'Defined cohort' }
+    - { name: Outcome, description: 'Measured outcome' }
+
 sourceSystems:
   - { vendor: IQVIA, product: PharMetrics Plus, category: RWD }
   - { vendor: Optum, product: Clinformatics, category: RWD }

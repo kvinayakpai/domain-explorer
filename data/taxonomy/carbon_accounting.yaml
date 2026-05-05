@@ -1,0 +1,36 @@
+id: carbon_accounting
+name: Carbon Accounting
+vertical: Energy
+oneLiner: Scope 1/2/3 GHG accounting, sustainability reporting, and offset tracking.
+
+personas:
+  - { name: 'Chief Sustainability Officer', title: 'Chief Sustainability Officer', level: C-suite }
+  - { name: 'Carbon Accountant', title: 'Senior Carbon Accountant', level: Manager }
+  - { name: 'ESG Reporting Lead', title: 'ESG Reporting Lead', level: Manager }
+
+kpis:
+  - { id: ca.kpi.scope1, name: 'Scope 1 Emissions', formula: 'sum(direct_co2e)', unit: 'tCO2e', direction: lower_is_better }
+  - { id: ca.kpi.scope2, name: 'Scope 2 Emissions', formula: 'sum(indirect_energy_co2e)', unit: 'tCO2e', direction: lower_is_better }
+  - { id: ca.kpi.scope3, name: 'Scope 3 Emissions', formula: 'sum(value_chain_co2e)', unit: 'tCO2e', direction: lower_is_better }
+  - { id: ca.kpi.intensity, name: 'Emissions Intensity', formula: 'co2e / revenue', unit: 'kg/USD', direction: lower_is_better }
+  - { id: ca.kpi.offset_coverage, name: 'Offset Coverage', formula: 'offsets / emissions', unit: '%', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: EmissionFactor, description: 'Emission factor lookup' }
+    - { name: Activity, description: 'Emission-causing activity' }
+    - { name: EmissionEvent, description: 'Calculated emission record' }
+    - { name: Offset, description: 'Carbon offset purchase' }
+    - { name: Disclosure, description: 'Periodic regulatory disclosure' }
+
+sourceSystems:
+  - { vendor: 'Microsoft', product: 'Sustainability Manager', category: 'ESG Platform' }
+  - { vendor: 'Salesforce', product: 'Net Zero Cloud', category: 'ESG Platform' }
+  - { vendor: 'Persefoni', product: 'Climate Disclosure', category: 'Carbon Platform' }
+  - { vendor: 'Watershed', product: 'Platform', category: 'Carbon Platform' }
+  - { vendor: 'Sphera', product: 'Sustainability', category: 'ESG Platform' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }
+  - { type: 'Webhook', protocol: 'HTTPS', auth: 'HMAC' }

@@ -15,6 +15,14 @@ kpis:
   - { id: ev.kpi.ttr, name: Time-to-Repair Faulted Stations, formula: avg(repair_dt - fault_dt), unit: hours, direction: lower_is_better }
   - { id: ev.kpi.payment_failure, name: Payment Failure Rate, formula: failed / attempts, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: ChargingStation, description: 'Physical charging station' }
+    - { name: Charger, description: 'Charger / dispenser' }
+    - { name: Session, description: 'Charging session' }
+    - { name: Driver, description: 'Registered driver' }
+    - { name: Tariff, description: 'Pricing tariff' }
+
 sourceSystems:
   - { vendor: ChargePoint, product: ChargePoint Network, category: CPO Platform }
   - { vendor: ABB, product: e-mobility, category: Hardware/CPO }

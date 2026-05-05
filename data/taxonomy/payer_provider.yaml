@@ -15,6 +15,14 @@ kpis:
   - { id: pp.kpi.prior_auth_turnaround, name: Prior Auth Turnaround, formula: avg(decision_ts - request_ts), unit: hours, direction: lower_is_better }
   - { id: pp.kpi.network_adequacy, name: Network Adequacy Pass Rate, formula: passing_zips / total_zips, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Member, description: 'Health plan member' }
+    - { name: Provider, description: 'Healthcare provider' }
+    - { name: Claim, description: 'Submitted medical claim' }
+    - { name: Authorization, description: 'Prior authorisation' }
+    - { name: Capitation, description: 'Capitation arrangement' }
+
 sourceSystems:
   - { vendor: Optum, product: Optum360, category: Claims Platform }
   - { vendor: Epic, product: Tapestry, category: Payer Platform }

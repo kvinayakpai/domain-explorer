@@ -15,6 +15,14 @@ kpis:
   - { id: lic.kpi.inspection_compliance, name: Inspection Compliance Rate, formula: passed / inspections, unit: "%", direction: higher_is_better }
   - { id: lic.kpi.fee_collection, name: Fee Collection Rate, formula: collected / billed, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Application, description: 'Permit/license application' }
+    - { name: Permit, description: 'Issued permit' }
+    - { name: Inspection, description: 'Permit inspection' }
+    - { name: Fee, description: 'Application/permit fee' }
+    - { name: Violation, description: 'Recorded violation' }
+
 sourceSystems:
   - { vendor: Tyler Technologies, product: EnerGov, category: Permitting }
   - { vendor: Accela, product: Civic Platform, category: Permitting }

@@ -15,6 +15,16 @@ kpis:
   - { id: card.kpi.cost_of_rewards, name: Cost of Rewards, formula: rewards_paid / spend, unit: "%", direction: target_band }
   - { id: card.kpi.attrition, name: Card Attrition, formula: closed_cards / open_cards, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Cardholder, description: 'Cardholder profile' }
+    - { name: Card, description: 'Issued card' }
+    - { name: CardTransaction, description: 'Card-present or CNP transaction' }
+    - { name: AuthorizationLog, description: 'Auth attempt record' }
+    - { name: FraudDecision, description: 'Fraud decision outcome' }
+    - { name: Statement, description: 'Periodic cardholder statement' }
+    - { name: RewardsAccrual, description: 'Rewards point accrual' }
+
 sourceSystems:
   - { vendor: TSYS, product: TS2, category: Card Processor }
   - { vendor: FIS, product: Card Management, category: Card Processor }

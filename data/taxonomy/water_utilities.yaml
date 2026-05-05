@@ -1,0 +1,36 @@
+id: water_utilities
+name: Water Utilities
+vertical: Utilities
+oneLiner: 'Water distribution: treatment, metering, non-revenue water, and quality compliance.'
+
+personas:
+  - { name: 'Head of Water Operations', title: 'Head of Water Operations', level: VP }
+  - { name: 'Distribution Engineer', title: 'Distribution Engineer', level: Manager }
+  - { name: 'Water Quality Lead', title: 'Water Quality Lead', level: Manager }
+
+kpis:
+  - { id: wu.kpi.nrw, name: 'Non-Revenue Water', formula: '(produced - billed)/produced', unit: '%', direction: lower_is_better }
+  - { id: wu.kpi.compliance, name: 'Quality Compliance', formula: 'compliant_samples / total', unit: '%', direction: higher_is_better }
+  - { id: wu.kpi.main_breaks, name: 'Main Breaks per 100mi', formula: 'breaks / 100mi', unit: 'incidents', direction: lower_is_better }
+  - { id: wu.kpi.pressure_excursions, name: 'Pressure Excursions', formula: 'out_of_range / readings', unit: '%', direction: lower_is_better }
+  - { id: wu.kpi.amr_coverage, name: 'AMR/AMI Coverage', formula: 'smart_meters / total', unit: '%', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: WaterMeter, description: 'Water meter' }
+    - { name: MeterRead, description: 'Periodic meter read' }
+    - { name: Sample, description: 'Water quality sample' }
+    - { name: MainBreak, description: 'Distribution main break event' }
+    - { name: Sensor, description: 'Pressure / flow sensor' }
+
+sourceSystems:
+  - { vendor: 'Itron', product: 'Riva', category: 'AMI' }
+  - { vendor: 'Sensus', product: 'FlexNet', category: 'AMI' }
+  - { vendor: 'Schneider', product: 'AVEVA Water', category: 'SCADA' }
+  - { vendor: 'Esri', product: 'Utility Network', category: 'GIS' }
+  - { vendor: 'HydroIQ', product: 'Water Network', category: 'Smart Water' }
+
+connectors:
+  - { type: 'DNP3', protocol: 'TCP', auth: 'Mutual Auth' }
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }

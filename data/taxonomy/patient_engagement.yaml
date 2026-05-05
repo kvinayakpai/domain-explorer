@@ -1,0 +1,36 @@
+id: patient_engagement
+name: Patient Engagement
+vertical: Healthcare
+oneLiner: Patient portals, messaging, reminders, and digital front-door experiences.
+
+personas:
+  - { name: 'Chief Experience Officer', title: 'Chief Patient Experience Officer', level: C-suite }
+  - { name: 'Digital Front Door PM', title: 'Digital Front Door Product Manager', level: Manager }
+  - { name: 'Engagement Marketer', title: 'Patient Engagement Marketer', level: IC }
+
+kpis:
+  - { id: pe.kpi.portal_adoption, name: 'Portal Adoption', formula: 'activated / eligible', unit: '%', direction: higher_is_better }
+  - { id: pe.kpi.message_response, name: 'Message Response Time', formula: 'avg(replied - sent)', unit: 'hours', direction: lower_is_better }
+  - { id: pe.kpi.reminder_success, name: 'Reminder Success', formula: 'kept / reminded', unit: '%', direction: higher_is_better }
+  - { id: pe.kpi.nps, name: 'Patient NPS', formula: 'promoters - detractors', unit: 'NPS', direction: higher_is_better }
+  - { id: pe.kpi.online_scheduling, name: 'Online Scheduling Share', formula: 'online / total', unit: '%', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: Patient, description: 'Patient profile' }
+    - { name: PortalAccount, description: 'Linked portal account' }
+    - { name: Message, description: 'Secure message' }
+    - { name: Reminder, description: 'Appointment reminder' }
+    - { name: Appointment, description: 'Scheduled appointment' }
+
+sourceSystems:
+  - { vendor: 'Epic', product: 'MyChart', category: 'Patient Portal' }
+  - { vendor: 'Cerner', product: 'HealtheLife', category: 'Patient Portal' }
+  - { vendor: 'Athenahealth', product: 'athenaCommunicator', category: 'Engagement' }
+  - { vendor: 'Twilio', product: 'Messaging', category: 'SMS/Comms' }
+  - { vendor: 'Salesforce', product: 'Health Cloud', category: 'CRM' }
+
+connectors:
+  - { type: 'FHIR', protocol: 'HTTPS', auth: 'SMART on FHIR' }
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'Webhook', protocol: 'HTTPS', auth: 'HMAC' }

@@ -15,6 +15,14 @@ kpis:
   - { id: lic.kpi.true_up_recovery, name: True-Up Recovery, formula: collected_overuse_usd, unit: USD, direction: higher_is_better }
   - { id: lic.kpi.renewal_rate, name: Renewal Rate, formula: renewed / due_renewals, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: LicenseAsset, description: 'Software license asset' }
+    - { name: Entitlement, description: 'Entitlement record' }
+    - { name: Usage, description: 'License usage record' }
+    - { name: Vendor, description: 'Software vendor' }
+    - { name: Renewal, description: 'Renewal event' }
+
 sourceSystems:
   - { vendor: Flexera, product: FlexNet Operations, category: License Mgmt }
   - { vendor: Revenera, product: Software Monetization, category: License Mgmt }

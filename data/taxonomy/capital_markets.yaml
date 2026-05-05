@@ -15,6 +15,15 @@ kpis:
   - { id: cm.kpi.execution_slippage, name: Execution Slippage vs Arrival, formula: avg(arrival_px - exec_px) / arrival_px, unit: bps, direction: lower_is_better }
   - { id: cm.kpi.regulatory_breaches, name: Regulatory Breaches, formula: count(breach_events), unit: events, direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Trade, description: 'Executed trade' }
+    - { name: Order, description: 'Order to trade' }
+    - { name: Position, description: 'End-of-day position' }
+    - { name: Instrument, description: 'Tradeable instrument' }
+    - { name: MarketData, description: 'Market data tick' }
+    - { name: SettlementInstruction, description: 'SSI for clearing' }
+
 sourceSystems:
   - { vendor: Murex, product: MX.3, category: Trading Platform }
   - { vendor: Calypso, product: Calypso, category: Trading Platform }

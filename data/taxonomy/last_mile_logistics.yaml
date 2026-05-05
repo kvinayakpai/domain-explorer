@@ -15,6 +15,14 @@ kpis:
   - { id: lm.kpi.stops_per_hour, name: Stops per Hour, formula: stops / driver_hours, unit: stops/hr, direction: higher_is_better }
   - { id: lm.kpi.damage_rate, name: Damage Rate, formula: damaged_packages / delivered_packages, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Shipment, description: 'Last-mile shipment' }
+    - { name: Stop, description: 'Stop on a route' }
+    - { name: Route, description: 'Optimised route' }
+    - { name: Driver, description: 'Delivery driver' }
+    - { name: Exception, description: 'Delivery exception' }
+
 sourceSystems:
   - { vendor: Descartes, product: Route Planner RC, category: Routing }
   - { vendor: Bringg, product: Last-Mile Platform, category: Delivery Orchestration }

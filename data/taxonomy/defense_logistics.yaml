@@ -15,6 +15,14 @@ kpis:
   - { id: dl.kpi.fill_rate, name: Requisition Fill Rate, formula: filled / requisitions, unit: "%", direction: higher_is_better }
   - { id: dl.kpi.stockout, name: Stockout Rate, formula: zero_balance_skus / total_skus, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Asset, description: 'Defence asset' }
+    - { name: Maintenance, description: 'Maintenance record' }
+    - { name: SupplyClass, description: 'Supply class category' }
+    - { name: Movement, description: 'Logistics movement' }
+    - { name: Requisition, description: 'Supply requisition' }
+
 sourceSystems:
   - { vendor: DLA, product: EBS, category: Defense ERP }
   - { vendor: SAP, product: NS2 ERP, category: Defense ERP }

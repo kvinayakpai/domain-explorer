@@ -15,6 +15,14 @@ kpis:
   - { id: rs.kpi.driver_utilization, name: Driver Utilization, formula: paid_minutes / online_minutes, unit: "%", direction: higher_is_better }
   - { id: rs.kpi.cancellation_rate, name: Rider Cancellation Rate, formula: cancellations / requests, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Rider, description: 'Ride-share rider' }
+    - { name: Driver, description: 'Ride-share driver' }
+    - { name: Ride, description: 'Completed or active ride' }
+    - { name: DispatchOffer, description: 'Match offer to driver' }
+    - { name: Surge, description: 'Surge pricing event' }
+
 sourceSystems:
   - { vendor: Mapbox, product: Navigation, category: Mapping }
   - { vendor: Google, product: Maps Platform, category: Mapping }

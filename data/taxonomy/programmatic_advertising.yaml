@@ -1,0 +1,36 @@
+id: programmatic_advertising
+name: Programmatic Advertising
+vertical: Media
+oneLiner: Real-time bidded ad transactions across SSPs, DSPs, and ad exchanges.
+
+personas:
+  - { name: 'Head of Programmatic', title: 'Head of Programmatic', level: Director }
+  - { name: 'Yield Analyst', title: 'Senior Yield Analyst', level: Manager }
+  - { name: 'Ad Ops Engineer', title: 'Ad Operations Engineer', level: IC }
+
+kpis:
+  - { id: prog.kpi.fill_rate, name: 'Fill Rate', formula: 'filled / requests', unit: '%', direction: higher_is_better }
+  - { id: prog.kpi.cpm, name: 'Effective CPM', formula: 'revenue * 1000 / impressions', unit: 'USD', direction: higher_is_better }
+  - { id: prog.kpi.viewability, name: 'Viewability', formula: 'viewable / measurable', unit: '%', direction: higher_is_better }
+  - { id: prog.kpi.bid_win, name: 'Bid Win Rate', formula: 'wins / bids', unit: '%', direction: target_band }
+  - { id: prog.kpi.ivt_rate, name: 'Invalid Traffic Rate', formula: 'ivt / impressions', unit: '%', direction: lower_is_better }
+
+dataModel:
+  entities:
+    - { name: BidRequest, description: 'RTB bid request' }
+    - { name: BidResponse, description: 'RTB bid response' }
+    - { name: Impression, description: 'Served impression' }
+    - { name: LineItem, description: 'Campaign line item' }
+    - { name: Audience, description: 'Targeting audience segment' }
+
+sourceSystems:
+  - { vendor: 'Google', product: 'Ad Manager', category: 'SSP/Ad Server' }
+  - { vendor: 'Magnite', product: 'SpringServe', category: 'SSP' }
+  - { vendor: 'PubMatic', product: 'OpenWrap', category: 'SSP' }
+  - { vendor: 'The Trade Desk', product: 'Platform', category: 'DSP' }
+  - { vendor: 'IAS', product: 'Verification', category: 'Ad Verification' }
+
+connectors:
+  - { type: 'OpenRTB', protocol: 'HTTPS', auth: 'Token' }
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'S3 export', protocol: 'HTTPS', auth: 'IAM' }

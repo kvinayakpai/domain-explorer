@@ -15,6 +15,14 @@ kpis:
   - { id: int.kpi.consumer_value, name: Consumer Value Score, formula: avg(consumer_rating), unit: score, direction: higher_is_better }
   - { id: int.kpi.tearline_share, name: Tearline Sharing Rate, formula: shareable_reports / total_reports, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Source, description: 'Intelligence source' }
+    - { name: Report, description: 'Intelligence report' }
+    - { name: Entity, description: 'Entity of interest' }
+    - { name: Link, description: 'Relationship between entities' }
+    - { name: Indicator, description: 'Indicator of compromise / interest' }
+
 sourceSystems:
   - { vendor: Palantir, product: Gotham, category: Analytical Platform }
   - { vendor: Maxar, product: SecureWatch, category: GEOINT }

@@ -15,6 +15,15 @@ kpis:
   - { id: rcm.kpi.dso_ar, name: Days in AR, formula: ar / daily_revenue, unit: days, direction: lower_is_better }
   - { id: rcm.kpi.cost_to_collect, name: Cost to Collect, formula: rcm_opex / collected_revenue, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Encounter, description: 'Patient encounter' }
+    - { name: Charge, description: 'Charge capture' }
+    - { name: Claim, description: 'Submitted claim' }
+    - { name: Denial, description: 'Claim denial' }
+    - { name: Payment, description: 'Posted payment' }
+    - { name: Adjustment, description: 'Contractual adjustment' }
+
 sourceSystems:
   - { vendor: Epic, product: Resolute, category: PFS }
   - { vendor: Oracle Health, product: Cerner Soarian Financials, category: PFS }

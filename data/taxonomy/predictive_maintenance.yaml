@@ -1,0 +1,36 @@
+id: predictive_maintenance
+name: Predictive Maintenance
+vertical: Manufacturing
+oneLiner: ML-driven prediction of equipment failure using sensor telemetry and historical maintenance.
+
+personas:
+  - { name: 'Head of Reliability', title: 'Head of Reliability Engineering', level: Director }
+  - { name: 'Data Science Lead', title: 'Data Science Lead - PdM', level: Manager }
+  - { name: 'Maintenance Engineer', title: 'Sr Maintenance Engineer', level: IC }
+
+kpis:
+  - { id: pdm.kpi.unplanned_dt, name: 'Unplanned Downtime', formula: 'sum(unplanned_minutes)', unit: 'minutes', direction: lower_is_better }
+  - { id: pdm.kpi.precision, name: 'Model Precision', formula: 'tp / (tp+fp)', unit: '%', direction: higher_is_better }
+  - { id: pdm.kpi.recall, name: 'Model Recall', formula: 'tp / (tp+fn)', unit: '%', direction: higher_is_better }
+  - { id: pdm.kpi.mtbf, name: 'MTBF', formula: 'operating_time / failures', unit: 'hours', direction: higher_is_better }
+  - { id: pdm.kpi.work_order_lead, name: 'Work Order Lead Time', formula: 'alert_to_wo', unit: 'hours', direction: lower_is_better }
+
+dataModel:
+  entities:
+    - { name: Asset, description: 'Plant asset under maintenance' }
+    - { name: Sensor, description: 'Telemetry sensor' }
+    - { name: FailureMode, description: 'Catalogued failure mode' }
+    - { name: ModelPrediction, description: 'PdM model output' }
+    - { name: WorkOrder, description: 'Generated maintenance WO' }
+
+sourceSystems:
+  - { vendor: 'GE', product: 'Predix', category: 'IIoT' }
+  - { vendor: 'PTC', product: 'ThingWorx', category: 'IIoT' }
+  - { vendor: 'AVEVA', product: 'PI System', category: 'Historian' }
+  - { vendor: 'Siemens', product: 'Senseye', category: 'PdM SaaS' }
+  - { vendor: 'IBM', product: 'Maximo', category: 'EAM' }
+
+connectors:
+  - { type: 'OPC-UA', protocol: 'TCP', auth: 'Cert' }
+  - { type: 'MQTT', protocol: 'TCP', auth: 'TLS' }
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }

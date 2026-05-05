@@ -15,6 +15,14 @@ kpis:
   - { id: psch.kpi.wip, name: Work-in-Process Inventory, formula: avg(wip_value), unit: USD, direction: lower_is_better }
   - { id: psch.kpi.expedites, name: Expedite Order Rate, formula: expedited_orders / total_orders, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: WorkOrder, description: 'Production work order' }
+    - { name: Resource, description: 'Production resource' }
+    - { name: Shift, description: 'Operating shift' }
+    - { name: Schedule, description: 'Optimised schedule' }
+    - { name: Constraint, description: 'Production constraint' }
+
 sourceSystems:
   - { vendor: SAP, product: S/4HANA PP/DS, category: APS }
   - { vendor: Siemens, product: Opcenter APS, category: APS }

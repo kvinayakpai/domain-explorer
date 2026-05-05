@@ -15,6 +15,14 @@ kpis:
   - { id: ret.kpi.return_fraud_rate, name: Return Fraud Rate, formula: flagged / total_returns, unit: "%", direction: lower_is_better }
   - { id: ret.kpi.shipping_recovery, name: Return Shipping Recovery, formula: shipping_charged / shipping_cost, unit: "%", direction: target_band }
 
+dataModel:
+  entities:
+    - { name: ReturnRequest, description: 'Customer return request' }
+    - { name: RmaTicket, description: 'Issued RMA ticket' }
+    - { name: Disposition, description: 'Return disposition' }
+    - { name: Refund, description: 'Issued refund' }
+    - { name: Reason, description: 'Return reason code' }
+
 sourceSystems:
   - { vendor: Narvar, product: Returns, category: Returns Platform }
   - { vendor: Loop, product: Returns, category: Returns Platform }

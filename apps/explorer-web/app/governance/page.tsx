@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Database, GitBranch, ShieldCheck } from "lucide-react";
+import { ArrowRight, BookOpen, Database, GitBranch, ShieldCheck, Activity } from "lucide-react";
 import { registry } from "@/lib/registry";
+import { loadDqReport } from "@/lib/dq";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import {
   Card,
@@ -11,7 +12,9 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-export const dynamic = "force-static";
+// Render at request time so DQ tile reflects live API or latest snapshot.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata = {
   title: "Governance · Domain Explorer",
@@ -63,13 +66,14 @@ function Metric({ label, value, hint }: MetricProps) {
   );
 }
 
-export default function GovernancePage() {
+export default async function GovernancePage() {
   const reg = registry();
   const totalEntities = reg.subdomains.reduce(
     (n, s) => n + (s.dataModel?.entities?.length ?? 0),
     0,
   );
   const verticals = new Set(reg.subdomains.map((s) => s.vertical)).size;
+  const { report: dqReport, source: dqSource } = await loadDqReport();
   return (
     <div className="space-y-8">
       <Breadcrumb items={[{ label: "Verticals", href: "/" }, { label: "Governance" }]} />
@@ -96,7 +100,7 @@ export default function GovernancePage() {
 
       <section>
         <h2 className="mb-3 text-lg font-semibold">Pillars</h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <CardLink
             href="/catalog"
             title="Catalog"
@@ -118,25 +122,23 @@ export default function GovernancePage() {
             icon={<GitBranch className="h-5 w-5" />}
             cta="View lineage"
           />
+          <CardLink
+            href="/dq"
+            title="Data Quality"
+            description="Real DQ rules executed against the populated DuckDB — pass/fail counts by severity, table, and subdomain."
+            icon={<Activity className="h-5 w-5" />}
+            cta="Open DQ dashboard"
+          />
         </div>
       </section>
 
       <section>
         <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold">Data quality (placeholder)</h2>
-          <span className="text-xs text-muted-foreground">Wired in v0.next</span>
+          <h2 className="text-lg font-semibold">Data quality</h2>
+          <span className="text-xs text-muted-foreground">
+            {dqReport
+              ? `${dqSource === "live" ? "Live API" : "Snapshot"} · ran ${dqReport.ran_at}`
+              : "Service unavailable — run scripts/dq_snapshot.py"}
+          </span>
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Metric label="Schema conformance" value="98.2%" hint="Average across feeds" />
-          <Metric label="Freshness SLA met" value="94%" hint="Last 30 days" />
-          <Metric label="Open DQ incidents" value={3} hint="P1 = 0 / P2 = 1 / P3 = 2" />
-          <Metric label="Lineage coverage" value="71%" hint="Critical-data elements" />
-        </div>
-        <p className="mt-3 inline-flex items-center gap-2 text-xs text-muted-foreground">
-          <ShieldCheck className="h-3.5 w-3.5" /> Sourced from registry today; will be wired to
-          the live observability stack in a future pass.
-        </p>
-      </section>
-    </div>
-  );
-}
+      

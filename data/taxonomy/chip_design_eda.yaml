@@ -1,0 +1,36 @@
+id: chip_design_eda
+name: Chip Design (EDA)
+vertical: HiTech
+oneLiner: 'Semiconductor design flows: RTL, simulation, synthesis, P&R, and tapeout.'
+
+personas:
+  - { name: 'VP Engineering', title: 'VP Silicon Engineering', level: VP }
+  - { name: 'Design Lead', title: 'Senior ASIC Design Lead', level: Manager }
+  - { name: 'Verification Engineer', title: 'Senior Verification Engineer', level: IC }
+
+kpis:
+  - { id: eda.kpi.coverage, name: 'Functional Coverage', formula: 'covered_bins / total', unit: '%', direction: higher_is_better }
+  - { id: eda.kpi.regression_pass, name: 'Regression Pass Rate', formula: 'pass / runs', unit: '%', direction: higher_is_better }
+  - { id: eda.kpi.tapeout_slippage, name: 'Tapeout Slippage', formula: 'actual - planned', unit: 'days', direction: lower_is_better }
+  - { id: eda.kpi.bug_density, name: 'Bug Density', formula: 'bugs / kloc', unit: 'bugs/kLOC', direction: lower_is_better }
+  - { id: eda.kpi.tool_utilisation, name: 'EDA Tool Utilisation', formula: 'used_hours / licensed', unit: '%', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: Project, description: 'Chip design project' }
+    - { name: Block, description: 'RTL block under design' }
+    - { name: RegressionRun, description: 'Verification regression run' }
+    - { name: Bug, description: 'Tracked bug' }
+    - { name: ToolLicenseUse, description: 'License usage record' }
+
+sourceSystems:
+  - { vendor: 'Cadence', product: 'Genus', category: 'Synthesis' }
+  - { vendor: 'Synopsys', product: 'VCS', category: 'Simulation' }
+  - { vendor: 'Siemens', product: 'Questa', category: 'Verification' }
+  - { vendor: 'Cadence', product: 'Innovus', category: 'Place & Route' }
+  - { vendor: 'Ansys', product: 'RedHawk', category: 'Power Integrity' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }
+  - { type: 'ODBC', protocol: 'TCP', auth: 'DB cred' }

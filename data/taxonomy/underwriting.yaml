@@ -1,0 +1,37 @@
+id: underwriting
+name: Underwriting
+vertical: Insurance
+oneLiner: Risk selection, pricing, and policy issuance across personal, commercial, and specialty lines.
+
+personas:
+  - { name: 'Chief Underwriter', title: 'Chief Underwriter', level: C-suite }
+  - { name: 'UW Manager', title: 'Underwriting Manager', level: Manager }
+  - { name: 'Pricing Actuary', title: 'Pricing Actuary', level: IC }
+
+kpis:
+  - { id: uw.kpi.hit_ratio, name: 'Quote-to-Bind Hit Ratio', formula: 'bound / quoted', unit: '%', direction: higher_is_better }
+  - { id: uw.kpi.loss_ratio, name: 'Loss Ratio', formula: 'losses / earned_premium', unit: '%', direction: lower_is_better }
+  - { id: uw.kpi.cycle_time, name: 'UW Cycle Time', formula: 'avg(decision_ts - submitted_ts)', unit: 'hours', direction: lower_is_better }
+  - { id: uw.kpi.declination_rate, name: 'Declination Rate', formula: 'declined / submissions', unit: '%', direction: target_band }
+  - { id: uw.kpi.referral_rate, name: 'Referral Rate', formula: 'referred / submissions', unit: '%', direction: lower_is_better }
+
+dataModel:
+  entities:
+    - { name: Submission, description: 'Quote intake from agent or broker' }
+    - { name: Quote, description: 'Priced quote returned to broker' }
+    - { name: Policy, description: 'Bound policy contract' }
+    - { name: Risk, description: 'Subject of insurance with characteristics' }
+    - { name: Endorsement, description: 'Mid-term policy change' }
+    - { name: RatingFactor, description: 'Lookup factor used in pricing' }
+
+sourceSystems:
+  - { vendor: 'Duck Creek', product: 'Underwriting', category: 'Policy Admin' }
+  - { vendor: 'Guidewire', product: 'PolicyCenter', category: 'Policy Admin' }
+  - { vendor: 'Verisk', product: 'ISO ERC', category: 'Rating Bureau' }
+  - { vendor: 'LexisNexis', product: 'RiskClassifier', category: 'External Risk Data' }
+  - { vendor: 'Earnix', product: 'Underwrite-It', category: 'Pricing Engine' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'SOAP', protocol: 'HTTPS', auth: 'WS-Security' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }

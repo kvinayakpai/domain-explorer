@@ -1,0 +1,37 @@
+id: life_annuity
+name: Life & Annuity
+vertical: Insurance
+oneLiner: Life insurance and annuity products covering issuance, in-force servicing, and benefits administration.
+
+personas:
+  - { name: 'Head of Life', title: 'Head of Life Insurance', level: VP }
+  - { name: 'Annuity Product Owner', title: 'Annuity Product Owner', level: Director }
+  - { name: 'Policy Servicing Lead', title: 'Life Policy Servicing Lead', level: Manager }
+
+kpis:
+  - { id: la.kpi.persistency, name: '13-month Persistency', formula: 'active_at_13m / issued', unit: '%', direction: higher_is_better }
+  - { id: la.kpi.surrender_rate, name: 'Surrender Rate', formula: 'surrenders / in_force', unit: '%', direction: lower_is_better }
+  - { id: la.kpi.new_business_apv, name: 'New Business APV', formula: 'sum(annual_premium_value)', unit: 'USD', direction: higher_is_better }
+  - { id: la.kpi.claim_ratio, name: 'Mortality / Claim Ratio', formula: 'claims_paid / earned_premium', unit: '%', direction: lower_is_better }
+  - { id: la.kpi.unitlinked_aum, name: 'Unit-Linked AUM', formula: 'sum(fund_value)', unit: 'USD', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: Policy, description: 'Life or annuity contract' }
+    - { name: Beneficiary, description: 'Designated benefit recipient' }
+    - { name: Premium, description: 'Periodic premium payment' }
+    - { name: Fund, description: 'Linked investment fund' }
+    - { name: Claim, description: 'Death or surrender claim' }
+    - { name: Annuitant, description: 'Annuity payment recipient' }
+
+sourceSystems:
+  - { vendor: 'Oracle', product: 'Insurance Policy Admin', category: 'Policy Admin' }
+  - { vendor: 'DXC', product: 'wmA', category: 'Life Policy Admin' }
+  - { vendor: 'FAST', product: 'Insurance Platform', category: 'Policy Admin' }
+  - { vendor: 'Bloomberg', product: 'Terminal', category: 'Asset Pricing' }
+  - { vendor: 'Pega', product: 'Customer Service', category: 'Servicing' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }
+  - { type: 'MQ', protocol: 'JMS', auth: 'mTLS' }

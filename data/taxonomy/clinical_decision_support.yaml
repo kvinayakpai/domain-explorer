@@ -1,0 +1,36 @@
+id: clinical_decision_support
+name: Clinical Decision Support
+vertical: Healthcare
+oneLiner: Evidence-based alerts and order sets at the point of care, integrated with EHR.
+
+personas:
+  - { name: 'CMIO', title: 'Chief Medical Information Officer', level: C-suite }
+  - { name: 'Clinical Informatics Lead', title: 'Clinical Informatics Lead', level: Director }
+  - { name: 'Knowledge Engineer', title: 'Clinical Knowledge Engineer', level: IC }
+
+kpis:
+  - { id: cds.kpi.alert_action_rate, name: 'Alert Action Rate', formula: 'acted / fired', unit: '%', direction: higher_is_better }
+  - { id: cds.kpi.alert_override, name: 'Alert Override Rate', formula: 'overridden / fired', unit: '%', direction: target_band }
+  - { id: cds.kpi.protocol_compliance, name: 'Protocol Compliance', formula: 'compliant / eligible', unit: '%', direction: higher_is_better }
+  - { id: cds.kpi.harm_avoided, name: 'Harms Avoided per 1k Visits', formula: 'harms_avoided', unit: 'per_1k', direction: higher_is_better }
+  - { id: cds.kpi.alert_latency, name: 'Alert Latency', formula: 'avg(fired - eligible)', unit: 'ms', direction: lower_is_better }
+
+dataModel:
+  entities:
+    - { name: Rule, description: 'CDS rule definition' }
+    - { name: AlertEvent, description: 'Fired alert' }
+    - { name: OrderSet, description: 'Bundled clinical order set' }
+    - { name: ClinicalContext, description: 'Patient context at firing time' }
+    - { name: Outcome, description: 'Linked clinical outcome' }
+
+sourceSystems:
+  - { vendor: 'Epic', product: 'Best Practice Advisories', category: 'CDS' }
+  - { vendor: 'Cerner', product: 'Discern', category: 'CDS' }
+  - { vendor: 'Wolters Kluwer', product: 'UpToDate', category: 'Reference' }
+  - { vendor: 'Elsevier', product: 'ClinicalKey', category: 'Reference' }
+  - { vendor: 'IBM', product: 'Micromedex', category: 'Drug Reference' }
+
+connectors:
+  - { type: 'FHIR', protocol: 'HTTPS', auth: 'SMART on FHIR' }
+  - { type: 'CDS Hooks', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }

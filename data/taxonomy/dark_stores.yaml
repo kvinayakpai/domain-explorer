@@ -1,0 +1,36 @@
+id: dark_stores
+name: Dark Stores
+vertical: Retail
+oneLiner: Dedicated micro-fulfilment centres serving online and quick-commerce orders.
+
+personas:
+  - { name: 'Head of Q-Commerce', title: 'Head of Quick Commerce', level: VP }
+  - { name: 'Dark Store Manager', title: 'Dark Store Manager', level: Manager }
+  - { name: 'Pick-Pack Lead', title: 'Pick-Pack Operations Lead', level: Manager }
+
+kpis:
+  - { id: ds.kpi.pick_rate, name: 'Picks per Hour', formula: 'picks / labor_hour', unit: 'picks/h', direction: higher_is_better }
+  - { id: ds.kpi.order_cycle, name: 'Order Cycle Time', formula: 'avg(handed_off - placed)', unit: 'minutes', direction: lower_is_better }
+  - { id: ds.kpi.oos, name: 'Out of Stock %', formula: 'oos_picks / picks', unit: '%', direction: lower_is_better }
+  - { id: ds.kpi.subs_rate, name: 'Substitution Rate', formula: 'substituted / picks', unit: '%', direction: target_band }
+  - { id: ds.kpi.shrinkage, name: 'Shrinkage', formula: 'loss / inventory', unit: '%', direction: lower_is_better }
+
+dataModel:
+  entities:
+    - { name: DarkStore, description: 'Dark store / MFC node' }
+    - { name: Order, description: 'Online order assigned to MFC' }
+    - { name: Pick, description: 'Individual pick line' }
+    - { name: Slot, description: 'Storage location' }
+    - { name: Inventory, description: 'Per-SKU per-store inventory' }
+
+sourceSystems:
+  - { vendor: 'Manhattan', product: 'Active Omni', category: 'Order Mgmt' }
+  - { vendor: 'Fabric', product: 'MFC', category: 'Micro-Fulfilment' }
+  - { vendor: 'AutoStore', product: 'Robotics', category: 'Automated Storage' }
+  - { vendor: 'Locus', product: 'Pick by Robot', category: 'Picking Robotics' }
+  - { vendor: 'Bringg', product: 'Last Mile', category: 'Delivery Orchestration' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'Webhook', protocol: 'HTTPS', auth: 'HMAC' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }

@@ -15,6 +15,14 @@ kpis:
   - { id: bill.kpi.rev_leakage, name: Revenue Leakage, formula: unbilled_usage / total_usage, unit: "%", direction: lower_is_better }
   - { id: bill.kpi.bad_debt, name: Bad Debt Write-off, formula: writeoffs / revenue, unit: "%", direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Subscriber, description: 'Telecom subscriber' }
+    - { name: Plan, description: 'Subscribed plan' }
+    - { name: UsageRecord, description: 'Usage data record' }
+    - { name: Invoice, description: 'Periodic invoice' }
+    - { name: Payment, description: 'Customer payment' }
+
 sourceSystems:
   - { vendor: Amdocs, product: Charging, category: Billing/Charging }
   - { vendor: Ericsson, product: BSCS iX, category: Billing }

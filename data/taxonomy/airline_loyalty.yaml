@@ -15,6 +15,15 @@ kpis:
   - { id: aloy.kpi.elite_retention, name: Elite Tier Retention, formula: requalified_elites / prior_year_elites, unit: "%", direction: higher_is_better }
   - { id: aloy.kpi.award_seat_yield, name: Award Seat Yield, formula: revenue_displaced / award_seats_used, unit: USD, direction: target_band }
 
+dataModel:
+  entities:
+    - { name: Member, description: 'Loyalty member' }
+    - { name: MileBalance, description: 'Member mile balance' }
+    - { name: AccrualEvent, description: 'Mile accrual event' }
+    - { name: RedemptionEvent, description: 'Mile redemption event' }
+    - { name: TierStatus, description: 'Tier status assignment' }
+    - { name: Promotion, description: 'Loyalty promotion' }
+
 sourceSystems:
   - { vendor: Sabre, product: Loyalty, category: Loyalty Platform }
   - { vendor: Amadeus, product: Loyalty Management, category: Loyalty Platform }

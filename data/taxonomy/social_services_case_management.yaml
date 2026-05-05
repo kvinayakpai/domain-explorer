@@ -15,6 +15,14 @@ kpis:
   - { id: ssc.kpi.case_load, name: Caseworker Load, formula: open_cases / caseworker_fte, unit: cases/fte, direction: lower_is_better }
   - { id: ssc.kpi.outcome_attainment, name: Service Outcome Attainment, formula: attained / planned, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Case, description: 'Social services case' }
+    - { name: Caseworker, description: 'Assigned caseworker' }
+    - { name: Visit, description: 'Home/field visit' }
+    - { name: ServicePlan, description: 'Service plan' }
+    - { name: Assessment, description: 'Risk/need assessment' }
+
 sourceSystems:
   - { vendor: Northwoods, product: Compass, category: Social Services }
   - { vendor: Deloitte, product: HHS Connect, category: HHS Platform }

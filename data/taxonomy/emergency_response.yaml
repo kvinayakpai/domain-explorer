@@ -1,0 +1,36 @@
+id: emergency_response
+name: Emergency Response
+vertical: PublicSector
+oneLiner: 911 dispatch, incident management, and inter-agency coordination for emergency services.
+
+personas:
+  - { name: 'Director of EMS', title: 'Director of Emergency Medical Services', level: Director }
+  - { name: 'Dispatch Center Manager', title: 'Dispatch Center Manager', level: Manager }
+  - { name: 'Field Commander', title: 'Field Commander', level: Manager }
+
+kpis:
+  - { id: er.kpi.response_time, name: 'Response Time', formula: 'avg(arrived - dispatched)', unit: 'minutes', direction: lower_is_better }
+  - { id: er.kpi.dispatch_time, name: 'Dispatch Time', formula: 'avg(dispatched - received)', unit: 'seconds', direction: lower_is_better }
+  - { id: er.kpi.unit_availability, name: 'Unit Availability', formula: 'available_minutes / total', unit: '%', direction: higher_is_better }
+  - { id: er.kpi.priority1_compliance, name: 'Priority-1 SLA Compliance', formula: 'met / total', unit: '%', direction: higher_is_better }
+  - { id: er.kpi.cad_to_rms, name: 'CAD-to-RMS Latency', formula: 'avg(rms_ts - cad_ts)', unit: 'seconds', direction: lower_is_better }
+
+dataModel:
+  entities:
+    - { name: Incident, description: '911 incident' }
+    - { name: Unit, description: 'Responding unit' }
+    - { name: DispatchEvent, description: 'Status change event' }
+    - { name: Call, description: 'Inbound 911 call' }
+    - { name: Address, description: 'Geocoded incident address' }
+
+sourceSystems:
+  - { vendor: 'Hexagon', product: 'CAD', category: 'CAD' }
+  - { vendor: 'Tyler', product: 'New World', category: 'CAD/RMS' }
+  - { vendor: 'Motorola', product: 'CommandCentral', category: 'CAD' }
+  - { vendor: 'RapidSOS', product: 'NG911', category: 'NG911 Data' }
+  - { vendor: 'Esri', product: 'ArcGIS', category: 'GIS' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'CAP', protocol: 'XML/HTTPS', auth: 'Cert' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }

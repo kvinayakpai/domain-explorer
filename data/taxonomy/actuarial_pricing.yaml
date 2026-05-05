@@ -1,0 +1,36 @@
+id: actuarial_pricing
+name: Actuarial Pricing
+vertical: Insurance
+oneLiner: Actuarial reserving, pricing models, and capital adequacy across lines of business.
+
+personas:
+  - { name: 'Chief Actuary', title: 'Chief Actuary', level: C-suite }
+  - { name: 'Pricing Actuary', title: 'Pricing Actuary', level: Manager }
+  - { name: 'Reserving Actuary', title: 'Reserving Actuary', level: Manager }
+
+kpis:
+  - { id: act.kpi.combined_ratio, name: 'Combined Ratio', formula: '(losses + expenses)/earned_premium', unit: '%', direction: lower_is_better }
+  - { id: act.kpi.scr_ratio, name: 'Solvency Capital Ratio', formula: 'own_funds / scr', unit: '%', direction: higher_is_better }
+  - { id: act.kpi.reserve_strengthening, name: 'Reserve Strengthening', formula: 'prior_year_dev / reserves', unit: '%', direction: lower_is_better }
+  - { id: act.kpi.rate_change, name: 'Rate Change', formula: 'new_rate / old_rate - 1', unit: '%', direction: target_band }
+  - { id: act.kpi.pricing_lift, name: 'Model Pricing Lift', formula: 'gini_coefficient', unit: 'ratio', direction: higher_is_better }
+
+dataModel:
+  entities:
+    - { name: Reserve, description: 'Loss reserve estimate' }
+    - { name: RateClass, description: 'Pricing class with relativity' }
+    - { name: ExperienceTriangle, description: 'Loss development triangle' }
+    - { name: ModelRun, description: 'Versioned pricing or reserving run' }
+    - { name: CapitalScenario, description: 'Stress-test capital scenario' }
+
+sourceSystems:
+  - { vendor: 'Milliman', product: 'Arius', category: 'Reserving' }
+  - { vendor: 'WTW', product: 'ResQ', category: 'Reserving' }
+  - { vendor: 'Earnix', product: 'Price-It', category: 'Pricing Engine' }
+  - { vendor: 'RGA', product: 'Capital Models', category: 'Capital Modeling' }
+  - { vendor: "Moody's", product: 'AXIS', category: 'Capital & Reserving' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }
+  - { type: 'ODBC', protocol: 'TCP', auth: 'DB cred' }

@@ -15,6 +15,14 @@ kpis:
   - { id: tpm.kpi.unauthorized_deduction_pct, name: Unauthorized Deduction %, formula: unauthorized / total_deductions, unit: "%", direction: lower_is_better }
   - { id: tpm.kpi.event_compliance, name: Event Compliance Rate, formula: compliant_events / total_events, unit: "%", direction: higher_is_better }
 
+dataModel:
+  entities:
+    - { name: Promotion, description: 'Trade promotion' }
+    - { name: Account, description: 'Retailer account' }
+    - { name: Plan, description: 'Promotional plan' }
+    - { name: Lift, description: 'Measured lift' }
+    - { name: Deduction, description: 'Customer deduction' }
+
 sourceSystems:
   - { vendor: SAP, product: Trade Promotion Management, category: TPM }
   - { vendor: Vistex, product: Channel Incentive Management, category: TPM }

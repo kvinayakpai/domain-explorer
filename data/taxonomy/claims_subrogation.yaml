@@ -1,0 +1,37 @@
+id: claims_subrogation
+name: Claims & Subrogation
+vertical: Insurance
+oneLiner: Claims intake, adjudication, recovery, and subrogation across P&C and specialty lines.
+
+personas:
+  - { name: 'Head of Claims', title: 'Head of Claims', level: VP }
+  - { name: 'Subrogation Lead', title: 'Subrogation Recovery Lead', level: Manager }
+  - { name: 'Claims Adjuster', title: 'Senior Claims Adjuster', level: IC }
+
+kpis:
+  - { id: clm.kpi.cycle_time, name: 'Claim Cycle Time', formula: 'avg(closed_ts - opened_ts)', unit: 'days', direction: lower_is_better }
+  - { id: clm.kpi.subrogation_recovery, name: 'Subrogation Recovery Rate', formula: 'recovered / recoverable', unit: '%', direction: higher_is_better }
+  - { id: clm.kpi.lae_ratio, name: 'LAE Ratio', formula: 'lae / loss', unit: '%', direction: lower_is_better }
+  - { id: clm.kpi.reopen_rate, name: 'Reopen Rate', formula: 'reopened / closed', unit: '%', direction: lower_is_better }
+  - { id: clm.kpi.fraud_referral, name: 'Fraud Referral Rate', formula: 'referred / claims', unit: '%', direction: target_band }
+
+dataModel:
+  entities:
+    - { name: Claim, description: 'Loss notification and adjudication record' }
+    - { name: Reserve, description: 'Estimated future payment' }
+    - { name: Payment, description: 'Indemnity or expense payment' }
+    - { name: Recovery, description: 'Subrogated or salvaged amount' }
+    - { name: Adjuster, description: 'Person handling the claim' }
+    - { name: LossEvent, description: 'Event triggering claim' }
+
+sourceSystems:
+  - { vendor: 'Guidewire', product: 'ClaimCenter', category: 'Claims' }
+  - { vendor: 'Sapiens', product: 'ClaimsPro', category: 'Claims' }
+  - { vendor: 'Mitchell', product: 'WorkCenter', category: 'Claims Adjudication' }
+  - { vendor: 'CCC', product: 'Estimating', category: 'Auto Claims' }
+  - { vendor: 'ISO', product: 'ClaimSearch', category: 'Industry Data' }
+
+connectors:
+  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: 'EDI 837', protocol: 'SFTP', auth: 'SSH key' }
+  - { type: 'File feeds', protocol: 'SFTP', auth: 'SSH key' }

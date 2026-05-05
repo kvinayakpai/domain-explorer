@@ -15,6 +15,15 @@ kpis:
   - { id: lend.kpi.charge_off_rate, name: Charge-off Rate, formula: charge_offs / avg_loans, unit: "%", direction: lower_is_better }
   - { id: lend.kpi.cost_per_loan, name: Cost per Loan Originated, formula: origination_cost / loans_originated, unit: USD, direction: lower_is_better }
 
+dataModel:
+  entities:
+    - { name: Application, description: 'Loan application' }
+    - { name: Loan, description: 'Funded loan' }
+    - { name: Underwriting, description: 'Underwriting decision' }
+    - { name: Payment, description: 'Loan payment' }
+    - { name: Delinquency, description: 'Delinquency event' }
+    - { name: Collateral, description: 'Pledged collateral' }
+
 sourceSystems:
   - { vendor: nCino, product: Cloud Banking, category: Loan Origination }
   - { vendor: ICE Mortgage Technology, product: Encompass, category: Mortgage LOS }
