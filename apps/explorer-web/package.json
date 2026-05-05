@@ -11,6 +11,7 @@
     "test": "echo 'no-op'"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
     "@domain-explorer/metadata": "workspace:*",
     "@domain-explorer/shared-types": "workspace:*",
     "@duckdb/node-api": "1.2.0-alpha.15",

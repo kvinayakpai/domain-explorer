@@ -1,0 +1,28 @@
+id: benefits_administration
+name: Benefits Administration
+vertical: PublicSector
+oneLiner: Eligibility, enrolment, and disbursement for social safety net and benefit programs.
+
+personas:
+  - { name: Program Director, title: Director of Benefits Programs, level: Director }
+  - { name: Eligibility Operations Lead, title: Eligibility Operations Lead, level: Manager }
+  - { name: Fraud Investigator, title: Benefits Fraud Investigator, level: IC }
+
+kpis:
+  - { id: ba.kpi.eligibility_accuracy, name: Eligibility Determination Accuracy, formula: correct_decisions / sampled_decisions, unit: "%", direction: higher_is_better }
+  - { id: ba.kpi.payment_error_rate, name: Improper Payment Rate, formula: improper_payments / total_payments, unit: "%", direction: lower_is_better }
+  - { id: ba.kpi.application_backlog, name: Application Backlog, formula: pending_apps_over_sla, unit: applications, direction: lower_is_better }
+  - { id: ba.kpi.case_closure_time, name: Case Closure Time, formula: avg(closed_ts - opened_ts), unit: days, direction: lower_is_better }
+  - { id: ba.kpi.appeal_rate, name: Appeal Rate, formula: appeals / decisions, unit: "%", direction: target_band }
+
+sourceSystems:
+  - { vendor: Deloitte, product: ACCESS, category: Benefits Platform }
+  - { vendor: Conduent, product: Benefits Solutions, category: Benefits Platform }
+  - { vendor: Tyler, product: Eagle, category: Case Management }
+  - { vendor: Salesforce, product: Public Sector Solutions, category: Case Management }
+  - { vendor: In-house, product: Mainframe COBOL, category: Legacy }
+
+connectors:
+  - { type: SOAP, protocol: HTTPS, auth: WS-Security }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }

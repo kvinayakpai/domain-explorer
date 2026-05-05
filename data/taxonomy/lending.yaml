@@ -1,0 +1,28 @@
+id: lending
+name: Lending
+vertical: BFSI
+oneLiner: Origination through servicing for consumer, mortgage, and commercial loan portfolios.
+
+personas:
+  - { name: Head of Lending, title: Head of Lending, level: VP }
+  - { name: Chief Credit Officer, title: Chief Credit Officer, level: C-suite }
+  - { name: Servicing Operations Lead, title: Loan Servicing Operations Lead, level: Director }
+
+kpis:
+  - { id: lend.kpi.approval_rate, name: Approval Rate, formula: approved_apps / submitted_apps, unit: "%", direction: target_band }
+  - { id: lend.kpi.time_to_decision, name: Time to Decision, formula: avg(decision_ts - submit_ts), unit: hours, direction: lower_is_better }
+  - { id: lend.kpi.npl_ratio, name: Non-Performing Loan Ratio, formula: npl_balance / gross_loans, unit: "%", direction: lower_is_better }
+  - { id: lend.kpi.charge_off_rate, name: Charge-off Rate, formula: charge_offs / avg_loans, unit: "%", direction: lower_is_better }
+  - { id: lend.kpi.cost_per_loan, name: Cost per Loan Originated, formula: origination_cost / loans_originated, unit: USD, direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: nCino, product: Cloud Banking, category: Loan Origination }
+  - { vendor: ICE Mortgage Technology, product: Encompass, category: Mortgage LOS }
+  - { vendor: FIS, product: MortgageServ, category: Loan Servicing }
+  - { vendor: Black Knight, product: MSP, category: Loan Servicing }
+  - { vendor: Experian, product: PowerCurve, category: Decisioning }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }
+  - { type: SOAP, protocol: HTTPS, auth: WS-Security }

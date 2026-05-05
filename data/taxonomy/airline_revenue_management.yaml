@@ -1,0 +1,28 @@
+id: airline_revenue_management
+name: Airline Revenue Management
+vertical: TTH
+oneLiner: O&D bid prices, fare class controls, and overbooking to maximise yield across the network.
+
+personas:
+  - { name: VP Revenue Management, title: VP Revenue Management, level: VP }
+  - { name: Pricing Analyst, title: Pricing Analyst, level: IC }
+  - { name: Network Planning Director, title: Director of Network Planning, level: Director }
+
+kpis:
+  - { id: arm.kpi.rask, name: RASK, formula: revenue / available_seat_kilometres, unit: cents/ASK, direction: higher_is_better }
+  - { id: arm.kpi.yield, name: Yield, formula: passenger_revenue / revenue_passenger_kilometres, unit: cents/RPK, direction: higher_is_better }
+  - { id: arm.kpi.load_factor, name: Load Factor, formula: rpk / ask, unit: "%", direction: higher_is_better }
+  - { id: arm.kpi.spill_rate, name: Spill Rate, formula: refused_pax / requested_pax, unit: "%", direction: lower_is_better }
+  - { id: arm.kpi.no_show_rate, name: No-Show Rate, formula: no_shows / booked_pax, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Sabre, product: AirVision Revenue Optimizer, category: RM System }
+  - { vendor: Amadeus, product: Altea NDC, category: PSS }
+  - { vendor: PROS, product: Origin & Destination, category: RM System }
+  - { vendor: ATPCO, product: Fares & Pricing, category: Fare Filing }
+  - { vendor: Navitaire, product: New Skies, category: PSS }
+
+connectors:
+  - { type: EDIFACT (PNRGOV/MIR), protocol: AS2, auth: PKI }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }

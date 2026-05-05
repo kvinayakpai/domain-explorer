@@ -1,0 +1,28 @@
+id: airline_loyalty
+name: Airline Loyalty
+vertical: TTH
+oneLiner: Frequent flyer program — accrual, redemption, tier qualification, and partner monetisation.
+
+personas:
+  - { name: Head of Loyalty, title: Head of Frequent Flyer Program, level: VP }
+  - { name: Partnerships Director, title: Director of Loyalty Partnerships, level: Director }
+  - { name: CFO, title: Chief Financial Officer, level: C-suite }
+
+kpis:
+  - { id: aloy.kpi.miles_liability, name: Miles Liability, formula: outstanding_miles * value_per_mile, unit: USD, direction: target_band }
+  - { id: aloy.kpi.breakage_rate, name: Breakage Rate, formula: expired_miles / earned_miles, unit: "%", direction: target_band }
+  - { id: aloy.kpi.partner_revenue, name: Partner Revenue, formula: sum(partner_billed_revenue), unit: USD, direction: higher_is_better }
+  - { id: aloy.kpi.elite_retention, name: Elite Tier Retention, formula: requalified_elites / prior_year_elites, unit: "%", direction: higher_is_better }
+  - { id: aloy.kpi.award_seat_yield, name: Award Seat Yield, formula: revenue_displaced / award_seats_used, unit: USD, direction: target_band }
+
+sourceSystems:
+  - { vendor: Sabre, product: Loyalty, category: Loyalty Platform }
+  - { vendor: Amadeus, product: Loyalty Management, category: Loyalty Platform }
+  - { vendor: Comarch, product: Loyalty Management for Travel, category: Loyalty Platform }
+  - { vendor: Switchfly, product: Loyalty, category: Award Booking }
+  - { vendor: Salesforce, product: Service Cloud, category: CRM }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: SOAP, protocol: HTTPS, auth: WS-Security }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }

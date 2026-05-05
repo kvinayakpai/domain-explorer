@@ -1,0 +1,28 @@
+id: store_ops
+name: Store Operations
+vertical: Retail
+oneLiner: Workforce, in-store execution, and shrink management across the store network.
+
+personas:
+  - { name: VP Stores, title: VP Store Operations, level: VP }
+  - { name: District Manager, title: District Manager, level: Manager }
+  - { name: Loss Prevention Lead, title: Loss Prevention Lead, level: Director }
+
+kpis:
+  - { id: ops.kpi.sales_per_labor_hour, name: Sales per Labor Hour, formula: net_sales / labor_hours, unit: USD, direction: higher_is_better }
+  - { id: ops.kpi.shrink, name: Shrink, formula: shrink_dollars / net_sales, unit: "%", direction: lower_is_better }
+  - { id: ops.kpi.store_compliance, name: Store Compliance Score, formula: passed_audits / total_audits, unit: "%", direction: higher_is_better }
+  - { id: ops.kpi.checkout_wait, name: Avg Checkout Wait, formula: avg(wait_time), unit: seconds, direction: lower_is_better }
+  - { id: ops.kpi.scheduled_vs_worked, name: Schedule Adherence, formula: scheduled_hours / worked_hours, unit: "%", direction: target_band }
+
+sourceSystems:
+  - { vendor: NCR, product: Voyix POS, category: POS }
+  - { vendor: Toshiba, product: TCx Elevate, category: POS }
+  - { vendor: UKG, product: Pro Workforce Management, category: WFM }
+  - { vendor: Reflexis, product: Reflexis ONE, category: Task & Comms }
+  - { vendor: Sensormatic, product: ShopperTrak, category: Traffic Counter }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }
+  - { type: MQTT, protocol: MQTT, auth: TLS + cred }

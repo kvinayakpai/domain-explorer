@@ -1,0 +1,28 @@
+id: fraud
+name: Fraud & Financial Crime
+vertical: BFSI
+oneLiner: Detect, score, and disposition suspicious activity across cards, payments, and accounts.
+
+personas:
+  - { name: Head of Fraud, title: Head of Fraud Strategy, level: VP }
+  - { name: Fraud Ops Manager, title: Fraud Operations Manager, level: Manager }
+  - { name: Model Risk Lead, title: Fraud Model Risk Lead, level: Director }
+
+kpis:
+  - { id: fraud.kpi.fraud_loss_bps, name: Fraud Loss (bps of volume), formula: net_fraud_loss / volume * 10000, unit: bps, direction: lower_is_better }
+  - { id: fraud.kpi.false_positive_rate, name: False Positive Rate, formula: legit_blocked / total_blocked, unit: "%", direction: lower_is_better }
+  - { id: fraud.kpi.detection_rate, name: Detection Rate, formula: caught_fraud / total_fraud, unit: "%", direction: higher_is_better }
+  - { id: fraud.kpi.time_to_disposition, name: Time to Disposition, formula: avg(disposition_ts - alert_ts), unit: minutes, direction: lower_is_better }
+  - { id: fraud.kpi.recovery_rate, name: Loss Recovery Rate, formula: recovered / gross_loss, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: SAS, product: Fraud Management, category: Fraud Platform }
+  - { vendor: FICO, product: Falcon, category: Fraud Platform }
+  - { vendor: NICE Actimize, product: IFM-X, category: Fraud Platform }
+  - { vendor: Featurespace, product: ARIC, category: Behavioral Analytics }
+  - { vendor: ThreatMetrix, product: Digital Identity Network, category: Device Intelligence }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: Kafka, protocol: Kafka, auth: SASL/SCRAM }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }

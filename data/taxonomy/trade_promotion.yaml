@@ -1,0 +1,28 @@
+id: trade_promotion
+name: Trade Promotion Management
+vertical: CPG
+oneLiner: Plan, fund, and measure trade promotions with retailers — accruals, deductions, and lift attribution.
+
+personas:
+  - { name: VP Sales, title: VP National Sales, level: VP }
+  - { name: Trade Marketing Director, title: Director of Trade Marketing, level: Director }
+  - { name: Deduction Resolution Lead, title: Deduction Resolution Lead, level: Manager }
+
+kpis:
+  - { id: tpm.kpi.promo_roi, name: Promo ROI, formula: incremental_profit / promo_spend, unit: ratio, direction: higher_is_better }
+  - { id: tpm.kpi.lift_pct, name: Promo Lift, formula: (promo_volume - baseline_volume) / baseline_volume, unit: "%", direction: higher_is_better }
+  - { id: tpm.kpi.deduction_aging, name: Deduction Aging > 60 days, formula: open_60d_deductions / total_deductions, unit: "%", direction: lower_is_better }
+  - { id: tpm.kpi.unauthorized_deduction_pct, name: Unauthorized Deduction %, formula: unauthorized / total_deductions, unit: "%", direction: lower_is_better }
+  - { id: tpm.kpi.event_compliance, name: Event Compliance Rate, formula: compliant_events / total_events, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: SAP, product: Trade Promotion Management, category: TPM }
+  - { vendor: Vistex, product: Channel Incentive Management, category: TPM }
+  - { vendor: Exceedra, product: by Telus, category: TPM }
+  - { vendor: NielsenIQ, product: Discover, category: Syndicated Data }
+  - { vendor: Circana, product: IRI Liquid Data, category: Syndicated Data }
+
+connectors:
+  - { type: SAP IDoc, protocol: RFC/file, auth: SAP user }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }

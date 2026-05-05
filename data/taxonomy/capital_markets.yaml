@@ -1,0 +1,28 @@
+id: capital_markets
+name: Capital Markets
+vertical: BFSI
+oneLiner: Front-to-back trade lifecycle for equities, FICC, and derivatives across execution, clearing, and settlement.
+
+personas:
+  - { name: Head of Trading, title: Head of Trading, level: VP }
+  - { name: Operations COO, title: COO Capital Markets Operations, level: C-suite }
+  - { name: Head of Quant Risk, title: Head of Quantitative Risk, level: Director }
+
+kpis:
+  - { id: cm.kpi.trade_break_rate, name: Trade Break Rate, formula: breaks / total_trades, unit: "%", direction: lower_is_better }
+  - { id: cm.kpi.t_plus_1_settlement, name: T+1 Settlement Rate, formula: settled_t1 / eligible_trades, unit: "%", direction: higher_is_better }
+  - { id: cm.kpi.var, name: Value at Risk (1d 99%), formula: var_1d_99, unit: USD, direction: target_band }
+  - { id: cm.kpi.execution_slippage, name: Execution Slippage vs Arrival, formula: avg(arrival_px - exec_px) / arrival_px, unit: bps, direction: lower_is_better }
+  - { id: cm.kpi.regulatory_breaches, name: Regulatory Breaches, formula: count(breach_events), unit: events, direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Murex, product: MX.3, category: Trading Platform }
+  - { vendor: Calypso, product: Calypso, category: Trading Platform }
+  - { vendor: Bloomberg, product: AIM, category: OMS }
+  - { vendor: ION, product: Fidessa, category: OEMS }
+  - { vendor: DTCC, product: CTM, category: Settlement Network }
+
+connectors:
+  - { type: FIX, protocol: TCP, auth: PKI }
+  - { type: SWIFT MT/ISO20022, protocol: MQ/file, auth: PKI }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }

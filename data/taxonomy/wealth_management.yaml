@@ -1,0 +1,28 @@
+id: wealth_management
+name: Wealth Management
+vertical: BFSI
+oneLiner: Advisory, portfolio management, and reporting for HNW and retail investors.
+
+personas:
+  - { name: Head of Wealth, title: Head of Wealth Management, level: VP }
+  - { name: Chief Investment Officer, title: Chief Investment Officer, level: C-suite }
+  - { name: Advisor Practice Lead, title: Advisor Practice Lead, level: Director }
+
+kpis:
+  - { id: wm.kpi.aum, name: Assets Under Management, formula: sum(account_market_value), unit: USD, direction: higher_is_better }
+  - { id: wm.kpi.net_new_assets, name: Net New Assets, formula: inflows - outflows, unit: USD, direction: higher_is_better }
+  - { id: wm.kpi.advisor_productivity, name: Advisor Productivity, formula: revenue / advisor_count, unit: USD, direction: higher_is_better }
+  - { id: wm.kpi.fee_compression, name: Fee Compression, formula: avg_fee_bps_qoq_delta, unit: bps, direction: target_band }
+  - { id: wm.kpi.client_attrition, name: Client Attrition, formula: lost_clients / total_clients, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: SS&C, product: Black Diamond, category: Portfolio Management }
+  - { vendor: Envestnet, product: Tamarac, category: Wealth Platform }
+  - { vendor: Charles River, product: Investment Management Solution, category: OMS }
+  - { vendor: Salesforce, product: Financial Services Cloud, category: Customer 360 }
+  - { vendor: Refinitiv, product: Eikon, category: Market Data }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: FIX, protocol: TCP, auth: PKI }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }

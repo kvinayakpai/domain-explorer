@@ -1,0 +1,28 @@
+id: warranty
+name: Warranty & Aftermarket
+vertical: Manufacturing
+oneLiner: Claims processing, supplier recovery, and field-failure analytics for warranty operations.
+
+personas:
+  - { name: VP Service & Warranty, title: VP Service and Warranty, level: VP }
+  - { name: Warranty Operations Manager, title: Warranty Operations Manager, level: Manager }
+  - { name: Quality Engineer, title: Field Quality Engineer, level: IC }
+
+kpis:
+  - { id: war.kpi.claim_rate, name: Claim Rate per 1k Units, formula: claims / shipped_units * 1000, unit: per 1k, direction: lower_is_better }
+  - { id: war.kpi.cost_per_unit_sold, name: Warranty Cost per Unit Sold, formula: warranty_cost / units_sold, unit: USD, direction: lower_is_better }
+  - { id: war.kpi.supplier_recovery_rate, name: Supplier Recovery Rate, formula: recovered_from_suppliers / claim_cost, unit: "%", direction: higher_is_better }
+  - { id: war.kpi.claim_cycle_time, name: Claim Cycle Time, formula: avg(close_ts - submit_ts), unit: days, direction: lower_is_better }
+  - { id: war.kpi.repeat_repair_rate, name: Repeat Repair Rate, formula: repeat_repairs / total_repairs, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Tavant, product: Warranty Management, category: Warranty Platform }
+  - { vendor: PTC, product: Servigistics, category: Service Parts }
+  - { vendor: SAP, product: Warranty Management, category: Warranty Platform }
+  - { vendor: Salesforce, product: Service Cloud, category: CRM }
+  - { vendor: Syncron, product: Service Lifecycle, category: Aftermarket }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: SAP IDoc, protocol: RFC/file, auth: SAP user }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }

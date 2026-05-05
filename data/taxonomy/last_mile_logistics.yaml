@@ -1,0 +1,28 @@
+id: last_mile_logistics
+name: Last-Mile Logistics
+vertical: TTH
+oneLiner: Route, dispatch, and proof-of-delivery for parcel and same-day delivery operations.
+
+personas:
+  - { name: VP Last Mile, title: VP Last-Mile Operations, level: VP }
+  - { name: Dispatcher Lead, title: Dispatch Operations Lead, level: Manager }
+  - { name: Driver Experience Manager, title: Driver Experience Manager, level: Manager }
+
+kpis:
+  - { id: lm.kpi.first_attempt_success, name: First-Attempt Delivery Success, formula: first_attempt_delivered / total_attempts, unit: "%", direction: higher_is_better }
+  - { id: lm.kpi.cost_per_stop, name: Cost per Stop, formula: total_route_cost / stops, unit: USD, direction: lower_is_better }
+  - { id: lm.kpi.on_time_window, name: On-Time Window Rate, formula: deliveries_in_window / total_deliveries, unit: "%", direction: higher_is_better }
+  - { id: lm.kpi.stops_per_hour, name: Stops per Hour, formula: stops / driver_hours, unit: stops/hr, direction: higher_is_better }
+  - { id: lm.kpi.damage_rate, name: Damage Rate, formula: damaged_packages / delivered_packages, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Descartes, product: Route Planner RC, category: Routing }
+  - { vendor: Bringg, product: Last-Mile Platform, category: Delivery Orchestration }
+  - { vendor: Onfleet, product: Last-Mile Software, category: Dispatch }
+  - { vendor: Samsara, product: Vehicle Telematics, category: Telematics }
+  - { vendor: project44, product: Movement, category: Visibility Network }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: Webhook, protocol: HTTPS, auth: HMAC }
+  - { type: GPS streaming, protocol: MQTT, auth: TLS + cred }

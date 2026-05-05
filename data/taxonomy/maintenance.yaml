@@ -1,0 +1,28 @@
+id: maintenance
+name: Asset & Maintenance Management
+vertical: Manufacturing
+oneLiner: Predictive and preventive maintenance for plant assets — work orders, spares, and reliability engineering.
+
+personas:
+  - { name: Reliability Director, title: Director of Reliability Engineering, level: Director }
+  - { name: Maintenance Planner, title: Maintenance Planner, level: Manager }
+  - { name: CMMS Admin, title: CMMS Administrator, level: IC }
+
+kpis:
+  - { id: maint.kpi.pm_compliance, name: PM Compliance, formula: pm_completed_on_time / pm_scheduled, unit: "%", direction: higher_is_better }
+  - { id: maint.kpi.unplanned_downtime, name: Unplanned Downtime, formula: hours_unplanned_down / total_hours, unit: "%", direction: lower_is_better }
+  - { id: maint.kpi.spare_stockout, name: Critical Spares Stockout, formula: stockout_events / total_requests, unit: "%", direction: lower_is_better }
+  - { id: maint.kpi.maintenance_cost_per_unit, name: Maintenance Cost per Unit Produced, formula: maint_cost / units_produced, unit: USD, direction: lower_is_better }
+  - { id: maint.kpi.wrench_time, name: Wrench Time, formula: wrench_hours / labor_hours, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: IBM, product: Maximo, category: EAM/CMMS }
+  - { vendor: SAP, product: PM/EAM, category: EAM }
+  - { vendor: Infor, product: EAM, category: EAM }
+  - { vendor: AVEVA, product: PI System, category: Historian }
+  - { vendor: GE Digital, product: APM, category: Asset Performance }
+
+connectors:
+  - { type: OPC UA, protocol: OPC UA, auth: PKI }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: SAP RFC, protocol: RFC, auth: SAP user }

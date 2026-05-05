@@ -1,0 +1,28 @@
+id: loyalty
+name: Loyalty & CRM
+vertical: RCG
+oneLiner: Member acquisition, segmentation, redemption, and lifecycle marketing across channels.
+
+personas:
+  - { name: Head of Loyalty, title: Head of Loyalty, level: Director }
+  - { name: VP CRM, title: VP CRM & Lifecycle Marketing, level: VP }
+  - { name: Member Insights Manager, title: Member Insights Manager, level: Manager }
+
+kpis:
+  - { id: loy.kpi.active_member_pct, name: Active Member %, formula: active_members / enrolled, unit: "%", direction: higher_is_better }
+  - { id: loy.kpi.member_share_of_sales, name: Member Share of Sales, formula: member_sales / total_sales, unit: "%", direction: higher_is_better }
+  - { id: loy.kpi.redemption_rate, name: Redemption Rate, formula: points_redeemed / points_issued, unit: "%", direction: target_band }
+  - { id: loy.kpi.liability_per_member, name: Points Liability per Member, formula: outstanding_points_value / members, unit: USD, direction: lower_is_better }
+  - { id: loy.kpi.repeat_purchase_rate, name: Repeat Purchase Rate, formula: repeat_buyers / total_buyers, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Salesforce, product: Marketing Cloud, category: CRM }
+  - { vendor: Braze, product: Customer Engagement Platform, category: Lifecycle Marketing }
+  - { vendor: SAP, product: Emarsys, category: Lifecycle Marketing }
+  - { vendor: Cheetah Digital, product: Loyalty, category: Loyalty Platform }
+  - { vendor: mParticle, product: CDP, category: Customer Data Platform }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: Webhook, protocol: HTTPS, auth: HMAC }
+  - { type: Reverse ETL, protocol: HTTPS, auth: OAuth2 }

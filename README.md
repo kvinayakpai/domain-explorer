@@ -12,13 +12,13 @@ domain-explorer/
 │   ├── metadata/           # Zod (TS) + Pydantic v2 (Py) schemas, YAML loader
 │   └── shared-types/       # generated TS types
 ├── data/
-│   ├── taxonomy/           # subdomain configs (10 seeded)
+│   ├── taxonomy/           # subdomain configs (10 anchors + breadth pass)
 │   ├── kpis/               # starter KPI registry
 │   ├── source-systems/     # source system registry
 │   └── connectors/         # 23 connector patterns
 ├── modeling/
 │   ├── dbt/                # dbt-core skeleton (DuckDB profile)
-│   └── ddl/                # 3NF / Vault / dim DDL excerpts
+│   └── ddl/                # 3NF / Vault / dim DDL excerpts (all 7 anchors)
 ├── kg/
 │   ├── ontology/           # OWL/Turtle stubs
 │   └── cypher/             # openCypher query templates
@@ -45,7 +45,12 @@ pwsh ./demo-prep.ps1
 pnpm install
 pnpm --filter explorer-web dev
 
-# 3. (optional) Run the API
+# 3. (optional) Enable the live Claude assistant on /assistant.
+#    Without this the assistant runs in deterministic demo mode.
+cp .env.example .env
+# then set ANTHROPIC_API_KEY=sk-ant-...
+
+# 4. (optional) Run the API
 uv run uvicorn app.main:app --reload --app-dir services/api
 ```
 

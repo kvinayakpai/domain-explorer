@@ -1,0 +1,28 @@
+id: cards
+name: Cards
+vertical: BFSI
+oneLiner: Issuing and acquiring of credit/debit/prepaid cards across schemes, lifecycle, and rewards.
+
+personas:
+  - { name: Head of Cards, title: Head of Cards, level: VP }
+  - { name: Card Portfolio Manager, title: Card Portfolio Manager, level: Director }
+  - { name: Rewards Lead, title: Head of Card Rewards, level: Manager }
+
+kpis:
+  - { id: card.kpi.activation_rate, name: Activation Rate, formula: activated / issued, unit: "%", direction: higher_is_better }
+  - { id: card.kpi.spend_per_active, name: Spend per Active Card, formula: total_spend / active_cards, unit: USD, direction: higher_is_better }
+  - { id: card.kpi.delinquency_30, name: 30+ DPD Delinquency, formula: balance_30dpd / total_balance, unit: "%", direction: lower_is_better }
+  - { id: card.kpi.cost_of_rewards, name: Cost of Rewards, formula: rewards_paid / spend, unit: "%", direction: target_band }
+  - { id: card.kpi.attrition, name: Card Attrition, formula: closed_cards / open_cards, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: TSYS, product: TS2, category: Card Processor }
+  - { vendor: FIS, product: Card Management, category: Card Processor }
+  - { vendor: Fiserv, product: Optis, category: Card Management }
+  - { vendor: Visa, product: VisaNet, category: Scheme Network }
+  - { vendor: Mastercard, product: Mastercard Network, category: Scheme Network }
+
+connectors:
+  - { type: ISO8583, protocol: TCP, auth: PKI/MAC }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }

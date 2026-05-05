@@ -1,0 +1,28 @@
+id: saas_metrics
+name: SaaS Revenue Metrics
+vertical: Media
+oneLiner: ARR, retention, and product-led growth metrics for B2B SaaS go-to-market and finance.
+
+personas:
+  - { name: CFO, title: Chief Financial Officer, level: C-suite }
+  - { name: VP RevOps, title: VP Revenue Operations, level: VP }
+  - { name: Customer Success Director, title: Director of Customer Success, level: Director }
+
+kpis:
+  - { id: saas.kpi.arr, name: ARR, formula: sum(annualised_recurring_revenue), unit: USD, direction: higher_is_better }
+  - { id: saas.kpi.nrr, name: Net Revenue Retention, formula: ending_arr / starting_arr_excl_new, unit: "%", direction: higher_is_better }
+  - { id: saas.kpi.gross_churn, name: Gross Logo Churn, formula: churned_logos / starting_logos, unit: "%", direction: lower_is_better }
+  - { id: saas.kpi.cac_payback, name: CAC Payback, formula: cac / monthly_gross_margin, unit: months, direction: lower_is_better }
+  - { id: saas.kpi.ltv_cac, name: LTV / CAC, formula: ltv / cac, unit: ratio, direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Salesforce, product: Sales Cloud, category: CRM }
+  - { vendor: HubSpot, product: Sales Hub, category: CRM }
+  - { vendor: Stripe, product: Billing, category: Subscription Billing }
+  - { vendor: Zuora, product: Billing, category: Subscription Billing }
+  - { vendor: Gainsight, product: CS, category: Customer Success }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: Webhook, protocol: HTTPS, auth: HMAC }
+  - { type: Reverse ETL, protocol: HTTPS, auth: OAuth2 }

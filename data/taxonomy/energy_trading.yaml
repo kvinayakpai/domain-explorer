@@ -1,0 +1,28 @@
+id: energy_trading
+name: Energy Trading & Risk
+vertical: Energy
+oneLiner: Wholesale power, gas, and emissions trading with position management and risk limits.
+
+personas:
+  - { name: Head of Trading, title: Head of Energy Trading, level: VP }
+  - { name: Chief Risk Officer, title: Chief Risk Officer, level: C-suite }
+  - { name: Middle Office Lead, title: Middle Office Lead, level: Manager }
+
+kpis:
+  - { id: et.kpi.pnl, name: Daily P&L, formula: mark_to_market_pnl, unit: USD, direction: higher_is_better }
+  - { id: et.kpi.var, name: VaR (1d 95%), formula: var_1d_95, unit: USD, direction: target_band }
+  - { id: et.kpi.confirmation_lag, name: Trade Confirmation Lag, formula: avg(confirmed_ts - traded_ts), unit: hours, direction: lower_is_better }
+  - { id: et.kpi.position_limit_breaches, name: Position Limit Breaches, formula: count(breach_events), unit: events, direction: lower_is_better }
+  - { id: et.kpi.imbalance_cost, name: Imbalance Cost, formula: imbalance_volume * imbalance_price, unit: USD, direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: ION, product: Allegro CTRM, category: CTRM }
+  - { vendor: Openlink, product: Endur, category: CTRM }
+  - { vendor: Eka, product: ETRM, category: ETRM }
+  - { vendor: ICE, product: WebICE, category: Exchange }
+  - { vendor: Refinitiv, product: Eikon, category: Market Data }
+
+connectors:
+  - { type: FIX, protocol: TCP, auth: PKI }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }

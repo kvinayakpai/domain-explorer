@@ -1,0 +1,28 @@
+id: payer_provider
+name: Payer-Provider Operations
+vertical: Healthcare
+oneLiner: Claims adjudication, member enrolment, and provider network management for health plans.
+
+personas:
+  - { name: Chief Medical Officer, title: Chief Medical Officer, level: C-suite }
+  - { name: VP Claims, title: VP Claims Operations, level: VP }
+  - { name: Network Director, title: Director of Network Management, level: Director }
+
+kpis:
+  - { id: pp.kpi.first_pass_pay_rate, name: First Pass Pay Rate, formula: claims_paid_first_pass / total_claims, unit: "%", direction: higher_is_better }
+  - { id: pp.kpi.claims_cycle_time, name: Claims Cycle Time, formula: avg(paid_ts - received_ts), unit: days, direction: lower_is_better }
+  - { id: pp.kpi.medical_loss_ratio, name: Medical Loss Ratio, formula: medical_costs / premiums, unit: "%", direction: target_band }
+  - { id: pp.kpi.prior_auth_turnaround, name: Prior Auth Turnaround, formula: avg(decision_ts - request_ts), unit: hours, direction: lower_is_better }
+  - { id: pp.kpi.network_adequacy, name: Network Adequacy Pass Rate, formula: passing_zips / total_zips, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Optum, product: Optum360, category: Claims Platform }
+  - { vendor: Epic, product: Tapestry, category: Payer Platform }
+  - { vendor: HealthEdge, product: HealthRules Payer, category: Core Admin }
+  - { vendor: Cognizant, product: TriZetto Facets, category: Core Admin }
+  - { vendor: Change Healthcare, product: Clearinghouse, category: EDI Clearinghouse }
+
+connectors:
+  - { type: X12 EDI 837/835/270, protocol: AS2, auth: PKI }
+  - { type: HL7 v2/FHIR, protocol: HTTPS, auth: OAuth2 }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }

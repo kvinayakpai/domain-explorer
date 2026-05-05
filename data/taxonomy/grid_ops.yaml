@@ -1,0 +1,28 @@
+id: grid_ops
+name: Grid Operations
+vertical: Utilities
+oneLiner: Real-time monitoring and control of transmission and distribution networks for reliability and DER integration.
+
+personas:
+  - { name: VP Grid Operations, title: VP Grid Operations, level: VP }
+  - { name: Distribution Operations Manager, title: Distribution Operations Manager, level: Manager }
+  - { name: DER Integration Lead, title: DER Integration Lead, level: Director }
+
+kpis:
+  - { id: grid.kpi.saidi, name: SAIDI, formula: total_outage_minutes / customers, unit: minutes, direction: lower_is_better }
+  - { id: grid.kpi.saifi, name: SAIFI, formula: outage_events_total / customers, unit: events, direction: lower_is_better }
+  - { id: grid.kpi.caidi, name: CAIDI, formula: saidi / saifi, unit: minutes, direction: lower_is_better }
+  - { id: grid.kpi.feeder_loading, name: Feeder Loading at Peak, formula: peak_load / nameplate, unit: "%", direction: target_band }
+  - { id: grid.kpi.der_curtailment, name: DER Curtailment, formula: curtailed_mwh / scheduled_mwh, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: GE Digital, product: ADMS, category: ADMS }
+  - { vendor: Schneider Electric, product: EcoStruxure ADMS, category: ADMS }
+  - { vendor: OSI, product: monarch SCADA, category: SCADA }
+  - { vendor: Siemens, product: Spectrum Power, category: EMS }
+  - { vendor: AspenTech, product: DGM, category: DERMS }
+
+connectors:
+  - { type: ICCP, protocol: TASE.2, auth: PKI }
+  - { type: DNP3, protocol: TCP, auth: cert/cred }
+  - { type: CIM/IEC 61968, protocol: XML/JMS, auth: PKI }

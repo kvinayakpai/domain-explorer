@@ -1,0 +1,28 @@
+id: customer_care
+name: Customer Care
+vertical: Telecom
+oneLiner: Multi-channel contact centre operations — voice, chat, self-serve — for service support and retention.
+
+personas:
+  - { name: VP Customer Care, title: VP Customer Care, level: VP }
+  - { name: Contact Center Director, title: Contact Center Operations Director, level: Director }
+  - { name: WFM Manager, title: Workforce Management Manager, level: Manager }
+
+kpis:
+  - { id: care.kpi.csat, name: CSAT, formula: avg(post_call_csat), unit: index, direction: higher_is_better }
+  - { id: care.kpi.fcr, name: First Contact Resolution, formula: resolved_first_contact / total_contacts, unit: "%", direction: higher_is_better }
+  - { id: care.kpi.aht, name: Average Handle Time, formula: total_handle_time / contacts, unit: seconds, direction: lower_is_better }
+  - { id: care.kpi.containment_rate, name: Self-Service Containment, formula: contained_self_serve / attempted_self_serve, unit: "%", direction: higher_is_better }
+  - { id: care.kpi.churn, name: Subscriber Churn, formula: disconnects / avg_subscribers, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: NICE, product: CXone, category: CCaaS }
+  - { vendor: Genesys, product: Cloud CX, category: CCaaS }
+  - { vendor: Salesforce, product: Service Cloud, category: CRM }
+  - { vendor: Zendesk, product: Suite, category: Service }
+  - { vendor: Amazon, product: Connect, category: CCaaS }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: Webhook, protocol: HTTPS, auth: HMAC }
+  - { type: SIP/RTP, protocol: SIP, auth: SIP digest }

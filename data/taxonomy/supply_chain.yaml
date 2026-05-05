@@ -1,0 +1,28 @@
+id: supply_chain
+name: Supply Chain
+vertical: RCG
+oneLiner: End-to-end logistics, distribution, and inventory across DCs, carriers, and stores.
+
+personas:
+  - { name: Chief Supply Chain Officer, title: Chief Supply Chain Officer, level: C-suite }
+  - { name: VP Logistics, title: VP Logistics, level: VP }
+  - { name: DC Operations Manager, title: Distribution Center Operations Manager, level: Manager }
+
+kpis:
+  - { id: sc.kpi.perfect_order_rate, name: Perfect Order Rate, formula: perfect_orders / total_orders, unit: "%", direction: higher_is_better }
+  - { id: sc.kpi.dc_throughput, name: DC Throughput, formula: lines_shipped / labor_hours, unit: lines/hr, direction: higher_is_better }
+  - { id: sc.kpi.cost_per_unit_shipped, name: Cost per Unit Shipped, formula: total_logistics_cost / units_shipped, unit: USD, direction: lower_is_better }
+  - { id: sc.kpi.on_time_delivery, name: On-Time Delivery, formula: on_time_deliveries / total_deliveries, unit: "%", direction: higher_is_better }
+  - { id: sc.kpi.inventory_accuracy, name: Inventory Accuracy, formula: counted_matches / counted_total, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Manhattan Associates, product: Active WM, category: WMS }
+  - { vendor: SAP, product: EWM, category: WMS }
+  - { vendor: Blue Yonder, product: Transportation Management, category: TMS }
+  - { vendor: Oracle, product: Transportation Management Cloud, category: TMS }
+  - { vendor: project44, product: Movement, category: Visibility Network }
+
+connectors:
+  - { type: EDI 940/945/214, protocol: AS2, auth: PKI }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }

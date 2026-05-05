@@ -1,0 +1,28 @@
+id: pricing
+name: Pricing
+vertical: RCG
+oneLiner: List, promo, and channel pricing optimised against demand elasticity, competitive intel, and margin targets.
+
+personas:
+  - { name: VP Pricing, title: VP Pricing & Revenue Growth Management, level: VP }
+  - { name: Pricing Manager, title: Pricing Manager, level: Manager }
+  - { name: RGM Analyst, title: Revenue Growth Management Analyst, level: IC }
+
+kpis:
+  - { id: pric.kpi.price_realization, name: Price Realization, formula: net_price / list_price, unit: "%", direction: higher_is_better }
+  - { id: pric.kpi.price_elasticity, name: Price Elasticity, formula: pct_volume_change / pct_price_change, unit: ratio, direction: target_band }
+  - { id: pric.kpi.competitive_index, name: Competitive Price Index, formula: own_price / compset_avg_price, unit: index, direction: target_band }
+  - { id: pric.kpi.margin_pct, name: Margin %, formula: gross_margin / net_sales, unit: "%", direction: higher_is_better }
+  - { id: pric.kpi.promo_lift, name: Promo Lift, formula: (promo_units - baseline_units) / baseline_units, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: PROS, product: Smart Price Optimization, category: Pricing }
+  - { vendor: Vendavo, product: Profit Analyzer, category: Pricing }
+  - { vendor: Blue Yonder, product: Lifecycle Pricing, category: Pricing }
+  - { vendor: Nielsen, product: NielsenIQ, category: Market Data }
+  - { vendor: SAP, product: S/4HANA SD, category: ERP }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: SAP IDoc, protocol: RFC/file, auth: SAP user }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }

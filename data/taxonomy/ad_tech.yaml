@@ -1,0 +1,28 @@
+id: ad_tech
+name: Ad Tech
+vertical: Media
+oneLiner: Programmatic ad buying/selling, audience targeting, and campaign measurement across publishers and brands.
+
+personas:
+  - { name: Chief Revenue Officer, title: Chief Revenue Officer, level: C-suite }
+  - { name: Head of Ad Operations, title: Head of Ad Operations, level: Director }
+  - { name: Yield Manager, title: Programmatic Yield Manager, level: Manager }
+
+kpis:
+  - { id: ad.kpi.fill_rate, name: Fill Rate, formula: filled_impressions / total_requests, unit: "%", direction: higher_is_better }
+  - { id: ad.kpi.ecpm, name: eCPM, formula: revenue / impressions * 1000, unit: USD, direction: higher_is_better }
+  - { id: ad.kpi.viewability, name: Viewability, formula: viewable_imps / measured_imps, unit: "%", direction: higher_is_better }
+  - { id: ad.kpi.iva_rate, name: Invalid Traffic Rate, formula: ivt_impressions / total_impressions, unit: "%", direction: lower_is_better }
+  - { id: ad.kpi.attributed_conversions, name: Attributed Conversions, formula: count(attributed_conversions), unit: conversions, direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: Google, product: Ad Manager, category: SSP/Ad Server }
+  - { vendor: The Trade Desk, product: TTD Platform, category: DSP }
+  - { vendor: Magnite, product: SpringServe, category: SSP }
+  - { vendor: LiveRamp, product: Identity, category: Identity Resolution }
+  - { vendor: Integral Ad Science, product: IAS Signal, category: Verification }
+
+connectors:
+  - { type: OpenRTB, protocol: HTTPS, auth: API key }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: S2S Postback, protocol: HTTPS, auth: HMAC }

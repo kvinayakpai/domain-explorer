@@ -1,0 +1,28 @@
+id: clinical_trials
+name: Clinical Trials
+vertical: LifeSciences
+oneLiner: Protocol design, site activation, patient enrollment, and trial data capture for drug development.
+
+personas:
+  - { name: VP Clinical Operations, title: VP Clinical Operations, level: VP }
+  - { name: Clinical Data Manager, title: Clinical Data Manager, level: Manager }
+  - { name: CRO Lead, title: CRO Engagement Lead, level: Director }
+
+kpis:
+  - { id: ct.kpi.enrollment_rate, name: Enrollment Rate, formula: enrolled / target_enrolment, unit: "%", direction: higher_is_better }
+  - { id: ct.kpi.site_activation_time, name: Site Activation Cycle Time, formula: avg(active_ts - selected_ts), unit: days, direction: lower_is_better }
+  - { id: ct.kpi.protocol_deviation_rate, name: Protocol Deviation Rate, formula: deviations / patient_visits, unit: per visit, direction: lower_is_better }
+  - { id: ct.kpi.query_resolution_time, name: Data Query Resolution Time, formula: avg(closed_ts - opened_ts), unit: days, direction: lower_is_better }
+  - { id: ct.kpi.dropout_rate, name: Patient Dropout Rate, formula: dropouts / enrolled, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Veeva, product: Vault Clinical, category: eClinical Suite }
+  - { vendor: Medidata, product: Rave EDC, category: EDC }
+  - { vendor: Oracle, product: Clinical One, category: eClinical Suite }
+  - { vendor: IQVIA, product: CTMS, category: CTMS }
+  - { vendor: Signant Health, product: SmartSignals eCOA, category: eCOA }
+
+connectors:
+  - { type: CDISC ODM, protocol: HTTPS, auth: OAuth2 }
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: Secure file transfer, protocol: SFTP, auth: SSH key }

@@ -1,0 +1,28 @@
+id: kyc_aml
+name: KYC & AML
+vertical: BFSI
+oneLiner: Customer due diligence, sanctions screening, transaction monitoring, and SAR filing.
+
+personas:
+  - { name: BSA Officer, title: BSA/AML Officer, level: Director }
+  - { name: Head of Financial Crime, title: Head of Financial Crime Compliance, level: VP }
+  - { name: KYC Operations Lead, title: KYC Operations Lead, level: Manager }
+
+kpis:
+  - { id: aml.kpi.case_backlog, name: Case Investigation Backlog, formula: open_cases_over_sla, unit: cases, direction: lower_is_better }
+  - { id: aml.kpi.sar_filing_timeliness, name: SAR Filing Timeliness, formula: on_time_sars / total_sars, unit: "%", direction: higher_is_better }
+  - { id: aml.kpi.alert_to_case_rate, name: Alert to Case Conversion, formula: cases_opened / alerts_generated, unit: "%", direction: target_band }
+  - { id: aml.kpi.kyc_refresh_overdue, name: KYC Refresh Overdue, formula: overdue / total_customers, unit: "%", direction: lower_is_better }
+  - { id: aml.kpi.true_positive_rate, name: Sanctions True Positive Rate, formula: true_hits / total_hits, unit: "%", direction: higher_is_better }
+
+sourceSystems:
+  - { vendor: NICE Actimize, product: SAM, category: Transaction Monitoring }
+  - { vendor: Oracle, product: Financial Crime and Compliance, category: AML Platform }
+  - { vendor: LexisNexis, product: Bridger Insight, category: Sanctions Screening }
+  - { vendor: Refinitiv, product: World-Check, category: Watchlist Data }
+  - { vendor: Fenergo, product: Client Lifecycle Management, category: KYC Platform }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: SOAP, protocol: HTTPS, auth: WS-Security }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }

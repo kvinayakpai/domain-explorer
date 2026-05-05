@@ -1,0 +1,28 @@
+id: bss_oss
+name: BSS / OSS
+vertical: Telecom
+oneLiner: Order, billing, and service activation across telecom business and operational support systems.
+
+personas:
+  - { name: VP BSS, title: VP Business Support Systems, level: VP }
+  - { name: Billing Operations Director, title: Director of Billing Operations, level: Director }
+  - { name: Order Management Lead, title: Order Management Lead, level: Manager }
+
+kpis:
+  - { id: bss.kpi.order_fallout, name: Order Fallout Rate, formula: failed_orders / total_orders, unit: "%", direction: lower_is_better }
+  - { id: bss.kpi.bill_dispute_rate, name: Bill Dispute Rate, formula: disputed_bills / total_bills, unit: "%", direction: lower_is_better }
+  - { id: bss.kpi.activation_time, name: Service Activation Time, formula: avg(active_ts - order_ts), unit: hours, direction: lower_is_better }
+  - { id: bss.kpi.revenue_leakage, name: Revenue Leakage, formula: leakage_amount / billed_amount, unit: "%", direction: lower_is_better }
+  - { id: bss.kpi.dso, name: Days Sales Outstanding, formula: receivables / daily_revenue, unit: days, direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Amdocs, product: CES, category: BSS Suite }
+  - { vendor: Netcracker, product: Digital BSS/OSS, category: BSS/OSS }
+  - { vendor: Oracle, product: BRM, category: Billing }
+  - { vendor: CSG, product: Ascendon, category: Billing }
+  - { vendor: ServiceNow, product: Telecom Service Management, category: ITSM }
+
+connectors:
+  - { type: TM Forum Open APIs, protocol: HTTPS, auth: OAuth2 }
+  - { type: SOAP, protocol: HTTPS, auth: WS-Security }
+  - { type: File feeds, protocol: SFTP, auth: SSH key }

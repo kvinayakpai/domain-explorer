@@ -1,0 +1,28 @@
+id: ecommerce
+name: Ecommerce
+vertical: Retail
+oneLiner: Storefront, search, fulfillment, and conversion analytics across the digital channel.
+
+personas:
+  - { name: VP Digital, title: VP Digital & Ecommerce, level: VP }
+  - { name: Head of Ecom Merch, title: Head of Online Merchandising, level: Director }
+  - { name: Site Operations Lead, title: Site Operations Lead, level: Manager }
+
+kpis:
+  - { id: ecom.kpi.conversion_rate, name: Conversion Rate, formula: orders / sessions, unit: "%", direction: higher_is_better }
+  - { id: ecom.kpi.aov, name: Average Order Value, formula: revenue / orders, unit: USD, direction: higher_is_better }
+  - { id: ecom.kpi.cart_abandonment, name: Cart Abandonment Rate, formula: abandoned_carts / created_carts, unit: "%", direction: lower_is_better }
+  - { id: ecom.kpi.cac, name: Customer Acquisition Cost, formula: marketing_spend / new_customers, unit: USD, direction: lower_is_better }
+  - { id: ecom.kpi.return_rate, name: Online Return Rate, formula: returned_units / shipped_units, unit: "%", direction: lower_is_better }
+
+sourceSystems:
+  - { vendor: Salesforce, product: Commerce Cloud, category: Ecommerce }
+  - { vendor: Adobe, product: Commerce (Magento), category: Ecommerce }
+  - { vendor: Shopify, product: Plus, category: Ecommerce }
+  - { vendor: Algolia, product: Search, category: Site Search }
+  - { vendor: Adobe, product: Analytics, category: Web Analytics }
+
+connectors:
+  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: Webhook, protocol: HTTPS, auth: HMAC }
+  - { type: GraphQL, protocol: HTTPS, auth: OAuth2 }
