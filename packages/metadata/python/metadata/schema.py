@@ -4,7 +4,7 @@ The shapes mirror packages/metadata/src/schema.ts (Zod) so the same YAML
 files validate identically in both ecosystems.
 """
 from enum import Enum
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -60,7 +60,7 @@ class Kpi(_Strict):
 
 class Entity(_Strict):
     name: str = Field(..., min_length=1)
-    description: Optional[str] = None
+    description: str | None = None
     keys: list[str] = Field(default_factory=list)
 
 

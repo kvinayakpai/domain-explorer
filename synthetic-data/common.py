@@ -8,18 +8,16 @@ All generators import from this module so we get:
 """
 from __future__ import annotations
 
-import os
 import random
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Mapping, Sequence
 
 import numpy as np
 import pandas as pd
 from faker import Faker
 from mimesis import Generic
 from mimesis.locales import Locale
-
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SYNTH_ROOT = Path(__file__).resolve().parent

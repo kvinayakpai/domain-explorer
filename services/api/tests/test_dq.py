@@ -6,7 +6,6 @@ from pathlib import Path
 import duckdb
 import pytest
 
-
 # ---- helpers --------------------------------------------------------------- #
 
 
@@ -106,7 +105,7 @@ def test_distribution_drift_rule_returns_diff_count():
 
 def test_dq_executor_classifies_pass_and_fail(tmp_path: Path):
     """End-to-end: write a tiny duckdb, point dq at it via env, run two rules."""
-    from app.dq import DqRule, DqResult  # type: ignore
+    from app.dq import DqResult, DqRule  # type: ignore
 
     # The module's run_rules() reads from data/quality/dq_rules.yaml at the
     # repo root; we exercise the model layer directly here, since the YAML is

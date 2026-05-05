@@ -142,3 +142,63 @@ PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.playwright.dev \
   npx -y playwright@1.48 install chromium
 node screenshots/shoot.js
 ```
+
+## Knowledge graph
+
+The KG is built from the YAML registry by `kg/build_graph.py` (NetworkX-backed,
+no native deps). It produces:
+
+- `kg/graph.gpickle` — full `MultiDiGraph`, gitignored. Used by the FastAPI
+  service for live `/kg/*` queries.
+- `kg/graph.json` — committed snapshot with a precomputed force-directed
+  layout. The Next.js app loads this directly so the demo runs without the
+  API.
+
+```bash
+# Regenerate after editing data/.
+npm run kg:build
+# or, equivalently:
+python kg/build_graph.py --data-root data --out kg
+```
+
+The assistant grounding layer (`apps/explorer-web/lib/grounding.ts`) prefers
+the live API at `$KG_API_URL` if set, falls back to the JSON snapshot, and
+falls back again to direct YAML traversal — `bundle.backend` records which
+path was taken. See `kg/README.md` for the schema and edge labels.
+
+## Demo flows
+
+`/demo/[vertical]` ships 16 scripted 3-screen tours (one per vertical). Each
+maps to a "hero" subdomain — preferring one we have full DDL + DuckDB data
+for (Payments, P&C Claims, Merchandising, Demand Planning, Hotel RM,
+MES/Quality, Pharmacovigilance), falling back to the highest-leverage
+subdomain in the vertical otherwise. The mapping lives in
+`apps/explorer-web/lib/demo-flows.ts`.
+
+## Test suites
+
+```bash
+# Python — pytest discovers tests under packages/metadata/python/tests,
+# services/api/tests, and synthetic-data/tests. Slow generator runs (the
+# full 7-subdomain seed=0 suite executed twice per generator) are tagged
+# @pytest.mark.slow and deselected in pyproject.toml — opt in via -m slow.
+python -m pytest
+
+# TypeScript — vitest, suite under apps/explorer-web/__tests__/.
+pnpm --filter explorer-web test
+```
+
+CI runs both jobs; see `.github/workflows/ci.yml`.
+
+## Filesystem caveats (sandbox)
+
+The Windows virtiofs bind-mount we use rejects `unlink()` (NOTES has the
+DuckDB-specific workaround above; it bites pnpm's store cleanup, file
+deletions, and `git`'s `.git/index.lock` cleanup too). Workarounds:
+
+- `pnpm install --store-dir /tmp/pnpm-store` keeps the content-addressable
+  store on a writeable tmpfs.
+- Stale `.git/index.lock` blocks commits. `cp -r .git /tmp/git-dir-x && rm -f
+  /tmp/git-dir-x/index.lock`, run `git --git-dir=/tmp/git-dir-x ...`, then
+  copy the modified pieces (`index`, `HEAD`, `refs/heads/*`, `logs/*`,
+  `objects/`) back into the real `.git`.

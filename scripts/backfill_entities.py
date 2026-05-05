@@ -3,8 +3,8 @@
 Adds 5-7 representative entity names + a 1-line description each. Editable text-only
 inserts — does not rewrite the rest of the YAML.
 """
-from pathlib import Path
 import re
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TAX = ROOT / "data" / "taxonomy"

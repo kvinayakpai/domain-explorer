@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from common import (  # noqa: E402
+from common import (
     country_codes,
     daterange_minutes,
     make_context,

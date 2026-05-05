@@ -1,4 +1,5 @@
 """Domain Explorer metadata package — Pydantic v2 schemas and loader."""
+from .loader import Registry, get_kpi, get_source_system, get_subdomain, load_registry
 from .schema import (
     Connector,
     ConnectorPattern,
@@ -14,7 +15,6 @@ from .schema import (
     Subdomain,
     Vertical,
 )
-from .loader import Registry, get_kpi, get_source_system, get_subdomain, load_registry
 
 __all__ = [
     "Connector",

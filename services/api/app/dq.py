@@ -14,7 +14,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 import yaml
 from fastapi import APIRouter, HTTPException
@@ -49,7 +49,7 @@ class DqRule(BaseModel):
     id: str
     subdomain: str
     table: str
-    column: Optional[str] = None
+    column: str | None = None
     rule_type: str
     expectation: str
     severity: Severity
@@ -60,14 +60,14 @@ class DqResult(BaseModel):
     id: str
     subdomain: str
     table: str
-    column: Optional[str]
+    column: str | None
     rule_type: str
     severity: Severity
     expectation: str
     failing_rows: int
     passed: bool
     duration_ms: int
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class DqRunReport(BaseModel):
@@ -124,13 +124,13 @@ def run_rules() -> DqRunReport:
         try:
             import duckdb  # type: ignore
         except ImportError as exc:  # pragma: no cover
-            raise HTTPException(status_code=500, detail=f"duckdb not available: {exc}")
+            raise HTTPException(status_code=500, detail=f"duckdb not available: {exc}") from exc
 
         con = duckdb.connect(str(duckdb_path), read_only=True)
         try:
             for r in rules:
                 start = time.perf_counter()
-                err: Optional[str] = None
+                err: str | None = None
                 failing = -1
                 try:
                     row = con.execute(r.sql).fetchone()

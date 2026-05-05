@@ -5,8 +5,6 @@ from pathlib import Path
 
 import pytest
 import yaml
-from pydantic import ValidationError
-
 from metadata import (
     Connector,
     ConnectorPattern,
@@ -18,7 +16,7 @@ from metadata import (
     Subdomain,
     load_registry,
 )
-
+from pydantic import ValidationError
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 DATA_ROOT = REPO_ROOT / "data"

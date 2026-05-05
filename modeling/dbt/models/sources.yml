@@ -1,5 +1,0 @@
-# NOTE: source declarations live under their domain folder now.
-# Real source declarations for the populated DuckDB are under
-# models/payments/sources.yml. This top-level file is kept as a placeholder.
-version: 2
-sources: []

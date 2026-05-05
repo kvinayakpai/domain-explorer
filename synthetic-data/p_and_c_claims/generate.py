@@ -14,11 +14,9 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from common import (  # noqa: E402
-    GenContext,
+from common import (
     country_codes,
     daterange_minutes,
-    lognormal_amounts,
     make_context,
     weighted_choice,
     write_table,

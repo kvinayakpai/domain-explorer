@@ -7,32 +7,35 @@ A metadata-driven explorer for industry verticals, subdomains, KPIs, source syst
 ```
 domain-explorer/
 ├── apps/explorer-web/      # Next.js 14 App Router UI (TS strict, Tailwind, shadcn/ui)
-├── services/api/           # FastAPI service (taxonomy + KG queries — stub for now)
+├── services/api/           # FastAPI service (registry + DQ + KG endpoints)
 ├── packages/
 │   ├── metadata/           # Zod (TS) + Pydantic v2 (Py) schemas, YAML loader
 │   └── shared-types/       # generated TS types
 ├── data/
-│   ├── taxonomy/           # subdomain configs (~80 across 10 verticals)
+│   ├── taxonomy/           # subdomain configs (110+ across 16 verticals)
 │   ├── glossary/           # business / KPI / regulatory term glossary
-│   ├── kpis/               # starter KPI registry
+│   ├── kpis/               # cross-vertical KPI registry
 │   ├── source-systems/     # source system registry
-│   └── connectors/         # 23 connector patterns
+│   ├── connectors/         # connector patterns (23 of them)
+│   └── quality/            # DQ rules + last-run snapshot
 ├── modeling/
 │   ├── dbt/                # dbt-core models for Payments (DuckDB)
 │   └── ddl/                # 3NF / Vault / dim DDL excerpts (all 7 anchors)
 ├── kg/
-│   ├── ontology/           # OWL/Turtle stubs
-│   └── cypher/             # openCypher query templates
-├── synthetic-data/         # generation strategy (stub)
+│   ├── build_graph.py      # registry → NetworkX MultiDiGraph + JSON snapshot
+│   ├── graph.json          # committed snapshot (loaded by /kg + assistant)
+│   ├── cypher/             # openCypher query templates
+│   └── ontology/           # OWL/Turtle stubs
+├── synthetic-data/         # per-subdomain generators (Faker + numpy)
 ├── docs/
 │   ├── blueprint/          # drop the project blueprint .docx here
 │   └── architecture/       # ADRs
-└── .github/workflows/      # CI: node + python lint/typecheck
+└── .github/workflows/      # CI: node + python lint/typecheck/test
 ```
 
 ## Quick start
 
-Prerequisites: Node 20+, pnpm 9+, Python 3.10+ (uv optional).
+Prerequisites: Node 20+, pnpm 9+, Python 3.11+ (uv optional).
 
 ```bash
 # 1. Generate the synthetic data layer (~4M rows, ~90MB DuckDB).
@@ -46,12 +49,15 @@ pwsh ./demo-prep.ps1
 pnpm install
 pnpm --filter explorer-web dev
 
-# 3. (optional) Enable the live Claude assistant on /assistant.
-#    Without this the assistant runs in deterministic demo mode.
+# 3. Build the knowledge graph (also produces kg/graph.json which is committed
+#    so the explorer works without any further setup).
+npm run kg:build
+
+# 4. (optional) Enable the live Claude assistant on /assistant.
 cp .env.example .env
 # then set ANTHROPIC_API_KEY=sk-ant-...
 
-# 4. (optional) Run the API
+# 5. (optional) Run the API
 uv run uvicorn app.main:app --reload --app-dir services/api
 ```
 
@@ -66,6 +72,45 @@ The full `domain-explorer.duckdb` is ~91MB and the CSV/parquet sidecars push the
 1. YAML files in `data/taxonomy/` define subdomains.
 2. `packages/metadata` validates them against Zod (TS) and Pydantic v2 (Python) schemas.
 3. The Next.js app reads the typed registry at build/request time and renders the 9-attribute template for every subdomain — no per-page code.
-4. The FastAPI service exposes the same registry over HTTP for downstream tools.
+4. `kg/build_graph.py` projects the same registry into a NetworkX `MultiDiGraph` (~2,700 nodes / ~3,000 edges) and ships a JSON snapshot for the UI.
+5. The FastAPI service exposes the registry, the DQ executor, and the KG over HTTP for downstream tools.
 
-To add a new subdomain: drop a YAML file in `dat
+To add a new subdomain: drop a YAML file in `data/taxonomy/` matching the schema. That's it.
+
+## Routes the explorer ships with
+
+- `/` and `/v/<vertical>` — verticals + subdomain detail.
+- `/governance`, `/catalog`, `/glossary`, `/lineage`, `/dq` — governance backbone.
+- `/kg` — vertical-filterable subgraph rendered straight from `kg/graph.json` (click a node to see its 1-hop neighbourhood).
+- `/demo` and `/demo/<vertical>` — 3-screen scripted tours per vertical (persona pain → answer + lineage → platform stack).
+- `/assistant` — Claude-powered assistant grounded by the KG (with a YAML-direct fallback when the API or graph isn't available).
+
+## Tests
+
+```bash
+# Python (pytest, ~36 tests by default; -m slow runs the full generator suite)
+python -m pytest
+
+# TypeScript (vitest, ~15 tests)
+pnpm --filter explorer-web test
+```
+
+## Running dbt against the populated DuckDB
+
+A real dbt project lives at `modeling/dbt/` for the Payments anchor: 10 staging
+views, a small Vault layer (hubs, links, sat as ephemeral CTEs), and a
+six-table star (dim_customer, dim_merchant, dim_date, fct_payments,
+fct_settlements, fct_chargebacks).
+
+```bash
+# from the repo root, after demo-prep has populated domain-explorer.duckdb
+npm run dbt:build      # dbt deps && dbt run --select payments+
+npm run dbt:test       # dbt test --select payments+
+```
+
+The marts land in `domain-explorer.duckdb` under the `dbt` schema. See
+`modeling/dbt/README.md` for env-var / sandbox details.
+
+## License
+
+MIT — see `LICENSE`.

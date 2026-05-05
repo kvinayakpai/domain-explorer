@@ -21,8 +21,9 @@ from __future__ import annotations
 import json
 import pickle
 from functools import lru_cache
+from itertools import pairwise
 from pathlib import Path
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 import networkx as nx
 from fastapi import APIRouter, HTTPException
@@ -140,10 +141,10 @@ class KgQuery(BaseModel):
         "vertical_to_subdomains",
         "kpi_to_decisions",
     ]
-    persona_id: Optional[str] = None
-    kpi_id: Optional[str] = None
-    subdomain_id: Optional[str] = None
-    vertical_id: Optional[str] = None
+    persona_id: str | None = None
+    kpi_id: str | None = None
+    subdomain_id: str | None = None
+    vertical_id: str | None = None
     limit: int = 50
 
 
@@ -227,7 +228,7 @@ def path(source: str, target: str) -> KgPath:
     except nx.NetworkXNoPath as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     edges: list[KgEdge] = []
-    for u, v in zip(nodes, nodes[1:], strict=False):
+    for u, v in pairwise(nodes):
         # Pick any edge between u and v in either direction.
         if g.has_edge(u, v):
             data = next(iter(g[u][v].values()))

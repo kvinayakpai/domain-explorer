@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import pickle
 import random
 import sys
@@ -28,7 +27,6 @@ from typing import Any
 
 import networkx as nx
 import yaml
-
 
 # Vertical labels (mirrors apps/explorer-web/lib/registry.ts VERTICALS).
 VERTICAL_LABELS: dict[str, str] = {

@@ -14,10 +14,9 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from common import (  # noqa: E402
+from common import (
     country_codes,
     daterange_minutes,
-    lognormal_amounts,
     make_context,
     weighted_choice,
     write_table,
@@ -75,7 +74,7 @@ def _prices(ctx, products, stores, n_min=200_000):
     n = max(n_min, 200_000)
     pids = rng.choice(products["sku"].to_numpy(), size=n)
     sids = rng.choice(stores["store_id"].to_numpy(), size=n)
-    msrp_lookup = dict(zip(products["sku"], products["msrp"]))
+    msrp_lookup = dict(zip(products["sku"], products["msrp"], strict=False))
     base = np.array([msrp_lookup[s] for s in pids])
     factor = rng.uniform(0.7, 1.1, size=n)
     return pd.DataFrame({
@@ -119,7 +118,7 @@ def _sales(ctx, products, stores, n=400_000):
     rng = ctx.rng
     qty = rng.integers(1, 8, size=n)
     pid = rng.choice(products["sku"].to_numpy(), size=n)
-    msrp_lookup = dict(zip(products["sku"], products["msrp"]))
+    msrp_lookup = dict(zip(products["sku"], products["msrp"], strict=False))
     unit_price = np.array([msrp_lookup[p] for p in pid]) * rng.uniform(0.4, 1.05, size=n)
     return pd.DataFrame({
         "sale_line_id": [f"SLE{i:010d}" for i in range(1, n + 1)],
