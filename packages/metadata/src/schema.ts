@@ -115,4 +115,15 @@ export const ConnectorPattern = z.object({
   latency: z.enum(["realtime", "near-realtime", "batch"]),
   modes: z.array(z.enum(["push", "pull", "stream", "file"])).default([]),
 });
-export type ConnectorPatter
+export type ConnectorPattern = z.infer<typeof ConnectorPattern>;
+
+/** Glossary term entry. */
+export const GlossaryTerm = z.object({
+  name: z.string().min(1),
+  aliases: z.array(z.string()).default([]),
+  definition: z.string().min(1),
+  related_subdomains: z.array(z.string()).default([]),
+  related_kpis: z.array(z.string()).default([]),
+  steward: z.string().optional(),
+});
+export type GlossaryTerm = z.infer<typeof GlossaryTerm>;

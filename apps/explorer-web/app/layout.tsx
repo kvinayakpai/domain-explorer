@@ -20,6 +20,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     { id: "nav-catalog", label: "Catalog", href: "/catalog", group: "Governance" },
     { id: "nav-glossary", label: "Glossary", href: "/glossary", group: "Governance" },
     { id: "nav-lineage", label: "Lineage (Payments)", href: "/lineage", group: "Governance" },
+    { id: "nav-dq", label: "Data Quality", href: "/dq", group: "Governance" },
+    { id: "nav-kg", label: "Knowledge Graph", href: "/kg", group: "Governance" },
+    { id: "nav-demo", label: "Demo flows", href: "/demo", group: "Demo" },
     ...reg.subdomains.map((s) => ({
       id: `sd-${s.id}`,
       label: s.name,
@@ -47,4 +50,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   ];
   return (
     <html lang="en" suppressHydrationWarning>
-      <body cl
+      <body className="min-h-screen bg-background text-foreground antialiased">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <NavBar verticals={verticals} paletteItems={paletteItems} />
+          <main className="container py-8">{children}</main>
+          <footer className="container py-8 text-xs text-muted-foreground">
+            <p>
+              Domain Explorer · MIT · {VERTICALS.length} verticals · {reg.subdomains.length}{" "}
+              subdomains seeded · {reg.glossary.length} glossary terms
+            </p>
+          </footer>
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}

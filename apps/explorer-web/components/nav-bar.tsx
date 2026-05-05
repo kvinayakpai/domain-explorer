@@ -63,4 +63,45 @@ export function NavBar({
                 </Link>
                 <Link href="/glossary" className="rounded-md px-2 py-1.5 text-sm hover:bg-accent">
                   Glossary
-    
+                </Link>
+                <Link href="/lineage" className="rounded-md px-2 py-1.5 text-sm hover:bg-accent">
+                  Lineage
+                </Link>
+                <Link href="/dq" className="rounded-md px-2 py-1.5 text-sm hover:bg-accent">
+                  Data Quality
+                </Link>
+                <Link href="/kg" className="rounded-md px-2 py-1.5 text-sm hover:bg-accent">
+                  Knowledge Graph
+                </Link>
+                <Link href="/demo" className="rounded-md px-2 py-1.5 text-sm hover:bg-accent">
+                  Demo flows
+                </Link>
+                <Link href="/assistant" className="rounded-md px-2 py-1.5 text-sm hover:bg-accent">
+                  Assistant
+                </Link>
+              </nav>
+            </SheetContent>
+          </Sheet>
+          <Link href="/" className="text-base font-semibold tracking-tight">
+            Domain Explorer
+          </Link>
+        </div>
+        <nav className="hidden md:flex items-center gap-1 text-sm">
+          <Link href="/" className="rounded-md px-3 py-1.5 hover:bg-accent">Verticals</Link>
+          <Link href="/governance" className="rounded-md px-3 py-1.5 hover:bg-accent">Governance</Link>
+          <Link href="/catalog" className="rounded-md px-3 py-1.5 hover:bg-accent">Catalog</Link>
+          <Link href="/glossary" className="rounded-md px-3 py-1.5 hover:bg-accent">Glossary</Link>
+          <Link href="/lineage" className="rounded-md px-3 py-1.5 hover:bg-accent">Lineage</Link>
+          <Link href="/dq" className="rounded-md px-3 py-1.5 hover:bg-accent">DQ</Link>
+          <Link href="/kg" className="rounded-md px-3 py-1.5 hover:bg-accent">KG</Link>
+          <Link href="/demo" className="rounded-md px-3 py-1.5 hover:bg-accent">Demo</Link>
+          <Link href="/assistant" className="rounded-md px-3 py-1.5 hover:bg-accent">Assistant</Link>
+        </nav>
+        <div className="flex items-center gap-2">
+          <CommandPalette items={paletteItems} />
+          <ThemeToggle />
+        </div>
+      </div>
+    </header>
+  );
+}

@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Database, GitBranch, ShieldCheck, Activity } from "lucide-react";
+import { ArrowRight, BookOpen, Database, GitBranch, ShieldCheck, Activity, Network } from "lucide-react";
 import { registry } from "@/lib/registry";
 import { loadDqReport } from "@/lib/dq";
+import { loadKgSnapshot } from "@/lib/kg";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import {
   Card,
@@ -18,7 +19,7 @@ export const revalidate = 0;
 
 export const metadata = {
   title: "Governance · Domain Explorer",
-  description: "Catalog, glossary, and lineage — the governance backbone of the registry.",
+  description: "Catalog, glossary, lineage, KG, and DQ — the governance backbone of the registry.",
 };
 
 interface CardLinkProps {
@@ -74,6 +75,7 @@ export default async function GovernancePage() {
   );
   const verticals = new Set(reg.subdomains.map((s) => s.vertical)).size;
   const { report: dqReport, source: dqSource } = await loadDqReport();
+  const kg = loadKgSnapshot();
   return (
     <div className="space-y-8">
       <Breadcrumb items={[{ label: "Verticals", href: "/" }, { label: "Governance" }]} />
@@ -81,7 +83,7 @@ export default async function GovernancePage() {
         <Badge>Governance</Badge>
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Governance</h1>
         <p className="max-w-3xl text-muted-foreground">
-          Catalog, glossary, and lineage views over the registry. Everything renders from the
+          Catalog, glossary, lineage, knowledge graph, and DQ. Everything renders from the
           same typed YAML files that drive the explorer.
         </p>
       </header>
@@ -100,11 +102,11 @@ export default async function GovernancePage() {
 
       <section>
         <h2 className="mb-3 text-lg font-semibold">Pillars</h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
           <CardLink
             href="/catalog"
             title="Catalog"
-            description="Searchable, filterable list of every entity from every subdomain — with owning persona and source links."
+            description="Searchable, filterable list of every entity from every subdomain - with owning persona and source links."
             icon={<Database className="h-5 w-5" />}
             cta="Browse the catalog"
           />
@@ -118,16 +120,23 @@ export default async function GovernancePage() {
           <CardLink
             href="/lineage"
             title="Lineage"
-            description="Column-level lineage walkthrough for the Payments anchor — sources to vault to dimensional KPIs."
+            description="Column-level lineage walkthrough for the Payments anchor - sources to vault to dimensional KPIs."
             icon={<GitBranch className="h-5 w-5" />}
             cta="View lineage"
           />
           <CardLink
             href="/dq"
             title="Data Quality"
-            description="Real DQ rules executed against the populated DuckDB — pass/fail counts by severity, table, and subdomain."
+            description="Real DQ rules executed against the populated DuckDB - pass/fail counts by severity, table, and subdomain."
             icon={<Activity className="h-5 w-5" />}
             cta="Open DQ dashboard"
+          />
+          <CardLink
+            href="/kg"
+            title="Knowledge Graph"
+            description="The NetworkX-backed graph that grounds the assistant. Same shape powers /catalog, /lineage, and /assistant."
+            icon={<Network className="h-5 w-5" />}
+            cta="Explore the graph"
           />
         </div>
       </section>
@@ -137,8 +146,67 @@ export default async function GovernancePage() {
           <h2 className="text-lg font-semibold">Data quality</h2>
           <span className="text-xs text-muted-foreground">
             {dqReport
-              ? `${dqSource === "live" ? "Live API" : "Snapshot"} · ran ${dqReport.ran_at}`
-              : "Service unavailable — run scripts/dq_snapshot.py"}
+              ? `${dqSource === "live" ? "Live API" : "Snapshot"} - ran ${dqReport.ran_at}`
+              : "Service unavailable - run scripts/dq_snapshot.py"}
           </span>
         </div>
-      
+        {dqReport ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <Metric label="Total rules" value={dqReport.total_rules} />
+            <Metric
+              label="Pass rate"
+              value={`${(dqReport.pass_rate * 100).toFixed(1)}%`}
+              hint={`${dqReport.passed} pass / ${dqReport.failed} fail`}
+            />
+            <Metric label="Failed" value={dqReport.failed} />
+            <Metric label="Errored" value={dqReport.errored} />
+            <Metric
+              label="Critical fails"
+              value={dqReport.by_severity?.critical?.failed ?? 0}
+            />
+            <Metric
+              label="High fails"
+              value={dqReport.by_severity?.high?.failed ?? 0}
+            />
+          </div>
+        ) : (
+          <div className="rounded-lg border border-amber-300/50 bg-amber-50/40 p-4 text-sm dark:bg-amber-950/20">
+            FastAPI service is not reachable and no snapshot is committed yet. Run
+            <code className="mx-1">python3 scripts/dq_snapshot.py</code> from the repo root to
+            generate <code>data/quality/last_run.json</code>.
+          </div>
+        )}
+        <p className="mt-3 inline-flex items-center gap-2 text-xs text-muted-foreground">
+          <ShieldCheck className="h-3.5 w-3.5" />
+          Rules from <code>data/quality/dq_rules.yaml</code>; runs against the populated DuckDB.
+          {" "}
+          <Link href="/dq" className="underline hover:text-foreground">
+            Open the full DQ dashboard
+          </Link>
+        </p>
+      </section>
+
+      {kg && (
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">Knowledge graph</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <Metric label="Total nodes" value={kg.stats.nodes.toLocaleString()} />
+            <Metric label="Total edges" value={kg.stats.edges.toLocaleString()} />
+            <Metric label="Subdomains" value={kg.stats.byKind.subdomain ?? 0} />
+            <Metric label="Personas" value={kg.stats.byKind.persona ?? 0} />
+            <Metric label="KPIs" value={kg.stats.byKind.kpi ?? 0} />
+            <Metric label="Entities" value={kg.stats.byKind.entity ?? 0} />
+          </div>
+          <p className="mt-3 inline-flex items-center gap-2 text-xs text-muted-foreground">
+            <Network className="h-3.5 w-3.5" />
+            NetworkX-backed; rebuilt by <code>npm run kg:build</code> from the YAML registry.
+            {" "}
+            <Link href="/kg" className="underline hover:text-foreground">
+              Open the graph
+            </Link>
+          </p>
+        </section>
+      )}
+    </div>
+  );
+}

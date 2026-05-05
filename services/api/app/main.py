@@ -1,4 +1,4 @@
-"""FastAPI app exposing the metadata registry plus stub KG endpoints."""
+"""FastAPI app exposing the metadata registry plus the KG endpoints."""
 from __future__ import annotations
 
 from functools import lru_cache
@@ -17,6 +17,7 @@ from metadata import (
 from pydantic import BaseModel
 
 from .dq import router as dq_router
+from .kg import router as kg_router
 
 app = FastAPI(
     title="Domain Explorer API",
@@ -114,21 +115,8 @@ def list_connectors() -> list[ConnectorPattern]:
     return registry().connectors
 
 
-# --- Stub KG endpoints ---------------------------------------------------
+# --- Data quality module -------------------------------------------------
+app.include_router(dq_router)
 
-
-class KgQueryRequest(BaseModel):
-    cypher: str
-
-
-class KgQueryResponse(BaseModel):
-    rows: list[dict[str, str]]
-    note: str
-
-
-@app.post("/v1/kg/query", response_model=KgQueryResponse)
-def kg_query(req: KgQueryRequest) -> KgQueryResponse:
-    """Stub — returns an empty result set with a note. Wire to Neo4j later."""
-    return KgQueryResponse(
-        rows=[],
-        note="KG backend not yet wired. Requested cypher echoed:
+# --- Knowledge graph module ----------------------------------------------
+app.include_router(kg_router)

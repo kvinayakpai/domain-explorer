@@ -79,4 +79,16 @@ export function getSubdomainsByVertical(
   return registry.subdomains.filter((s) => s.vertical === vertical);
 }
 
-export function getK
+export function getKpi(
+  registry: Registry,
+  id: string,
+): KpiRegistryEntryT | undefined {
+  return registry.kpis.find((k) => k.id === id);
+}
+
+export function getSourceSystem(
+  registry: Registry,
+  id: string,
+): SourceSystemEntryT | undefined {
+  return registry.sourceSystems.find((s) => s.id === id);
+}

@@ -71,3 +71,5 @@ __pycache__/
 # Local Python venvs
 .venv/
 _tmp_*
+
+# KG binary store (regenerate via `npm run

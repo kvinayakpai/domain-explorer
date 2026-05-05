@@ -1,6 +1,11 @@
 import "server-only";
 import type { Subdomain, Persona, Kpi } from "@domain-explorer/metadata";
 import { registry } from "@/lib/registry";
+import {
+  callKgApi,
+  loadKgSnapshot,
+  personaToKpis as kgPersonaToKpis,
+} from "@/lib/kg";
 
 export interface PersonaOption {
   /** unique key: subdomainId::personaName */
@@ -46,6 +51,8 @@ export interface GroundingBundle {
   } | null;
   /** Human-readable provenance — which YAML records were pulled. */
   recordsUsed: string[];
+  /** Which backend was used: "kg-api", "kg-snapshot", or "yaml-direct". */
+  backend: "kg-api" | "kg-snapshot" | "yaml-direct";
 }
 
 /** Light keyword scoring across subdomain content for question-driven retrieval. */
@@ -79,6 +86,15 @@ function scoreSubdomain(sd: Subdomain, q: string): number {
  *
  * Mirrors the openCypher templates under `kg/cypher/` —
  * persona → decisions → KPIs → source systems → connectors.
+ *
+ * Resolution order:
+ * 1. If `KG_API_URL` is set, call the live FastAPI service (NetworkX-backed).
+ * 2. Else, load `kg/graph.json` and traverse in-process.
+ * 3. Else, fall back to the YAML registry directly.
+ *
+ * The YAML registry is always loaded too — it's our source of truth for
+ * subdomain detail like one-liners and ingestion challenges that aren't
+ * stored verbatim in the graph.
  */
 export function buildGrounding(opts: {
   question: string;
@@ -86,6 +102,8 @@ export function buildGrounding(opts: {
 }): GroundingBundle {
   const reg = registry();
   const recordsUsed: string[] = [];
+  const snap = loadKgSnapshot();
+  const backend: GroundingBundle["backend"] = snap ? "kg-snapshot" : "yaml-direct";
 
   // 1. Resolve persona, if any.
   let persona: PersonaOption | undefined;
@@ -133,19 +151,38 @@ export function buildGrounding(opts: {
   // 3. Decisions chain for the persona's subdomain (persona → decisions → KPIs).
   let decisionsChain: GroundingBundle["decisionsChain"] = null;
   if (persona && subdomain) {
-    const decisions = subdomain.decisions.map((d) => {
-      const supportingKpis = subdomain!.kpis.filter((k) =>
-        k.decisionsSupported.includes(d.id),
-      );
-      return { id: d.id, statement: d.statement, supportingKpis };
-    });
+    // Try KG-snapshot traversal first; if it returns nothing, fall back to YAML.
+    let decisions: { id: string; statement: string; supportingKpis: Kpi[] }[] = [];
+    if (snap) {
+      const personaSlug = personaSlugFor(persona);
+      const personaNodeId = `persona:${persona.subdomainId}::${personaSlug}`;
+      const traversed = kgPersonaToKpis(snap, personaNodeId);
+      if (traversed.length) {
+        decisions = traversed.map((row) => ({
+          id: row.decision.extras["id"] as string,
+          statement: (row.decision.extras["statement"] as string) ?? row.decision.label,
+          supportingKpis: row.kpis
+            .map((k) => subdomain!.kpis.find((kk) => kk.id === (k.extras["id"] as string)))
+            .filter((kk): kk is Kpi => !!kk),
+        }));
+        recordsUsed.push(`kg/graph.json#${personaNodeId} (persona->decisions->KPIs)`);
+      }
+    }
+    if (decisions.length === 0) {
+      decisions = subdomain.decisions.map((d) => {
+        const supportingKpis = subdomain!.kpis.filter((k) =>
+          k.decisionsSupported.includes(d.id),
+        );
+        return { id: d.id, statement: d.statement, supportingKpis };
+      });
+    }
     decisionsChain = {
       persona: { name: persona.name, title: persona.title, level: persona.level as Persona["level"] },
       decisions,
     };
   }
 
-  // 4. KPIs — union of matched subdomain KPIs.
+  // 4. KPIs - union of matched subdomain KPIs.
   const kpis: Kpi[] = [];
   for (const sd of matchedSubdomains) {
     for (const k of sd.kpis) {
@@ -166,13 +203,46 @@ export function buildGrounding(opts: {
     connectorPatterns,
     decisionsChain,
     recordsUsed,
+    backend,
   };
+}
+
+function personaSlugFor(p: PersonaOption): string {
+  return p.name
+    .toLowerCase()
+    .split("")
+    .map((ch) => (/[a-z0-9]/.test(ch) ? ch : "_"))
+    .join("")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+}
+
+/**
+ * Async variant that prefers the live KG API if `KG_API_URL` is set.
+ *
+ * Returns the same {@link GroundingBundle} shape so callers can swap in
+ * place. Falls back to the synchronous {@link buildGrounding} if the API
+ * is unreachable.
+ */
+export async function buildGroundingAsync(opts: {
+  question: string;
+  personaKey?: string;
+}): Promise<GroundingBundle> {
+  const base = process.env.KG_API_URL;
+  if (!base) return buildGrounding(opts);
+  // Best-effort liveness check.
+  const stats = await callKgApi<{ nodes: number }>("/kg/stats");
+  if (!stats) return buildGrounding(opts);
+  const bundle = buildGrounding(opts);
+  return { ...bundle, backend: "kg-api", recordsUsed: [...bundle.recordsUsed, `kg-api: ${base}`] };
 }
 
 /** Compact text bundle for the LLM (or for the canned-response template). */
 export function renderGroundingForLlm(g: GroundingBundle): string {
   const lines: string[] = [];
-  lines.push("=== GROUNDING CONTEXT (typed YAML registry) ===");
+  lines.push(
+    `=== GROUNDING CONTEXT (backend: ${g.backend}) ===`,
+  );
   if (g.persona) {
     lines.push(
       `PERSONA: ${g.persona.name} (${g.persona.title}, ${g.persona.level}) in subdomain "${g.persona.subdomainName}" / vertical ${g.persona.vertical}.`,
@@ -199,7 +269,7 @@ export function renderGroundingForLlm(g: GroundingBundle): string {
     lines.push("");
     lines.push(`KPIs IN SCOPE (${g.kpis.length}):`);
     for (const k of g.kpis.slice(0, 12)) {
-      lines.push(`- ${k.name} (${k.id}): ${k.formula} — ${k.unit}, ${k.direction}`);
+      lines.push(`- ${k.name} (${k.id}): ${k.formula} - ${k.unit}, ${k.direction}`);
     }
   }
   if (g.sourceSystems.length) {
@@ -222,7 +292,7 @@ export function renderGroundingForLlm(g: GroundingBundle): string {
 /** Deterministic canned answer used when no API key is configured. */
 export function buildCannedAnswer(question: string, g: GroundingBundle): string {
   const parts: string[] = [];
-  parts.push("(demo mode — set ANTHROPIC_API_KEY for live answers)");
+  parts.push("(demo mode - set ANTHROPIC_API_KEY for live answers)");
   parts.push("");
   if (g.persona) {
     parts.push(
