@@ -3,6 +3,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NavBar } from "@/components/nav-bar";
 import { registry, VERTICALS } from "@/lib/registry";
+import { ANCHOR_KEYS, anchorLineages, anchorSlugs } from "@/lib/lineage-data";
 
 export const metadata: Metadata = {
   title: "Domain Explorer",
@@ -19,10 +20,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     { id: "nav-governance", label: "Governance", href: "/governance", group: "Governance" },
     { id: "nav-catalog", label: "Catalog", href: "/catalog", group: "Governance" },
     { id: "nav-glossary", label: "Glossary", href: "/glossary", group: "Governance" },
-    { id: "nav-lineage", label: "Lineage (Payments)", href: "/lineage", group: "Governance" },
+    { id: "nav-lineage", label: "Lineage (all anchors)", href: "/lineage", group: "Governance" },
     { id: "nav-dq", label: "Data Quality", href: "/dq", group: "Governance" },
     { id: "nav-kg", label: "Knowledge Graph", href: "/kg", group: "Governance" },
     { id: "nav-demo", label: "Demo flows", href: "/demo", group: "Demo" },
+    ...ANCHOR_KEYS.map((key) => ({
+      id: `lineage-${key}`,
+      label: `Lineage: ${anchorLineages[key].title}`,
+      href: `/lineage/${anchorSlugs[key]}`,
+      group: "Lineage",
+    })),
     ...reg.subdomains.map((s) => ({
       id: `sd-${s.id}`,
       label: s.name,

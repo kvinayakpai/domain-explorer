@@ -1,12 +1,23 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { LineageDiagram } from "@/components/lineage-diagram";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { LineageThumbnail } from "@/components/lineage-diagram";
+import { ANCHOR_KEYS, anchorLineages, anchorSlugs } from "@/lib/lineage-data";
 
 export const dynamic = "force-static";
 
 export const metadata = {
   title: "Lineage · Domain Explorer",
-  description: "Column-level lineage walkthrough for the Payments anchor.",
+  description:
+    "Hand-curated column-level lineage diagrams for the seven anchor subdomains — sources to vault to dimensional KPIs.",
 };
 
 const LEGEND = [
@@ -17,9 +28,9 @@ const LEGEND = [
   { kind: "kpi", label: "KPI", swatch: "bg-rose-200 dark:bg-rose-700" },
 ];
 
-export default function LineagePage() {
+export default function LineageIndexPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <Breadcrumb
         items={[
           { label: "Verticals", href: "/" },
@@ -28,11 +39,12 @@ export default function LineagePage() {
         ]}
       />
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Payments lineage</h1>
+        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Lineage diagrams</h1>
         <p className="max-w-3xl text-muted-foreground">
-          End-to-end view from acquirer/core-banking source systems through staging, Data Vault,
-          and dimensional marts to the KPIs they roll up to. The diagram below is generated from
-          a static node/edge list — easy to extend as the dbt project grows.
+          Each anchor subdomain ships with a hand-curated, ~30-node column-level lineage
+          diagram. Source systems flow through staging into Data Vault hubs / links / satellites,
+          land in star-schema marts, and finally roll up to the KPIs that answer the decisions
+          on each subdomain page. Pick an anchor to open its diagram.
         </p>
       </header>
 
@@ -45,27 +57,53 @@ export default function LineagePage() {
         ))}
       </div>
 
-      <LineageDiagram />
+      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {ANCHOR_KEYS.map((key) => {
+          const g = anchorLineages[key];
+          return (
+            <Link
+              key={key}
+              href={`/lineage/${anchorSlugs[key]}`}
+              className="group focus-visible:outline-none"
+            >
+              <Card className="flex h-full flex-col transition-colors group-hover:bg-accent">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-base">{g.title}</CardTitle>
+                    <Badge className="text-[10px]">{g.vertical}</Badge>
+                  </div>
+                  <CardDescription className="line-clamp-3">{g.oneLiner}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-1 flex-col justify-end gap-3 pt-0">
+                  <LineageThumbnail graph={g} />
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      {g.nodes.length} nodes · {g.edges.length} edges
+                    </span>
+                    <span className="inline-flex items-center text-foreground">
+                      View lineage <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
+      </section>
 
       <section className="grid gap-4 md:grid-cols-2">
         <div className="rounded-lg border p-4">
           <h2 className="mb-2 text-sm font-semibold">What this is</h2>
           <p className="text-sm text-muted-foreground">
-            A hand-curated lineage anchored on the Payments subdomain — five source systems, ten
-            staging views, vault hubs/links/sats, three fact and two dim marts, and five KPIs.
-            Roughly thirty nodes, designed to scan left-to-right at desktop and scroll
-            horizontally on mobile.
+            Seven hand-curated lineage diagrams — one per anchor subdomain. Each follows the
+            same six-column pattern (sources → staging → vault → marts → KPIs) and is backed
+            by real source-system, DDL, and KPI names from the registry. Use the legend above
+            to read any of them at a glance.
           </p>
         </div>
         <div className="rounded-lg border p-4">
           <h2 className="mb-2 text-sm font-semibold">Where to next</h2>
           <ul className="ml-4 list-disc space-y-1 text-sm text-muted-foreground">
-            <li>
-              <Link href="/d/payments" className="hover:underline">
-                Payments subdomain page
-              </Link>{" "}
-              — personas, KPIs, source systems, sample queries.
-            </li>
             <li>
               <Link href="/catalog" className="hover:underline">
                 Catalog
@@ -76,7 +114,13 @@ export default function LineagePage() {
               <Link href="/glossary" className="hover:underline">
                 Glossary
               </Link>{" "}
-              — definitions for the KPIs and acronyms used here.
+              — definitions for the KPIs and acronyms used in these diagrams.
+            </li>
+            <li>
+              <Link href="/governance" className="hover:underline">
+                Governance overview
+              </Link>{" "}
+              — DQ, KG, and the rest of the governance backbone.
             </li>
           </ul>
         </div>

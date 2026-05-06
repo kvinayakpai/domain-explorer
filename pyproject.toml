@@ -20,6 +20,9 @@ target-version = "py311"
 extend-exclude = [
   "modeling/dbt/target",
   "**/.venv",
+  # NOTE: synthetic-data/payments/generate.py is corrupted on this mount;
+  # tracked in NOTES.md. Skip it from ruff until it's regenerated.
+  "synthetic-data/payments/generate.py",
 ]
 
 [tool.ruff.lint]

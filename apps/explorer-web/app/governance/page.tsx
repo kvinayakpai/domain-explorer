@@ -120,7 +120,7 @@ export default async function GovernancePage() {
           <CardLink
             href="/lineage"
             title="Lineage"
-            description="Column-level lineage walkthrough for the Payments anchor - sources to vault to dimensional KPIs."
+            description="Column-level lineage diagrams for all seven anchor subdomains - sources to vault to dimensional KPIs."
             icon={<GitBranch className="h-5 w-5" />}
             cta="View lineage"
           />
@@ -209,4 +209,6 @@ export default async function GovernancePage() {
       )}
     </div>
   );
+}
+);
 }
