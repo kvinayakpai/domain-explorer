@@ -18,7 +18,8 @@ const ROUTES = [
 ];
 
 const OUT = process.argv[2] || path.join(__dirname);
-const BASE = 'http://127.0.0.1:3000';
+const PORT = process.env.SHOOT_PORT || process.env.PORT || 3000;
+const BASE = `http://127.0.0.1:${PORT}`;
 
 async function shoot(profile, viewport, deviceScaleFactor) {
   const browser = await chromium.launch({ args: ['--no-sandbox'] });

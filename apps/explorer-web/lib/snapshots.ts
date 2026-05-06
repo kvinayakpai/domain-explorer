@@ -1,5 +1,5 @@
 import "server-only";
-import { queryOne } from "./duckdb";
+import { queryOne } from "./db";
 
 export type Stat = {
   label: string;

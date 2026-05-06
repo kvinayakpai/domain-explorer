@@ -17,6 +17,8 @@ const nextConfig = {
       "@duckdb/node-bindings-darwin-x64",
       "@duckdb/node-bindings-darwin-arm64",
       "@duckdb/node-bindings-win32-x64",
+      "pg",
+      "pg-native",
     ],
   },
   webpack: (config, { isServer }) => {
@@ -27,7 +29,9 @@ const nextConfig = {
           if (
             request === "@duckdb/node-api" ||
             request === "@duckdb/node-bindings" ||
-            (request && request.startsWith("@duckdb/node-bindings-"))
+            (request && request.startsWith("@duckdb/node-bindings-")) ||
+            request === "pg" ||
+            request === "pg-native"
           ) {
             return callback(null, "commonjs " + request);
           }

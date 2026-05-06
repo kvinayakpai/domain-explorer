@@ -44,6 +44,36 @@ Generators write CSV + Parquet sidecars to `synthetic-data/output/<subdomain>/`
 and `generate_all.py` materialises everything into one DuckDB at the repo root
 (`domain-explorer.duckdb`, one schema per subdomain).
 
+## Targets: DuckDB and / or Postgres
+
+`generate_all.py` accepts a `--target` flag:
+
+```bash
+# DuckDB only (default — what setup-and-run ships with)
+python synthetic-data/generate_all.py --seed 42
+
+# Postgres only — provide a SQLAlchemy/psycopg-style URL
+python synthetic-data/generate_all.py --target postgres \
+    --postgres-url postgresql://explorer:explorer@localhost:5432/domain_explorer
+
+# Both backends from the same generation pass
+python synthetic-data/generate_all.py --target both \
+    --postgres-url postgresql://explorer:explorer@localhost:5432/domain_explorer
+```
+
+`load_to_postgres.py` is a standalone loader that reuses already-generated
+CSVs under `output/<sub>/`:
+
+```bash
+python synthetic-data/load_to_postgres.py \
+    --postgres-url postgresql://explorer:explorer@localhost:5432/domain_explorer
+```
+
+Postgres support requires `psycopg[binary]`, `sqlalchemy`, and `pandas`.
+`postgres_schema.sql` declares the per-anchor schemas (and includes the
+3NF reference DDLs from `modeling/ddl/`) — apply it with `psql -f` if you
+want the schemas pre-created (the loader creates them automatically too).
+
 ## Tests
 
 ```bash

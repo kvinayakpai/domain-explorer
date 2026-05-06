@@ -9,6 +9,12 @@ dependencies = [
   "domain-explorer-metadata",
 ]
 
+[project.optional-dependencies]
+postgres = [
+  "psycopg[binary]>=3.1",
+  "sqlalchemy>=2.0",
+]
+
 [tool.uv.sources]
 domain-explorer-metadata = { workspace = true }
 

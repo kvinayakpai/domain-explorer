@@ -18,6 +18,7 @@
     "kg:build": "python kg/build_graph.py --data-root data --out kg"
   },
   "devDependencies": {
+    "playwright": "~1.48.2",
     "prettier": "^3.3.3",
     "typescript": "^5.5.4"
   },

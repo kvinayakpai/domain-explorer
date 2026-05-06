@@ -1,0 +1,17 @@
+Domain Explorer — portable bundle
+=================================
+
+1. Double-click `setup-and-run.bat` (Windows) or run `./setup-and-run.sh`
+   (macOS / Linux) from this folder.
+2. The first run takes ~5 minutes — Node, pnpm, and the synthetic-data
+   generators all install, then the deterministic seed=42 dataset is built
+   into `domain-explorer.duckdb` at the repo root.
+3. Subsequent runs skip data generation if `domain-explorer.duckdb` already
+   exists, so they boot in seconds.
+4. The launcher prompts you to pick DuckDB (default, zero setup) or Postgres
+   (you supply a `DATABASE_URL`); a Postgres run additionally loads the same
+   data into your database.
+5. The browser opens automatically at http://localhost:3030. Press Ctrl+C
+   in the terminal window to stop the server.
+
+All progress is mirrored to `setup-and-run.log` in this folder.

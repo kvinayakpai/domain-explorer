@@ -1,11 +1,27 @@
 """
 Run every subdomain generator at a fixed seed (42), then load all parquet files
-into a single DuckDB database at the repo root (`domain-explorer.duckdb`),
-one schema per subdomain.
+into one (or both) of the supported targets:
 
-CSV + Parquet files land under `synthetic-data/output/<subdomain>/<table>.{csv,parquet}`.
+    --target duckdb     (default) load into ``domain-explorer.duckdb``
+    --target postgres            load into a Postgres instance via ``--postgres-url``
+    --target both                do both
 
+CSV + Parquet files always land under ``synthetic-data/output/<subdomain>/<table>.{csv,parquet}``,
+regardless of target.
+
+Examples
+--------
+
+    # DuckDB-only (default — what `setup-and-run` ships with):
     python synthetic-data/generate_all.py --seed 42
+
+    # Postgres only — provide a SQLAlchemy / psycopg-style URL:
+    python synthetic-data/generate_all.py --target postgres \\
+        --postgres-url postgresql://explorer:explorer@localhost:5432/domain_explorer
+
+    # Skip generation, load existing parquet/csv into Postgres:
+    python synthetic-data/generate_all.py --skip-generation --target postgres \\
+        --postgres-url postgresql://explorer:explorer@localhost:5432/domain_explorer
 """
 from __future__ import annotations
 
@@ -96,15 +112,97 @@ def load_into_duckdb() -> None:
             pass
 
 
+def load_into_postgres(postgres_url: str) -> None:
+    """
+    Load every CSV under ``synthetic-data/output/<sub>/`` into Postgres,
+    one schema per subdomain. Tables are dropped + recreated each run.
+
+    Requires ``psycopg[binary]``, ``sqlalchemy``, and ``pandas``.
+    """
+    # Defer imports so DuckDB-only users don't pay the dependency cost.
+    try:
+        import pandas as pd
+        from sqlalchemy import create_engine, text
+    except ImportError as exc:
+        raise SystemExit(
+            f"Postgres target requires sqlalchemy + psycopg + pandas: {exc}\n"
+            "  pip install 'psycopg[binary]' sqlalchemy pandas"
+        ) from exc
+
+    # Normalise ``postgresql://`` to the SQLAlchemy psycopg-v3 form.
+    sa_url = postgres_url
+    if sa_url.startswith("postgres://"):
+        sa_url = "postgresql://" + sa_url[len("postgres://") :]
+    if sa_url.startswith("postgresql://"):
+        sa_url = "postgresql+psycopg://" + sa_url[len("postgresql://") :]
+
+    engine = create_engine(sa_url, future=True)
+
+    with engine.begin() as con:
+        for sub in SUBDOMAINS:
+            sub_dir = OUT_ROOT / sub
+            if not sub_dir.exists():
+                continue
+            con.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{sub}"'))
+            for csv in sorted(sub_dir.glob("*.csv")):
+                table = csv.stem
+                df = pd.read_csv(csv)
+                con.execute(text(f'DROP TABLE IF EXISTS "{sub}"."{table}" CASCADE'))
+                df.to_sql(
+                    name=table,
+                    con=con,
+                    schema=sub,
+                    if_exists="append",
+                    index=False,
+                    method="multi",
+                    chunksize=2000,
+                )
+                cnt_row = con.execute(text(f'SELECT COUNT(*) FROM "{sub}"."{table}"')).fetchone()
+                cnt = int(cnt_row[0]) if cnt_row else 0
+                print(f"  loaded postgres {sub}.{table}: {cnt:,}")
+
+    engine.dispose()
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--seed", type=int, default=42)
-    p.add_argument("--skip-generation", action="store_true", help="reuse existing parquet under output/")
+    p.add_argument(
+        "--skip-generation",
+        action="store_true",
+        help="reuse existing parquet/csv under output/",
+    )
+    p.add_argument(
+        "--target",
+        choices=["duckdb", "postgres", "both"],
+        default="duckdb",
+        help="where to load the generated data",
+    )
+    p.add_argument(
+        "--postgres-url",
+        default=os.environ.get("DATABASE_URL"),
+        help="Postgres URL (required for --target postgres|both); "
+             "defaults to env DATABASE_URL",
+    )
     args = p.parse_args()
+
+    if args.target in {"postgres", "both"} and not args.postgres_url:
+        raise SystemExit(
+            "--postgres-url is required when --target is 'postgres' or 'both' "
+            "(or set the DATABASE_URL env var)"
+        )
+
     if not args.skip_generation:
         run_generators(args.seed)
-    print(f"Loading into DuckDB at {DUCKDB_PATH}")
-    load_into_duckdb()
+
+    if args.target in {"duckdb", "both"}:
+        print(f"Loading into DuckDB at {DUCKDB_PATH}")
+        load_into_duckdb()
+
+    if args.target in {"postgres", "both"}:
+        print(f"Loading into Postgres at {args.postgres_url}")
+        load_into_postgres(args.postgres_url)
+
     print("done.")
 
 

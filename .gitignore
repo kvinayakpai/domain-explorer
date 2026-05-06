@@ -55,6 +55,7 @@ desktop.ini
 coverage/
 .coverage
 htmlcov/
+pytest-cache-files-*/
 
 # Build artefacts and runtime detritus
 .next/
@@ -72,4 +73,8 @@ __pycache__/
 .venv/
 _tmp_*
 
-# KG binary store (regenerate via `npm run
+# KG binary store (regenerate via `npm run kg:build`); JSON snapshot is committed.
+kg/graph.gpickle
+
+# Sandbox-only test detritus.
+_test_*.txt
