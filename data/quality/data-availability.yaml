@@ -1,0 +1,1137 @@
+# Data Availability Audit — programmatic version of docs/research/data-availability-audit.md
+# Generated: 2026-05-07
+#
+# Tiers:
+#   1 = Public standards available — full anchor-grade model possible
+#   2 = Vendor public data dictionary — synthesise 2-3 vendor docs
+#   3 = Mostly proprietary / customer-specific — do NOT attribute without real data
+#   4 = Standards exist but paid/restricted (ACORD, IEC, NERC, SEMI, MIL CUI, etc.)
+#
+# anchor: true => one of the 7 already fully-attributed reference subdomains.
+
+audit:
+  generated: '2026-05-07'
+  total_subdomains: 116
+  tier_counts:
+    tier1: 66
+    tier2: 23
+    tier3: 18
+    tier4: 9
+  recommended_next_anchors:
+    - ehr_integrations
+    - capital_markets
+    - smart_metering
+    - clinical_trials
+    - cloud_finops
+    - ev_charging
+    - tax_administration
+    - real_world_evidence
+    - settlement_clearing
+    - ad_tech
+
+subdomains:
+
+  # --- BFSI ---
+
+  - id: payments
+    vertical: BFSI
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'ISO 20022 message catalogue', url: 'https://www.iso20022.org/iso-20022-message-definitions' }
+      - { name: 'NACHA Operating Rules', url: 'https://www.nacha.org/rules' }
+      - { name: 'Stripe API', url: 'https://docs.stripe.com/api' }
+      - { name: 'ISO 8583 (paid)', url: 'https://www.iso.org/standard/31628.html' }
+    notes: Existing anchor.
+
+  - id: asset_management
+    vertical: BFSI
+    tier: 1
+    citations:
+      - { name: 'SEC Form N-PORT', url: 'https://www.sec.gov/structureddata/n-port-data-sets' }
+      - { name: 'SEC Form ADV', url: 'https://www.sec.gov/about/forms/formadv.pdf' }
+      - { name: 'FpML', url: 'https://www.fpml.org/' }
+      - { name: 'GIPS (paid via CFA Institute)', url: 'https://www.cfainstitute.org/en/ethics-standards/codes/gips-standards' }
+    entities: [Portfolio, Holding, Lot, Transaction, PerformancePeriod, FeeSchedule, Account, Mandate, Benchmark, Composite]
+
+  - id: capital_markets
+    vertical: BFSI
+    tier: 1
+    citations:
+      - { name: 'FIX Trading Community', url: 'https://www.fixtrading.org/standards/' }
+      - { name: 'FpML', url: 'https://www.fpml.org/spec/' }
+      - { name: 'ISO 20022 securities', url: 'https://www.iso20022.org/' }
+      - { name: 'CFTC Part 43/45', url: 'https://www.cftc.gov/IndustryOversight/DataReporting' }
+      - { name: 'ESMA MiFID II RTS 22', url: 'https://www.esma.europa.eu/policy-rules/mifid-ii-and-mifir' }
+    entities: [Order, ExecutionReport, Trade, Allocation, Confirmation, SettlementInstruction, Position, CashAccount, SecurityMaster, Counterparty, ISDAMasterAgreement, MarginCall, LifecycleEvent]
+
+  - id: cards
+    vertical: BFSI
+    tier: 1
+    citations:
+      - { name: 'EMVCo Specifications', url: 'https://www.emvco.com/specifications/' }
+      - { name: 'ISO/IEC 7812', url: 'https://www.iso.org/standard/70484.html' }
+      - { name: 'Marqeta Core API', url: 'https://www.marqeta.com/docs/core-api' }
+      - { name: 'Stripe Issuing API', url: 'https://docs.stripe.com/issuing' }
+    entities: [Cardholder, Card, BinRange, Authorization, Capture, Chargeback, DisputeCycle, Refund, Statement, RewardAccrual, InterchangeFee, SchemeSettlementFile]
+
+  - id: cross_border_payments
+    vertical: BFSI
+    tier: 1
+    citations:
+      - { name: 'SWIFT CBPR+', url: 'https://www.swift.com/standards/iso-20022/cbpr-plus' }
+      - { name: 'SWIFT GPI', url: 'https://developer.swift.com/' }
+      - { name: 'FedNow ISO 20022', url: 'https://www.federalreserve.gov/paymentsystems/fednow_about.htm' }
+      - { name: 'TCH RTP', url: 'https://www.theclearinghouse.org/payment-systems/rtp' }
+      - { name: 'NPCI UPI', url: 'https://www.npci.org.in/what-we-do/upi/product-overview' }
+    entities: [CrossBorderPaymentInstruction, FxQuote, FxTrade, CorrespondentLeg, SettlementAccount, GpiTrackerEvent, Beneficiary, SanctionsHit, AmlHold, ComplianceReasonCode]
+
+  - id: kyc_aml
+    vertical: BFSI
+    tier: 1
+    citations:
+      - { name: 'FinCEN BSA E-Filing', url: 'https://www.fincen.gov/resources/financial-institutions/bsa-e-filing-system' }
+      - { name: 'OFAC SDN list', url: 'https://ofac.treasury.gov/specially-designated-nationals-and-blocked-persons-list-sdn-human-readable-lists' }
+      - { name: 'UN Security Council Sanctions', url: 'https://main.un.org/securitycouncil/en/content/un-sc-consolidated-list' }
+      - { name: 'EU Consolidated Sanctions', url: 'https://webgate.ec.europa.eu/fsd/fsf' }
+      - { name: 'FATF Recommendations', url: 'https://www.fatf-gafi.org/en/topics/fatf-recommendations.html' }
+      - { name: 'goAML', url: 'https://unite.un.org/goaml' }
+    entities: [Customer, CustomerDueDiligenceRecord, BeneficialOwner, SanctionsHit, PepMatch, TransactionAlert, SuspiciousActivityReport, CurrencyTransactionReport, WatchlistSnapshot, RiskScore]
+
+  - id: lending
+    vertical: BFSI
+    tier: 1
+    citations:
+      - { name: 'MISMO Reference Model v3.6', url: 'https://www.mismo.org/standards-resources/residential-specifications/reference-model' }
+      - { name: 'Fannie Mae URLA / Form 1003', url: 'https://singlefamily.fanniemae.com/applications-technology/urla' }
+      - { name: 'CFPB HMDA LAR', url: 'https://ffiec.cfpb.gov/documentation/2026/lar-data-fields/' }
+      - { name: 'SBA E-Tran', url: 'https://www.sba.gov/partners/lenders/7a-loan-program/etran' }
+    entities: [LoanApplication, Borrower, CoBorrower, Property, IncomeSource, Asset, Liability, Loan, Disbursement, Payment, EscrowAccount, DefaultEvent, ChargeOff, HmdaLarRecord]
+
+  - id: mortgage_servicing
+    vertical: BFSI
+    tier: 1
+    citations:
+      - { name: 'MISMO Servicing Reference Model', url: 'https://www.mismo.org/standards-resources/residential-specifications/reference-model' }
+      - { name: 'Fannie Mae Investor Reporting', url: 'https://singlefamily.fanniemae.com/servicing/investor-reporting' }
+      - { name: 'Freddie Mac Loan-Level Reporting', url: 'https://sf.freddiemac.com/servicing/loan-level-reporting' }
+      - { name: 'Ginnie Mae MBS Pool reporting', url: 'https://www.ginniemae.gov/issuers/issuer_tools/Pages/multifamilyandissuermbsguide.aspx' }
+    entities: [ServicingLoan, PaymentPosting, EscrowDisbursement, TaxInsuranceBill, DelinquencyStatus, LossMitigationWorkout, ForeclosureEvent, BankruptcyStay, InvestorRemittance, InvestorLarRecord, MbsPool]
+
+  - id: settlement_clearing
+    vertical: BFSI
+    tier: 1
+    citations:
+      - { name: 'ISO 20022 securities settlement', url: 'https://www.iso20022.org/' }
+      - { name: 'DTCC NSCC CNS', url: 'https://www.dtcc.com/clearing-services/equities-clearing-services' }
+      - { name: 'DTCC DTC Settlement', url: 'https://www.dtcc.com/settlement-and-asset-services/dtc-settlement' }
+      - { name: 'Fedwire Funds Service', url: 'https://www.frbservices.org/resources/financial-services/wires/index.html' }
+    entities: [SettlementInstruction, TradeMatch, NetSettlementPosition, CcpMarginCall, FailedTrade, BuyIn, PreSettlementMatchingStatus, CashSettlementMovement, SecuritiesMovement, ReconciliationBreak, CsdAccount]
+
+  - id: securities_lending
+    vertical: BFSI
+    tier: 1
+    citations:
+      - { name: 'ESMA SFTR', url: 'https://www.esma.europa.eu/policy-rules/sftr' }
+      - { name: 'SEC Rule 10c-1a', url: 'https://www.sec.gov/rules/final/2023/34-98737.pdf' }
+      - { name: 'ISLA GMSLA', url: 'https://www.islaemea.org/legal/gmsla/' }
+      - { name: 'FpML', url: 'https://www.fpml.org/spec/' }
+      - { name: 'DTCC SFT Clearing', url: 'https://www.dtcc.com/clearing-services/sft-clearing' }
+    entities: [Loan, SecurityOnLoan, BorrowContract, CollateralSchedule, MarginCall, RecallNotice, RebateFee, MarkToMarket, DefaultEvent, SftrTradeReport]
+
+  - id: treasury
+    vertical: BFSI
+    tier: 1
+    citations:
+      - { name: 'ISO 20022 cash management', url: 'https://www.iso20022.org/' }
+      - { name: 'BAI2 Format', url: 'https://www.bai.org/docs/default-source/libraries-data-management/bai2_complete_v3-7_2021.pdf' }
+      - { name: 'Federal Reserve H.15', url: 'https://www.federalreserve.gov/releases/h15/' }
+    entities: [BankAccount, Statement, CashPosition, CashForecastBucket, FxSpotTrade, FxForward, MoneyMarketDeposit, Repo, IntradayLiquidityEvent, FundingConcentrationLimit]
+
+  - id: regulatory_reporting
+    vertical: BFSI
+    tier: 1
+    citations:
+      - { name: 'FFIEC Call Report MDRM', url: 'https://www.federalreserve.gov/apps/mdrm/' }
+      - { name: 'EBA COREP/FINREP XBRL', url: 'https://www.eba.europa.eu/risk-and-data-analysis/reporting-frameworks' }
+      - { name: 'MAS 610', url: 'https://www.mas.gov.sg/regulation/forms-and-templates/regulatory-and-supervisory-framework' }
+      - { name: 'SEC EDGAR US-GAAP XBRL', url: 'https://xbrl.us/xbrl-taxonomy/2024-us-gaap/' }
+      - { name: 'XBRL specification', url: 'https://specifications.xbrl.org/' }
+    entities: [ReportingPeriod, RegulatoryForm, FormLineItem, CounterpartyConcentration, CapitalComponent, RiskWeightedAssetBucket, StressScenario, SupervisorySubmission, ReconciliationBreak, LineageEdge]
+
+  - id: wealth_management
+    vertical: BFSI
+    tier: 2
+    citations:
+      - { name: 'SEC Form ADV', url: 'https://www.sec.gov/about/forms/formadv.pdf' }
+      - { name: 'SEC Form CRS', url: 'https://www.sec.gov/about/forms/formcrs.pdf' }
+      - { name: 'FINRA Rule 4530', url: 'https://www.finra.org/rules-guidance/rulebooks/finra-rules/4530' }
+      - { name: 'BNY/Pershing Developer', url: 'https://www.developer.bnymellon.com/' }
+    entities: [Advisor, ClientHousehold, GoalPlan, RiskToleranceProfile, Account, Holding, SuitabilityReview, FeeSchedule, PerformanceStatement, DisclosureDocument]
+
+  - id: fraud
+    vertical: BFSI
+    tier: 2
+    citations:
+      - { name: 'FFIEC Authentication Guidance', url: 'https://www.ffiec.gov/press/PDF/Authentication-and-Access-to-Financial-Institution-Services-and-Systems.pdf' }
+      - { name: 'Sift Developer Docs', url: 'https://sift.com/developers' }
+      - { name: 'Stripe Radar Rules', url: 'https://docs.stripe.com/radar/rules' }
+      - { name: 'Visa Rules (public PDF)', url: 'https://usa.visa.com/dam/VCOM/global/support-legal/documents/visa-rules-public.pdf' }
+    entities: [Transaction, RiskScore, RuleHit, Alert, Case, Disposition, InvestigatorNote, FraudReasonCode, Recovery, LinkedIdentityCluster]
+    notes: Fraud rules and model coefficients are NOT publicly modellable; leave abstract.
+
+  - id: merchant_acquiring
+    vertical: BFSI
+    tier: 2
+    citations:
+      - { name: 'ISO 18245 MCC', url: 'https://www.iso.org/standard/79450.html' }
+      - { name: 'PCI DSS', url: 'https://www.pcisecuritystandards.org/' }
+      - { name: 'Stripe Connect', url: 'https://docs.stripe.com/connect' }
+      - { name: 'Adyen Marketpay', url: 'https://docs.adyen.com/marketpay/' }
+    entities: [MerchantApplication, Merchant, OutletTerminal, MCC, CardAcceptanceAgreement, Authorization, Capture, SettlementFunding, Reserve, ChargebackRecovery, RiskUnderwritingDecision]
+
+  - id: prepaid_cards
+    vertical: BFSI
+    tier: 2
+    citations:
+      - { name: 'Marqeta Core API', url: 'https://www.marqeta.com/docs/core-api' }
+      - { name: 'Galileo Pro', url: 'https://docs.galileo-ft.com/pro/' }
+      - { name: 'CFPB Reg E §1005.18', url: 'https://www.consumerfinance.gov/rules-policy/regulations/1005/18/' }
+    entities: [CardProgram, Cardholder, FundingSource, Load, Card, Authorization, NegativeBalance, Expiration, DisclosureLongForm, CardholderAgreement]
+
+  # --- Insurance ---
+
+  - id: p_and_c_claims
+    vertical: Insurance
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'ACORD Data Standards (paid)', url: 'https://www.acord.org/standards-architecture/acord-data-standards' }
+      - { name: 'Guidewire ClaimCenter Cloud Docs', url: 'https://docs.guidewire.com/cloud/cc/' }
+      - { name: 'Verisk ISO ClaimSearch (paid)', url: 'https://www.verisk.com/' }
+    notes: Existing anchor.
+
+  - id: actuarial_pricing
+    vertical: Insurance
+    tier: 1
+    citations:
+      - { name: 'NAIC Annual Statement Instructions', url: 'https://content.naic.org/cmte_e_app_blanks.htm' }
+      - { name: 'EIOPA Solvency II XBRL', url: 'https://www.eiopa.europa.eu/tools-and-data/supervisory-reporting-dpm-and-xbrl_en' }
+      - { name: 'CAS', url: 'https://www.casact.org/' }
+      - { name: 'SOA', url: 'https://www.soa.org/' }
+    entities: [LossDevelopmentTriangleCell, Reserve, RateClassRelativity, PricingModelRun, CapitalScenario, SolvencyIIScrModule, RbcAuthorizedControlLevel, BenchmarkRate, TrendCurve, CatastropheLoad]
+
+  - id: claims_subrogation
+    vertical: Insurance
+    tier: 2
+    citations:
+      - { name: 'Guidewire ClaimCenter', url: 'https://docs.guidewire.com/cloud/cc/' }
+      - { name: 'Mitchell Cloud Claims', url: 'https://www.mitchell.com/insurance' }
+      - { name: 'CCC Intelligent Solutions', url: 'https://www.cccis.com/' }
+      - { name: 'Arbitration Forums', url: 'https://www.arbfile.org/' }
+    entities: [Claim, LossNotice, Coverage, Reserve, Payment, Recovery, SubrogationDemand, ArbitrationFiling, SalvageDisposition, LitigationMatter]
+
+  - id: policy_admin
+    vertical: Insurance
+    tier: 2
+    citations:
+      - { name: 'Guidewire PolicyCenter', url: 'https://docs.guidewire.com/cloud/pc/' }
+      - { name: 'Duck Creek', url: 'https://www.duckcreek.com/' }
+      - { name: 'NAIC SERFF', url: 'https://www.serff.com/' }
+      - { name: 'ACORD (paid)', url: 'https://www.acord.org/' }
+    entities: [Policy, PolicyTerm, InsuredProducer, Coverage, Endorsement, PremiumSchedule, BillPlan, CancellationReason, RenewalOffer, SerffFiling]
+
+  - id: life_annuity
+    vertical: Insurance
+    tier: 4
+    citations:
+      - { name: 'ACORD Life & Annuity (paid)', url: 'https://www.acord.org/standards-architecture/acord-data-standards' }
+      - { name: 'LIMRA (paid)', url: 'https://www.limra.com/' }
+      - { name: 'DTCC Insurance Services', url: 'https://www.dtcc.com/wealth-management-services/insurance-services' }
+      - { name: 'NAIC Annual Statement Life Blue Book', url: 'https://content.naic.org/cmte_e_app_blanks.htm' }
+    notes: Hold pending ACORD or LIMRA membership.
+
+  - id: reinsurance
+    vertical: Insurance
+    tier: 4
+    citations:
+      - { name: 'ACORD Reinsurance Standards (paid)', url: 'https://www.acord.org/standards-architecture/acord-data-standards' }
+      - { name: 'Lloyd''s Market Association', url: 'https://www.lmalloyds.com/' }
+      - { name: 'Lloyd''s Coverholder Reporting', url: 'https://www.lloyds.com/conducting-business/delegated-authorities' }
+    notes: Hold pending ACORD membership.
+
+  - id: underwriting
+    vertical: Insurance
+    tier: 4
+    citations:
+      - { name: 'Verisk ISO (paid)', url: 'https://www.verisk.com/' }
+      - { name: 'NCCI Stat Plan (paid)', url: 'https://www.ncci.com/' }
+      - { name: 'NAIC SERFF', url: 'https://www.serff.com/' }
+    notes: Hold pending Verisk/NCCI/ACORD access.
+
+  # --- Healthcare ---
+
+  - id: ehr_integrations
+    vertical: Healthcare
+    tier: 1
+    citations:
+      - { name: 'HL7 FHIR', url: 'https://hl7.org/fhir/' }
+      - { name: 'HL7 v2.x', url: 'https://www.hl7.org/implement/standards/product_section.cfm?section=13' }
+      - { name: 'IHE Profiles', url: 'https://profiles.ihe.net/' }
+      - { name: 'ONC USCDI v3', url: 'https://www.healthit.gov/isa/united-states-core-data-interoperability-uscdi' }
+      - { name: 'Epic on FHIR', url: 'https://fhir.epic.com/' }
+      - { name: 'Oracle Health Millennium FHIR', url: 'https://docs.oracle.com/en/industries/health/millennium-platform-apis/' }
+    entities: [Patient, Encounter, Observation, Condition, Procedure, MedicationRequest, MedicationAdministration, AllergyIntolerance, Immunization, DiagnosticReport, ServiceRequest, Practitioner, Organization, Location, Coverage]
+
+  - id: clinical_decision_support
+    vertical: Healthcare
+    tier: 1
+    citations:
+      - { name: 'HL7 FHIR Clinical Reasoning', url: 'https://hl7.org/fhir/clinicalreasoning-module.html' }
+      - { name: 'CDS Hooks v2.0', url: 'https://cds-hooks.hl7.org/2.0/' }
+      - { name: 'Clinical Quality Language', url: 'https://cql.hl7.org/' }
+      - { name: 'SMART App Launch', url: 'https://www.hl7.org/fhir/smart-app-launch/' }
+    entities: [HookTrigger, CdsService, CdsCard, PlanDefinition, ActivityDefinition, CqlLibrary, Suggestion, OverrideAcceptance, AuditEvent]
+
+  - id: medical_imaging
+    vertical: Healthcare
+    tier: 1
+    citations:
+      - { name: 'DICOM PS3', url: 'https://www.dicomstandard.org/current' }
+      - { name: 'FHIR ImagingStudy', url: 'https://hl7.org/fhir/imagingstudy.html' }
+      - { name: 'IHE Radiology', url: 'https://profiles.ihe.net/RAD/' }
+      - { name: 'DICOMweb', url: 'https://www.dicomstandard.org/dicomweb' }
+      - { name: 'RadLex', url: 'https://radlex.org/' }
+    entities: [ImagingStudy, Series, Instance, Modality, ProcedureCode, DicomSrReport, AiAlgorithmOutput, CriticalFinding, WorklistItem, ReportingTemplate]
+
+  - id: patient_engagement
+    vertical: Healthcare
+    tier: 1
+    citations:
+      - { name: 'HL7 FHIR Communication / Appointment', url: 'https://hl7.org/fhir/' }
+      - { name: 'SMART App Launch', url: 'https://www.hl7.org/fhir/smart-app-launch/' }
+      - { name: 'CMS Patient Access API (Blue Button 2.0)', url: 'https://bluebutton.cms.gov/developers/' }
+      - { name: 'Da Vinci PCT', url: 'https://hl7.org/fhir/us/davinci-pct/' }
+    entities: [PatientAccount, PortalSession, SecureMessageThread, Appointment, ReminderJob, Consent, NotificationPreference, OutreachCampaign, EngagementEvent, Authorization]
+
+  - id: payer_provider
+    vertical: Healthcare
+    tier: 1
+    citations:
+      - { name: 'X12 Transaction Sets (paid; companion guides free)', url: 'https://x12.org/products/transaction-sets' }
+      - { name: 'CAQH CORE Operating Rules', url: 'https://www.caqh.org/core/all-operating-rules' }
+      - { name: 'Da Vinci PAS', url: 'https://hl7.org/fhir/us/davinci-pas/' }
+      - { name: 'CMS Interoperability Final Rule', url: 'https://www.cms.gov/regulations-and-guidance/guidance/interoperability/index' }
+    entities: [Member, Subscriber, Coverage, PlanProduct, EligibilityResponse, ClaimHeader, ClaimLine, Era835, Provider, PractitionerRole, PriorAuthorization, NetworkAffiliation, CapitationRoster]
+
+  - id: revenue_cycle
+    vertical: Healthcare
+    tier: 1
+    citations:
+      - { name: 'CMS NCCI', url: 'https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits' }
+      - { name: 'CMS ICD-10', url: 'https://www.cms.gov/medicare/coding/icd10' }
+      - { name: 'AMA CPT (paid)', url: 'https://www.ama-assn.org/practice-management/cpt' }
+      - { name: 'CMS HCPCS', url: 'https://www.cms.gov/medicare/coding-billing/healthcare-common-procedure-system' }
+    entities: [PatientEncounter, Charge, Claim, ClaimLine, Icd10Code, CptHcpcsCode, Modifier, Adjustment, DenialReason, BadDebtWriteOff, SelfPayPlan, PatientStatement]
+
+  - id: telehealth
+    vertical: Healthcare
+    tier: 1
+    citations:
+      - { name: 'HL7 FHIR Encounter (virtual)', url: 'https://hl7.org/fhir/encounter.html' }
+      - { name: 'CMS POS Codes', url: 'https://www.cms.gov/medicare/coding-billing/place-service-codes' }
+      - { name: 'ATA Practice Guidelines', url: 'https://www.americantelemed.org/resources/practice-guidelines/' }
+    entities: [VirtualVisit, PreVisitForm, VideoSession, EPrescription, RemoteMonitoringDevice, VitalSignStream, PatientReportedOutcome, ConsentForTelehealth, CarePlanUpdate]
+
+  - id: value_based_care
+    vertical: Healthcare
+    tier: 1
+    citations:
+      - { name: 'CMS Star Ratings', url: 'https://www.cms.gov/medicare/health-drug-plans/part-c-d-performance-data' }
+      - { name: 'NCQA HEDIS', url: 'https://www.ncqa.org/hedis/' }
+      - { name: 'CMS MIPS', url: 'https://qpp.cms.gov/mips/quality-measures' }
+      - { name: 'CMS HCC Risk Adjustment', url: 'https://www.cms.gov/medicare/payment/medicare-advantage-rates-statistics/risk-adjustment' }
+      - { name: 'Da Vinci DEQM', url: 'https://hl7.org/fhir/us/davinci-deqm/' }
+    entities: [AttributedMember, CareGap, QualityMeasure, NumeratorDenominatorExclusion, RiskScoreHcc, SharedSavingsSettlement, BenchmarkCohort, ProviderQualityProfile]
+
+  # --- LifeSciences ---
+
+  - id: pharmacovigilance
+    vertical: LifeSciences
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'ICH E2B(R3)', url: 'https://www.ich.org/page/efficacy-guidelines' }
+      - { name: 'MedDRA', url: 'https://www.meddra.org/' }
+      - { name: 'FDA FAERS', url: 'https://www.fda.gov/drugs/questions-and-answers-fdas-adverse-event-reporting-system-faers' }
+    notes: Existing anchor.
+
+  - id: clinical_trials
+    vertical: LifeSciences
+    tier: 1
+    citations:
+      - { name: 'CDISC SDTM', url: 'https://www.cdisc.org/standards/foundational/sdtm' }
+      - { name: 'CDISC ADaM', url: 'https://www.cdisc.org/standards/foundational/adam' }
+      - { name: 'CDISC ODM-XML', url: 'https://www.cdisc.org/standards/data-exchange/odm' }
+      - { name: 'CDISC Define-XML', url: 'https://www.cdisc.org/standards/data-exchange/define-xml' }
+      - { name: 'FDA Study Data Standards', url: 'https://www.fda.gov/industry/fda-data-standards-advisory-board/study-data-standards-resources' }
+      - { name: 'ClinicalTrials.gov API', url: 'https://clinicaltrials.gov/data-api/api' }
+      - { name: 'EU CTIS', url: 'https://euclinicaltrials.eu/' }
+    entities: [Study, Site, Subject, Visit, ProtocolVersion, InformedConsent, CrfItem, SdtmDomain, AdamDataset, AdverseEvent, ConcomitantMedication]
+
+  - id: medical_devices
+    vertical: LifeSciences
+    tier: 1
+    citations:
+      - { name: 'FDA AccessGUDID', url: 'https://accessgudid.nlm.nih.gov/' }
+      - { name: 'FDA MAUDE', url: 'https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfmaude/search.cfm' }
+      - { name: 'EU Eudamed', url: 'https://ec.europa.eu/tools/eudamed/' }
+    entities: [Device, UdiDi, UdiPi, Lot, Complaint, MdrReport, Capa, FieldActionRecall, DesignHistoryFile, RiskFile, PostMarketClinicalFollowUp]
+
+  - id: pharma_supply_chain
+    vertical: LifeSciences
+    tier: 1
+    citations:
+      - { name: 'GS1 EPCIS 2.0', url: 'https://ref.gs1.org/standards/epcis/' }
+      - { name: 'GS1 Healthcare', url: 'https://www.gs1.org/industries/healthcare' }
+      - { name: 'FDA DSCSA', url: 'https://www.fda.gov/drugs/drug-supply-chain-integrity/drug-supply-chain-security-act-dscsa' }
+      - { name: 'EMVO (EU FMD)', url: 'https://emvo-medicines.eu/' }
+    entities: [ProductMaster, Lot, SerialNumber, TradeItemHierarchy, AggregationEvent, ObjectEvent, TransformationEvent, CustodyTransfer, EpcisDocument, T3TrackAndTraceHistory]
+
+  - id: real_world_evidence
+    vertical: LifeSciences
+    tier: 1
+    citations:
+      - { name: 'OMOP CDM v5.4', url: 'https://ohdsi.github.io/CommonDataModel/cdm54.html' }
+      - { name: 'OHDSI Athena vocabulary', url: 'https://athena.ohdsi.org/' }
+      - { name: 'FDA Sentinel CDM', url: 'https://www.sentinelinitiative.org/methods-data-tools/sentinel-common-data-model' }
+      - { name: 'PCORnet CDM v6', url: 'https://pcornet.org/data-driven-common-model/' }
+      - { name: 'HL7 FHIR US Core', url: 'https://hl7.org/fhir/us/core/' }
+    entities: [Person, ObservationPeriod, VisitOccurrence, ConditionOccurrence, DrugExposure, ProcedureOccurrence, Measurement, Death, Cohort, CohortDefinition, Vocabulary, ConceptHierarchy]
+
+  # --- Manufacturing ---
+
+  - id: mes_quality
+    vertical: Manufacturing
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'ISA-95 / B2MML', url: 'https://www.mesa.org/topics-resources/b2mml/' }
+      - { name: 'OPC UA Companion Specs', url: 'https://reference.opcfoundation.org/' }
+      - { name: 'Sparkplug B', url: 'https://sparkplug.eclipse.org/' }
+    notes: Existing anchor.
+
+  - id: ehs
+    vertical: Manufacturing
+    tier: 1
+    citations:
+      - { name: 'OSHA Recordkeeping', url: 'https://www.osha.gov/recordkeeping' }
+      - { name: 'EPA TRI', url: 'https://www.epa.gov/toxics-release-inventory-tri-program' }
+      - { name: 'UN GHS', url: 'https://unece.org/transport/dangerous-goods/ghs' }
+      - { name: 'EPA NEI', url: 'https://www.epa.gov/air-emissions-inventories' }
+    entities: [Incident, NearMiss, InjuryIllnessRecord, HazardIdentification, CorrectiveAction, Permit, AirEmissionSource, WasteStream, SafetyDataSheet, AuditFinding]
+
+  - id: production_scheduling
+    vertical: Manufacturing
+    tier: 1
+    citations:
+      - { name: 'B2MML schemas (ISA-95 Part 4)', url: 'https://www.mesa.org/topics-resources/b2mml/' }
+      - { name: 'MESA Manufacturing Operations', url: 'https://www.mesa.org/' }
+      - { name: 'Siemens Opcenter', url: 'https://docs.sw.siemens.com/' }
+    entities: [ProductionSchedule, ProductionRequest, Job, Operation, Resource, Capability, WorkMaster, SetupTime, SequenceDependentChangeover, DispatchRule]
+
+  - id: shop_floor_iot
+    vertical: Manufacturing
+    tier: 1
+    citations:
+      - { name: 'OPC UA Companion Specs', url: 'https://reference.opcfoundation.org/' }
+      - { name: 'OASIS MQTT v5', url: 'https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html' }
+      - { name: 'Sparkplug B v3.0', url: 'https://sparkplug.eclipse.org/' }
+    entities: [Asset, TelemetryTag, TimeSeriesSample, OeeBucket, RunDownEvent, QualityReject, Alarm, EdgeGateway, SparkplugNode, SparkplugDevice]
+
+  - id: supply_chain_visibility
+    vertical: Manufacturing
+    tier: 1
+    citations:
+      - { name: 'GS1 EPCIS 2.0', url: 'https://ref.gs1.org/standards/epcis/' }
+      - { name: 'ANSI X12 EDI', url: 'https://x12.org/' }
+      - { name: 'Project44 API', url: 'https://www.project44.com/api' }
+    entities: [Shipment, Stop, TrackingEvent, ContainerTrailer, EtaEstimate, Exception, Carrier, Consignee, HandOff, CustodyEvent]
+
+  - id: bill_of_materials
+    vertical: Manufacturing
+    tier: 2
+    citations:
+      - { name: 'Siemens Teamcenter', url: 'https://docs.sw.siemens.com/' }
+      - { name: 'PTC Windchill', url: 'https://www.ptc.com/en/products/windchill' }
+      - { name: 'STEP AP242 (paid)', url: 'https://www.iso.org/standard/66654.html' }
+    entities: [Item, ItemRevision, BOM, BomLine, EffectivityRange, WhereUsed, EngineeringChangeOrder, EcoApproval, VariantConfigurationRule, SubstitutionGroup]
+
+  - id: maintenance
+    vertical: Manufacturing
+    tier: 2
+    citations:
+      - { name: 'IBM Maximo data model', url: 'https://www.ibm.com/docs/en/maximo-as' }
+      - { name: 'MIMOSA OSA-EAI', url: 'https://www.mimosa.org/' }
+      - { name: 'ISO 14224 (paid)', url: 'https://www.iso.org/standard/64076.html' }
+    entities: [Asset, FunctionalLocation, WorkOrder, JobPlan, PmSchedule, FailureCode, SparePartBom, Crew, MeterReading, ReliabilityKpi]
+
+  - id: predictive_maintenance
+    vertical: Manufacturing
+    tier: 2
+    citations:
+      - { name: 'NASA C-MAPSS dataset', url: 'https://www.nasa.gov/intelligent-systems-division/discovery-and-systems-health/pcoe/pcoe-data-set-repository/' }
+      - { name: 'AWS Lookout for Equipment', url: 'https://docs.aws.amazon.com/lookout-for-equipment/' }
+      - { name: 'ISO 13374 (paid)', url: 'https://www.iso.org/standard/61322.html' }
+    entities: [Asset, SensorChannel, TelemetrySample, HealthIndex, Anomaly, RemainingUsefulLifeEstimate, FailureMode, RecommendedAction, MaintenanceTrigger, ModelVersion]
+
+  - id: supplier_quality
+    vertical: Manufacturing
+    tier: 2
+    citations:
+      - { name: 'AIAG (paid)', url: 'https://www.aiag.org/' }
+      - { name: 'Siemens Opcenter Quality', url: 'https://docs.sw.siemens.com/' }
+      - { name: 'IATF 16949 process', url: 'https://www.iatfglobaloversight.org/' }
+    entities: [Supplier, PartApproval, ControlPlan, IncomingInspectionLot, NonConformanceReport, CorrectiveAction, SupplierScorecard, CostOfPoorQuality, SubSupplierTier]
+
+  - id: warranty
+    vertical: Manufacturing
+    tier: 3
+    citations:
+      - { name: 'AIAG TQRDC (paid)', url: 'https://www.aiag.org/' }
+      - { name: 'Mize / Syncron public docs', url: 'https://www.syncron.com/' }
+    notes: Would require imagination — not recommended.
+
+  # --- Retail ---
+
+  - id: merchandising
+    vertical: Retail
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'GS1 Standards', url: 'https://www.gs1.org/standards' }
+      - { name: 'NRF Retail Data Model', url: 'https://nrf.com/research-insights/research-archive/data-model' }
+      - { name: 'ANSI X12 EDI', url: 'https://x12.org/' }
+    notes: Existing anchor.
+
+  - id: ecommerce
+    vertical: Retail
+    tier: 1
+    citations:
+      - { name: 'schema.org Product', url: 'https://schema.org/Product' }
+      - { name: 'GS1 GPC', url: 'https://www.gs1.org/standards/gpc' }
+      - { name: 'OAGi BOD', url: 'https://oagi.org/' }
+      - { name: 'Shopify Admin API', url: 'https://shopify.dev/docs/api/admin' }
+      - { name: 'Adobe Commerce (Magento)', url: 'https://developer.adobe.com/commerce/' }
+    entities: [Product, Variant, Offer, Cart, Order, OrderLine, Customer, Address, Shipment, Payment, Refund, Review, Promo, InventoryPosition]
+
+  - id: returns_management
+    vertical: Retail
+    tier: 1
+    citations:
+      - { name: 'ANSI X12 EDI 180/754', url: 'https://x12.org/products/transaction-sets' }
+      - { name: 'Loop Returns API', url: 'https://docs.loopreturns.com/' }
+      - { name: 'Shopify Order Returns API', url: 'https://shopify.dev/docs/api/admin-rest/2024-01/resources/return' }
+    entities: [ReturnAuthorization, ReturnLine, ReturnReason, InspectionResult, Disposition, Refund, ReplacementOrder, ReverseShipment, RmaDocument]
+
+  - id: customer_analytics
+    vertical: Retail
+    tier: 2
+    citations:
+      - { name: 'Adobe XDM (open source)', url: 'https://github.com/adobe/xdm' }
+      - { name: 'Salesforce Data Cloud', url: 'https://developer.salesforce.com/docs/atlas.en-us.c360a_api.meta/c360a_api/c360a_api_intro.htm' }
+      - { name: 'Segment Common Spec', url: 'https://segment.com/docs/connections/spec/common/' }
+    entities: [PersonProfile, IdentityMap, Event, AudienceSegment, Journey, Touchpoint, LifetimeValue, ConsentState, IdentityGraphEdge]
+
+  - id: last_mile_delivery
+    vertical: Retail
+    tier: 2
+    citations:
+      - { name: 'FedEx Developer', url: 'https://developer.fedex.com/' }
+      - { name: 'UPS Developer', url: 'https://developer.ups.com/' }
+      - { name: 'USPS Web Tools', url: 'https://www.usps.com/business/web-tools-apis/' }
+    entities: [Order, DeliveryJob, Driver, Route, Stop, Geofence, ProofOfDelivery, DeliveryWindow, Exception, CustomerNotification]
+
+  - id: dark_stores
+    vertical: Retail
+    tier: 3
+    citations: []
+    notes: Would require imagination — not recommended. Reuse ecommerce + last-mile-delivery for shared parts.
+
+  - id: store_ops
+    vertical: Retail
+    tier: 3
+    citations: []
+    notes: Would require imagination — not recommended.
+
+  # --- CPG ---
+
+  - id: demand_planning
+    vertical: CPG
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'APICS / ASCM (paid)', url: 'https://www.ascm.org/' }
+      - { name: 'SAP IBP docs', url: 'https://help.sap.com/docs/SAP_INTEGRATED_BUSINESS_PLANNING' }
+    notes: Existing anchor.
+
+  - id: retail_execution
+    vertical: CPG
+    tier: 2
+    citations:
+      - { name: 'Salesforce Consumer Goods Cloud', url: 'https://developer.salesforce.com/docs/atlas.en-us.cgcloud_dev_guide.meta/cgcloud_dev_guide/cgcloud_dev_guide.htm' }
+      - { name: 'Repsly API', url: 'https://www.repsly.com/api' }
+      - { name: 'GS1 Smart Centre', url: 'https://www.gs1.org/' }
+    entities: [AccountOutlet, Visit, VisitTask, PhotoImage, OutOfStockDetection, PlanogramComplianceScore, PromoCompliance, FieldRepRoute, SurveyQuestion]
+
+  - id: brand_marketing
+    vertical: CPG
+    tier: 3
+    citations: []
+    notes: Would require imagination — not recommended. Nielsen/Kantar/Ipsos panels are syndicated paid; MMM schemas are agency-specific.
+
+  - id: trade_promotion
+    vertical: CPG
+    tier: 3
+    citations: []
+    notes: Would require imagination — not recommended. SAP TPM / Vistex / Exceedra differ widely; EDI 852 covers POS feedback only.
+
+  # --- TTH ---
+
+  - id: hotel_revenue_management
+    vertical: TTH
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'HTNG', url: 'https://www.htng.org/' }
+      - { name: 'OpenTravel Alliance', url: 'https://opentravel.org/specifications/' }
+      - { name: 'STR (CoStar)', url: 'https://str.com/' }
+    notes: Existing anchor.
+
+  - id: hotel_distribution
+    vertical: TTH
+    tier: 1
+    citations:
+      - { name: 'OpenTravel Alliance', url: 'https://opentravel.org/specifications/' }
+      - { name: 'HTNG Distribution', url: 'https://www.htng.org/page/Workgroups' }
+      - { name: 'Sabre Dev Studio', url: 'https://developer.sabre.com/' }
+      - { name: 'Amadeus for Developers', url: 'https://developers.amadeus.com/' }
+      - { name: 'Booking.com Connectivity', url: 'https://developers.booking.com/connectivity/' }
+      - { name: 'Expedia Partner Solutions', url: 'https://developers.expediagroup.com/' }
+    entities: [Property, RatePlan, RoomType, Channel, InventoryAllotment, Restriction, Booking, Cancellation, CommissionSchedule, ChannelPerformanceSnapshot]
+
+  - id: baggage_tracking
+    vertical: TTH
+    tier: 1
+    citations:
+      - { name: 'IATA Baggage Programs', url: 'https://www.iata.org/en/services/passenger/baggage/' }
+      - { name: 'IATA Resolution 753', url: 'https://www.iata.org/en/programs/ops-infra/baggage/baggage-tracking/' }
+      - { name: 'IATA AHM', url: 'https://www.iata.org/en/publications/manuals/airport-handling-manual/' }
+    entities: [BaggageTag, BagSourceMessage, BagManifestMessage, HandlingEvent, MishandledBagFile, TracingEvent, BagPool, AircraftContainer]
+
+  - id: fleet_telematics
+    vertical: TTH
+    tier: 1
+    citations:
+      - { name: 'FMCSA ELD Rule (49 CFR Part 395)', url: 'https://www.fmcsa.dot.gov/hours-service/elds/electronic-logging-devices' }
+      - { name: 'AEMP / ISO 15143-3', url: 'https://www.iso.org/standard/65156.html' }
+      - { name: 'Geotab SDK', url: 'https://geotab.github.io/sdk/' }
+      - { name: 'Samsara API', url: 'https://developers.samsara.com/' }
+    entities: [Vehicle, AssetIdentifier, Driver, Trip, GpsSample, EngineFaultCode, FuelEvent, HoursOfServiceLog, SpeedingHarshBrakeEvent, GeofenceCrossing]
+
+  - id: last_mile_logistics
+    vertical: TTH
+    tier: 1
+    citations:
+      - { name: 'FedEx Developer', url: 'https://developer.fedex.com/' }
+      - { name: 'UPS Developer', url: 'https://developer.ups.com/' }
+      - { name: 'DHL Developer', url: 'https://developer.dhl.com/' }
+      - { name: 'ANSI X12 214/215', url: 'https://x12.org/' }
+    entities: [Pickup, SortManifest, LinehaulLane, HubHandOff, DeliveryStop, ServiceFailure, DriverManifest, DeliveryConfirmation, AddressValidationResponse]
+
+  - id: airline_disruption
+    vertical: TTH
+    tier: 2
+    citations:
+      - { name: 'IATA AIDX', url: 'https://www.iata.org/en/publications/info-data-exchange/' }
+      - { name: 'IATA NDC', url: 'https://developer.iata.org/' }
+      - { name: 'EUROCONTROL A-CDM', url: 'https://www.eurocontrol.int/concept/airport-collaborative-decision-making' }
+    entities: [FlightLeg, ScheduleChange, MovementEvent, DisruptionReason, ReaccommodationOffer, CrewPairing, CrewDisruption, PassengerPnrImpact, Notification]
+
+  - id: vacation_rentals
+    vertical: TTH
+    tier: 2
+    citations:
+      - { name: 'Vrbo Connect', url: 'https://www.partner.vrbo.com/' }
+      - { name: 'iCal RFC 5545', url: 'https://datatracker.ietf.org/doc/html/rfc5545' }
+      - { name: 'Booking.com VR Connectivity', url: 'https://developers.booking.com/connectivity/' }
+    entities: [Listing, Property, CalendarSlot, Booking, Guest, Host, CleaningJob, ChannelSyncStatus, RatePlan, DamageDeposit]
+
+  - id: ride_share_dispatch
+    vertical: TTH
+    tier: 2
+    citations:
+      - { name: 'NYC TLC Trip Records', url: 'https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page' }
+      - { name: 'GBFS', url: 'https://gbfs.org/' }
+      - { name: 'Chicago TNP Data', url: 'https://data.cityofchicago.org/Transportation/Transportation-Network-Providers-Trips/m6dm-c72p' }
+    entities: [TripRequest, Trip, Driver, Rider, SurgeMultiplierRegion, Pickup, Dropoff, PickupLocationId, FareStructure, Tip, CancellationEvent]
+    notes: Dispatch matching/ETA models are proprietary.
+
+  - id: airline_loyalty
+    vertical: TTH
+    tier: 3
+    citations: []
+    notes: Would require imagination — not recommended. Frequent flyer rules are radically per-program.
+
+  - id: airline_revenue_management
+    vertical: TTH
+    tier: 3
+    citations: []
+    notes: Would require imagination — not recommended. PROS / Sabre / Amadeus RM models are proprietary.
+
+  # --- Telecom ---
+
+  - id: bss_oss
+    vertical: Telecom
+    tier: 1
+    citations:
+      - { name: 'TM Forum Information Framework (SID)', url: 'https://www.tmforum.org/oda/information-systems/information-framework-sid/' }
+      - { name: 'TM Forum Open APIs', url: 'https://www.tmforum.org/oda/open-apis/directory/' }
+      - { name: '3GPP TS 28 / 32 series', url: 'https://www.3gpp.org/specifications-technologies' }
+      - { name: 'MEF LSO APIs', url: 'https://www.mef.net/lso-apis/' }
+    entities: [Customer, Account, ProductOffering, ProductSpecification, Service, Resource, Order, OrderItem, Inventory, TroubleTicket, UsageRecord, BillingAccount]
+
+  - id: customer_care
+    vertical: Telecom
+    tier: 1
+    citations:
+      - { name: 'TMF621 Trouble Ticket', url: 'https://www.tmforum.org/oda/open-apis/directory/trouble-ticket-api-TMF621/' }
+      - { name: 'Genesys Cloud API', url: 'https://developer.genesys.cloud/' }
+      - { name: 'ITIL v4', url: 'https://www.axelos.com/certifications/propath/itil-4' }
+    entities: [Interaction, Contact, Channel, Queue, RoutingDecision, Agent, Skill, TroubleTicket, Resolution, NpsCsatResponse, KnowledgeArticleReference]
+
+  - id: network_operations
+    vertical: Telecom
+    tier: 1
+    citations:
+      - { name: '3GPP TS 28.5xx', url: 'https://www.3gpp.org/DynaReport/28-series.htm' }
+      - { name: 'ETSI NFV-MANO', url: 'https://www.etsi.org/technologies/nfv' }
+      - { name: 'IETF NETMOD YANG', url: 'https://datatracker.ietf.org/wg/netmod/about/' }
+      - { name: 'TMF642 Alarm Management', url: 'https://www.tmforum.org/oda/open-apis/directory/' }
+    entities: [NetworkElement, CellGnb, Link, Alarm, PerformanceKpiSample, TopologyEdge, TroubleTicket, ChangeRequest, MaintenanceWindow, ConfigurationChange]
+
+  - id: network_slicing_5g
+    vertical: Telecom
+    tier: 1
+    citations:
+      - { name: '3GPP TS 28.530', url: 'https://www.3gpp.org/DynaReport/28530.htm' }
+      - { name: '3GPP TS 28.541 NRM', url: 'https://www.3gpp.org/DynaReport/28541.htm' }
+      - { name: 'GSMA Generic Network Slice Template (GST)', url: 'https://www.gsma.com/newsroom/wp-content/uploads/NG.116-v3.0.pdf' }
+      - { name: 'ETSI ZSM 008', url: 'https://www.etsi.org/technologies/zero-touch-network-service-management' }
+    entities: [NetworkSliceSubnet, SliceProfile, GstAttribute, SNssai, ServiceLevelSpecification, SliceLifecycleEvent, KpiSnapshot, Tenant]
+
+  - id: subscriber_billing
+    vertical: Telecom
+    tier: 1
+    citations:
+      - { name: '3GPP TS 32.250 charging', url: 'https://www.3gpp.org/DynaReport/32-series.htm' }
+      - { name: '3GPP TS 32.298 CDR ASN.1', url: 'https://www.3gpp.org/DynaReport/32298.htm' }
+      - { name: 'TMF635 Usage Management', url: 'https://www.tmforum.org/oda/open-apis/directory/' }
+    entities: [Subscriber, Service, Tariff, Charge, UsageEvent, RatedCdr, BundleAllowance, BillRun, Invoice, DunningStep]
+
+  - id: video_streaming_qoe
+    vertical: Telecom
+    tier: 1
+    citations:
+      - { name: 'CTA-2066 CMCD', url: 'https://shop.cta.tech/products/web-application-video-ecosystem-common-media-client-data-cta-2066' }
+      - { name: 'DASH-IF Guidelines', url: 'https://dashif.org/guidelines/' }
+      - { name: 'IETF HLS WG', url: 'https://datatracker.ietf.org/wg/hls/about/' }
+      - { name: 'Streaming Video Alliance', url: 'https://www.svta.org/' }
+    entities: [Session, AssetManifest, BitrateSwitchEvent, BufferUnderrun, StartupTimeSample, RebufferEvent, CdnEdge, AbrDecision, ErrorCode, DevicePlayer]
+
+  - id: churn_management
+    vertical: Telecom
+    tier: 3
+    citations: []
+    notes: Would require imagination — not recommended. Use BSS/OSS for customer/contract entities; churn-prediction internals are proprietary.
+
+  # --- Utilities ---
+
+  - id: smart_metering
+    vertical: Utilities
+    tier: 1
+    citations:
+      - { name: 'ANSI C12.19', url: 'https://www.nema.org/standards/view/American-National-Standard-for-Utility-Industry-End-Device-Data-Tables' }
+      - { name: 'DLMS-COSEM IEC 62056', url: 'https://www.dlms.com/' }
+      - { name: 'IEC 61968-9', url: 'https://webstore.iec.ch/publication/56477' }
+      - { name: 'IEEE 2030.5 / SEP 2.0', url: 'https://standards.ieee.org/ieee/2030.5/5897/' }
+      - { name: 'MultiSpeak', url: 'https://www.multispeak.org/' }
+    entities: [Meter, Endpoint, IntervalReading, RegisterReading, MeterEvent, ServicePoint, DemandReading, TouBucket, DisconnectReconnectCommand, FirmwareVersion]
+
+  - id: outage_management
+    vertical: Utilities
+    tier: 1
+    citations:
+      - { name: 'MultiSpeak v5.2 OMS', url: 'https://www.multispeak.org/' }
+      - { name: 'DOE OE-417', url: 'https://www.oe.netl.doe.gov/oe417.aspx' }
+      - { name: 'IEC 61968-3', url: 'https://webstore.iec.ch/publication/6195' }
+    entities: [Outage, OutageCause, AffectedCustomersMeters, PredictedRestorationTime, Crew, CrewDispatch, SwitchingStep, CustomerNotification, Oe417Incident]
+
+  - id: water_utilities
+    vertical: Utilities
+    tier: 2
+    citations:
+      - { name: 'EPA SDWIS', url: 'https://www.epa.gov/ground-water-and-drinking-water/safe-drinking-water-information-system-sdwis-federal-reporting' }
+      - { name: 'OGC WaterML 2.0', url: 'https://www.ogc.org/standard/waterml/' }
+      - { name: 'AWWA standards (paid)', url: 'https://www.awwa.org/' }
+    entities: [ServiceConnection, Meter, Reading, SampleAnalyte, ComplianceDetermination, TreatmentPlant, DistributionNode, LeakEvent, FlushingEvent, NrwAudit]
+
+  - id: gas_distribution
+    vertical: Utilities
+    tier: 2
+    citations:
+      - { name: 'PHMSA Distribution Annual Reports', url: 'https://www.phmsa.dot.gov/data-and-statistics/pipeline/distribution-transmission-gathering-lng-and-liquid-annual-data' }
+      - { name: 'NAESB WGQ', url: 'https://www.naesb.org/' }
+      - { name: 'AGA standards (paid)', url: 'https://www.aga.org/' }
+    entities: [PipelineSegment, Asset, LeakSurveyRecord, LeakRepair, GasQualityReading, OdorantInjection, CathodicProtectionReading, CustomerPremise, PhmsaAnnualReport]
+
+  - id: asset_health_monitoring
+    vertical: Utilities
+    tier: 4
+    citations:
+      - { name: 'IEC 61850 (paid)', url: 'https://webstore.iec.ch/publication/6028' }
+      - { name: 'IEC 61968 / 61970 CIM (paid)', url: 'https://webstore.iec.ch/publication/6195' }
+      - { name: 'Bentley AssetWise APM', url: 'https://www.bentley.com/software/assetwise/' }
+    notes: Hold pending IEC membership.
+
+  - id: grid_ops
+    vertical: Utilities
+    tier: 4
+    citations:
+      - { name: 'IEC 61850 (paid)', url: 'https://webstore.iec.ch/publication/6028' }
+      - { name: 'NERC TADS / GADS / DADS (members)', url: 'https://www.nerc.com/pa/RAPA/Pages/PerformanceAnalysis.aspx' }
+      - { name: 'DOE OE-417', url: 'https://www.oe.netl.doe.gov/oe417.aspx' }
+      - { name: 'MultiSpeak', url: 'https://www.multispeak.org/' }
+    notes: Hold pending IEC + NERC membership.
+
+  # --- Energy ---
+
+  - id: carbon_accounting
+    vertical: Energy
+    tier: 1
+    citations:
+      - { name: 'GHG Protocol', url: 'https://ghgprotocol.org/standards' }
+      - { name: 'EPA GHGRP', url: 'https://www.epa.gov/ghgreporting' }
+      - { name: 'CDP', url: 'https://www.cdp.net/en/guidance' }
+      - { name: 'IFRS S2 Climate Disclosures', url: 'https://www.ifrs.org/issued-standards/ifrs-sustainability-standards-navigator/ifrs-s2-climate-related-disclosures/' }
+      - { name: 'EPA eGRID', url: 'https://www.epa.gov/egrid' }
+    entities: [ActivityDataRecord, EmissionFactor, ScopeCategory, Facility, InventoryPeriod, VerificationStatement, OffsetProject, RetiredCredit, TargetPathway, IfrsS2DisclosureItem]
+
+  - id: energy_trading
+    vertical: Energy
+    tier: 1
+    citations:
+      - { name: 'CFTC Part 43 / 45', url: 'https://www.cftc.gov/IndustryOversight/DataReporting' }
+      - { name: 'FERC EQR', url: 'https://www.ferc.gov/power-sales-and-markets/electric-quarterly-reports-eqr' }
+      - { name: 'ACER REMIT', url: 'https://www.acer.europa.eu/remit' }
+      - { name: 'FpML', url: 'https://www.fpml.org/spec/' }
+    entities: [Trade, TradeLeg, DeliveryPeriod, Position, MarkToMarket, SettlementPrice, HedgeDesignation, RiskLimit, RemitTradeReport, FercEqrRecord]
+
+  - id: ev_charging
+    vertical: Energy
+    tier: 1
+    citations:
+      - { name: 'OCPP 2.0.1 (IEC 63584)', url: 'https://openchargealliance.org/protocols/open-charge-point-protocol/' }
+      - { name: 'OCPI 2.2.1', url: 'https://evroaming.org/ocpi-protocol/' }
+      - { name: 'ISO 15118', url: 'https://www.iso.org/standard/77845.html' }
+      - { name: 'OpenADR 2.0b', url: 'https://www.openadr.org/' }
+    entities: [ChargePoint, Connector, Evse, ChargingSession, Authorization, Tariff, ChargeDetailRecord, Reservation, SmartChargingProfile, OcpiToken]
+
+  - id: renewable_generation
+    vertical: Energy
+    tier: 4
+    citations:
+      - { name: 'IEC 61400-25 (paid)', url: 'https://webstore.iec.ch/publication/5434' }
+      - { name: 'EIA-923', url: 'https://www.eia.gov/electricity/data/eia923/' }
+      - { name: 'SunSpec Modbus', url: 'https://sunspec.org/' }
+    notes: Hold pending IEC membership.
+
+  - id: refinery_operations
+    vertical: Energy
+    tier: 3
+    citations: []
+    notes: Would require imagination — not recommended. AspenTech / Honeywell / KBC schemas are proprietary.
+
+  # --- HiTech ---
+
+  - id: cloud_finops
+    vertical: HiTech
+    tier: 1
+    citations:
+      - { name: 'FOCUS Spec', url: 'https://focus.finops.org/focus-specification/' }
+      - { name: 'AWS CUR Data Dictionary', url: 'https://docs.aws.amazon.com/cur/latest/userguide/data-dictionary.html' }
+      - { name: 'Azure Cost Management', url: 'https://learn.microsoft.com/en-us/azure/cost-management-billing/automate/automation-overview' }
+      - { name: 'GCP Billing BigQuery export', url: 'https://cloud.google.com/billing/docs/how-to/export-data-bigquery-tables' }
+      - { name: 'OpenCost (CNCF)', url: 'https://opencost.io/' }
+    entities: [BillingAccount, Resource, ChargeLine, ServiceSku, TagLabel, ReservationSavingsPlan, Commitment, AllocationRule, CostCenter, UnitEconomicKpi]
+
+  - id: device_telemetry
+    vertical: HiTech
+    tier: 1
+    citations:
+      - { name: 'OpenTelemetry semconv', url: 'https://opentelemetry.io/docs/specs/semconv/' }
+      - { name: 'W3C Trace Context', url: 'https://www.w3.org/TR/trace-context/' }
+      - { name: 'Mixpanel data model', url: 'https://docs.mixpanel.com/docs/data-structure/events-and-properties' }
+      - { name: 'Amplitude data taxonomy', url: 'https://www.docs.developers.amplitude.com/data/data-taxonomy/' }
+    entities: [Device, Session, Event, TraceSpan, Resource, CrashReport, FeatureFlagExposure, Cohort, Identity, PipelineLag]
+
+  - id: chip_design_eda
+    vertical: HiTech
+    tier: 3
+    citations: []
+    notes: Would require imagination — not recommended. Synopsys/Cadence/Siemens EDA schemas are proprietary.
+
+  - id: developer_relations
+    vertical: HiTech
+    tier: 3
+    citations: []
+    notes: Would require imagination — not recommended. No standards exist for DevRel metrics.
+
+  - id: license_management
+    vertical: HiTech
+    tier: 3
+    citations: []
+    notes: Would require imagination — not recommended. ISO/IEC 19770 is process-only; vendor schemas are proprietary.
+
+  - id: marketplace_operations
+    vertical: HiTech
+    tier: 3
+    citations: []
+    notes: Would require imagination — not recommended. Marketplace internals are proprietary; SP-API only covers seller-side.
+
+  - id: semiconductor_yield
+    vertical: HiTech
+    tier: 4
+    citations:
+      - { name: 'SEMI Standards (paid)', url: 'https://www.semi.org/en/standards' }
+    notes: Hold pending SEMI membership.
+
+  # --- Media ---
+
+  - id: ad_tech
+    vertical: Media
+    tier: 1
+    citations:
+      - { name: 'IAB OpenRTB', url: 'https://iabtechlab.com/standards/openrtb/' }
+      - { name: 'IAB VAST', url: 'https://iabtechlab.com/standards/vast/' }
+      - { name: 'IAB OMID', url: 'https://iabtechlab.com/standards/open-measurement-sdk/' }
+      - { name: 'IAB ads.txt / sellers.json', url: 'https://iabtechlab.com/ads-txt/' }
+      - { name: 'MRC Standards', url: 'https://mediaratingcouncil.org/standards' }
+      - { name: 'Prebid', url: 'https://docs.prebid.org/' }
+      - { name: 'SCTE-224', url: 'https://www.scte.org/standards/library/' }
+    entities: [AdRequest, BidRequest, BidResponse, Impression, Click, Conversion, Creative, DealId, AudienceSegment, SiteAppInventory, AuctionOutcome]
+
+  - id: programmatic_advertising
+    vertical: Media
+    tier: 1
+    citations:
+      - { name: 'IAB OpenRTB', url: 'https://iabtechlab.com/standards/openrtb/' }
+      - { name: 'IAB VAST', url: 'https://iabtechlab.com/standards/vast/' }
+      - { name: 'IAB sellers.json', url: 'https://iabtechlab.com/sellers-json/' }
+    entities: [Auction, Bid, FloorPrice, Ssp, Dsp, AdExchange, WinNotice, AuctionLossReason, HeaderBidder, SsppJsonIdentity]
+    notes: Heavy overlap with ad_tech; consider consolidating.
+
+  - id: ad_inventory
+    vertical: Media
+    tier: 1
+    citations:
+      - { name: 'SCTE-224 / SCTE-35', url: 'https://www.scte.org/' }
+      - { name: 'Google Ad Manager API', url: 'https://developers.google.com/ad-manager/api' }
+      - { name: 'IAB OpenRTB', url: 'https://iabtechlab.com/standards/openrtb/' }
+    entities: [InventoryPool, ForecastRun, PackageBundle, SalesOrder, LineItem, Daypart, YieldCurve, CpmFloor, MakeGoodCredit]
+
+  - id: content_metadata
+    vertical: Media
+    tier: 1
+    citations:
+      - { name: 'EIDR', url: 'https://eidr.org/documents/' }
+      - { name: 'MovieLabs MDDF', url: 'https://www.movielabs.com/md/' }
+      - { name: 'SMPTE', url: 'https://www.smpte.org/' }
+      - { name: 'DDEX', url: 'https://kb.ddex.net/' }
+    entities: [Title, Edit, Manifestation, AvailsWindow, RightsHolder, TalentCredit, GenreTag, SubtitlesAudioTrack, ContentIdentifier, RoyaltyStatement]
+
+  - id: saas_metrics
+    vertical: Media
+    tier: 2
+    citations:
+      - { name: 'Stripe Billing', url: 'https://docs.stripe.com/billing' }
+      - { name: 'Maxio Glossary', url: 'https://maxio.com/resources/saas-metrics-glossary' }
+      - { name: 'Chargebee API', url: 'https://www.chargebee.com/docs/2.0/api_v2/' }
+    entities: [Subscription, Plan, Customer, MrrMovement, NetRevenueRetentionCohort, ArrSnapshot, ProductUsageEvent, TrialPlgConversion, CustomerHealthScore]
+
+  # --- ProfessionalServices ---
+
+  - id: time_and_billing
+    vertical: ProfessionalServices
+    tier: 1
+    citations:
+      - { name: 'LEDES', url: 'https://ledes.org/' }
+      - { name: 'LEDES UTBMS', url: 'https://ledes.org/utbms-codes/' }
+    entities: [Timekeeper, MatterEngagement, TimeEntry, ExpenseEntry, RateCard, Discount, Invoice, InvoiceLine, WipSnapshot, LockupDay]
+
+  - id: contract_management
+    vertical: ProfessionalServices
+    tier: 2
+    citations:
+      - { name: 'OASIS LegalRuleML', url: 'https://www.oasis-open.org/committees/legalruleml/' }
+      - { name: 'OASIS UBL', url: 'https://docs.oasis-open.org/ubl/' }
+      - { name: 'Adobe Acrobat Sign API', url: 'https://developer.adobe.com/document-services/docs/overview/adobe-sign-api/' }
+      - { name: 'DocuSign eSignature API', url: 'https://developers.docusign.com/' }
+    entities: [Contract, ContractType, ClauseLibraryEntry, NegotiationRound, Redline, Signatory, Obligation, RenewalTrigger, ApprovalWorkflowStep, AuditEvent]
+
+  - id: expense_management
+    vertical: ProfessionalServices
+    tier: 2
+    citations:
+      - { name: 'SAP Concur API', url: 'https://developer.concur.com/api-explorer/v3-0.html' }
+      - { name: 'Expensify API', url: 'https://integrations.expensify.com/' }
+      - { name: 'CFDI 4.0 (Mexico SAT)', url: 'http://www.sat.gob.mx/' }
+    entities: [ExpenseReport, ExpenseItem, ReceiptImage, MileageEntry, CardTransactionMatch, PolicyViolation, Approver, ReimbursementDisbursement, PerDiem]
+
+  - id: legal_case_management
+    vertical: ProfessionalServices
+    tier: 2
+    citations:
+      - { name: 'NIEM Justice', url: 'https://release.niem.gov/niem-domains/justice/' }
+      - { name: 'Clio API', url: 'https://developers.clio.com/' }
+      - { name: 'LEDES', url: 'https://ledes.org/' }
+    entities: [Matter, ClientOpposingParty, ConflictSearch, IntakeQuestionnaire, Document, CalendarCourtEvent, Task, TimeEntry, TrustLedger, StatuteOfLimitationsTickler]
+
+  - id: audit_workflow
+    vertical: ProfessionalServices
+    tier: 3
+    citations: []
+    notes: Would require imagination — not recommended. Audit-program data is dominated by Wolters Kluwer / Workiva proprietary schemas.
+
+  - id: bench_management
+    vertical: ProfessionalServices
+    tier: 3
+    citations: []
+    notes: Would require imagination — not recommended. No standards; firm-specific schemas.
+
+  - id: knowledge_management
+    vertical: ProfessionalServices
+    tier: 3
+    citations: []
+    notes: Would require imagination — not recommended. Firm-specific KM extensions; SECI is conceptual only.
+
+  # --- PublicSector ---
+
+  - id: tax_administration
+    vertical: PublicSector
+    tier: 1
+    citations:
+      - { name: 'IRS Modernized e-File Schemas', url: 'https://www.irs.gov/e-file-providers/modernized-e-file-mef-schemas-and-business-rules' }
+      - { name: 'IRS Forms', url: 'https://www.irs.gov/forms-instructions' }
+      - { name: 'OECD SAF-T', url: 'https://www.oecd.org/tax/administration/standardauditfile-taxsaf-t.htm' }
+    entities: [Taxpayer, FilingPeriod, Return, Schedule, LineItem, InformationReturn, RefundDisbursement, AuditCase, ExaminationFinding, CollectionLien]
+
+  - id: court_records
+    vertical: PublicSector
+    tier: 1
+    citations:
+      - { name: 'OASIS LegalXML ECF', url: 'https://groups.oasis-open.org/communities/community-home?CommunityKey=4ce92f63-c534-413a-a9da-44e09c11b817' }
+      - { name: 'NIEM Justice Domain', url: 'https://release.niem.gov/niem-domains/justice/' }
+      - { name: 'NCSC Court Data Standards', url: 'https://www.ncsc.org/services-and-experts/areas-of-expertise/courts-data-standards' }
+      - { name: 'PACER / CM-ECF', url: 'https://pacer.uscourts.gov/' }
+    entities: [Case, Party, Filing, DocketEntry, Hearing, Order, Judgment, Sentence, ChargeStatute, CourtCalendarSlot]
+
+  - id: emergency_response
+    vertical: PublicSector
+    tier: 1
+    citations:
+      - { name: 'NENA i3', url: 'https://www.nena.org/page/i3_Stage3_Spec' }
+      - { name: 'OASIS CAP v1.2', url: 'https://docs.oasis-open.org/emergency/cap/v1.2/CAP-v1.2-os.html' }
+      - { name: 'OASIS EDXL', url: 'https://www.oasis-open.org/committees/tc_home.php?wg_abbrev=emergency' }
+    entities: [Call, CallerLocation, Incident, Unit, DispatchAssignment, StatusChange, CadNote, MultiAgencyResourceRequest, CapAlert]
+
+  - id: social_services_case_management
+    vertical: PublicSector
+    tier: 1
+    citations:
+      - { name: 'NIEM Human Services', url: 'https://acf.gov/cb/niem' }
+      - { name: 'ACF CCWIS', url: 'https://acf.gov/cb/training-technical-assistance/ccwis' }
+      - { name: 'HUD HMIS Data Standards', url: 'https://www.hudexchange.info/programs/hmis/hmis-data-standards/' }
+      - { name: 'USDA SNAP E&T', url: 'https://www.fns.usda.gov/snap/et' }
+    entities: [ClientHousehold, IntakeApplication, EligibilityDetermination, BenefitIssuance, ServicePlan, CaseNote, Worker, Provider, HmisUniversalDataElement, Outcome]
+
+  - id: transit_operations
+    vertical: PublicSector
+    tier: 1
+    citations:
+      - { name: 'GTFS Schedule', url: 'https://gtfs.org/schedule/reference/' }
+      - { name: 'GTFS Realtime', url: 'https://gtfs.org/realtime/reference/' }
+      - { name: 'NeTEx', url: 'https://netex-cen.eu/' }
+      - { name: 'SIRI', url: 'https://www.transmodel-cen.eu/standards/siri/' }
+      - { name: 'GBFS', url: 'https://gbfs.org/' }
+      - { name: 'FTA NTD', url: 'https://www.transit.dot.gov/ntd' }
+    entities: [Agency, Route, Trip, Stop, StopTime, VehiclePosition, TripUpdate, ServiceAlert, CalendarDate, FareRule]
+
+  - id: benefits_administration
+    vertical: PublicSector
+    tier: 1
+    citations:
+      - { name: 'NIEM Human Services', url: 'https://acf.gov/cb/niem' }
+      - { name: 'USDA FNS', url: 'https://www.fns.usda.gov/' }
+      - { name: 'SSA Title II / XVI', url: 'https://www.ssa.gov/' }
+      - { name: 'UI ICON', url: 'https://www.dol.gov/agencies/eta/unemployment-insurance' }
+    entities: [Beneficiary, Application, EligibilityDetermination, BenefitPlan, Disbursement, Recertification, SanctionOverpayment, ProviderEnrollment, EbtAccount]
+
+  - id: licensing_permits
+    vertical: PublicSector
+    tier: 2
+    citations:
+      - { name: 'Accela Civic Platform', url: 'https://docs.accela.com/' }
+      - { name: 'Tyler EnerGov', url: 'https://www.tylertech.com/products/energov' }
+      - { name: 'NIEM', url: 'https://www.niem.gov/' }
+    entities: [Application, LicenseType, Applicant, Inspection, InspectionResult, Violation, RenewalCycle, FeeSchedule, PermitDocument]
+
+  - id: defense_logistics
+    vertical: PublicSector
+    tier: 4
+    citations:
+      - { name: 'DLA / DLM 4000.25 series', url: 'https://www.dla.mil/HQ/InformationOperations/DLMS/' }
+      - { name: 'DPAS', url: 'https://dpas.dla.mil/' }
+    notes: Hold pending DoD/CUI access.
+
+  - id: intelligence_analytics
+    vertical: PublicSector
+    tier: 4
+    citations:
+      - { name: 'OASIS STIX/TAXII', url: 'https://oasis-open.github.io/cti-documentation/' }
+      - { name: 'DoD DDMS', url: 'https://metadata.ces.mil/dse/irs/DDMS/' }
+    notes: Hold pending cleared access; STIX/TAXII covers cyber-threat slice only.
+
+  # --- RCG ---
+
+  - id: supply_chain
+    vertical: RCG
+    tier: 1
+    citations:
+      - { name: 'GS1 EPCIS 2.0', url: 'https://ref.gs1.org/standards/epcis/' }
+      - { name: 'ANSI X12 EDI', url: 'https://x12.org/products/transaction-sets' }
+      - { name: 'NRF Retail Data Model', url: 'https://nrf.com/research-insights/research-archive/data-model' }
+    entities: [PurchaseOrder, AdvanceShipNotice, GoodsReceipt, InventoryPosition, DistributionCentre, BillOfLading, CarrierManifest, TransferOrder, CycleCount, LotTrace]
+    notes: Heavy overlap with supply_chain_visibility (Manufacturing) and merchandising (Retail anchor); consider consolidating.
+
+  - id: loyalty
+    vertical: RCG
+    tier: 3
+    citations: []
+    notes: Would require imagination — not recommended. Program rules vary radically; no reference model.
+
+  - id: pricing
+    vertical: RCG
+    tier: 3
+    citations: []
+    notes: Would require imagination — not recommended. Pricefx / PROS / Vendavo schemas are proprietary; only basic price-list entity is generic.
