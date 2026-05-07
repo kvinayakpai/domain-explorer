@@ -26,3 +26,31 @@ models:
         +materialized: ephemeral
       marts:
         +materialized: table
+    p_and_c_claims:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    merchandising:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    demand_planning:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    hotel_revenue_management:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table

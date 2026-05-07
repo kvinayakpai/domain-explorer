@@ -1,6 +1,18 @@
 # Data Quality rules executed against the populated DuckDB at the repo root.
 # Each rule's `sql` returns a single integer count of "failing rows" — zero means pass.
 # Use this convention so /dq/run can uniformly classify pass/fail and surface failure counts.
+#
+# Rule scope:
+#   - The first block (dq_payments_* through dq_pv_*) covers the original
+#     7 anchors and runs against the live DuckDB on every snapshot.
+#   - The second block (dq_ehr_* through dq_prog_*) covers the 10 new anchors
+#     (FHIR, FIX/FpML, OMOP, OCPP/OCPI, OpenRTB, etc.). The SQL targets the
+#     schemas the synthetic-data generators in
+#     synthetic-data/{ehr_integrations,capital_markets,...}/generate.py
+#     produce — schema = subdomain id, tables = parquet stems written via
+#     write_table(). At authoring time the DuckDB doesn't yet have these
+#     schemas loaded, so last_run.json marks each as
+#     `status: "pending — awaiting data generation"`.
 
 rules:
   # ---------- payments (BFSI) ----------
@@ -288,3 +300,387 @@ rules:
     expectation: "received_at not in the future"
     severity: medium
     sql: "SELECT COUNT(*) FROM pharmacovigilance.cases WHERE received_at > CAST(CURRENT_TIMESTAMP AS TIMESTAMP)"
+
+  # ===========================================================================
+  # Wave 2 — 10 new anchors (FHIR, FIX/FpML, OMOP, OCPP/OCPI, OpenRTB, etc.)
+  # All rules below are pending data generation; see notes at top of file.
+  # ===========================================================================
+
+  # ---------- ehr_integrations (Healthcare / FHIR R4) ----------
+  - id: dq_ehr_001
+    subdomain: ehr_integrations
+    table: ehr_integrations.patient
+    column: patient_id
+    rule_type: not_null
+    expectation: "FHIR Patient.id is required on every patient row"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM ehr_integrations.patient WHERE patient_id IS NULL"
+
+  - id: dq_ehr_002
+    subdomain: ehr_integrations
+    table: ehr_integrations.patient
+    column: patient_id
+    rule_type: uniqueness
+    expectation: "patient_id is unique across ehr_integrations.patient"
+    severity: critical
+    sql: "SELECT (SELECT COUNT(*) FROM ehr_integrations.patient) - (SELECT COUNT(DISTINCT patient_id) FROM ehr_integrations.patient)"
+
+  - id: dq_ehr_003
+    subdomain: ehr_integrations
+    table: ehr_integrations.observation
+    column: patient_id
+    rule_type: foreign_key
+    expectation: "every Observation.subject_reference resolves to a known patient"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM ehr_integrations.observation o LEFT JOIN ehr_integrations.patient p ON o.patient_id = p.patient_id WHERE o.patient_id IS NOT NULL AND p.patient_id IS NULL"
+
+  - id: dq_ehr_004
+    subdomain: ehr_integrations
+    table: ehr_integrations.encounter
+    column: period_end
+    rule_type: range
+    expectation: "Encounter.period.end must be at or after period.start"
+    severity: high
+    sql: "SELECT COUNT(*) FROM ehr_integrations.encounter WHERE period_end IS NOT NULL AND period_start IS NOT NULL AND period_end < period_start"
+
+  - id: dq_ehr_005
+    subdomain: ehr_integrations
+    table: ehr_integrations.condition
+    column: clinical_status_code
+    rule_type: distribution
+    expectation: "Condition.clinicalStatus in FHIR-aligned enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM ehr_integrations.condition WHERE clinical_status_code IS NOT NULL AND clinical_status_code NOT IN ('active','recurrence','relapse','inactive','remission','resolved')"
+
+  # ---------- capital_markets (BFSI / FIX / FpML) ----------
+  - id: dq_cm_001
+    subdomain: capital_markets
+    table: capital_markets.trade
+    column: trade_id
+    rule_type: uniqueness
+    expectation: "trade_id is unique"
+    severity: critical
+    sql: "SELECT (SELECT COUNT(*) FROM capital_markets.trade) - (SELECT COUNT(DISTINCT trade_id) FROM capital_markets.trade)"
+
+  - id: dq_cm_002
+    subdomain: capital_markets
+    table: capital_markets.execution
+    column: exec_type
+    rule_type: distribution
+    expectation: "FIX tag 150 ExecType in {F=Trade, 0=New, 5=Replaced, 4=Cancelled}"
+    severity: high
+    sql: "SELECT COUNT(*) FROM capital_markets.execution WHERE exec_type NOT IN ('F','0','5','4')"
+
+  - id: dq_cm_003
+    subdomain: capital_markets
+    table: capital_markets.execution
+    column: order_id
+    rule_type: foreign_key
+    expectation: "every execution links to a known order"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM capital_markets.execution e LEFT JOIN capital_markets.order o ON e.order_id = o.order_id WHERE o.order_id IS NULL"
+
+  - id: dq_cm_004
+    subdomain: capital_markets
+    table: capital_markets.trade
+    column: settlement_date
+    rule_type: range
+    expectation: "settlement_date is on or after trade_date"
+    severity: high
+    sql: "SELECT COUNT(*) FROM capital_markets.trade WHERE settlement_date < trade_date"
+
+  # ---------- smart_metering (Energy / ANSI C12 / DLMS) ----------
+  - id: dq_ami_001
+    subdomain: smart_metering
+    table: smart_metering.meter_read
+    column: kwh_delivered
+    rule_type: range
+    expectation: "kwh_delivered is non-negative for every interval read"
+    severity: high
+    sql: "SELECT COUNT(*) FROM smart_metering.meter_read WHERE kwh_delivered < 0"
+
+  - id: dq_ami_002
+    subdomain: smart_metering
+    table: smart_metering.meter_read
+    column: meter_id
+    rule_type: foreign_key
+    expectation: "every meter_read.meter_id resolves in smart_metering.meter"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM smart_metering.meter_read r LEFT JOIN smart_metering.meter m ON r.meter_id = m.meter_id WHERE m.meter_id IS NULL"
+
+  - id: dq_ami_003
+    subdomain: smart_metering
+    table: smart_metering.meter_read
+    column: quality_code
+    rule_type: distribution
+    expectation: "C12.19 quality_code in {VALID, ESTIMATED, MISSING, EDITED}"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM smart_metering.meter_read WHERE quality_code NOT IN ('VALID','ESTIMATED','MISSING','EDITED')"
+
+  - id: dq_ami_004
+    subdomain: smart_metering
+    table: smart_metering.billing_determinant
+    column: period_end
+    rule_type: range
+    expectation: "billing period_end is strictly after period_start"
+    severity: high
+    sql: "SELECT COUNT(*) FROM smart_metering.billing_determinant WHERE period_end <= period_start"
+
+  # ---------- clinical_trials (Life Sciences / CDISC SDTM) ----------
+  - id: dq_ct_001
+    subdomain: clinical_trials
+    table: clinical_trials.subject
+    column: usubjid
+    rule_type: uniqueness
+    expectation: "SDTM USUBJID is unique within the demographics domain"
+    severity: critical
+    sql: "SELECT (SELECT COUNT(*) FROM clinical_trials.subject) - (SELECT COUNT(DISTINCT usubjid) FROM clinical_trials.subject)"
+
+  - id: dq_ct_002
+    subdomain: clinical_trials
+    table: clinical_trials.adverse_event
+    column: aeendtc
+    rule_type: range
+    expectation: "AE.aeendtc must be on or after AE.aestdtc when both populated"
+    severity: high
+    sql: "SELECT COUNT(*) FROM clinical_trials.adverse_event WHERE aeendtc IS NOT NULL AND aestdtc IS NOT NULL AND aeendtc < aestdtc"
+
+  - id: dq_ct_003
+    subdomain: clinical_trials
+    table: clinical_trials.adverse_event
+    column: aesev
+    rule_type: distribution
+    expectation: "AE.aesev in {MILD, MODERATE, SEVERE, LIFE-THREATENING}"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM clinical_trials.adverse_event WHERE aesev NOT IN ('MILD','MODERATE','SEVERE','LIFE-THREATENING')"
+
+  - id: dq_ct_004
+    subdomain: clinical_trials
+    table: clinical_trials.visit
+    column: usubjid
+    rule_type: foreign_key
+    expectation: "every SDTM SV row resolves to a subject in DM"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM clinical_trials.visit v LEFT JOIN clinical_trials.subject s ON v.usubjid = s.usubjid WHERE s.usubjid IS NULL"
+
+  # ---------- cloud_finops (HiTech / FOCUS) ----------
+  - id: dq_fo_001
+    subdomain: cloud_finops
+    table: cloud_finops.charge_record
+    column: billed_cost
+    rule_type: range
+    expectation: "FOCUS BilledCost cannot exceed ListCost (negative discount = data error)"
+    severity: high
+    sql: "SELECT COUNT(*) FROM cloud_finops.charge_record WHERE billed_cost > list_cost * 1.0001"
+
+  - id: dq_fo_002
+    subdomain: cloud_finops
+    table: cloud_finops.charge_record
+    column: billing_account_id
+    rule_type: foreign_key
+    expectation: "every charge_record.billing_account_id resolves in billing_account"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM cloud_finops.charge_record c LEFT JOIN cloud_finops.billing_account a ON c.billing_account_id = a.billing_account_id WHERE a.billing_account_id IS NULL"
+
+  - id: dq_fo_003
+    subdomain: cloud_finops
+    table: cloud_finops.resource_tag
+    column: tag_value
+    rule_type: not_null
+    expectation: "tag_value populated (no untagged resources in the canonical tag table)"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM cloud_finops.resource_tag WHERE tag_value IS NULL OR tag_value = ''"
+
+  - id: dq_fo_004
+    subdomain: cloud_finops
+    table: cloud_finops.charge_record
+    column: charge_period_end
+    rule_type: range
+    expectation: "charge_period_end is strictly after charge_period_start"
+    severity: high
+    sql: "SELECT COUNT(*) FROM cloud_finops.charge_record WHERE charge_period_end <= charge_period_start"
+
+  # ---------- ev_charging (Energy / OCPP 2.0.1 / OCPI 2.2.1) ----------
+  - id: dq_ev_001
+    subdomain: ev_charging
+    table: ev_charging.transaction
+    column: stopped_at
+    rule_type: range
+    expectation: "transaction.stopped_at is on or after started_at"
+    severity: high
+    sql: "SELECT COUNT(*) FROM ev_charging.transaction WHERE stopped_at < started_at"
+
+  - id: dq_ev_002
+    subdomain: ev_charging
+    table: ev_charging.meter_value
+    column: energy_active_import_register_kwh
+    rule_type: range
+    expectation: "OCPP energy_active_import_register is non-negative"
+    severity: high
+    sql: "SELECT COUNT(*) FROM ev_charging.meter_value WHERE energy_active_import_register_kwh < 0"
+
+  - id: dq_ev_003
+    subdomain: ev_charging
+    table: ev_charging.transaction
+    column: connector_id
+    rule_type: foreign_key
+    expectation: "every transaction.connector_id resolves in connector"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM ev_charging.transaction t LEFT JOIN ev_charging.connector c ON t.connector_id = c.connector_id WHERE c.connector_id IS NULL"
+
+  - id: dq_ev_004
+    subdomain: ev_charging
+    table: ev_charging.authorization
+    column: decision
+    rule_type: distribution
+    expectation: "OCPP Authorize.decision in OCA-defined enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM ev_charging.authorization WHERE decision NOT IN ('Accepted','Blocked','Expired','Invalid','ConcurrentTx','NoCredit','Unknown')"
+
+  # ---------- tax_administration (Public Sector / IRS MeF / CRS) ----------
+  - id: dq_tax_001
+    subdomain: tax_administration
+    table: tax_administration.return
+    column: return_id
+    rule_type: uniqueness
+    expectation: "return_id is unique within the filing system"
+    severity: critical
+    sql: 'SELECT (SELECT COUNT(*) FROM tax_administration."return") - (SELECT COUNT(DISTINCT return_id) FROM tax_administration."return")'
+
+  - id: dq_tax_002
+    subdomain: tax_administration
+    table: tax_administration.form
+    column: return_id
+    rule_type: foreign_key
+    expectation: "every form.return_id resolves in tax_administration.return"
+    severity: critical
+    sql: 'SELECT COUNT(*) FROM tax_administration.form f LEFT JOIN tax_administration."return" r ON f.return_id = r.return_id WHERE r.return_id IS NULL'
+
+  - id: dq_tax_003
+    subdomain: tax_administration
+    table: tax_administration.transmission
+    column: received_at
+    rule_type: range
+    expectation: "transmission.received_at is on or after sent_at"
+    severity: high
+    sql: "SELECT COUNT(*) FROM tax_administration.transmission WHERE received_at < sent_at"
+
+  - id: dq_tax_004
+    subdomain: tax_administration
+    table: tax_administration.fatca_account
+    column: account_balance_usd
+    rule_type: not_null
+    expectation: "FATCA reportable accounts must carry a balance"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM tax_administration.fatca_account WHERE account_balance_usd IS NULL"
+
+  # ---------- real_world_evidence (Life Sciences / OMOP CDM v5.4) ----------
+  - id: dq_rwe_001
+    subdomain: real_world_evidence
+    table: real_world_evidence.person
+    column: gender_concept_id
+    rule_type: distribution
+    expectation: "OMOP gender_concept_id in {8507=Male, 8532=Female, 0=Unknown}"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM real_world_evidence.person WHERE gender_concept_id NOT IN (8507, 8532, 0)"
+
+  - id: dq_rwe_002
+    subdomain: real_world_evidence
+    table: real_world_evidence.condition_occurrence
+    column: person_id
+    rule_type: foreign_key
+    expectation: "every condition_occurrence.person_id resolves in OMOP person"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM real_world_evidence.condition_occurrence c LEFT JOIN real_world_evidence.person p ON c.person_id = p.person_id WHERE p.person_id IS NULL"
+
+  - id: dq_rwe_003
+    subdomain: real_world_evidence
+    table: real_world_evidence.drug_exposure
+    column: drug_exposure_end_date
+    rule_type: range
+    expectation: "drug_exposure_end_date is on or after drug_exposure_start_date"
+    severity: high
+    sql: "SELECT COUNT(*) FROM real_world_evidence.drug_exposure WHERE drug_exposure_end_date IS NOT NULL AND drug_exposure_start_date IS NOT NULL AND drug_exposure_end_date < drug_exposure_start_date"
+
+  - id: dq_rwe_004
+    subdomain: real_world_evidence
+    table: real_world_evidence.visit_occurrence
+    column: visit_end_date
+    rule_type: range
+    expectation: "visit_end_date is on or after visit_start_date"
+    severity: high
+    sql: "SELECT COUNT(*) FROM real_world_evidence.visit_occurrence WHERE visit_end_date IS NOT NULL AND visit_start_date IS NOT NULL AND visit_end_date < visit_start_date"
+
+  # ---------- settlement_clearing (BFSI / ISO 20022 securities) ----------
+  - id: dq_stl_001
+    subdomain: settlement_clearing
+    table: settlement_clearing.settlement_instruction
+    column: ssi_id
+    rule_type: uniqueness
+    expectation: "ssi_id (sese.023 instruction id) is unique"
+    severity: critical
+    sql: "SELECT (SELECT COUNT(*) FROM settlement_clearing.settlement_instruction) - (SELECT COUNT(DISTINCT ssi_id) FROM settlement_clearing.settlement_instruction)"
+
+  - id: dq_stl_002
+    subdomain: settlement_clearing
+    table: settlement_clearing.failed_settlement
+    column: fail_reason
+    rule_type: distribution
+    expectation: "fail_reason in CSDR-aligned enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM settlement_clearing.failed_settlement WHERE fail_reason NOT IN ('LackOfSecurities','LackOfCash','MismatchedInstruction','CSDOperationalIssue','OnHold','PartialSettlement')"
+
+  - id: dq_stl_003
+    subdomain: settlement_clearing
+    table: settlement_clearing.collateral_movement
+    column: quantity
+    rule_type: range
+    expectation: "collateral_movement.quantity strictly positive"
+    severity: high
+    sql: "SELECT COUNT(*) FROM settlement_clearing.collateral_movement WHERE quantity <= 0"
+
+  - id: dq_stl_004
+    subdomain: settlement_clearing
+    table: settlement_clearing.margin_call
+    column: due_at
+    rule_type: range
+    expectation: "margin_call.due_at is on or after issued_at"
+    severity: high
+    sql: "SELECT COUNT(*) FROM settlement_clearing.margin_call WHERE due_at < issued_at"
+
+  # ---------- programmatic_advertising (Media / IAB OpenRTB 2.6 / VAST) ----------
+  - id: dq_prog_001
+    subdomain: programmatic_advertising
+    table: programmatic_advertising.bid
+    column: bid_price_cpm
+    rule_type: range
+    expectation: "bid price strictly positive — non-positive bids should never be persisted"
+    severity: high
+    sql: "SELECT COUNT(*) FROM programmatic_advertising.bid WHERE bid_price_cpm <= 0"
+
+  - id: dq_prog_002
+    subdomain: programmatic_advertising
+    table: programmatic_advertising.impression_event
+    column: viewable_pixels_pct
+    rule_type: range
+    expectation: "MRC viewable_pixels_pct between 0 and 100"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM programmatic_advertising.impression_event WHERE viewable_pixels_pct IS NOT NULL AND (viewable_pixels_pct < 0 OR viewable_pixels_pct > 100)"
+
+  - id: dq_prog_003
+    subdomain: programmatic_advertising
+    table: programmatic_advertising.conversion_event
+    column: click_event_id
+    rule_type: foreign_key
+    expectation: "every conversion_event.click_event_id resolves in click_event"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM programmatic_advertising.conversion_event c LEFT JOIN programmatic_advertising.click_event k ON c.click_event_id = k.click_event_id WHERE k.click_event_id IS NULL"
+
+  - id: dq_prog_004
+    subdomain: programmatic_advertising
+    table: programmatic_advertising.bid
+    column: status
+    rule_type: distribution
+    expectation: "bid.status in OpenRTB-aligned outcomes"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM programmatic_advertising.bid WHERE status NOT IN ('won','lost','no-decision','rejected')"

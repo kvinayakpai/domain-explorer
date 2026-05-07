@@ -17,7 +17,7 @@ export const dynamic = "force-static";
 export const metadata = {
   title: "Lineage · Domain Explorer",
   description:
-    "Hand-curated column-level lineage diagrams for the seven anchor subdomains — sources to vault to dimensional KPIs.",
+    "Hand-curated column-level lineage diagrams for the seventeen anchor subdomains — sources to vault to dimensional KPIs.",
 };
 
 const LEGEND = [
@@ -41,10 +41,11 @@ export default function LineageIndexPage() {
       <header className="space-y-2">
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Lineage diagrams</h1>
         <p className="max-w-3xl text-muted-foreground">
-          Each anchor subdomain ships with a hand-curated, ~30-node column-level lineage
-          diagram. Source systems flow through staging into Data Vault hubs / links / satellites,
-          land in star-schema marts, and finally roll up to the KPIs that answer the decisions
-          on each subdomain page. Pick an anchor to open its diagram.
+          Each of the {ANCHOR_KEYS.length} anchor subdomains ships with a hand-curated,
+          ~30-node column-level lineage diagram. Source systems flow through staging into
+          Data Vault hubs / links / satellites, land in star-schema marts, and finally roll
+          up to the KPIs that answer the decisions on each subdomain page. Pick an anchor
+          to open its diagram.
         </p>
       </header>
 
@@ -95,10 +96,10 @@ export default function LineageIndexPage() {
         <div className="rounded-lg border p-4">
           <h2 className="mb-2 text-sm font-semibold">What this is</h2>
           <p className="text-sm text-muted-foreground">
-            Seven hand-curated lineage diagrams — one per anchor subdomain. Each follows the
-            same six-column pattern (sources → staging → vault → marts → KPIs) and is backed
-            by real source-system, DDL, and KPI names from the registry. Use the legend above
-            to read any of them at a glance.
+            {ANCHOR_KEYS.length} hand-curated lineage diagrams — one per anchor subdomain.
+            Each follows the same six-column pattern (sources → staging → vault → marts →
+            KPIs) and is backed by real source-system, DDL, and KPI names from the registry.
+            Use the legend above to read any of them at a glance.
           </p>
         </div>
         <div className="rounded-lg border p-4">

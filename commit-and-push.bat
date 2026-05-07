@@ -1,14 +1,15 @@
 @echo off
 REM ============================================================================
-REM commit-and-push.bat — host-side commit script
+REM commit-and-push.bat - host-side commit script
 REM
-REM Bash was unavailable inside the agent sandbox during this run, so all the
-REM file edits were authored through the cowork mount and the commit has to
-REM be made on the host. Run this script once from the repo root.
+REM Bash was unavailable inside the agent sandbox during this run (workspace
+REM was out of inode space, so useradd kept failing). All file edits were
+REM authored through the cowork mount; the commit has to be made on the host.
+REM Run this script once from the repo root.
 REM
 REM     commit-and-push.bat
 REM
-REM This intentionally does NOT push — review the commit, then `git push` when
+REM This intentionally does NOT push - review the commit, then `git push` when
 REM you're happy.
 REM ============================================================================
 
@@ -17,16 +18,15 @@ setlocal EnableExtensions
 set "REPO_ROOT=%~dp0"
 if "%REPO_ROOT:~-1%"=="\" set "REPO_ROOT=%REPO_ROOT:~0,-1%"
 
-pushd "%REPO_ROOT%"
+set "COMMIT_MSG=feat: lineage diagrams + DQ rules for the 10 new anchors (FHIR, FIX, OMOP, OCPP, OpenRTB, etc.)"
 
-REM Optional: regenerate the master KPI library + per-style SQL stubs from the
-REM YAML taxonomy. Comment out if you don't want a fresh sweep on every commit.
-REM python tools\build_kpi_master.py
+pushd "%REPO_ROOT%"
 
 git add -A
 if errorlevel 1 goto :try_alt_index
 
-git commit -m "feat: fully attributed data models per subdomain, ERD viewer, enhanced KPI library with per-style SQL" -m "- packages/metadata: extend Zod + Pydantic schemas with entity.attributes[], entity.relationships[], dataModelArtifacts; new KpiMasterEntry + KpiSqlSpec" -m "- data/taxonomy: enrich the 7 anchor subdomains (payments, p_and_c_claims, merchandising, demand_planning, hotel_revenue_management, mes_quality, pharmacovigilance) with full PK/FK/relationship attributes pulled from existing 3NF DDL" -m "- data/kpis/master.yaml: ~210 curated KPIs across all 16 verticals with formula/unit/direction/definition/subdomains[]/related_personas[]" -m "- data/kpis/sql.yaml: 3NF + Vault + Dimensional SQL implementations; real queries for the 7 anchor KPIs against the populated DuckDB; stubs elsewhere" -m "- apps/explorer-web: new components/erd-diagram.tsx (data-driven SVG ERD), /models index + /models/[subdomain]/[style] route, /kpi-library index, extended /kpi/[id] page with per-style SQL viewer and live runner; new POST /api/kpi/[id]/run endpoint" -m "- tools/build_kpi_master.py: generator that aggregates KPIs from data/taxonomy/*.yaml into master.yaml + sql.yaml stubs"
+git commit -m "%COMMIT_MSG%" -m "apps/explorer-web/lib/lineage-data.ts: extends ANCHOR_KEYS, anchorLineages, and anchorSlugs from 7 to 17. Adds 10 new hand-curated LineageGraph entries (ehr_integrations, capital_markets, smart_metering, clinical_trials, cloud_finops, ev_charging, tax_administration, real_world_evidence, settlement_clearing, programmatic_advertising). Each follows the existing 6-column pattern (sources -> staging -> vault hubs/links -> vault sats -> marts -> KPIs) with 30 nodes / ~30 edges, names pulled from each anchor's YAML and DDL." -m "apps/explorer-web/app/lineage/page.tsx + [anchor]/page.tsx: index copy and metadata refreshed from 'seven' to 17 (driven off ANCHOR_KEYS.length). LineageDiagram and LineageThumbnail components are unchanged - they already accept any LineageGraph." -m "data/quality/dq_rules.yaml: appends 41 new DQ rules across the 10 new anchors (4-5 each), spanning not_null / uniqueness / range / foreign_key / freshness / distribution rule types. SQL targets the schemas the synthetic-data generators populate (e.g. ehr_integrations.patient, capital_markets.trade, real_world_evidence.condition_occurrence, tax_administration.\"return\"). The original 31 rules for the 7 anchors are unchanged. Top-of-file TODO marker replaced with a note explaining pending status." -m "data/quality/last_run.json: keeps the existing 7-anchor results AND adds 41 placeholder entries with status='pending - awaiting data generation' and count=null. total_rules bumped to 72; passed/failed/errored unchanged; new top-level pending=41; by_severity and by_subdomain entries get a pending counter. The /dq page handles pending gracefully via small additions in lib/dq.ts (DqResult.status / DqReport.pending), components/dq-rules-table.tsx (Pending status filter + slate Clock pill), and app/dq/page.tsx + app/governance/page.tsx (Pending tile / column)." -m "Synthetic-data generators, DuckDB file, and existing 7 anchors' lineage/DQ are untouched."
+
 if errorlevel 1 goto :try_alt_index
 
 echo.
@@ -45,7 +45,7 @@ if not exist "%GIT_DIR%" mkdir "%GIT_DIR%"
 xcopy /E /I /Y /Q "%REPO_ROOT%\.git\*" "%GIT_DIR%\" >nul 2>&1
 git --git-dir="%GIT_DIR%" --work-tree="%REPO_ROOT%" add -A
 if errorlevel 1 goto :fail
-git --git-dir="%GIT_DIR%" --work-tree="%REPO_ROOT%" commit -m "feat: fully attributed data models per subdomain, ERD viewer, enhanced KPI library with per-style SQL"
+git --git-dir="%GIT_DIR%" --work-tree="%REPO_ROOT%" commit -m "%COMMIT_MSG%"
 if errorlevel 1 goto :fail
 echo.
 echo Commit recorded against alternate index "%GIT_DIR%". When the workspace

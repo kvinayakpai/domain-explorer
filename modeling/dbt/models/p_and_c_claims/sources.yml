@@ -1,0 +1,77 @@
+version: 2
+
+sources:
+  - name: p_and_c_claims
+    description: |
+      Real Property & Casualty Claims source schema in the populated
+      domain-explorer.duckdb. Mirrors what a Guidewire ClaimCenter +
+      PolicyCenter operational data store would land after CDC. All ten
+      tables are populated by the synthetic-data generator.
+    schema: p_and_c_claims
+    tables:
+      - name: policyholders
+        description: One row per insured party (person or business).
+        columns:
+          - name: policyholder_id
+            tests: [unique, not_null]
+      - name: policies
+        description: Issued P&C policies across auto and property lines.
+        columns:
+          - name: policy_id
+            tests: [unique, not_null]
+          - name: policyholder_id
+            tests: [not_null]
+      - name: vehicles
+        description: Vehicles associated with auto policies.
+        columns:
+          - name: vehicle_id
+            tests: [unique, not_null]
+          - name: policy_id
+            tests: [not_null]
+      - name: properties
+        description: Insured properties associated with property policies.
+        columns:
+          - name: property_id
+            tests: [unique, not_null]
+          - name: policy_id
+            tests: [not_null]
+      - name: adjusters
+        description: Claims adjusters with specialty and licensure metadata.
+        columns:
+          - name: adjuster_id
+            tests: [unique, not_null]
+      - name: claims
+        description: Claim header — one row per filed claim through closure.
+        columns:
+          - name: claim_id
+            tests: [unique, not_null]
+          - name: policy_id
+            tests: [not_null]
+      - name: claim_lines
+        description: Coverage-level breakdown of paid/reserved amounts on a claim.
+        columns:
+          - name: claim_line_id
+            tests: [unique, not_null]
+          - name: claim_id
+            tests: [not_null]
+      - name: claim_payments
+        description: Indemnity payments issued against claim lines.
+        columns:
+          - name: payment_id
+            tests: [unique, not_null]
+          - name: claim_line_id
+            tests: [not_null]
+      - name: reserves
+        description: Loss reserve postings (case + bulk + salvage/subrogation).
+        columns:
+          - name: reserve_id
+            tests: [unique, not_null]
+          - name: claim_id
+            tests: [not_null]
+      - name: fnol_events
+        description: First Notice of Loss events captured at intake.
+        columns:
+          - name: fnol_event_id
+            tests: [unique, not_null]
+          - name: claim_id
+            tests: [not_null]

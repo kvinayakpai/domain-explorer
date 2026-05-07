@@ -215,7 +215,7 @@ function ScreenKpiAnswer({ flow }: { flow: ReturnType<typeof getDemoFlow> & obje
               <GitBranch className="h-4 w-4" /> Column-level lineage (Payments anchor)
             </CardTitle>
             <CardDescription>
-              The same lineage backbone you'd see on <code>/lineage</code> — sources to
+              The same lineage backbone you&apos;d see on <code>/lineage</code> — sources to
               dimensional model to KPIs.
             </CardDescription>
           </CardHeader>

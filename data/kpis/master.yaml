@@ -770,3 +770,204 @@ kpis:
   - { id: am.kpi.sharpe, name: Sharpe Ratio, formula: (return-rf)/stddev, unit: ratio, direction: higher_is_better, vertical: BFSI, subdomains: [asset_management] }
   - { id: iiot.kpi.energy_per_unit, name: Energy per Unit Produced, formula: kwh / units_produced, unit: kWh/unit, direction: lower_is_better, vertical: Manufacturing, subdomains: [shop_floor_iot] }
   - { id: iiot.kpi.tag_uptime, name: IoT Tag Stream Uptime, formula: minutes_streaming / total_minutes, unit: "%", direction: higher_is_better, vertical: Manufacturing, subdomains: [shop_floor_iot] }
+
+  # ============================================================
+  # Anchor: Settlement & Clearing (BFSI)
+  # Sources: ISO 20022 securities (sese.*, semt.*, colr.*), DTCC NSCC CNS
+  # ============================================================
+  - id: stl.kpi.same_day_settle
+    name: Same-Day Settlement Rate
+    formula: same_day_settled / total_trades
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of eligible trades that settle on the same business day they were intended to settle. Drives operational throughput under T+1 mandates.
+    vertical: BFSI
+    subdomains: [settlement_clearing]
+    related_personas: [Head of Settlements, Operations COO]
+  - id: stl.kpi.fail_rate
+    name: Settlement Fail Rate
+    formula: failed_settlements / total_settlements
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of settlement instructions (ISO 20022 sese.023) that did not settle by intended settlement date. Drives CSDR penalty exposure and buy-in volume.
+    vertical: BFSI
+    subdomains: [settlement_clearing]
+    related_personas: [Head of Settlements, Recon Lead]
+    decisionsSupported: [stl.d.buyin, stl.d.partial]
+  - id: stl.kpi.recon_break_count
+    name: Recon Break Count
+    formula: open_breaks_eod
+    unit: count
+    direction: lower_is_better
+    definition: Open reconciliation breaks between internal book and CSD/CCP statements at end of day.
+    vertical: BFSI
+    subdomains: [settlement_clearing]
+    related_personas: [Recon Lead]
+  - id: stl.kpi.aging_breaks
+    name: Aging Breaks > 5d
+    formula: breaks_over_5d / total_breaks
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of open recon breaks aged more than 5 business days; a leading indicator of regulatory escalation.
+    vertical: BFSI
+    subdomains: [settlement_clearing]
+    related_personas: [Recon Lead, Operations COO]
+  - id: stl.kpi.intraday_liquidity_use
+    name: Intraday Liquidity Usage
+    formula: peak_intraday_use / committed_facility
+    unit: "%"
+    direction: target_band
+    definition: BCBS 248 intraday liquidity peak relative to committed correspondent or RTGS facility.
+    vertical: BFSI
+    subdomains: [settlement_clearing]
+    related_personas: [Treasury Liaison]
+  - id: stl.kpi.match_rate
+    name: Pre-Settlement Match Rate
+    formula: matched_t1 / eligible_trades
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of settlement instructions (sese.024 status MACH) matched on or before T+1.
+    vertical: BFSI
+    subdomains: [settlement_clearing]
+    related_personas: [Head of Settlements]
+  - id: stl.kpi.cns_compression
+    name: CNS Net Compression Ratio
+    formula: gross_obligations / net_obligations
+    unit: ratio
+    direction: higher_is_better
+    definition: Compression achieved by DTCC NSCC Continuous Net Settlement — gross obligations divided by net obligations after CNS.
+    vertical: BFSI
+    subdomains: [settlement_clearing]
+    related_personas: [Head of Settlements]
+    decisionsSupported: [stl.d.cns_optout]
+  - id: stl.kpi.collateral_haircut_avg
+    name: Average Collateral Haircut
+    formula: weighted_haircut_pct
+    unit: "%"
+    direction: target_band
+    definition: Weighted-average haircut applied across pledged collateral against CCP margin calls.
+    vertical: BFSI
+    subdomains: [settlement_clearing]
+    related_personas: [CCP Risk Manager, Treasury Liaison]
+    decisionsSupported: [stl.d.collateral]
+  - id: stl.kpi.buyin_count
+    name: Buy-In Initiations
+    formula: count(buyin_events)
+    unit: count
+    direction: lower_is_better
+    definition: Number of CSDR buy-in executions initiated against failed settlements in the period.
+    vertical: BFSI
+    subdomains: [settlement_clearing]
+    related_personas: [Head of Settlements]
+    decisionsSupported: [stl.d.buyin]
+  - id: stl.kpi.cutoff_extension_rate
+    name: Cutoff-Extension Rate
+    formula: cutoff_extensions / total_settlements
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of settlements that required a CSD cutoff extension to clear.
+    vertical: BFSI
+    subdomains: [settlement_clearing]
+    related_personas: [Head of Settlements, Operations COO]
+    decisionsSupported: [stl.d.cutoff_extend]
+
+  # ============================================================
+  # Anchor: Programmatic Advertising (Media)
+  # Sources: IAB Tech Lab OpenRTB 2.6, AdCOM 1.0, VAST 4.2, MRC viewability
+  # ============================================================
+  - id: prog.kpi.fill_rate
+    name: Programmatic Fill Rate
+    formula: filled_impressions / ad_requests
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of OpenRTB BidRequests that produce a served impression. Low fill rates indicate floors set above demand or supply-path issues.
+    vertical: Media
+    subdomains: [programmatic_advertising]
+    related_personas: [Head of Programmatic, Yield Analyst]
+    decisionsSupported: [prog.d.floor]
+  - id: prog.kpi.ecpm
+    name: Effective CPM
+    formula: gross_revenue * 1000 / impressions
+    unit: USD
+    direction: higher_is_better
+    definition: Revenue per thousand served impressions across all auction types (open + PMP + PG).
+    vertical: Media
+    subdomains: [programmatic_advertising]
+    related_personas: [Head of Programmatic, Yield Analyst]
+  - id: prog.kpi.viewability
+    name: MRC Viewability Rate
+    formula: viewable_impressions / measurable_impressions
+    unit: "%"
+    direction: higher_is_better
+    definition: MRC standard — display 50% pixels viewable for ≥1s, video for ≥2s.
+    vertical: Media
+    subdomains: [programmatic_advertising]
+    related_personas: [Head of Programmatic, Ad Ops Engineer]
+    decisionsSupported: [prog.d.floor]
+  - id: prog.kpi.bid_win_rate
+    name: Bid Win Rate
+    formula: wins / bids_submitted
+    unit: "%"
+    direction: target_band
+    definition: Share of submitted Bids that won the auction. Above target band suggests under-priced supply; below suggests bidder quality issues.
+    vertical: Media
+    subdomains: [programmatic_advertising]
+    related_personas: [Trader, Demand Strategist]
+    decisionsSupported: [prog.d.bidder_throttle]
+  - id: prog.kpi.ivt_rate
+    name: Invalid Traffic Rate
+    formula: ivt_impressions / impressions
+    unit: "%"
+    direction: lower_is_better
+    definition: MRC GIVT + SIVT classification share of served impressions; tracked per supply path and per DSP.
+    vertical: Media
+    subdomains: [programmatic_advertising]
+    related_personas: [Head of Programmatic, Ad Ops Engineer]
+    decisionsSupported: [prog.d.fraud_threshold]
+  - id: prog.kpi.bid_response_latency
+    name: Bid Response Latency P95
+    formula: p95(response_received_ms - bid_request_ms)
+    unit: ms
+    direction: lower_is_better
+    definition: 95th-percentile bidder response time inside Imp.tmax. Bidders failing this trigger throttling.
+    vertical: Media
+    subdomains: [programmatic_advertising]
+    related_personas: [Ad Ops Engineer]
+    decisionsSupported: [prog.d.bidder_throttle]
+  - id: prog.kpi.video_completion
+    name: Video Completion Rate
+    formula: vast_complete_events / vast_start_events
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of VAST-served video impressions that fire the "complete" tracking event. Drives CPCV pricing.
+    vertical: Media
+    subdomains: [programmatic_advertising]
+    related_personas: [Yield Analyst]
+  - id: prog.kpi.pmp_share
+    name: PMP Share of Spend
+    formula: pmp_revenue / total_revenue
+    unit: "%"
+    direction: target_band
+    definition: Share of revenue cleared through private marketplace (PMP/PG/Preferred Deals) vs open auction.
+    vertical: Media
+    subdomains: [programmatic_advertising]
+    related_personas: [Head of Programmatic, Demand Strategist]
+    decisionsSupported: [prog.d.deal_priority, prog.d.pmp_renewal]
+  - id: prog.kpi.match_rate
+    name: User-Match Rate
+    formula: matched_user_ids / addressable_requests
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of addressable BidRequests where the buyer can resolve a User.id (or User.eids[]) match.
+    vertical: Media
+    subdomains: [programmatic_advertising]
+    related_personas: [Trader]
+  - id: prog.kpi.consent_share
+    name: Consented Traffic Share
+    formula: consented_requests / total_requests
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of EU/UK/US-privacy traffic that arrives with a TCF v2.2 / GPP consent string permitting targeting.
+    vertical: Media
+    subdomains: [programmatic_advertising]
+    related_personas: [Head of Programmatic, Ad Ops Engineer]

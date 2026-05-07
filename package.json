@@ -15,6 +15,17 @@
     "dbt:deps": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt deps",
     "dbt:build": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt deps && DBT_PROFILES_DIR=. dbt run --select payments+",
     "dbt:test": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt test --select payments+",
+    "dbt:build:payments": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt deps && DBT_PROFILES_DIR=. dbt run --select payments+",
+    "dbt:build:p_and_c_claims": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt deps && DBT_PROFILES_DIR=. dbt run --select p_and_c_claims+",
+    "dbt:build:merchandising": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt deps && DBT_PROFILES_DIR=. dbt run --select merchandising+",
+    "dbt:build:demand_planning": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt deps && DBT_PROFILES_DIR=. dbt run --select demand_planning+",
+    "dbt:build:hotel_revenue_management": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt deps && DBT_PROFILES_DIR=. dbt run --select hotel_revenue_management+",
+    "dbt:build:all": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt deps && DBT_PROFILES_DIR=. dbt run --select payments+ p_and_c_claims+ merchandising+ demand_planning+ hotel_revenue_management+",
+    "dbt:test:p_and_c_claims": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt test --select p_and_c_claims+",
+    "dbt:test:merchandising": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt test --select merchandising+",
+    "dbt:test:demand_planning": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt test --select demand_planning+",
+    "dbt:test:hotel_revenue_management": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt test --select hotel_revenue_management+",
+    "dbt:test:all": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt test --select payments+ p_and_c_claims+ merchandising+ demand_planning+ hotel_revenue_management+",
     "kg:build": "python kg/build_graph.py --data-root data --out kg"
   },
   "devDependencies": {

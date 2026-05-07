@@ -36,6 +36,7 @@ from pathlib import Path
 import duckdb
 
 SUBDOMAINS = [
+    # Original 7 anchors.
     "payments",
     "p_and_c_claims",
     "merchandising",
@@ -43,6 +44,17 @@ SUBDOMAINS = [
     "hotel_revenue_management",
     "mes_quality",
     "pharmacovigilance",
+    # 10 new anchors (FHIR / FIX / OMOP / OCPP / OpenRTB / FOCUS / SDTM / IRS MeF / ANSI C12 / ISO 20022).
+    "ehr_integrations",
+    "capital_markets",
+    "smart_metering",
+    "clinical_trials",
+    "cloud_finops",
+    "ev_charging",
+    "tax_administration",
+    "real_world_evidence",
+    "settlement_clearing",
+    "programmatic_advertising",
 ]
 
 REPO_ROOT = Path(__file__).resolve().parent.parent

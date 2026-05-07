@@ -1,0 +1,53 @@
+version: 2
+
+models:
+  - name: stg_hotel_revenue_management__reservations
+    description: Reservation header with computed lead_time_days.
+    columns:
+      - name: reservation_id
+        tests: [unique, not_null]
+  - name: stg_hotel_revenue_management__daily_inventory
+    description: Daily availability with computed occupancy_pct.
+    columns:
+      - name: inv_id
+        tests: [unique, not_null]
+  - name: dim_property
+    description: Property dimension keyed by md5(property_id).
+    columns:
+      - name: property_key
+        tests: [unique, not_null]
+      - name: property_id
+        tests: [unique, not_null]
+  - name: dim_room_type
+    description: Room type dimension keyed by md5(room_type_id).
+    columns:
+      - name: room_type_key
+        tests: [unique, not_null]
+      - name: room_type_id
+        tests: [unique, not_null]
+  - name: dim_channel
+    description: Distribution channel dimension with commission band.
+    columns:
+      - name: channel_key
+        tests: [unique, not_null]
+      - name: channel_id
+        tests: [unique, not_null]
+  - name: dim_date
+    description: Conformed daily date dimension for hotel RM.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+  - name: fct_reservations
+    description: Grain = one row per reservation, with ancillary + cancellation rollups.
+    columns:
+      - name: reservation_key
+        tests: [unique, not_null]
+      - name: reservation_id
+        tests: [unique, not_null]
+  - name: fct_daily_inventory
+    description: Grain = one row per (room_type, stay_date), with RevPAR and yield.
+    columns:
+      - name: inventory_key
+        tests: [unique, not_null]
+      - name: inv_id
+        tests: [unique, not_null]

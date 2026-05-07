@@ -35,7 +35,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "no executable SQL for this KPI/style yet — only the 7 anchor subdomain KPIs ship real implementations",
+          "no executable SQL for this KPI/style yet — only the 17 anchor subdomain KPIs ship real implementations",
       },
       { status: 400 },
     );

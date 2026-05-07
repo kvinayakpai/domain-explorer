@@ -493,3 +493,643 @@ terms:
     related_subdomains: [payments, cards]
     related_kpis: []
     steward: Head of Payments
+
+  # =========================================================================
+  # FHIR R4 / USCDI healthcare terminology
+  # =========================================================================
+  - name: FHIR Resource
+    aliases: [Resource]
+    definition: An atomic unit of healthcare data exchange in FHIR (Patient, Encounter, Observation, etc.). Each resource has a stable id, a versionable meta block, and a JSON or XML serialisation defined by the FHIR specification.
+    related_subdomains: [ehr_integrations, payer_provider, value_based_care]
+    related_kpis: [ehr.kpi.fhir_latency, ehr.kpi.message_success]
+    steward: FHIR Architect
+  - name: Bundle
+    aliases: [FHIR Bundle]
+    definition: A FHIR container resource that groups other resources for transmission as a single unit. Bundle types include searchset (search results), transaction (atomic write), and document (clinical document).
+    related_subdomains: [ehr_integrations, payer_provider]
+    related_kpis: [ehr.kpi.fhir_latency]
+    steward: FHIR Architect
+  - name: Encounter
+    aliases: [FHIR Encounter]
+    definition: FHIR resource that represents an interaction between a patient and a healthcare provider — inpatient stay, outpatient visit, emergency contact. Anchors clinical observations and procedures to a specific care episode.
+    related_subdomains: [ehr_integrations, payer_provider, revenue_cycle]
+    related_kpis: [ehr.kpi.message_success]
+    steward: Director Clinical IT
+  - name: Observation
+    aliases: [FHIR Observation]
+    definition: FHIR resource for measurements and simple assertions about a patient — vital signs, lab results, social history. Components carry coded result values typed via UCUM units and LOINC codes.
+    related_subdomains: [ehr_integrations, value_based_care]
+    related_kpis: [ehr.kpi.fhir_latency]
+    steward: FHIR Architect
+  - name: MedicationRequest
+    aliases: []
+    definition: FHIR resource representing an order or prescription for a medication. Carries medication coding (typically RxNorm), dosage instructions, and intent (order, plan, proposal).
+    related_subdomains: [ehr_integrations, value_based_care, real_world_evidence]
+    related_kpis: []
+    steward: FHIR Architect
+  - name: USCDI
+    aliases: [United States Core Data for Interoperability]
+    definition: ONC-defined minimum set of data classes and elements that certified EHRs must support for interoperable exchange. Versioned annually; v3 added social determinants of health and clinical notes elements.
+    related_subdomains: [ehr_integrations, payer_provider]
+    related_kpis: []
+    steward: Director Clinical IT
+  - name: LOINC
+    aliases: [Logical Observation Identifiers Names and Codes]
+    definition: Universal coding system for laboratory and clinical observations maintained by the Regenstrief Institute. Required by USCDI for lab results and many vital sign panels.
+    related_subdomains: [ehr_integrations, real_world_evidence]
+    related_kpis: []
+    steward: FHIR Architect
+  - name: RxNorm
+    aliases: []
+    definition: Normalised naming system for clinical drugs maintained by the U.S. National Library of Medicine. Provides stable concept identifiers (RXCUIs) for medication coding in FHIR MedicationRequest and prescription workflows.
+    related_subdomains: [ehr_integrations, real_world_evidence, value_based_care]
+    related_kpis: []
+    steward: FHIR Architect
+  - name: ICD-10-CM
+    aliases: [International Classification of Diseases, 10th Revision, Clinical Modification]
+    definition: U.S. clinical modification of WHO ICD-10 used for diagnosis coding on claims and clinical documentation. Roughly 70,000 codes covering disease, injury, and external cause classifications.
+    related_subdomains: [revenue_cycle, payer_provider, value_based_care]
+    related_kpis: [rcm.kpi.denial_rate]
+    steward: Coding Lead
+  - name: SNOMED CT
+    aliases: [Systematized Nomenclature of Medicine — Clinical Terms]
+    definition: Comprehensive clinical terminology covering findings, procedures, and observable entities. Required by USCDI for problem list and encounter type coding; richer than ICD for clinical decision support.
+    related_subdomains: [ehr_integrations, real_world_evidence, value_based_care]
+    related_kpis: []
+    steward: FHIR Architect
+  - name: FHIR Reference
+    aliases: [Resource Reference]
+    definition: A pointer from one FHIR resource to another, expressed as a relative URL like Patient/123 or an absolute URL. Enables the resource graph that ties Observations to Encounters to Patients.
+    related_subdomains: [ehr_integrations]
+    related_kpis: []
+    steward: FHIR Architect
+  - name: ValueSet
+    aliases: []
+    definition: A FHIR terminology resource enumerating the codes drawn from one or more CodeSystems that may be used in a specific binding. Used to constrain coded fields in profiles and forms.
+    related_subdomains: [ehr_integrations, real_world_evidence]
+    related_kpis: []
+    steward: FHIR Architect
+  - name: CodeSystem
+    aliases: []
+    definition: A FHIR terminology resource that defines the concepts (codes, displays, hierarchies) of a code system such as LOINC or SNOMED CT. Distinguished from a ValueSet, which selects from CodeSystems.
+    related_subdomains: [ehr_integrations]
+    related_kpis: []
+    steward: FHIR Architect
+
+  # =========================================================================
+  # FIX / FpML capital markets messaging
+  # =========================================================================
+  - name: NewOrderSingle
+    aliases: ["FIX MsgType=D"]
+    definition: FIX message that carries a single order from a buy-side firm to a broker or venue. Identifies the instrument, side, quantity, order type, and time-in-force; typically the first message in an order's life cycle.
+    related_subdomains: [capital_markets, securities_settlement]
+    related_kpis: [cm.kpi.execution_slippage]
+    steward: Trading Tech Lead
+  - name: ExecutionReport
+    aliases: ["FIX MsgType=8"]
+    definition: FIX message a venue or broker sends to acknowledge, fill, partially fill, replace, cancel, or reject an order. The execution life cycle of every FIX order is told through a stream of ExecutionReports.
+    related_subdomains: [capital_markets, securities_settlement]
+    related_kpis: [cm.kpi.execution_slippage, cm.kpi.trade_break_rate]
+    steward: Trading Tech Lead
+  - name: MarketDataSnapshotFullRefresh
+    aliases: ["FIX MsgType=W"]
+    definition: FIX message that delivers a full snapshot of the current state of a market data subscription — top-of-book or depth-of-book — at a point in time. Contrast with MarketDataIncrementalRefresh for tick-by-tick updates.
+    related_subdomains: [capital_markets]
+    related_kpis: []
+    steward: Market Data Lead
+  - name: FIX Tag
+    aliases: []
+    definition: A numeric field identifier in a FIX message body, e.g. 35=MsgType, 55=Symbol, 38=OrderQty. Tag-value pairs are SOH-delimited; the schema is versioned by FIX protocol release (4.4, 5.0 SP2, FIXT).
+    related_subdomains: [capital_markets, securities_settlement]
+    related_kpis: []
+    steward: Trading Tech Lead
+  - name: Trade Capture Report
+    aliases: ["FIX MsgType=AE", TCR]
+    definition: FIX message used to report a trade between counterparties to a venue or central matching service. Drives downstream affirmation, allocation, and settlement workflows.
+    related_subdomains: [capital_markets, securities_settlement]
+    related_kpis: [stl.kpi.match_rate, stl.kpi.fail_rate]
+    steward: Trade Operations Lead
+  - name: FpML Trade
+    aliases: [Financial products Markup Language Trade]
+    definition: An XML representation of an OTC derivative trade — IRS, CDS, FX option — defined by ISDA's FpML standard. Carries economic terms in product-specific blocks and is widely used in SEF and DTCC reporting.
+    related_subdomains: [capital_markets, regulatory_reporting, securities_settlement]
+    related_kpis: [reg.kpi.on_time_filings]
+    steward: Derivatives Tech Lead
+  - name: Allocation
+    aliases: [Block Allocation]
+    definition: The post-trade process of splitting a block execution across the underlying client accounts, typically expressed via FIX AllocationInstruction (J) and AllocationReport (AS) messages.
+    related_subdomains: [capital_markets, securities_settlement]
+    related_kpis: [stl.kpi.match_rate, stl.kpi.same_day_settle]
+    steward: Trade Operations Lead
+  - name: FIX Session
+    aliases: []
+    definition: A logically continuous, sequenced bidirectional conversation between two FIX endpoints, identified by SenderCompID/TargetCompID. Sessions handle Logon, Logout, Heartbeat, ResendRequest, and SequenceReset administrative traffic.
+    related_subdomains: [capital_markets]
+    related_kpis: []
+    steward: Trading Tech Lead
+  - name: Drop Copy
+    aliases: []
+    definition: A read-only, real-time FIX feed of executions sent to a third party — typically a clearing broker, risk system, or compliance group — for shadow position keeping and surveillance.
+    related_subdomains: [capital_markets, securities_settlement, regulatory_reporting]
+    related_kpis: []
+    steward: Surveillance Lead
+
+  # =========================================================================
+  # OMOP CDM observational research
+  # =========================================================================
+  - name: Common Data Model
+    aliases: [CDM]
+    definition: A standardised schema and vocabulary that lets researchers run identical analyses across heterogeneous data sources. OMOP, PCORnet, and Sentinel are the dominant CDMs in observational health research.
+    related_subdomains: [real_world_evidence]
+    related_kpis: [rwe.kpi.cohort_match]
+    steward: Data Acquisition Lead
+  - name: OMOP Concept
+    aliases: [Concept]
+    definition: A row in the OMOP CONCEPT table representing a single clinical idea — a drug, condition, procedure, or measurement — identified by a stable concept_id and tied to a Vocabulary and Domain.
+    related_subdomains: [real_world_evidence]
+    related_kpis: []
+    steward: Data Acquisition Lead
+  - name: OMOP Domain
+    aliases: []
+    definition: An OMOP-defined clinical area (Drug, Condition, Procedure, Measurement, Observation, Device) that determines which CDM table a Concept belongs in. Domain-routing is the first step in ETL into OMOP.
+    related_subdomains: [real_world_evidence]
+    related_kpis: []
+    steward: Data Acquisition Lead
+  - name: Vocabulary
+    aliases: [OMOP Vocabulary]
+    definition: A coded terminology managed within OMOP — SNOMED, RxNorm, LOINC, ICD-10-CM, NDC, etc. The Vocabulary tables define concept ids, hierarchies, and concept-to-concept relationships.
+    related_subdomains: [real_world_evidence]
+    related_kpis: []
+    steward: Data Acquisition Lead
+  - name: Standard Concept
+    aliases: []
+    definition: The canonical concept that OMOP-standardised analytics build on — typically SNOMED for conditions, RxNorm for drugs, LOINC for measurements. Source codes are mapped to a Standard Concept via concept_relationship.
+    related_subdomains: [real_world_evidence]
+    related_kpis: [rwe.kpi.cohort_match]
+    steward: Data Acquisition Lead
+  - name: Source Concept
+    aliases: []
+    definition: The original code from the source system (ICD-9-CM, NDC, local lab codes) preserved alongside the Standard Concept after ETL. Lets researchers audit and re-map without losing fidelity.
+    related_subdomains: [real_world_evidence]
+    related_kpis: []
+    steward: Data Acquisition Lead
+  - name: OMOP Cohort
+    aliases: [Cohort Definition]
+    definition: A reusable specification of a patient population — entry events, inclusion criteria, exit rules — typically authored in ATLAS and exported as a JSON definition or generated SQL.
+    related_subdomains: [real_world_evidence]
+    related_kpis: [rwe.kpi.cohort_match]
+    steward: Epidemiologist
+  - name: ATLAS
+    aliases: []
+    definition: OHDSI's open-source web application for browsing OMOP vocabularies, designing cohort definitions, characterising populations, and generating analytic SQL against a CDM database.
+    related_subdomains: [real_world_evidence]
+    related_kpis: []
+    steward: Epidemiologist
+  - name: OHDSI Network Studies
+    aliases: [OHDSI]
+    definition: Federated observational studies executed by sites in the Observational Health Data Sciences and Informatics network, each running the same analytic package against their local OMOP CDM and contributing only aggregate results.
+    related_subdomains: [real_world_evidence]
+    related_kpis: []
+    steward: Epidemiologist
+  - name: Observation Period
+    aliases: []
+    definition: An OMOP CDM concept representing a span of time during which a person's clinical events would have been recorded. Critical for denominator construction in incidence and prevalence studies.
+    related_subdomains: [real_world_evidence]
+    related_kpis: []
+    steward: Epidemiologist
+
+  # =========================================================================
+  # CDISC clinical trial standards
+  # =========================================================================
+  - name: SDTM
+    aliases: [Study Data Tabulation Model]
+    definition: CDISC standard for organising the raw clinical trial data submitted to FDA and PMDA. Each trial domain (DM, AE, LB, EX) maps to a defined SDTM table with prescribed variables and controlled terminology.
+    related_subdomains: [pharmacovigilance, real_world_evidence]
+    related_kpis: [pv.kpi.submission_timeliness]
+    steward: Clinical Data Manager
+  - name: ADaM
+    aliases: [Analysis Data Model]
+    definition: CDISC standard for the analysis-ready datasets that support a clinical trial's statistical analysis plan. Built from SDTM with traceability variables; ADSL (subject-level) is the foundation for all efficacy and safety ADaM datasets.
+    related_subdomains: [pharmacovigilance]
+    related_kpis: []
+    steward: Biostatistician
+  - name: Define-XML
+    aliases: []
+    definition: CDISC machine-readable metadata document submitted alongside SDTM/ADaM data. Describes datasets, variables, controlled terminology, and value-level metadata so reviewers can validate the submission programmatically.
+    related_subdomains: [pharmacovigilance]
+    related_kpis: [pv.kpi.submission_timeliness]
+    steward: Clinical Data Manager
+  - name: ODM
+    aliases: [Operational Data Model]
+    definition: CDISC XML standard for capturing and exchanging clinical trial case report form data and metadata between EDC systems, sponsors, and regulators. Preserves audit trails and electronic signatures.
+    related_subdomains: [pharmacovigilance]
+    related_kpis: []
+    steward: Clinical Data Manager
+  - name: MedDRA
+    aliases: [Medical Dictionary for Regulatory Activities]
+    definition: ICH-maintained terminology for adverse event coding in pharmacovigilance and clinical trials. Five-level hierarchy from System Organ Class down to Lowest Level Term.
+    related_subdomains: [pharmacovigilance]
+    related_kpis: [pv.kpi.ae_pt_accuracy]
+    steward: Drug Safety Coder
+  - name: MedDRA Preferred Term
+    aliases: [PT]
+    definition: The MedDRA hierarchy level used as the unit of analysis for safety reporting. AEs reported by sites at the verbatim level are mapped to a Preferred Term during medical coding.
+    related_subdomains: [pharmacovigilance]
+    related_kpis: [pv.kpi.ae_pt_accuracy]
+    steward: Drug Safety Coder
+  - name: USUBJID
+    aliases: [Unique Subject Identifier]
+    definition: SDTM variable carrying a study-wide unique subject identifier, typically formed by concatenating study, site, and subject id. The join key for almost every cross-domain SDTM and ADaM operation.
+    related_subdomains: [pharmacovigilance]
+    related_kpis: []
+    steward: Clinical Data Manager
+  - name: SAS Transport
+    aliases: [XPT, SAS XPT v5]
+    definition: Legacy fixed-position binary file format that FDA and PMDA require for SDTM and ADaM submission. Variable names are limited to 8 characters and labels to 40 characters, which constrains CDISC variable naming.
+    related_subdomains: [pharmacovigilance]
+    related_kpis: []
+    steward: Clinical Data Manager
+
+  # =========================================================================
+  # OpenRTB / IAB programmatic advertising
+  # =========================================================================
+  - name: BidRequest
+    aliases: [OpenRTB BidRequest]
+    definition: JSON object an exchange sends to bidders inviting them to bid on a single impression opportunity. Carries imp, site/app, device, user, and regs blocks per the OpenRTB specification.
+    related_subdomains: [programmatic_advertising, ad_tech]
+    related_kpis: [prog.kpi.bid_response_latency, prog.kpi.bid_win_rate]
+    steward: Ad Platform Lead
+  - name: Bid Floor
+    aliases: [Floor Price]
+    definition: The minimum CPM a publisher will accept for an impression, set per imp in the OpenRTB BidRequest. Hard floors filter bids below the threshold; soft floors are advisory in second-price auctions.
+    related_subdomains: [programmatic_advertising, ad_tech]
+    related_kpis: [prog.kpi.ecpm, prog.kpi.fill_rate]
+    steward: Yield Manager
+  - name: Header Bidding
+    aliases: [Pre-Bid]
+    definition: A publisher-side technique that solicits bids from multiple SSPs in parallel before the ad server's waterfall, increasing competition for each impression. Implemented client-side via Prebid.js or server-side via PBS.
+    related_subdomains: [programmatic_advertising, ad_tech, ad_inventory]
+    related_kpis: [prog.kpi.ecpm, prog.kpi.fill_rate]
+    steward: Yield Manager
+  - name: Real-Time Bidding
+    aliases: [RTB]
+    definition: Programmatic auction model in which each impression is sold individually via a sub-100ms auction across many bidders. The dominant transaction shape on most open exchanges.
+    related_subdomains: [programmatic_advertising, ad_tech]
+    related_kpis: [prog.kpi.bid_response_latency, prog.kpi.bid_win_rate]
+    steward: Ad Platform Lead
+  - name: Programmatic Direct
+    aliases: [PMP, Private Marketplace]
+    definition: Pre-negotiated programmatic deals between specific buyers and sellers, executed over the OpenRTB rails but with deal_id-scoped pricing and inventory. Includes Preferred Deals, PMPs, and Programmatic Guaranteed.
+    related_subdomains: [programmatic_advertising, ad_inventory]
+    related_kpis: [prog.kpi.pmp_share]
+    steward: VP Yield
+  - name: ads.txt
+    aliases: [Authorized Digital Sellers]
+    definition: An IAB Tech Lab plaintext file at /ads.txt on a publisher's domain listing the sellers and seller account ids authorised to sell its inventory. Buyers reject bids from unauthorised sellers to combat domain spoofing.
+    related_subdomains: [programmatic_advertising, ad_tech]
+    related_kpis: [prog.kpi.ivt_rate]
+    steward: Ad Platform Lead
+  - name: sellers.json
+    aliases: []
+    definition: Companion to ads.txt — a JSON file an SSP hosts at /sellers.json declaring every seller it represents. Lets buyers verify the supply chain end-to-end via the SupplyChain Object in OpenRTB.
+    related_subdomains: [programmatic_advertising, ad_tech]
+    related_kpis: [prog.kpi.ivt_rate]
+    steward: Ad Platform Lead
+  - name: OMID
+    aliases: [Open Measurement Interface Definition]
+    definition: IAB Tech Lab specification for in-app and in-web ad measurement that lets a single SDK report viewability and verification signals to many measurement vendors without each requiring its own integration.
+    related_subdomains: [programmatic_advertising, ad_tech]
+    related_kpis: [prog.kpi.viewability]
+    steward: Trafficking Lead
+  - name: Viewability
+    aliases: [Viewable Impression]
+    definition: Share of served impressions that meet the MRC viewability standard — at least 50% of pixels on screen for at least one second for display, two seconds for video.
+    related_subdomains: [programmatic_advertising, ad_tech]
+    related_kpis: [prog.kpi.viewability]
+    steward: Measurement Lead
+  - name: Invalid Traffic
+    aliases: [IVT, SIVT, GIVT]
+    definition: Ad traffic that does not represent real user interest. General IVT (GIVT) is filtered with declared bot lists; Sophisticated IVT (SIVT) requires behavioural detection and includes hijacked devices and bot farms.
+    related_subdomains: [programmatic_advertising, ad_tech, fraud]
+    related_kpis: [prog.kpi.ivt_rate]
+    steward: Ad Quality Lead
+  - name: TCF v2.2
+    aliases: [Transparency and Consent Framework]
+    definition: IAB Europe framework for collecting and signalling user consent under GDPR, encoded in a Consent String passed through the OpenRTB User Ext. v2.2 added explicit purpose disclosures and cleaner legitimate-interest handling.
+    related_subdomains: [programmatic_advertising, ad_tech]
+    related_kpis: [prog.kpi.consent_share]
+    steward: Privacy Counsel
+  - name: GPP
+    aliases: [Global Privacy Platform]
+    definition: IAB Tech Lab successor signalling format that combines TCF, U.S. State, and other regional consent strings into a single header-bearable string. Designed to scale to new privacy jurisdictions without re-plumbing.
+    related_subdomains: [programmatic_advertising, ad_tech]
+    related_kpis: [prog.kpi.consent_share]
+    steward: Privacy Counsel
+  - name: AdCOM
+    aliases: [Advertising Common Object Model]
+    definition: IAB Tech Lab object model that factors out shared types (placement, creative, context) used by OpenRTB, OpenDirect, and adCOM consumers. Versioned independently of OpenRTB to allow separate evolution.
+    related_subdomains: [programmatic_advertising, ad_tech]
+    related_kpis: []
+    steward: Ad Platform Lead
+
+  # =========================================================================
+  # OCPP / EV charging
+  # =========================================================================
+  - name: OCPP
+    aliases: [Open Charge Point Protocol]
+    definition: Open Charge Alliance protocol between EV chargers (Charge Points) and their backend (Central System / CSMS). Versions 1.6 (SOAP/JSON) and 2.0.1 (JSON over WebSocket with security profiles) are the deployed baselines.
+    related_subdomains: [ev_charging]
+    related_kpis: [ev.kpi.uptime, ev.kpi.utilization]
+    steward: EV Network Manager
+  - name: OCPI
+    aliases: [Open Charge Point Interface]
+    definition: EV roaming protocol between charge point operators (CPOs) and e-mobility service providers (EMSPs). Standardises Locations, Tariffs, Sessions, and CDR exchange so a driver can roam across networks with a single subscription.
+    related_subdomains: [ev_charging]
+    related_kpis: []
+    steward: EV Roaming Lead
+  - name: EV Tariff
+    aliases: [Charging Tariff]
+    definition: Pricing schedule a charging session is billed against — combining time, energy, and parking components, often with time-of-use bands. Carried in OCPI as a Tariff object referenced from each session.
+    related_subdomains: [ev_charging]
+    related_kpis: []
+    steward: EV Pricing Lead
+  - name: ISO 15118
+    aliases: [Vehicle to Grid Communication Interface]
+    definition: ISO standard for communication between an EV and a charging station, including high-level protocol stacks for AC and DC charging. Underpins Plug-and-Charge identification and bi-directional energy transfer.
+    related_subdomains: [ev_charging]
+    related_kpis: []
+    steward: EV Standards Lead
+  - name: Plug-and-Charge
+    aliases: [PnC]
+    definition: ISO 15118 capability that lets a driver authorise and pay for a charging session purely by plugging in — the vehicle and charger exchange certificates without a card tap or app interaction.
+    related_subdomains: [ev_charging]
+    related_kpis: []
+    steward: EV Standards Lead
+  - name: V2G
+    aliases: [Vehicle to Grid]
+    definition: Bi-directional charging that allows an EV battery to discharge to the grid during peak demand under a utility's V2G program. Requires ISO 15118 -20 and bi-directional onboard or DC chargers.
+    related_subdomains: [ev_charging, grid_ops]
+    related_kpis: []
+    steward: EV Standards Lead
+  - name: MeterValues
+    aliases: ["OCPP MeterValues"]
+    definition: OCPP message a charge point sends periodically during a transaction reporting energy.active.import.register, current, voltage, and other sampled values. The audit trail behind every kWh billed.
+    related_subdomains: [ev_charging]
+    related_kpis: [ev.kpi.utilization]
+    steward: EV Network Manager
+  - name: StartTransaction
+    aliases: ["OCPP StartTransaction"]
+    definition: OCPP 1.6 message (TransactionEvent in 2.0.1) a charge point sends when a session begins, carrying connectorId, idTag, meterStart, and timestamp. Pairs with StopTransaction at session end to bound a billable charging session.
+    related_subdomains: [ev_charging]
+    related_kpis: [ev.kpi.utilization]
+    steward: EV Network Manager
+  - name: RFID Tag
+    aliases: [idTag]
+    definition: Card or fob a driver presents at a charge point to authenticate a charging session in lieu of an app or Plug-and-Charge. Identified by an idTag string sent in OCPP Authorize and StartTransaction messages.
+    related_subdomains: [ev_charging]
+    related_kpis: []
+    steward: EV Network Manager
+
+  # =========================================================================
+  # FOCUS cloud cost specification
+  # =========================================================================
+  - name: BilledCost
+    aliases: []
+    definition: FOCUS column representing the cost a cloud provider invoices for a charge in the billing period, after commitment-based discounts and credits are applied. The number that reconciles to the customer's invoice.
+    related_subdomains: [cloud_finops]
+    related_kpis: [fo.kpi.unit_cost, fo.kpi.budget_variance]
+    steward: Head of FinOps
+  - name: EffectiveCost
+    aliases: []
+    definition: FOCUS column representing the amortised cost of a charge after spreading commitment fees across the term they cover. Used for unit-economics comparisons that need consistent treatment across reservation purchases.
+    related_subdomains: [cloud_finops]
+    related_kpis: [fo.kpi.unit_cost, fo.kpi.savings_plan_coverage]
+    steward: Head of FinOps
+  - name: ListCost
+    aliases: [Public Price]
+    definition: FOCUS column representing the cost of a charge at the publicly listed on-demand price, before commitment, negotiated, or volume discounts. Useful for measuring discount yield versus list.
+    related_subdomains: [cloud_finops]
+    related_kpis: [fo.kpi.savings_plan_coverage]
+    steward: Head of FinOps
+  - name: Commitment Discount
+    aliases: [CUD, Reserved Instance, Savings Plan]
+    definition: A pricing construct in which a customer commits to a baseline of usage in exchange for a discount versus on-demand. FOCUS represents these via CommitmentDiscountId, Type, and Status columns.
+    related_subdomains: [cloud_finops]
+    related_kpis: [fo.kpi.savings_plan_coverage]
+    steward: Head of FinOps
+  - name: Resource Tag
+    aliases: [Cost Allocation Tag]
+    definition: A key-value label attached to a cloud resource for cost allocation, ownership, or environment tracking. FOCUS surfaces tags via the Tags column as a JSON-encoded map for analytic querying.
+    related_subdomains: [cloud_finops]
+    related_kpis: [fo.kpi.tag_coverage]
+    steward: Head of FinOps
+  - name: Service Category
+    aliases: [FOCUS Service Category]
+    definition: FOCUS controlled-vocabulary value that buckets each charge into a high-level cloud service group (Compute, Storage, AI and Machine Learning, Networking, etc.) for cross-provider comparison.
+    related_subdomains: [cloud_finops]
+    related_kpis: [fo.kpi.unit_cost]
+    steward: Head of FinOps
+  - name: Pricing Unit
+    aliases: []
+    definition: FOCUS column expressing the unit a charge is priced in — vCPU-Hours, GB-Months, Requests. Lets analytics aggregate quantities across providers without conflating heterogeneous units.
+    related_subdomains: [cloud_finops]
+    related_kpis: [fo.kpi.unit_cost]
+    steward: Head of FinOps
+  - name: Charge Period
+    aliases: [Billing Period]
+    definition: FOCUS pair of columns (ChargePeriodStart, ChargePeriodEnd) bounding the time window a charge applies to. Foundational for accurate amortisation and commitment-coverage analytics.
+    related_subdomains: [cloud_finops]
+    related_kpis: [fo.kpi.budget_variance]
+    steward: Head of FinOps
+
+  # =========================================================================
+  # ISO 20022 securities and post-trade
+  # =========================================================================
+  - name: sese.023
+    aliases: [SecuritiesSettlementTransactionInstruction]
+    definition: ISO 20022 securities settlement instruction message used by an account owner to instruct its custodian on a delivery or receipt of securities. Carries trade details, settlement parties, and SD/SD+1 instructions.
+    related_subdomains: [securities_settlement, capital_markets]
+    related_kpis: [stl.kpi.same_day_settle, stl.kpi.fail_rate]
+    steward: Trade Operations Lead
+  - name: semt.017
+    aliases: [SecuritiesTransactionPostingReport]
+    definition: ISO 20022 securities post-trade message a custodian sends to report transaction postings on a securities account. Anchors break investigations and reconciliation against trade-side records.
+    related_subdomains: [securities_settlement]
+    related_kpis: [stl.kpi.recon_break_count, stl.kpi.aging_breaks]
+    steward: Recon Lead
+  - name: MatchingStatus
+    aliases: []
+    definition: Field on a securities settlement instruction reporting whether the CSD has paired the instruction with the counterparty's matching instruction. Unmatched and mismatched are the two failure states.
+    related_subdomains: [securities_settlement]
+    related_kpis: [stl.kpi.match_rate]
+    steward: Trade Operations Lead
+  - name: ISIN
+    aliases: [International Securities Identification Number]
+    definition: 12-character ISO 6166 identifier for a security — country code, NSIN, and check digit. The dominant cross-border instrument identifier used in settlement, custody, and regulatory reporting.
+    related_subdomains: [securities_settlement, capital_markets, regulatory_reporting]
+    related_kpis: []
+    steward: Reference Data Lead
+  - name: BIC
+    aliases: [Business Identifier Code, SWIFT BIC]
+    definition: ISO 9362 8- or 11-character code identifying a financial institution and optionally a branch. Used to address SWIFT MT and ISO 20022 messages and to identify settlement parties in CSD instructions.
+    related_subdomains: [payments, securities_settlement]
+    related_kpis: []
+    steward: Reference Data Lead
+  - name: LEI
+    aliases: [Legal Entity Identifier]
+    definition: ISO 17442 20-character identifier for a legal entity participating in financial transactions. Mandated by EMIR, MiFID II, and Dodd-Frank for transaction-level reporting; issued by Local Operating Units.
+    related_subdomains: [regulatory_reporting, capital_markets, securities_settlement]
+    related_kpis: [reg.kpi.on_time_filings]
+    steward: Reference Data Lead
+  - name: CFI
+    aliases: [Classification of Financial Instruments]
+    definition: ISO 10962 6-character code classifying an instrument by category, group, and attributes. Required alongside ISIN for MiFID II transaction reporting and helps disambiguate equity classes and bond seniority.
+    related_subdomains: [securities_settlement, regulatory_reporting]
+    related_kpis: []
+    steward: Reference Data Lead
+  - name: CSDR
+    aliases: [Central Securities Depositories Regulation]
+    definition: EU regulation that governs CSDs and securities settlement, including the Settlement Discipline Regime that imposes cash penalties for late or failed settlements and mandates buy-ins for persistent fails.
+    related_subdomains: [securities_settlement, regulatory_reporting]
+    related_kpis: [stl.kpi.fail_rate, stl.kpi.buyin_count]
+    steward: Settlement Compliance Lead
+  - name: T+1 Settlement
+    aliases: ["T plus 1"]
+    definition: Settlement cycle in which trades settle on the business day following the trade date. The U.S., Canada, and Mexico moved to T+1 in May 2024; the EU and UK have committed to follow in October 2027.
+    related_subdomains: [securities_settlement, capital_markets]
+    related_kpis: [cm.kpi.t_plus_1_settlement, stl.kpi.same_day_settle]
+    steward: Trade Operations Lead
+  - name: Buy-In
+    aliases: [Mandatory Buy-In]
+    definition: A CSDR-mandated procedure in which a failing seller's broker is forced to source the securities in the open market to deliver to the buyer, with the original seller covering any price difference.
+    related_subdomains: [securities_settlement]
+    related_kpis: [stl.kpi.buyin_count, stl.kpi.fail_rate]
+    steward: Settlement Compliance Lead
+  - name: Recall
+    aliases: [Securities Recall]
+    definition: A lender's instruction calling back loaned securities — typically because the underlying owner has sold or wishes to vote a corporate action. Failure to return on time can trigger a buy-in under CSDR.
+    related_subdomains: [securities_settlement, securities_lending]
+    related_kpis: [stl.kpi.fail_rate]
+    steward: Securities Lending Desk
+
+  # =========================================================================
+  # IRS / U.S. tax filing
+  # =========================================================================
+  - name: MeF
+    aliases: [Modernized e-File]
+    definition: IRS XML-based platform for electronic filing of federal tax returns. Replaced the legacy EMS system; supports business and individual returns with real-time acknowledgements and structured error feedback.
+    related_subdomains: [tax_administration, regulatory_reporting]
+    related_kpis: [tax.kpi.collection_efficiency, reg.kpi.on_time_filings]
+    steward: e-File Program Manager
+  - name: Form 1040
+    aliases: ["Individual Income Tax Return"]
+    definition: The U.S. individual federal income tax return. Schedules attach to address specific income types, deductions, and credits beyond the main return.
+    related_subdomains: [tax_administration]
+    related_kpis: [tax.kpi.refund_cycle_time]
+    steward: Individual Returns Director
+  - name: Form 1120
+    aliases: ["U.S. Corporation Income Tax Return"]
+    definition: The federal income tax return for U.S. C corporations, including subsidiary forms 1120-S (S corporations), 1120-F (foreign corporations), and 1120-L (life insurance companies).
+    related_subdomains: [tax_administration]
+    related_kpis: [tax.kpi.voluntary_compliance]
+    steward: Business Returns Director
+  - name: Form 1065
+    aliases: ["U.S. Return of Partnership Income"]
+    definition: The federal return for partnerships and LLCs taxed as partnerships. Schedule K-1 flows through to each partner's individual or entity return.
+    related_subdomains: [tax_administration]
+    related_kpis: [tax.kpi.voluntary_compliance]
+    steward: Business Returns Director
+  - name: Schedule
+    aliases: [Tax Schedule]
+    definition: Supplemental form that attaches to a base IRS return to detail a category of income, deduction, or credit (e.g. Schedule A itemised deductions, Schedule C self-employment, Schedule K-1 partner income).
+    related_subdomains: [tax_administration]
+    related_kpis: []
+    steward: Individual Returns Director
+  - name: Acknowledgement
+    aliases: [ACK]
+    definition: An MeF response message confirming the IRS's receipt of an e-filed return and reporting whether it was Accepted or Rejected with a list of validation errors. Logged into MeF audit trails per submission.
+    related_subdomains: [tax_administration]
+    related_kpis: [tax.kpi.refund_cycle_time]
+    steward: e-File Program Manager
+  - name: FATCA
+    aliases: [Foreign Account Tax Compliance Act]
+    definition: U.S. statute requiring foreign financial institutions to report on accounts held by U.S. persons, enforced via withholding on non-compliant payments. Reported on Forms 8966, 1042, and 1042-S.
+    related_subdomains: [tax_administration, regulatory_reporting, kyc_aml]
+    related_kpis: []
+    steward: Tax Compliance Counsel
+  - name: CRS
+    aliases: [Common Reporting Standard]
+    definition: OECD standard for automatic exchange of financial account information between participating jurisdictions. Functions as the international counterpart to FATCA and is implemented via local CRS reporting forms.
+    related_subdomains: [regulatory_reporting, kyc_aml]
+    related_kpis: []
+    steward: Tax Compliance Counsel
+  - name: Withholding
+    aliases: [Tax Withholding]
+    definition: Mechanism by which a payer remits a portion of a payment directly to a tax authority on behalf of the payee. U.S. examples include W-2 wage withholding, 1042 nonresident withholding, and backup withholding.
+    related_subdomains: [tax_administration]
+    related_kpis: []
+    steward: Withholding Operations Lead
+  - name: AGI
+    aliases: [Adjusted Gross Income]
+    definition: Gross income minus above-the-line adjustments (educator expenses, HSA contributions, student loan interest, etc.). Drives eligibility for many tax credits, IRA deduction limits, and Medicare premium tiers.
+    related_subdomains: [tax_administration]
+    related_kpis: []
+    steward: Individual Returns Director
+  - name: AMT
+    aliases: [Alternative Minimum Tax]
+    definition: Parallel federal tax computation that disallows certain preferences, deductions, and credits. Filers pay the higher of regular tax and AMT; corporate AMT was reintroduced under the 2022 IRA at a 15% book-income floor.
+    related_subdomains: [tax_administration]
+    related_kpis: []
+    steward: Individual Returns Director
+
+  # =========================================================================
+  # Cross-cutting dimensional modeling and data warehousing
+  # =========================================================================
+  - name: Surrogate Key
+    aliases: [SK]
+    definition: System-generated, source-independent integer or hash key used as the primary identifier of a dimension or fact row. Decouples the warehouse from upstream identifier changes and supports SCD2 history.
+    related_subdomains: [customer_analytics, content_metadata, ehr_integrations]
+    related_kpis: []
+    steward: Data Lineage Steward
+  - name: Natural Key
+    aliases: [Business Key]
+    definition: The identifier a business uses for an entity in its source system — a customer number, ISIN, NPI. Stored alongside the surrogate key but never used as the join key in the dimensional model.
+    related_subdomains: [customer_analytics, ehr_integrations, securities_settlement]
+    related_kpis: []
+    steward: Data Lineage Steward
+  - name: Hub/Link/Satellite
+    aliases: [Data Vault]
+    definition: Data Vault 2.0 modeling pattern. Hubs hold business keys, Links capture relationships between Hubs, and Satellites carry descriptive attributes with effective dates, enabling auditable, parallel-loadable warehouses.
+    related_subdomains: [customer_analytics, ehr_integrations]
+    related_kpis: []
+    steward: Data Lineage Steward
+  - name: Hash Diff
+    aliases: [Record Hash]
+    definition: A hash of a row's descriptive attributes used to detect change cheaply during ETL. In Data Vault Satellites, a new row is inserted only when the hash differs from the most recent active row.
+    related_subdomains: [customer_analytics]
+    related_kpis: []
+    steward: Data Lineage Steward
+  - name: Conformed Dimension
+    aliases: []
+    definition: A dimension shared across multiple fact tables with identical structure and meaning, enabling drill-across analysis. Conformed Date, Customer, and Product dimensions are the backbone of bus-architecture warehouses.
+    related_subdomains: [customer_analytics, content_metadata]
+    related_kpis: []
+    steward: Data Lineage Steward
+  - name: Bridge Table
+    aliases: [Many-to-Many Bridge]
+    definition: A table that resolves many-to-many relationships between a fact and a dimension — for example, a household membership bridge between an account fact and a customer dimension. Often carries a weighting factor for fair allocation.
+    related_subdomains: [customer_analytics, payer_provider]
+    related_kpis: []
+    steward: Data Lineage Steward
+  - name: Fact Grain
+    aliases: [Grain of the Fact]
+    definition: The exact level of detail a fact row represents — one transaction, one daily snapshot, one claim line. Defining the grain is the first step in dimensional design and should never silently change.
+    related_subdomains: [customer_analytics, ehr_integrations, regulatory_reporting]
+    related_kpis: []
+    steward: Data Lineage Steward
+  - name: Late-Arriving Dimension
+    aliases: [Late-Arriving Member]
+    definition: A dimension row that arrives after a fact references it. Handled by inserting a placeholder dimension row at fact-load time and back-filling the descriptive attributes when the dimension feed catches up.
+    related_subdomains: [customer_analytics, ehr_integrations]
+    related_kpis: []
+    steward: Data Lineage Steward

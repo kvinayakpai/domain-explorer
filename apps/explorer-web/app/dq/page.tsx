@@ -84,12 +84,20 @@ export default async function DqPage() {
                 Run at {report.ran_at}
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-7">
               <Metric label="Total rules" value={report.total_rules} />
-              <Metric label="Pass rate" value={`${(report.pass_rate * 100).toFixed(1)}%`} tone={report.pass_rate >= 0.9 ? "good" : report.pass_rate >= 0.75 ? "warn" : "bad"} />
+              <Metric label="Pass rate" value={`${(report.pass_rate * 100).toFixed(1)}%`} tone={report.pass_rate >= 0.9 ? "good" : report.pass_rate >= 0.75 ? "warn" : "bad"} hint="of executed rules" />
               <Metric label="Passed" value={report.passed} tone="good" />
               <Metric label="Failed" value={report.failed} tone={report.failed ? "bad" : "neutral"} />
               <Metric label="Errored" value={report.errored} tone={report.errored ? "warn" : "neutral"} />
+              {report.pending !== undefined && report.pending > 0 && (
+                <Metric
+                  label="Pending"
+                  value={report.pending}
+                  tone="neutral"
+                  hint="awaiting data generation"
+                />
+              )}
               <Metric label="DuckDB" value={report.duckdb_available ? "available" : "missing"} tone={report.duckdb_available ? "good" : "warn"} />
             </div>
           </section>
@@ -106,6 +114,7 @@ export default async function DqPage() {
                     <th className="py-1 pr-2">Passed</th>
                     <th className="py-1 pr-2">Failed</th>
                     <th className="py-1 pr-2">Errored</th>
+                    <th className="py-1 pr-2">Pending</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -115,6 +124,7 @@ export default async function DqPage() {
                       <td className="py-1.5 pr-2">{c.passed}</td>
                       <td className="py-1.5 pr-2 text-red-600 dark:text-red-400">{c.failed}</td>
                       <td className="py-1.5 pr-2 text-amber-600 dark:text-amber-400">{c.errored}</td>
+                      <td className="py-1.5 pr-2 text-slate-500 dark:text-slate-400">{c.pending ?? 0}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -131,6 +141,7 @@ export default async function DqPage() {
                     <th className="py-1 pr-2">Passed</th>
                     <th className="py-1 pr-2">Failed</th>
                     <th className="py-1 pr-2">Errored</th>
+                    <th className="py-1 pr-2">Pending</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -140,6 +151,7 @@ export default async function DqPage() {
                       <td className="py-1.5 pr-2">{c.passed}</td>
                       <td className="py-1.5 pr-2 text-red-600 dark:text-red-400">{c.failed}</td>
                       <td className="py-1.5 pr-2 text-amber-600 dark:text-amber-400">{c.errored}</td>
+                      <td className="py-1.5 pr-2 text-slate-500 dark:text-slate-400">{c.pending ?? 0}</td>
                     </tr>
                   ))}
                 </tbody>

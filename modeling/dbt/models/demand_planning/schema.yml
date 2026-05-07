@@ -1,0 +1,53 @@
+version: 2
+
+models:
+  - name: stg_demand_planning__forecasts
+    description: Forecasts with computed PI relative width.
+    columns:
+      - name: forecast_id
+        tests: [unique, not_null]
+  - name: stg_demand_planning__shipments
+    description: Outbound shipments with computed transit_hours.
+    columns:
+      - name: shipment_id
+        tests: [unique, not_null]
+  - name: dim_item
+    description: Item dimension keyed by md5(item_id).
+    columns:
+      - name: item_key
+        tests: [unique, not_null]
+      - name: item_id
+        tests: [unique, not_null]
+  - name: dim_location
+    description: Location dimension keyed by md5(location_id).
+    columns:
+      - name: location_key
+        tests: [unique, not_null]
+      - name: location_id
+        tests: [unique, not_null]
+  - name: dim_date
+    description: Conformed daily date dimension reusing the planning calendar.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+  - name: fct_demand
+    description: Grain = one row per historical demand observation.
+    columns:
+      - name: demand_key
+        tests: [unique, not_null]
+      - name: demand_id
+        tests: [unique, not_null]
+  - name: fct_forecast_accuracy
+    description: Grain = one row per forecast/error pair, with accuracy and PI hit-rate.
+    columns:
+      - name: accuracy_key
+        tests: [unique, not_null]
+      - name: error_id
+        tests: [unique, not_null]
+  - name: fct_inventory_positions
+    description: Grain = one row per inventory position observation.
+    columns:
+      - name: position_key
+        tests: [unique, not_null]
+      - name: position_id
+        tests: [unique, not_null]

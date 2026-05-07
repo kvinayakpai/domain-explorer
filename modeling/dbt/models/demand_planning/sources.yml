@@ -1,0 +1,67 @@
+version: 2
+
+sources:
+  - name: demand_planning
+    description: |
+      Real Demand Planning source schema in the populated domain-explorer.duckdb.
+      Mirrors what an SAP IBP / o9 / Kinaxis operational data store would land:
+      item master, locations, periods, baseline + statistical forecasts,
+      historical demand, promotions, inventory positions and forecast errors.
+    schema: demand_planning
+    tables:
+      - name: items
+        description: Item master with ABC class, lead time, shelf life.
+        columns:
+          - name: item_id
+            tests: [unique, not_null]
+      - name: locations
+        description: Plants / DCs / customer-facing locations.
+        columns:
+          - name: location_id
+            tests: [unique, not_null]
+      - name: customers_b2b
+        description: B2B customers consuming the planning output.
+        columns:
+          - name: customer_id
+            tests: [unique, not_null]
+      - name: calendar_periods
+        description: Daily planning calendar with fiscal/iso labels.
+        columns:
+          - name: period_id
+            tests: [unique, not_null]
+      - name: historical_demand
+        description: Realised demand per item/location/period.
+        columns:
+          - name: demand_id
+            tests: [unique, not_null]
+          - name: item_id
+            tests: [not_null]
+      - name: forecasts
+        description: Statistical or manual forecasts with 80% PI bounds.
+        columns:
+          - name: forecast_id
+            tests: [unique, not_null]
+          - name: item_id
+            tests: [not_null]
+      - name: promotions
+        description: Demand-affecting promotions with lift estimates.
+        columns:
+          - name: promo_id
+            tests: [unique, not_null]
+      - name: shipments
+        description: Outbound shipments to B2B customers.
+        columns:
+          - name: shipment_id
+            tests: [unique, not_null]
+      - name: inventory_positions
+        description: On-hand / in-transit / reserved inventory.
+        columns:
+          - name: position_id
+            tests: [unique, not_null]
+      - name: forecast_errors
+        description: Per-forecast actuals + APE for error analytics.
+        columns:
+          - name: error_id
+            tests: [unique, not_null]
+          - name: forecast_id
+            tests: [not_null]

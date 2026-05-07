@@ -1,12 +1,31 @@
 "use client";
 import * as React from "react";
-import { CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { DqResult } from "@/lib/dq";
 
 const SEVERITY_ORDER = ["critical", "high", "medium", "low"] as const;
 
+// Inlined to avoid pulling the server-only `@/lib/dq` runtime into the client
+// bundle (the file has `import "server-only"` at the top — only its types are
+// safe to reach for from a client component).
+function isPending(r: DqResult): boolean {
+  return typeof r.status === "string" && r.status.toLowerCase().startsWith("pending");
+}
+
 function StatusBadge({ r }: { r: DqResult }) {
+  // Pending takes priority over the pass/fail/error tri-state — these rules
+  // haven't run yet, so they're neither failing nor errored.
+  if (isPending(r)) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-800 dark:bg-slate-800/50 dark:text-slate-200"
+        title={r.status ?? "pending"}
+      >
+        <Clock className="h-3 w-3" /> pending
+      </span>
+    );
+  }
   if (r.error) {
     return (
       <span className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
@@ -46,7 +65,8 @@ function SeverityPill({ sev }: { sev: DqResult["severity"] }) {
 
 export function DqRulesTable({ results }: { results: DqResult[] }) {
   const [q, setQ] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState<"all" | "passed" | "failed" | "errored">("all");
+  const [statusFilter, setStatusFilter] =
+    React.useState<"all" | "passed" | "failed" | "errored" | "pending">("all");
   const [sevFilter, setSevFilter] = React.useState<string>("all");
   const [subFilter, setSubFilter] = React.useState<string>("all");
 
@@ -58,9 +78,12 @@ export function DqRulesTable({ results }: { results: DqResult[] }) {
     const needle = q.trim().toLowerCase();
     return results
       .filter((r) => {
-        if (statusFilter === "passed" && !r.passed) return false;
-        if (statusFilter === "failed" && (r.passed || r.error)) return false;
-        if (statusFilter === "errored" && !r.error) return false;
+        const pending = isPending(r);
+        if (statusFilter === "passed" && (!r.passed || pending)) return false;
+        // Pending rules are *not* counted as failed (they haven't run yet).
+        if (statusFilter === "failed" && (r.passed || r.error || pending)) return false;
+        if (statusFilter === "errored" && (!r.error || pending)) return false;
+        if (statusFilter === "pending" && !pending) return false;
         if (sevFilter !== "all" && r.severity !== sevFilter) return false;
         if (subFilter !== "all" && r.subdomain !== subFilter) return false;
         if (!needle) return true;
@@ -97,6 +120,7 @@ export function DqRulesTable({ results }: { results: DqResult[] }) {
           <option value="passed">Passed</option>
           <option value="failed">Failed</option>
           <option value="errored">Errored</option>
+          <option value="pending">Pending</option>
         </select>
         <select
           value={sevFilter}
@@ -152,7 +176,7 @@ export function DqRulesTable({ results }: { results: DqResult[] }) {
                 <td className="px-3 py-2">{r.rule_type}</td>
                 <td className="px-3 py-2 text-xs text-muted-foreground">{r.expectation}</td>
                 <td className="px-3 py-2 text-right tabular-nums">
-                  {r.error ? "—" : r.failing_rows.toLocaleString()}
+                  {r.error || isPending(r) ? "—" : r.failing_rows.toLocaleString()}
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{r.duration_ms}</td>
               </tr>

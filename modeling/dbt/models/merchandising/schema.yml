@@ -1,0 +1,60 @@
+version: 2
+
+models:
+  - name: stg_merchandising__sales_lines
+    description: Light typing on POS sale lines.
+    columns:
+      - name: sale_line_id
+        tests: [unique, not_null]
+  - name: stg_merchandising__products
+    description: SKU master with computed margin_at_msrp.
+    columns:
+      - name: sku
+        tests: [unique, not_null]
+  - name: dim_product
+    description: Product dimension keyed by md5(sku).
+    columns:
+      - name: product_key
+        tests: [unique, not_null]
+      - name: sku
+        tests: [unique, not_null]
+  - name: dim_store
+    description: Store dimension keyed by md5(store_id).
+    columns:
+      - name: store_key
+        tests: [unique, not_null]
+      - name: store_id
+        tests: [unique, not_null]
+  - name: dim_vendor
+    description: Vendor dimension keyed by md5(vendor_id).
+    columns:
+      - name: vendor_key
+        tests: [unique, not_null]
+      - name: vendor_id
+        tests: [unique, not_null]
+  - name: dim_date
+    description: Conformed daily date dimension for merchandising.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+  - name: fct_sales
+    description: Grain = one row per POS sale line, with COGS / margin / return signals.
+    columns:
+      - name: sale_key
+        tests: [unique, not_null]
+      - name: sale_line_id
+        tests: [unique, not_null]
+  - name: fct_inventory_snapshots
+    description: Grain = one row per (snapshot, sku, store).
+    columns:
+      - name: snapshot_key
+        tests: [unique, not_null]
+      - name: snapshot_id
+        tests: [unique, not_null]
+  - name: fct_returns
+    description: Grain = one row per return event.
+    columns:
+      - name: return_key
+        tests: [unique, not_null]
+      - name: return_id
+        tests: [unique, not_null]

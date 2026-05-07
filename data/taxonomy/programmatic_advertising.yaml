@@ -1,36 +1,514 @@
 id: programmatic_advertising
 name: Programmatic Advertising
 vertical: Media
-oneLiner: Real-time bidded ad transactions across SSPs, DSPs, and ad exchanges.
+oneLiner: Real-time bidded ad transactions across SSPs, DSPs, ad exchanges, with creative serving and verification.
+
+# Authoritative sources:
+#   IAB Tech Lab OpenRTB 2.6 (https://github.com/InteractiveAdvertisingBureau/openrtb2.x)
+#     — BidRequest, Imp, Banner, Video, Native, Audio, Source, App, Site,
+#       User, Geo, Device, Regs, BidResponse, SeatBid, Bid.
+#   IAB Tech Lab AdCOM 1.0 (https://github.com/InteractiveAdvertisingBureau/AdCOM)
+#     — Placement, Display, Audio/Video Placement, Ad, DOOH placement.
+#   IAB Tech Lab VAST 4.2 (https://iabtechlab.com/standards/vast/) — video ad
+#     serving template, MediaFile, TrackingEvents (impression, start, firstQuartile,
+#     midpoint, thirdQuartile, complete, mute, click).
+#   IAB Tech Lab ads.txt / app-ads.txt 1.1 — publisher seller authorization.
+#   IAB Tech Lab MRC Viewability — 50% pixels for >=1s display / >=2s video.
+#   IAB Tech Lab GPP / TCF v2.2 (consent string format).
+#   Prebid.js auction lifecycle (auctionInit, bidRequested, bidWon, auctionEnd).
 
 personas:
-  - { name: 'Head of Programmatic', title: 'Head of Programmatic', level: Director }
-  - { name: 'Yield Analyst', title: 'Senior Yield Analyst', level: Manager }
-  - { name: 'Ad Ops Engineer', title: 'Ad Operations Engineer', level: IC }
+  - { name: Head of Programmatic, title: Head of Programmatic, level: VP }
+  - { name: Yield Analyst, title: Senior Yield Analyst, level: Manager }
+  - { name: Ad Ops Engineer, title: Ad Operations Engineer, level: IC }
+  - { name: Demand Strategist, title: Demand Partnerships Lead, level: Director }
+  - { name: Trader, title: Programmatic Media Trader, level: IC }
+
+decisions:
+  - { id: prog.d.floor, statement: Raise the price floor on a unit vs let market clear. }
+  - { id: prog.d.dsp_block, statement: Block a DSP / advertiser due to brand-safety risk. }
+  - { id: prog.d.deal_priority, statement: Promote a private deal above open-auction in the waterfall. }
+  - { id: prog.d.fraud_threshold, statement: Reject a bid stream whose IVT rate exceeds threshold. }
+  - { id: prog.d.bidder_throttle, statement: Throttle QPS to a bidder failing latency SLA. }
+  - { id: prog.d.pmp_renewal, statement: Renew or sunset a private marketplace deal. }
+  - { id: prog.d.creative_approval, statement: Approve or reject a creative after policy review. }
 
 kpis:
-  - { id: prog.kpi.fill_rate, name: 'Fill Rate', formula: 'filled / requests', unit: '%', direction: higher_is_better }
-  - { id: prog.kpi.cpm, name: 'Effective CPM', formula: 'revenue * 1000 / impressions', unit: 'USD', direction: higher_is_better }
-  - { id: prog.kpi.viewability, name: 'Viewability', formula: 'viewable / measurable', unit: '%', direction: higher_is_better }
-  - { id: prog.kpi.bid_win, name: 'Bid Win Rate', formula: 'wins / bids', unit: '%', direction: target_band }
-  - { id: prog.kpi.ivt_rate, name: 'Invalid Traffic Rate', formula: 'ivt / impressions', unit: '%', direction: lower_is_better }
+  - id: prog.kpi.fill_rate
+    name: Fill Rate
+    formula: filled_impressions / ad_requests
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [prog.d.floor]
+  - id: prog.kpi.ecpm
+    name: Effective CPM
+    formula: gross_revenue * 1000 / impressions
+    unit: USD
+    direction: higher_is_better
+  - id: prog.kpi.viewability
+    name: MRC Viewability Rate
+    formula: viewable_impressions / measurable_impressions
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [prog.d.floor]
+  - id: prog.kpi.bid_win_rate
+    name: Bid Win Rate
+    formula: wins / bids_submitted
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [prog.d.bidder_throttle]
+  - id: prog.kpi.ivt_rate
+    name: Invalid Traffic Rate
+    formula: ivt_impressions / impressions
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [prog.d.fraud_threshold]
+  - id: prog.kpi.bid_response_latency
+    name: Bid Response Latency P95
+    formula: p95(bid_response_ms - bid_request_ms)
+    unit: ms
+    direction: lower_is_better
+    decisionsSupported: [prog.d.bidder_throttle]
+  - id: prog.kpi.video_completion
+    name: Video Completion Rate (VAST 4.x)
+    formula: complete_events / start_events
+    unit: "%"
+    direction: higher_is_better
+  - id: prog.kpi.pmp_share
+    name: Private Marketplace Share of Spend
+    formula: pmp_revenue / total_revenue
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [prog.d.deal_priority, prog.d.pmp_renewal]
+  - id: prog.kpi.match_rate
+    name: User-Match Rate
+    formula: matched_user_ids / addressable_requests
+    unit: "%"
+    direction: higher_is_better
+  - id: prog.kpi.consent_share
+    name: Consented Traffic Share (GPP/TCF)
+    formula: consented_requests / total_requests
+    unit: "%"
+    direction: higher_is_better
 
 dataModel:
   entities:
-    - { name: BidRequest, description: 'RTB bid request' }
-    - { name: BidResponse, description: 'RTB bid response' }
-    - { name: Impression, description: 'Served impression' }
-    - { name: LineItem, description: 'Campaign line item' }
-    - { name: Audience, description: 'Targeting audience segment' }
+    - name: ad_request
+      description: OpenRTB 2.6 BidRequest envelope. Inbound auction trigger from publisher to bidders.
+      keys: [request_id]
+      attributes:
+        - { name: request_id, type: varchar(64), isPrimaryKey: true, description: "BidRequest.id" }
+        - { name: received_at, type: timestamp }
+        - { name: auction_type, type: smallint, description: "BidRequest.at — 1=first-price, 2=second-price, 3=deal" }
+        - { name: tmax_ms, type: integer, description: "BidRequest.tmax — bidder timeout" }
+        - { name: cur_currency, type: varchar(12), description: "BidRequest.cur" }
+        - { name: bcat, type: text, description: "Blocked IAB categories" }
+        - { name: badv, type: text, description: "Blocked advertiser domains" }
+        - { name: app_or_site, type: varchar(8), description: "App|Site" }
+        - { name: site_id, type: varchar(64), isForeignKey: true, references: site.site_id }
+        - { name: app_id, type: varchar(64), isForeignKey: true, references: app.app_id }
+        - { name: user_id, type: varchar(64), isForeignKey: true, references: rtb_user.user_id }
+        - { name: device_id, type: varchar(64), isForeignKey: true, references: device.device_id }
+        - { name: source_id, type: varchar(64), isForeignKey: true, references: source.source_id }
+        - { name: regs_id, type: varchar(64), isForeignKey: true, references: regs.regs_id }
+        - { name: test_flag, type: boolean, description: "BidRequest.test" }
+
+    - name: imp
+      description: OpenRTB 2.6 Imp object — one impression opportunity inside an ad_request.
+      keys: [imp_id, request_id]
+      attributes:
+        - { name: imp_id, type: varchar(64), isPrimaryKey: true, description: "Imp.id" }
+        - { name: request_id, type: varchar(64), isPrimaryKey: true, isForeignKey: true, references: ad_request.request_id }
+        - { name: tagid, type: varchar(64), description: "Imp.tagid (AdUnit reference)" }
+        - { name: bidfloor, type: "decimal(12,4)", description: "Imp.bidfloor" }
+        - { name: bidfloorcur, type: varchar(3) }
+        - { name: secure, type: smallint, description: "1=https required" }
+        - { name: format_type, type: varchar(8), description: "Banner|Video|Native|Audio" }
+        - { name: pmp_dealcount, type: smallint, description: "PMP.deals[] cardinality" }
+        - { name: instl, type: smallint, description: "1=interstitial" }
+        - { name: rwdd, type: smallint, description: "Rewarded inventory flag (OpenRTB 2.6)" }
+
+    - name: banner
+      description: AdCOM/OpenRTB Banner placement spec for an impression opportunity.
+      keys: [imp_id, request_id]
+      attributes:
+        - { name: imp_id, type: varchar(64), isPrimaryKey: true, isForeignKey: true, references: imp.imp_id }
+        - { name: request_id, type: varchar(64), isPrimaryKey: true, isForeignKey: true, references: ad_request.request_id }
+        - { name: w, type: smallint, description: "Width" }
+        - { name: h, type: smallint, description: "Height" }
+        - { name: btype, type: text, description: "Banner.btype — blocked creative types" }
+        - { name: pos, type: smallint, description: "Banner.pos — ad position" }
+        - { name: api, type: text, description: "Supported API frameworks (MRAID, OMID)" }
+
+    - name: video
+      description: AdCOM/OpenRTB Video placement spec; pairs with VAST creative on response.
+      keys: [imp_id, request_id]
+      attributes:
+        - { name: imp_id, type: varchar(64), isPrimaryKey: true, isForeignKey: true, references: imp.imp_id }
+        - { name: request_id, type: varchar(64), isPrimaryKey: true, isForeignKey: true, references: ad_request.request_id }
+        - { name: mimes, type: text, description: "Allowed MIME types" }
+        - { name: minduration, type: smallint }
+        - { name: maxduration, type: smallint }
+        - { name: protocols, type: text, description: "VAST/VPAID protocol versions" }
+        - { name: linearity, type: smallint, description: "1=linear in-stream, 2=non-linear" }
+        - { name: skip, type: smallint }
+        - { name: skipafter, type: smallint }
+        - { name: placement, type: smallint, description: "AdCOM placement subtype (in-stream/in-banner/in-article/in-feed)" }
+        - { name: pos, type: smallint }
+
+    - name: native
+      description: OpenRTB Native 1.2 placement spec.
+      keys: [imp_id, request_id]
+      attributes:
+        - { name: imp_id, type: varchar(64), isPrimaryKey: true, isForeignKey: true, references: imp.imp_id }
+        - { name: request_id, type: varchar(64), isPrimaryKey: true, isForeignKey: true, references: ad_request.request_id }
+        - { name: ver, type: varchar(8) }
+        - { name: api, type: text }
+        - { name: assets_required_count, type: smallint }
+        - { name: plcmttype, type: smallint, description: "Placement type" }
+
+    - name: site
+      description: OpenRTB Site object — web inventory descriptor.
+      keys: [site_id]
+      attributes:
+        - { name: site_id, type: varchar(64), isPrimaryKey: true }
+        - { name: name, type: varchar(255) }
+        - { name: domain, type: varchar(255) }
+        - { name: cat, type: text, description: "IAB Content Taxonomy IDs" }
+        - { name: page_url, type: text }
+        - { name: ref_url, type: text }
+        - { name: publisher_id, type: varchar(64), isForeignKey: true, references: publisher.publisher_id }
+        - { name: privacypolicy, type: smallint }
+        - { name: mobile, type: smallint }
+
+    - name: app
+      description: OpenRTB App object — app inventory descriptor.
+      keys: [app_id]
+      attributes:
+        - { name: app_id, type: varchar(64), isPrimaryKey: true }
+        - { name: bundle, type: varchar(128), description: "Store bundle id" }
+        - { name: name, type: varchar(255) }
+        - { name: domain, type: varchar(255) }
+        - { name: storeurl, type: text }
+        - { name: cat, type: text }
+        - { name: ver, type: varchar(32) }
+        - { name: paid, type: smallint }
+        - { name: publisher_id, type: varchar(64), isForeignKey: true, references: publisher.publisher_id }
+
+    - name: publisher
+      description: OpenRTB Publisher object — owns site/app inventory.
+      keys: [publisher_id]
+      attributes:
+        - { name: publisher_id, type: varchar(64), isPrimaryKey: true }
+        - { name: name, type: varchar(255) }
+        - { name: cat, type: text }
+        - { name: domain, type: varchar(255) }
+        - { name: ads_txt_status, type: varchar(16), description: "ads.txt validation status" }
+
+    - name: rtb_user
+      description: OpenRTB User object — pseudonymous user identifier and segments.
+      keys: [user_id]
+      attributes:
+        - { name: user_id, type: varchar(64), isPrimaryKey: true, description: "User.id (publisher id)" }
+        - { name: buyeruid, type: varchar(64), description: "User.buyeruid (DSP id)" }
+        - { name: yob, type: smallint }
+        - { name: gender, type: varchar(1) }
+        - { name: keywords, type: text }
+        - { name: geo_id, type: varchar(64), isForeignKey: true, references: geo.geo_id }
+        - { name: consent_string, type: text, description: "TCF v2.2 / GPP" }
+        - { name: eids_count, type: smallint, description: "Cardinality of User.eids[]" }
+
+    - name: device
+      description: OpenRTB Device object — UA, OS, IP, IFA.
+      keys: [device_id]
+      attributes:
+        - { name: device_id, type: varchar(64), isPrimaryKey: true }
+        - { name: ua, type: text }
+        - { name: ip, type: varchar(45) }
+        - { name: devicetype, type: smallint }
+        - { name: make, type: varchar(64) }
+        - { name: model, type: varchar(64) }
+        - { name: os, type: varchar(32) }
+        - { name: osv, type: varchar(32) }
+        - { name: language, type: varchar(8) }
+        - { name: ifa, type: varchar(64), description: "Identifier for advertisers (IDFA / GAID)" }
+        - { name: dnt, type: smallint }
+        - { name: lmt, type: smallint, description: "Limit Ad Tracking" }
+        - { name: connectiontype, type: smallint }
+        - { name: geo_id, type: varchar(64), isForeignKey: true, references: geo.geo_id }
+
+    - name: geo
+      description: OpenRTB Geo object — derived or supplied location metadata.
+      keys: [geo_id]
+      attributes:
+        - { name: geo_id, type: varchar(64), isPrimaryKey: true }
+        - { name: lat, type: "decimal(9,6)" }
+        - { name: lon, type: "decimal(9,6)" }
+        - { name: country, type: varchar(3), description: "ISO 3166-1 alpha-3" }
+        - { name: region, type: varchar(8) }
+        - { name: city, type: varchar(64) }
+        - { name: zip, type: varchar(16) }
+        - { name: type, type: smallint, description: "1=GPS, 2=IP, 3=user, ..." }
+        - { name: utcoffset, type: smallint }
+
+    - name: source
+      description: OpenRTB Source object + supply chain (sellers.json/SCS).
+      keys: [source_id]
+      attributes:
+        - { name: source_id, type: varchar(64), isPrimaryKey: true }
+        - { name: tid, type: varchar(64), description: "Source.tid — transaction id" }
+        - { name: pchain, type: text, description: "Payment chain string" }
+        - { name: schain_complete, type: smallint, description: "SupplyChain complete flag (1=fully declared)" }
+        - { name: schain_nodes_count, type: smallint }
+        - { name: fd, type: smallint, description: "Final-decision flag" }
+
+    - name: regs
+      description: OpenRTB Regs object — TCF/GPP, COPPA, US Privacy.
+      keys: [regs_id]
+      attributes:
+        - { name: regs_id, type: varchar(64), isPrimaryKey: true }
+        - { name: coppa, type: smallint }
+        - { name: gpp_string, type: text }
+        - { name: gpp_sid, type: text }
+        - { name: us_privacy, type: varchar(8) }
+        - { name: gdpr_applies, type: smallint }
+
+    - name: bid_response
+      description: OpenRTB BidResponse — DSP reply within tmax.
+      keys: [response_id]
+      attributes:
+        - { name: response_id, type: varchar(64), isPrimaryKey: true, description: "BidResponse.id" }
+        - { name: request_id, type: varchar(64), isForeignKey: true, references: ad_request.request_id }
+        - { name: dsp_id, type: varchar(64), isForeignKey: true, references: dsp.dsp_id }
+        - { name: bidid, type: varchar(64), description: "BidResponse.bidid" }
+        - { name: cur_currency, type: varchar(3) }
+        - { name: nbr_code, type: smallint, description: "No-bid reason code" }
+        - { name: response_received_at, type: timestamp }
+        - { name: response_latency_ms, type: integer }
+
+    - name: seatbid
+      description: OpenRTB SeatBid — bids grouped by seat (buyer/agency).
+      keys: [seatbid_id]
+      attributes:
+        - { name: seatbid_id, type: varchar(64), isPrimaryKey: true }
+        - { name: response_id, type: varchar(64), isForeignKey: true, references: bid_response.response_id }
+        - { name: seat, type: varchar(64), description: "Buyer seat id" }
+        - { name: group_flag, type: smallint, description: "1=all-or-nothing seat" }
+
+    - name: bid
+      description: OpenRTB Bid — individual bid for an Imp.
+      keys: [bid_id]
+      attributes:
+        - { name: bid_id, type: varchar(64), isPrimaryKey: true }
+        - { name: seatbid_id, type: varchar(64), isForeignKey: true, references: seatbid.seatbid_id }
+        - { name: imp_id, type: varchar(64), isForeignKey: true, references: imp.imp_id }
+        - { name: campaign_id, type: varchar(64), isForeignKey: true, references: campaign.campaign_id }
+        - { name: creative_id, type: varchar(64), isForeignKey: true, references: creative.creative_id }
+        - { name: price, type: "decimal(12,4)", description: "Bid.price (CPM)" }
+        - { name: dealid, type: varchar(64), isForeignKey: true, references: deal.deal_id }
+        - { name: adomain, type: text, description: "Bid.adomain — advertiser domains" }
+        - { name: cat, type: text }
+        - { name: cattax, type: smallint, description: "Category taxonomy in use" }
+        - { name: w, type: smallint }
+        - { name: h, type: smallint }
+        - { name: nurl, type: text, description: "Win-notice URL" }
+        - { name: lurl, type: text, description: "Loss-notice URL" }
+        - { name: burl, type: text, description: "Billing-notice URL" }
+        - { name: api, type: smallint }
+        - { name: status, type: varchar(16), description: "submitted|won|lost|filtered|rejected" }
+
+    - name: deal
+      description: OpenRTB PMP Deal — private marketplace fixed/auction terms.
+      keys: [deal_id]
+      attributes:
+        - { name: deal_id, type: varchar(64), isPrimaryKey: true }
+        - { name: publisher_id, type: varchar(64), isForeignKey: true, references: publisher.publisher_id }
+        - { name: dsp_id, type: varchar(64), isForeignKey: true, references: dsp.dsp_id }
+        - { name: bidfloor, type: "decimal(12,4)" }
+        - { name: bidfloorcur, type: varchar(3) }
+        - { name: at, type: smallint, description: "Auction type override" }
+        - { name: wseat, type: text }
+        - { name: wadomain, type: text }
+        - { name: priority, type: smallint, description: "Waterfall priority" }
+        - { name: deal_type, type: varchar(16), description: "PMP|PG|PreferredDeal" }
+        - { name: start_at, type: date }
+        - { name: end_at, type: date }
+        - { name: status, type: varchar(16) }
+
+    - name: dsp
+      description: Demand-Side Platform / bidder seat directory.
+      keys: [dsp_id]
+      attributes:
+        - { name: dsp_id, type: varchar(64), isPrimaryKey: true }
+        - { name: name, type: varchar(255) }
+        - { name: endpoint_url, type: text }
+        - { name: status, type: varchar(16) }
+        - { name: qps_limit, type: integer }
+
+    - name: campaign
+      description: Buy-side campaign object linking creatives, budgets, deals.
+      keys: [campaign_id]
+      attributes:
+        - { name: campaign_id, type: varchar(64), isPrimaryKey: true }
+        - { name: dsp_id, type: varchar(64), isForeignKey: true, references: dsp.dsp_id }
+        - { name: advertiser_domain, type: varchar(255) }
+        - { name: name, type: varchar(255) }
+        - { name: start_at, type: date }
+        - { name: end_at, type: date }
+        - { name: budget, type: "decimal(15,4)" }
+        - { name: budget_currency, type: varchar(3) }
+        - { name: pacing_type, type: varchar(16), description: "ASAP|EvenDaily|Frontloaded" }
+        - { name: status, type: varchar(16) }
+
+    - name: creative
+      description: AdCOM Ad object — VAST/VPAID/HTML5/native asset bundle.
+      keys: [creative_id]
+      attributes:
+        - { name: creative_id, type: varchar(64), isPrimaryKey: true }
+        - { name: campaign_id, type: varchar(64), isForeignKey: true, references: campaign.campaign_id }
+        - { name: ad_format, type: varchar(16), description: "Banner|Video|Native|Audio|DOOH" }
+        - { name: width, type: smallint }
+        - { name: height, type: smallint }
+        - { name: duration_sec, type: smallint }
+        - { name: vast_version, type: varchar(8), description: "VAST 4.x version" }
+        - { name: media_url, type: text }
+        - { name: clickthrough_url, type: text }
+        - { name: omid_partner, type: varchar(64), description: "Open Measurement (OMID) partner" }
+        - { name: review_status, type: varchar(16), description: "pending|approved|rejected" }
+        - { name: brand_safety_score, type: "decimal(5,2)" }
+
+    - name: auction_event
+      description: Auction-clearing outcome per Imp (Prebid auctionEnd or SSP server-side equivalent).
+      keys: [auction_event_id]
+      attributes:
+        - { name: auction_event_id, type: varchar(64), isPrimaryKey: true }
+        - { name: request_id, type: varchar(64), isForeignKey: true, references: ad_request.request_id }
+        - { name: imp_id, type: varchar(64), isForeignKey: true, references: imp.imp_id }
+        - { name: winning_bid_id, type: varchar(64), isForeignKey: true, references: bid.bid_id }
+        - { name: clearing_price, type: "decimal(12,4)" }
+        - { name: cleared_currency, type: varchar(3) }
+        - { name: bid_count, type: smallint }
+        - { name: filtered_count, type: smallint }
+        - { name: auction_type, type: smallint }
+        - { name: cleared_at, type: timestamp }
+
+    - name: impression_event
+      description: Served impression (publisher-side fire of Bid.burl or pixel).
+      keys: [impression_event_id]
+      attributes:
+        - { name: impression_event_id, type: varchar(64), isPrimaryKey: true }
+        - { name: bid_id, type: varchar(64), isForeignKey: true, references: bid.bid_id }
+        - { name: served_at, type: timestamp }
+        - { name: viewable, type: boolean, description: "MRC viewability metric" }
+        - { name: viewable_pixels_pct, type: "decimal(5,2)" }
+        - { name: viewable_seconds, type: "decimal(5,2)" }
+        - { name: ivt_flag, type: boolean, description: "Invalid-traffic flag (MRC GIVT/SIVT)" }
+        - { name: ivt_category, type: varchar(16), description: "GIVT|SIVT|None" }
+        - { name: omid_session_id, type: varchar(64) }
+
+    - name: video_event
+      description: VAST 4.x TrackingEvents — start/quartile/complete/skip/click.
+      keys: [video_event_id]
+      attributes:
+        - { name: video_event_id, type: varchar(64), isPrimaryKey: true }
+        - { name: impression_event_id, type: varchar(64), isForeignKey: true, references: impression_event.impression_event_id }
+        - { name: event_type, type: varchar(24), description: "impression|start|firstQuartile|midpoint|thirdQuartile|complete|skip|mute|click" }
+        - { name: event_ts, type: timestamp }
+        - { name: position_sec, type: "decimal(8,2)" }
+
+    - name: click_event
+      description: Click event captured via VAST ClickThrough or banner click pixel.
+      keys: [click_event_id]
+      attributes:
+        - { name: click_event_id, type: varchar(64), isPrimaryKey: true }
+        - { name: impression_event_id, type: varchar(64), isForeignKey: true, references: impression_event.impression_event_id }
+        - { name: clicked_at, type: timestamp }
+        - { name: click_url, type: text }
+        - { name: ivt_flag, type: boolean }
+
+    - name: conversion_event
+      description: Post-click/post-view conversion (signal back from advertiser tag).
+      keys: [conversion_event_id]
+      attributes:
+        - { name: conversion_event_id, type: varchar(64), isPrimaryKey: true }
+        - { name: impression_event_id, type: varchar(64), isForeignKey: true, references: impression_event.impression_event_id }
+        - { name: click_event_id, type: varchar(64), isForeignKey: true, references: click_event.click_event_id }
+        - { name: campaign_id, type: varchar(64), isForeignKey: true, references: campaign.campaign_id }
+        - { name: conversion_type, type: varchar(32), description: "purchase|signup|leadform|install" }
+        - { name: conversion_value, type: "decimal(12,4)" }
+        - { name: currency, type: varchar(3) }
+        - { name: attribution_window_hours, type: smallint }
+        - { name: occurred_at, type: timestamp }
+
+  relationships:
+    - { from: ad_request, to: imp, kind: one_to_many }
+    - { from: imp, to: banner, kind: one_to_one }
+    - { from: imp, to: video, kind: one_to_one }
+    - { from: imp, to: native, kind: one_to_one }
+    - { from: ad_request, to: site, kind: many_to_one }
+    - { from: ad_request, to: app, kind: many_to_one }
+    - { from: ad_request, to: rtb_user, kind: many_to_one }
+    - { from: ad_request, to: device, kind: many_to_one }
+    - { from: ad_request, to: source, kind: many_to_one }
+    - { from: ad_request, to: regs, kind: many_to_one }
+    - { from: site, to: publisher, kind: many_to_one }
+    - { from: app, to: publisher, kind: many_to_one }
+    - { from: bid_response, to: ad_request, kind: many_to_one }
+    - { from: bid_response, to: seatbid, kind: one_to_many }
+    - { from: seatbid, to: bid, kind: one_to_many }
+    - { from: bid, to: imp, kind: many_to_one }
+    - { from: bid, to: deal, kind: many_to_one }
+    - { from: bid, to: creative, kind: many_to_one }
+    - { from: bid, to: campaign, kind: many_to_one }
+    - { from: campaign, to: dsp, kind: many_to_one }
+    - { from: deal, to: dsp, kind: many_to_one }
+    - { from: auction_event, to: bid, kind: many_to_one }
+    - { from: impression_event, to: bid, kind: many_to_one }
+    - { from: video_event, to: impression_event, kind: many_to_one }
+    - { from: click_event, to: impression_event, kind: many_to_one }
+    - { from: conversion_event, to: impression_event, kind: many_to_one }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/programmatic_advertising_3nf.sql
+  vault: modeling/ddl/programmatic_advertising_vault.sql
+  dimensional: modeling/ddl/programmatic_advertising_dim.sql
 
 sourceSystems:
-  - { vendor: 'Google', product: 'Ad Manager', category: 'SSP/Ad Server' }
-  - { vendor: 'Magnite', product: 'SpringServe', category: 'SSP' }
-  - { vendor: 'PubMatic', product: 'OpenWrap', category: 'SSP' }
-  - { vendor: 'The Trade Desk', product: 'Platform', category: 'DSP' }
-  - { vendor: 'IAS', product: 'Verification', category: 'Ad Verification' }
+  - { vendor: Google, product: Ad Manager / Authorized Buyers, category: SSP/Ad Server }
+  - { vendor: Magnite, product: SpringServe / Magnite Streaming, category: SSP }
+  - { vendor: PubMatic, product: OpenWrap / Connect, category: SSP }
+  - { vendor: Index Exchange, product: Index Exchange, category: SSP }
+  - { vendor: The Trade Desk, product: TTD Platform, category: DSP }
+  - { vendor: DV360, product: Display & Video 360, category: DSP }
+  - { vendor: Amazon, product: Amazon DSP, category: DSP }
+  - { vendor: IAS, product: Integral Ad Science Verification, category: Ad Verification }
+  - { vendor: DoubleVerify, product: DoubleVerify Authentic, category: Ad Verification }
+  - { vendor: HUMAN, product: HUMAN BotGuard for Advertising, category: IVT/Fraud }
+  - { vendor: Prebid.org, product: Prebid Server / Prebid.js, category: Header Bidding }
 
 connectors:
-  - { type: 'OpenRTB', protocol: 'HTTPS', auth: 'Token' }
-  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
-  - { type: 'S3 export', protocol: 'HTTPS', auth: 'IAM' }
+  - { type: OpenRTB 2.6 endpoint, protocol: HTTPS POST JSON, auth: shared secret + IP allowlist }
+  - { type: VAST 4.2 redirect, protocol: HTTPS, auth: none }
+  - { type: ads.txt / app-ads.txt, protocol: HTTPS GET, auth: none }
+  - { type: Prebid Server S2S, protocol: HTTPS, auth: bearer }
+  - { type: Server-side log export, protocol: S3 / GCS, auth: IAM / SA key }
+  - { type: Reporting API (DSP/SSP), protocol: HTTPS, auth: OAuth2 }
+  - { type: Open Measurement (OMID) SDK, protocol: in-app SDK, auth: partner config }
+
+ingestionChallenges:
+  - Ad-event volumes can exceed millions of QPS; must downsample auctions and keep impressions/clicks/conversions at full fidelity.
+  - Event ordering — bid wins arrive before the impression fires, and conversions can post-arrive days later.
+  - Late-binding identity — User.eids[] resolves on the buyer side and rarely echoes back on the publisher feed.
+  - Currency normalization — bids declare cur per BidRequest, but reporting wants USD at audit FX.
+  - IVT classification (MRC GIVT vs SIVT) requires verification-vendor enrichment after the fact.
+  - Multi-tenant publisher feeds change schema as bidders add OpenRTB extensions.
+  - Consent strings (TCF v2.2 / GPP) must be parsed to determine which IDs are usable.
+
+integrationChallenges:
+  - ads.txt / app-ads.txt drift — declared sellers do not match SupplyChain object ("schain") nodes.
+  - Rebroadcast/duplicate impression pixels — burl, nurl, and viewability all fire independently.
+  - VAST wrapper chains (3+ deep) make creative attribution non-trivial.
+  - Header bidding fans out to 10–30 bidders per Imp; each fires its own auctionEnd telemetry.
+  - SDA / SKAN / Privacy Sandbox API parallel running with classic OpenRTB consent flows.
+  - PMP deal IDs are case-sensitive across DSPs; conflicts require aliasing.
+  - First-price vs second-price clearing semantics differ across SSPs and require normalization.

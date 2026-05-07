@@ -368,3 +368,500 @@ kpis:
     threeNF: "-- TODO: SELECT SUM(annual_recurring_revenue) FROM saas_3nf.subscription WHERE status='active';"
     vault: "-- TODO"
     dimensional: "-- TODO"
+
+  # ============================================================
+  # Settlement & Clearing (BFSI)
+  # Schemas: settlement_clearing_3nf | settlement_clearing_vault | settlement_clearing_dim
+  # Source standards: ISO 20022 sese.*/semt.*/colr.*, DTCC NSCC CNS, CSDR.
+  # ============================================================
+  - kpi_id: stl.kpi.fail_rate
+    notes: Fail = settlement_instruction whose terminal status is Failed (or which has a failed_settlement record).
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE status = 'Failed') * 1.0
+             / NULLIF(COUNT(*), 0) AS fail_rate
+      FROM settlement_clearing_3nf.settlement_instruction
+      WHERE created_at >= COALESCE(CAST(:since AS TIMESTAMP), TIMESTAMP '1900-01-01');
+    vault: |
+      WITH latest AS (
+        SELECT s.ssi_hk,
+               s.status,
+               ROW_NUMBER() OVER (PARTITION BY s.ssi_hk ORDER BY s.load_dts DESC) AS rn
+        FROM settlement_clearing_vault.sat_ssi_state s
+      )
+      SELECT COUNT(*) FILTER (WHERE status = 'Failed') * 1.0
+             / NULLIF(COUNT(*), 0) AS fail_rate
+      FROM latest WHERE rn = 1;
+    dimensional: |
+      SELECT COUNT(*) FILTER (WHERE final_status = 'Failed') * 1.0
+             / NULLIF(COUNT(*), 0) AS fail_rate
+      FROM settlement_clearing_dim.fact_settlement f
+      JOIN settlement_clearing_dim.dim_date d
+        ON d.date_key = f.intended_settlement_date_key
+      WHERE d.date_actual >= COALESCE(CAST(:since AS DATE), DATE '1900-01-01');
+
+  - kpi_id: stl.kpi.same_day_settle
+    threeNF: |
+      SELECT COUNT(*) FILTER (
+               WHERE status = 'Settled'
+                 AND DATE(c.settlement_ts) = i.settlement_date
+             ) * 1.0 / NULLIF(COUNT(*), 0) AS same_day_settle_rate
+      FROM settlement_clearing_3nf.settlement_instruction i
+      LEFT JOIN settlement_clearing_3nf.settlement_confirmation c USING (ssi_id);
+    vault: "SELECT NULL::DOUBLE AS same_day_settle_rate; -- TODO: derive via sat_ssi_state terminal-status snapshot"
+    dimensional: |
+      SELECT COUNT(*) FILTER (WHERE settled_same_day) * 1.0
+             / NULLIF(COUNT(*), 0) AS same_day_settle_rate
+      FROM settlement_clearing_dim.fact_settlement;
+
+  - kpi_id: stl.kpi.match_rate
+    threeNF: |
+      WITH first_match AS (
+        SELECT ssi_id, MIN(status_ts) AS matched_at
+        FROM settlement_clearing_3nf.matching_status
+        WHERE status_code = 'MACH'
+        GROUP BY ssi_id
+      )
+      SELECT COUNT(*) FILTER (
+               WHERE fm.matched_at::DATE <= i.trade_date + INTERVAL '1 day'
+             ) * 1.0 / NULLIF(COUNT(*), 0) AS match_rate
+      FROM settlement_clearing_3nf.settlement_instruction i
+      LEFT JOIN first_match fm USING (ssi_id);
+    vault: "SELECT NULL::DOUBLE AS match_rate; -- TODO"
+    dimensional: |
+      SELECT COUNT(*) FILTER (WHERE matched_t1) * 1.0 / NULLIF(COUNT(*), 0) AS match_rate
+      FROM settlement_clearing_dim.fact_settlement;
+
+  - kpi_id: stl.kpi.recon_break_count
+    threeNF: |
+      SELECT COUNT(*) AS open_breaks_eod
+      FROM settlement_clearing_3nf.reconciliation_break
+      WHERE status IN ('Open', 'InProgress', 'Aged');
+    vault: "SELECT NULL::INTEGER AS open_breaks_eod; -- TODO: model breaks as link/sat in vault"
+    dimensional: |
+      SELECT SUM(open_break_count) AS open_breaks_eod
+      FROM settlement_clearing_dim.fact_recon_break_daily f
+      JOIN settlement_clearing_dim.dim_date d ON d.date_key = f.business_date_key
+      WHERE d.date_actual = (SELECT MAX(date_actual) FROM settlement_clearing_dim.dim_date d2
+                             JOIN settlement_clearing_dim.fact_recon_break_daily f2
+                               ON f2.business_date_key = d2.date_key);
+
+  - kpi_id: stl.kpi.aging_breaks
+    threeNF: |
+      SELECT COUNT(*) FILTER (
+               WHERE EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - detected_at)) / 86400.0 > 5
+             ) * 1.0 / NULLIF(COUNT(*), 0) AS aging_break_pct
+      FROM settlement_clearing_3nf.reconciliation_break
+      WHERE status IN ('Open', 'InProgress', 'Aged');
+    vault: "SELECT NULL::DOUBLE AS aging_break_pct; -- TODO"
+    dimensional: |
+      SELECT SUM(aged_break_count) * 1.0 / NULLIF(SUM(open_break_count), 0) AS aging_break_pct
+      FROM settlement_clearing_dim.fact_recon_break_daily;
+
+  - kpi_id: stl.kpi.cns_compression
+    notes: CNS netting compression per DTCC NSCC.
+    threeNF: |
+      SELECT SUM(ABS(long_position_qty) + ABS(short_position_qty))
+             / NULLIF(SUM(ABS(net_position_qty)), 0) AS compression_ratio
+      FROM settlement_clearing_3nf.cns_obligation;
+    vault: |
+      SELECT SUM(ABS(long_position_qty) + ABS(short_position_qty))
+             / NULLIF(SUM(ABS(net_position_qty)), 0) AS compression_ratio
+      FROM settlement_clearing_vault.sat_cns_obligation;
+    dimensional: |
+      SELECT SUM(gross_obligation_qty) / NULLIF(SUM(ABS(net_position_qty)), 0) AS compression_ratio
+      FROM settlement_clearing_dim.fact_cns_obligation_daily;
+
+  - kpi_id: stl.kpi.collateral_haircut_avg
+    threeNF: |
+      SELECT SUM(market_value * haircut_pct) / NULLIF(SUM(market_value), 0)
+             AS weighted_haircut_pct
+      FROM settlement_clearing_3nf.collateral_movement
+      WHERE direction = 'Pledge';
+    vault: "SELECT NULL::DOUBLE AS weighted_haircut_pct; -- TODO"
+    dimensional: |
+      SELECT SUM(market_value * haircut_pct) / NULLIF(SUM(market_value), 0)
+             AS weighted_haircut_pct
+      FROM settlement_clearing_dim.fact_collateral_movement
+      WHERE direction = 'Pledge';
+
+  - kpi_id: stl.kpi.buyin_count
+    threeNF: |
+      SELECT COUNT(*) AS buyin_count
+      FROM settlement_clearing_3nf.buyin
+      WHERE executed_at >= COALESCE(CAST(:since AS TIMESTAMP), TIMESTAMP '1900-01-01');
+    vault: "SELECT NULL::INTEGER AS buyin_count; -- TODO: model buyin as sat off failure"
+    dimensional: |
+      SELECT COUNT(*) FILTER (WHERE triggered_buyin) AS buyin_count
+      FROM settlement_clearing_dim.fact_settlement_fail;
+
+  # ============================================================
+  # Programmatic Advertising (Media)
+  # Schemas: programmatic_advertising_3nf | programmatic_advertising_vault | programmatic_advertising_dim
+  # Source standards: IAB OpenRTB 2.6, AdCOM 1.0, VAST 4.2, MRC viewability.
+  # ============================================================
+  - kpi_id: prog.kpi.fill_rate
+    notes: Fill rate over OpenRTB BidRequests. An impression event indicates a fill.
+    threeNF: |
+      WITH req AS (
+        SELECT request_id FROM programmatic_advertising_3nf.ad_request
+        WHERE received_at >= COALESCE(CAST(:since AS TIMESTAMP), TIMESTAMP '1900-01-01')
+      ),
+      filled AS (
+        SELECT DISTINCT ae.request_id
+        FROM programmatic_advertising_3nf.auction_event ae
+        JOIN programmatic_advertising_3nf.bid b ON b.bid_id = ae.winning_bid_id
+        JOIN programmatic_advertising_3nf.impression_event ie ON ie.bid_id = b.bid_id
+      )
+      SELECT COUNT(*) FILTER (WHERE filled.request_id IS NOT NULL) * 1.0
+             / NULLIF(COUNT(*), 0) AS fill_rate
+      FROM req LEFT JOIN filled USING (request_id);
+    vault: "SELECT NULL::DOUBLE AS fill_rate; -- TODO: link_request_imp ⨝ sat_bid_outcome.served"
+    dimensional: |
+      SELECT SUM(served_impressions) * 1.0 / NULLIF(SUM(requests), 0) AS fill_rate
+      FROM programmatic_advertising_dim.fact_auction_summary_hourly h
+      JOIN programmatic_advertising_dim.dim_hour dh ON dh.hour_key = h.hour_key
+      JOIN programmatic_advertising_dim.dim_date dd ON dd.date_key = dh.date_key
+      WHERE dd.date_actual >= COALESCE(CAST(:since AS DATE), DATE '1900-01-01');
+
+  - kpi_id: prog.kpi.ecpm
+    threeNF: |
+      SELECT SUM(ae.clearing_price) * 1000.0
+             / NULLIF(COUNT(ie.impression_event_id), 0) AS ecpm
+      FROM programmatic_advertising_3nf.auction_event ae
+      JOIN programmatic_advertising_3nf.impression_event ie
+        ON ie.bid_id = ae.winning_bid_id;
+    vault: "SELECT NULL::DOUBLE AS ecpm; -- TODO"
+    dimensional: |
+      SELECT SUM(revenue) * 1000.0 / NULLIF(SUM(served_impressions), 0) AS ecpm
+      FROM programmatic_advertising_dim.fact_auction_summary_hourly;
+
+  - kpi_id: prog.kpi.viewability
+    notes: MRC standard — viewable / measurable.
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE viewable) * 1.0
+             / NULLIF(COUNT(*) FILTER (WHERE viewable_pixels_pct IS NOT NULL), 0)
+             AS viewability_rate
+      FROM programmatic_advertising_3nf.impression_event;
+    vault: |
+      WITH latest AS (
+        SELECT s.bid_hk, s.viewable, s.served,
+               ROW_NUMBER() OVER (PARTITION BY s.bid_hk ORDER BY s.load_dts DESC) AS rn
+        FROM programmatic_advertising_vault.sat_bid_outcome s
+      )
+      SELECT COUNT(*) FILTER (WHERE viewable AND served) * 1.0
+             / NULLIF(COUNT(*) FILTER (WHERE served), 0) AS viewability_rate
+      FROM latest WHERE rn = 1;
+    dimensional: |
+      SELECT SUM(viewable_impressions) * 1.0
+             / NULLIF(SUM(measurable_impressions), 0) AS viewability_rate
+      FROM programmatic_advertising_dim.fact_auction_summary_hourly;
+
+  - kpi_id: prog.kpi.bid_win_rate
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE status = 'won') * 1.0
+             / NULLIF(COUNT(*), 0) AS win_rate
+      FROM programmatic_advertising_3nf.bid;
+    vault: |
+      WITH latest AS (
+        SELECT bid_hk, status,
+               ROW_NUMBER() OVER (PARTITION BY bid_hk ORDER BY load_dts DESC) AS rn
+        FROM programmatic_advertising_vault.sat_bid_state
+      )
+      SELECT COUNT(*) FILTER (WHERE status = 'won') * 1.0
+             / NULLIF(COUNT(*), 0) AS win_rate
+      FROM latest WHERE rn = 1;
+    dimensional: |
+      SELECT SUM(wins) * 1.0 / NULLIF(SUM(bids), 0) AS win_rate
+      FROM programmatic_advertising_dim.fact_auction_summary_hourly;
+
+  - kpi_id: prog.kpi.ivt_rate
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE ivt_flag) * 1.0
+             / NULLIF(COUNT(*), 0) AS ivt_rate
+      FROM programmatic_advertising_3nf.impression_event;
+    vault: |
+      WITH latest AS (
+        SELECT bid_hk, ivt_flag, served,
+               ROW_NUMBER() OVER (PARTITION BY bid_hk ORDER BY load_dts DESC) AS rn
+        FROM programmatic_advertising_vault.sat_bid_outcome
+      )
+      SELECT COUNT(*) FILTER (WHERE ivt_flag AND served) * 1.0
+             / NULLIF(COUNT(*) FILTER (WHERE served), 0) AS ivt_rate
+      FROM latest WHERE rn = 1;
+    dimensional: |
+      SELECT SUM(ivt_impressions) * 1.0
+             / NULLIF(SUM(served_impressions), 0) AS ivt_rate
+      FROM programmatic_advertising_dim.fact_auction_summary_hourly;
+
+  - kpi_id: prog.kpi.bid_response_latency
+    threeNF: |
+      SELECT QUANTILE_CONT(response_latency_ms, 0.95) AS p95_ms
+      FROM programmatic_advertising_3nf.bid_response
+      WHERE response_received_at IS NOT NULL;
+    vault: "SELECT NULL::DOUBLE AS p95_ms; -- TODO: latency satellite"
+    dimensional: |
+      SELECT QUANTILE_CONT(avg_response_latency_ms, 0.95) AS p95_ms
+      FROM programmatic_advertising_dim.fact_auction_summary_hourly;
+
+  - kpi_id: prog.kpi.video_completion
+    threeNF: |
+      WITH starts AS (
+        SELECT impression_event_id FROM programmatic_advertising_3nf.video_event WHERE event_type = 'start'
+      ),
+      completes AS (
+        SELECT impression_event_id FROM programmatic_advertising_3nf.video_event WHERE event_type = 'complete'
+      )
+      SELECT COUNT(c.impression_event_id) * 1.0 / NULLIF(COUNT(s.impression_event_id), 0)
+             AS completion_rate
+      FROM starts s LEFT JOIN completes c USING (impression_event_id);
+    vault: "SELECT NULL::DOUBLE AS completion_rate; -- TODO"
+    dimensional: |
+      SELECT COUNT(*) FILTER (WHERE event_type = 'complete') * 1.0
+             / NULLIF(COUNT(*) FILTER (WHERE event_type = 'start'), 0) AS completion_rate
+      FROM programmatic_advertising_dim.fact_video_event;
+
+  - kpi_id: prog.kpi.pmp_share
+    threeNF: |
+      SELECT SUM(ae.clearing_price) FILTER (WHERE b.dealid IS NOT NULL)
+             / NULLIF(SUM(ae.clearing_price), 0) AS pmp_share
+      FROM programmatic_advertising_3nf.auction_event ae
+      JOIN programmatic_advertising_3nf.bid b ON b.bid_id = ae.winning_bid_id;
+    vault: "SELECT NULL::DOUBLE AS pmp_share; -- TODO"
+    dimensional: |
+      WITH totals AS (SELECT SUM(revenue) AS total_rev FROM programmatic_advertising_dim.fact_auction_summary_hourly)
+      SELECT SUM(d.revenue) / NULLIF((SELECT total_rev FROM totals), 0) AS pmp_share
+      FROM programmatic_advertising_dim.fact_deal_performance_daily d;
+
+  # ============================================================
+  # NEW ANCHOR KPIs — wired against the runtime schemas populated by
+  # `synthetic-data/<anchor>/generate.py`. Each anchor's data lands in a
+  # DuckDB schema named after the anchor (e.g. `ehr_integrations.observation`),
+  # so these queries reference those schemas directly. Vault / dimensional
+  # variants are stubs (TODO) until the corresponding _vault / _dim DDL is
+  # built and a transform layer populates them.
+  # ============================================================
+
+  # ---- EHR Integrations (FHIR R4) ----------------------------
+  - kpi_id: ehr.kpi.message_success
+    notes: Acked HL7v2/FHIR transactions over total. Approximated via observation status (final = ack'd).
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE status = 'final') * 1.0
+             / NULLIF(COUNT(*), 0) AS message_success_rate
+      FROM ehr_integrations.observation;
+    vault: "SELECT NULL::DOUBLE AS message_success_rate; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS message_success_rate; -- TODO"
+
+  - kpi_id: ehr.kpi.fhir_latency
+    notes: P95 latency between observation effective_date_time and issued_at — proxy for FHIR write latency.
+    threeNF: |
+      SELECT QUANTILE_CONT(EXTRACT(EPOCH FROM (issued - effective_date_time)) * 1000.0, 0.95) AS p95_ms
+      FROM ehr_integrations.observation
+      WHERE issued IS NOT NULL AND effective_date_time IS NOT NULL;
+    vault: "SELECT NULL::DOUBLE AS p95_ms; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS p95_ms; -- TODO"
+
+  - kpi_id: ehr.kpi.dq_match_rate
+    notes: Fraction of patients with a non-null MRN identifier (proxy for cross-system match).
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE identifier_mrn IS NOT NULL AND identifier_mrn <> '') * 1.0
+             / NULLIF(COUNT(*), 0) AS match_rate
+      FROM ehr_integrations.patient;
+    vault: "SELECT NULL::DOUBLE AS match_rate; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS match_rate; -- TODO"
+
+  # ---- Capital Markets (FIX / FpML) --------------------------
+  - kpi_id: cm.kpi.trade_break_rate
+    notes: Trades whose status is rejected or cancelled, proxy for trade breaks.
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE status IN ('rejected','cancelled')) * 1.0
+             / NULLIF(COUNT(*), 0) AS trade_break_rate
+      FROM capital_markets."order"
+      WHERE placed_at >= COALESCE(CAST(:since AS TIMESTAMP), TIMESTAMP '1900-01-01');
+    vault: "SELECT NULL::DOUBLE AS trade_break_rate; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS trade_break_rate; -- TODO"
+
+  - kpi_id: cm.kpi.t_plus_1_settlement
+    notes: Trades whose settlement_date is exactly trade_date + 1 business day.
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE settlement_date = trade_date + INTERVAL '1 day') * 1.0
+             / NULLIF(COUNT(*), 0) AS t1_settle_rate
+      FROM capital_markets.trade;
+    vault: "SELECT NULL::DOUBLE AS t1_settle_rate; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS t1_settle_rate; -- TODO"
+
+  - kpi_id: cm.kpi.execution_slippage
+    notes: Volume-weighted slippage between order limit_price and fill price, in bps.
+    threeNF: |
+      SELECT 10000.0 * AVG((e.last_px - o.limit_price) / NULLIF(o.limit_price, 0)
+                          * CASE WHEN o.side = 'BUY' THEN 1 ELSE -1 END) AS slippage_bps
+      FROM capital_markets.execution e
+      JOIN capital_markets."order" o USING (order_id)
+      WHERE o.placed_at >= COALESCE(CAST(:since AS TIMESTAMP), TIMESTAMP '1900-01-01');
+    vault: "SELECT NULL::DOUBLE AS slippage_bps; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS slippage_bps; -- TODO"
+
+  # ---- Smart Metering (ANSI C12 / DLMS) ----------------------
+  - kpi_id: ami.kpi.read_success
+    notes: Reads with VALID quality_code over total reads.
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE quality_code = 'VALID') * 1.0
+             / NULLIF(COUNT(*), 0) AS read_success_rate
+      FROM smart_metering.meter_read;
+    vault: "SELECT NULL::DOUBLE AS read_success_rate; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS read_success_rate; -- TODO"
+
+  - kpi_id: ami.kpi.billing_accuracy
+    notes: Bills not flagged as estimated.
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE NOT estimated) * 1.0
+             / NULLIF(COUNT(*), 0) AS billing_accuracy
+      FROM smart_metering.billing_determinant;
+    vault: "SELECT NULL::DOUBLE AS billing_accuracy; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS billing_accuracy; -- TODO"
+
+  - kpi_id: ami.kpi.ntl
+    notes: Non-technical loss proxy — energy_loss_kwh from validated tampers / total billed kWh.
+    threeNF: |
+      WITH tamper AS (
+        SELECT SUM(energy_loss_kwh_est) AS loss_kwh
+        FROM smart_metering.tamper_event WHERE status IN ('validated','billed')
+      ),
+      billed AS (
+        SELECT SUM(kwh_total) AS billed_kwh
+        FROM smart_metering.billing_determinant
+      )
+      SELECT (SELECT loss_kwh FROM tamper) * 1.0 / NULLIF((SELECT billed_kwh FROM billed), 0) AS ntl_pct;
+    vault: "SELECT NULL::DOUBLE AS ntl_pct; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS ntl_pct; -- TODO"
+
+  # ---- Clinical Trials (CDISC SDTM) --------------------------
+  - kpi_id: ct.kpi.enrollment_rate
+    notes: Enrolled subjects / target across active sites.
+    threeNF: |
+      SELECT SUM(subject_enrolled) * 1.0 / NULLIF(SUM(subject_target), 0) AS enrollment_rate
+      FROM clinical_trials.site;
+    vault: "SELECT NULL::DOUBLE AS enrollment_rate; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS enrollment_rate; -- TODO"
+
+  - kpi_id: ct.kpi.site_activation_time
+    notes: Average days from IRB approval to site activation.
+    threeNF: |
+      SELECT AVG(EXTRACT(EPOCH FROM (activated_at - irb_approval_date)) / 86400.0) AS days
+      FROM clinical_trials.site
+      WHERE activated_at IS NOT NULL AND irb_approval_date IS NOT NULL;
+    vault: "SELECT NULL::DOUBLE AS days; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS days; -- TODO"
+
+  - kpi_id: ct.kpi.dropout_rate
+    notes: Subjects whose actual arm code is SCRNFAIL or who have death flag set.
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE actarmcd = 'SCRNFAIL' OR dthfl = 'Y') * 1.0
+             / NULLIF(COUNT(*), 0) AS dropout_rate
+      FROM clinical_trials.subject;
+    vault: "SELECT NULL::DOUBLE AS dropout_rate; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS dropout_rate; -- TODO"
+
+  # ---- Cloud FinOps (FOCUS) ----------------------------------
+  - kpi_id: fo.kpi.tag_coverage
+    notes: Charge records with a non-untagged tag_environment over total.
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE tag_environment <> 'untagged') * 1.0
+             / NULLIF(COUNT(*), 0) AS tag_coverage
+      FROM cloud_finops.charge_record;
+    vault: "SELECT NULL::DOUBLE AS tag_coverage; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS tag_coverage; -- TODO"
+
+  - kpi_id: fo.kpi.savings_plan_coverage
+    notes: Effective cost covered by a commitment_discount_id over total effective cost.
+    threeNF: |
+      SELECT SUM(effective_cost) FILTER (WHERE commitment_discount_id IS NOT NULL) * 1.0
+             / NULLIF(SUM(effective_cost), 0) AS savings_plan_coverage
+      FROM cloud_finops.charge_record;
+    vault: "SELECT NULL::DOUBLE AS savings_plan_coverage; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS savings_plan_coverage; -- TODO"
+
+  - kpi_id: fo.kpi.budget_variance
+    notes: Actual spend / budgeted - 1, averaged over open budgets.
+    threeNF: |
+      SELECT AVG(actual_spend_usd / NULLIF(budgeted_amount_usd, 0)) - 1.0 AS budget_variance
+      FROM cloud_finops.budget;
+    vault: "SELECT NULL::DOUBLE AS budget_variance; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS budget_variance; -- TODO"
+
+  - kpi_id: fo.kpi.idle_spend
+    notes: Charge records tagged dev/qa as a proxy for idle.
+    threeNF: |
+      SELECT SUM(effective_cost) FILTER (WHERE tag_environment IN ('dev','qa','staging')) * 1.0
+             / NULLIF(SUM(effective_cost), 0) AS idle_spend_pct
+      FROM cloud_finops.charge_record;
+    vault: "SELECT NULL::DOUBLE AS idle_spend_pct; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS idle_spend_pct; -- TODO"
+
+  # ---- EV Charging (OCPP / OCPI) -----------------------------
+  - kpi_id: ev.kpi.uptime
+    notes: Stations not in Faulted/Offline status.
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE status NOT IN ('Faulted','Offline')) * 1.0
+             / NULLIF(COUNT(*), 0) AS uptime_pct
+      FROM ev_charging.charging_station;
+    vault: "SELECT NULL::DOUBLE AS uptime_pct; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS uptime_pct; -- TODO"
+
+  - kpi_id: ev.kpi.utilization
+    notes: Connector utilization — sum of transaction durations over a horizon.
+    threeNF: |
+      SELECT SUM(duration_minutes) * 1.0
+             / NULLIF((SELECT COUNT(*) * 60 * 24 * 30 FROM ev_charging.connector), 0) AS utilization
+      FROM ev_charging.transaction
+      WHERE started_at >= COALESCE(CAST(:since AS TIMESTAMP), TIMESTAMP '1900-01-01');
+    vault: "SELECT NULL::DOUBLE AS utilization; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS utilization; -- TODO"
+
+  # ---- Tax Administration (IRS MeF / CRS) --------------------
+  - kpi_id: tax.kpi.voluntary_compliance
+    notes: Returns filed and accepted on or before due date.
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE status = 'accepted' AND filed_at::DATE <= due_date) * 1.0
+             / NULLIF(COUNT(*), 0) AS voluntary_compliance
+      FROM tax_administration."return";
+    vault: "SELECT NULL::DOUBLE AS voluntary_compliance; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS voluntary_compliance; -- TODO"
+
+  - kpi_id: tax.kpi.collection_efficiency
+    notes: Total payments posted / total tax assessed.
+    threeNF: |
+      WITH paid AS (
+        SELECT SUM(amount) AS collected FROM tax_administration.payment WHERE status = 'posted'
+      ),
+      owed AS (SELECT SUM(total_tax) AS assessed FROM tax_administration."return")
+      SELECT (SELECT collected FROM paid) * 1.0 / NULLIF((SELECT assessed FROM owed), 0) AS collection_efficiency;
+    vault: "SELECT NULL::DOUBLE AS collection_efficiency; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS collection_efficiency; -- TODO"
+
+  - kpi_id: tax.kpi.refund_cycle_time
+    notes: Days from filed_at to first posted refund payment for the same return.
+    threeNF: |
+      SELECT AVG(EXTRACT(EPOCH FROM (p.paid_at - r.filed_at)) / 86400.0) AS days
+      FROM tax_administration."return" r
+      JOIN tax_administration.payment p USING (return_id)
+      WHERE r.refund_amount > 0 AND p.status = 'posted';
+    vault: "SELECT NULL::DOUBLE AS days; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS days; -- TODO"
+
+  # ---- Real World Evidence (OMOP CDM v5.4) -------------------
+  - kpi_id: rwe.kpi.cohort_match
+    notes: Subjects in any cohort over total persons.
+    threeNF: |
+      SELECT COUNT(DISTINCT c.subject_id) * 1.0
+             / NULLIF((SELECT COUNT(*) FROM real_world_evidence.person), 0) AS cohort_match_rate
+      FROM real_world_evidence.cohort c;
+    vault: "SELECT NULL::DOUBLE AS cohort_match_rate; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS cohort_match_rate; -- TODO"
+
+  - kpi_id: rwe.kpi.data_freshness
+    notes: Average days from latest measurement to today.
+    threeNF: |
+      SELECT AVG(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - measurement_datetime)) / 86400.0) AS days
+      FROM real_world_evidence.measurement;
+    vault: "SELECT NULL::DOUBLE AS days; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS days; -- TODO"

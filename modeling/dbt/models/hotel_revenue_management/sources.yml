@@ -1,0 +1,74 @@
+version: 2
+
+sources:
+  - name: hotel_revenue_management
+    description: |
+      Real Hotel Revenue Management source schema in the populated
+      domain-explorer.duckdb. Mirrors what an Opera PMS / IDeaS RMS / Duetto
+      operational data store would land: properties, room types, rate plans,
+      channels, guests, reservations, daily inventory + pricing, ancillaries,
+      and cancellations.
+    schema: hotel_revenue_management
+    tables:
+      - name: properties
+        description: Hotel property master.
+        columns:
+          - name: property_id
+            tests: [unique, not_null]
+      - name: room_types
+        description: Room types within a property.
+        columns:
+          - name: room_type_id
+            tests: [unique, not_null]
+          - name: property_id
+            tests: [not_null]
+      - name: rate_plans
+        description: Rate plans (refundable / corporate / package) per property.
+        columns:
+          - name: rate_plan_id
+            tests: [unique, not_null]
+          - name: property_id
+            tests: [not_null]
+      - name: channels
+        description: Distribution channels (direct / OTA / GDS / wholesale).
+        columns:
+          - name: channel_id
+            tests: [unique, not_null]
+      - name: guests
+        description: Guest profile master.
+        columns:
+          - name: guest_id
+            tests: [unique, not_null]
+      - name: reservations
+        description: Reservation header — booked through stay completion.
+        columns:
+          - name: reservation_id
+            tests: [unique, not_null]
+          - name: property_id
+            tests: [not_null]
+      - name: daily_inventory
+        description: Daily availability per room type.
+        columns:
+          - name: inv_id
+            tests: [unique, not_null]
+          - name: room_type_id
+            tests: [not_null]
+      - name: daily_pricing
+        description: Daily rate per room type / rate plan with yield score.
+        columns:
+          - name: pricing_id
+            tests: [unique, not_null]
+      - name: ancillaries
+        description: Ancillary revenue (F&B, parking, spa) tied to reservations.
+        columns:
+          - name: ancillary_id
+            tests: [unique, not_null]
+          - name: reservation_id
+            tests: [not_null]
+      - name: cancellations
+        description: Cancellation events with reason and fee.
+        columns:
+          - name: cancellation_id
+            tests: [unique, not_null]
+          - name: reservation_id
+            tests: [not_null]

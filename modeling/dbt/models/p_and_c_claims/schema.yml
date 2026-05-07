@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: stg_p_and_c_claims__claims
+    description: Claim header with computed report_lag_days.
+    columns:
+      - name: claim_id
+        tests: [unique, not_null]
+      - name: policy_id
+        tests: [not_null]
+  - name: stg_p_and_c_claims__claim_payments
+    description: Indemnity payments with typed timestamps.
+    columns:
+      - name: payment_id
+        tests: [unique, not_null]
+  - name: dim_policyholder
+    description: Policyholder dimension keyed by md5(policyholder_id).
+    columns:
+      - name: policyholder_key
+        tests: [unique, not_null]
+      - name: policyholder_id
+        tests: [unique, not_null]
+  - name: dim_policy
+    description: Policy dimension joined to its policyholder.
+    columns:
+      - name: policy_key
+        tests: [unique, not_null]
+      - name: policy_id
+        tests: [unique, not_null]
+  - name: dim_adjuster
+    description: Adjuster dimension with seniority band.
+    columns:
+      - name: adjuster_key
+        tests: [unique, not_null]
+      - name: adjuster_id
+        tests: [unique, not_null]
+  - name: dim_date
+    description: Conformed daily date dimension for P&C claims.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+  - name: fct_claims
+    description: Grain = one row per claim, with rolled-up payments / reserves / FNOL.
+    columns:
+      - name: claim_key
+        tests: [unique, not_null]
+      - name: claim_id
+        tests: [unique, not_null]
+  - name: fct_claim_payments
+    description: Grain = one row per indemnity payment.
+    columns:
+      - name: payment_key
+        tests: [unique, not_null]
+      - name: payment_id
+        tests: [unique, not_null]

@@ -78,16 +78,46 @@ function streamText(text: string, recordsUsed: string[], mode: "live" | "demo"):
   });
 }
 
+// Minimal structural type describing the slice of the Anthropic SDK we use.
+// We avoid importing the SDK's types at the top level because the SDK is
+// loaded lazily and may not be installed in every deployment.
+type AnthropicCtor = new (cfg: { apiKey: string }) => AnthropicClient;
+
+interface AnthropicClient {
+  messages: {
+    stream(args: {
+      model: string;
+      max_tokens: number;
+      system: string;
+      messages: { role: "user" | "assistant"; content: string }[];
+    }): AnthropicStream;
+  };
+}
+
+interface AnthropicStream {
+  on(event: "text", listener: (delta: string) => void): void;
+  on(event: "error", listener: (err: Error) => void): void;
+  on(event: "end", listener: () => void): void;
+  finalMessage(): Promise<unknown>;
+}
+
+interface AnthropicModule {
+  default?: AnthropicCtor;
+  Anthropic?: AnthropicCtor;
+}
+
 /**
  * Try to load the Anthropic SDK lazily. Returns null if it isn't installed —
  * the route then falls back to canned mode.
  */
-async function loadAnthropic(): Promise<unknown | null> {
+async function loadAnthropic(): Promise<AnthropicCtor | null> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mod: any = await import("@anthropic-ai/sdk").catch(() => null);
+    const mod = (await import("@anthropic-ai/sdk").catch(() => null)) as
+      | AnthropicModule
+      | null;
     if (!mod) return null;
-    return mod.default ?? mod.Anthropic ?? mod;
+    const ctor = mod.default ?? mod.Anthropic;
+    return ctor ?? null;
   } catch {
     return null;
   }
@@ -100,12 +130,9 @@ async function streamFromAnthropic(opts: {
   message: string;
   recordsUsed: string[];
 }): Promise<Response | null> {
-  const Anthropic = (await loadAnthropic()) as unknown as
-    | (new (cfg: { apiKey: string }) => unknown)
-    | null;
+  const Anthropic = await loadAnthropic();
   if (!Anthropic) return null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const client: any = new (Anthropic as any)({ apiKey: opts.apiKey });
+  const client: AnthropicClient = new Anthropic({ apiKey: opts.apiKey });
 
   const messages = [
     ...opts.history.map((h) => ({ role: h.role, content: h.content })),
@@ -123,8 +150,7 @@ async function streamFromAnthropic(opts: {
         });
         controller.enqueue(encoder.encode(`event: header\ndata: ${header}\n\n`));
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const upstream: any = client.messages.stream({
+        const upstream: AnthropicStream = client.messages.stream({
           model: "claude-sonnet-4-6",
           max_tokens: 1024,
           system: opts.systemPrompt,

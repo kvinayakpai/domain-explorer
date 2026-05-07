@@ -1,0 +1,71 @@
+version: 2
+
+sources:
+  - name: merchandising
+    description: |
+      Real Merchandising source schema in the populated domain-explorer.duckdb.
+      Mirrors what an Oracle Retail / Aptos / Manhattan-class operational data
+      store would land after CDC. All ten tables are populated by the
+      synthetic-data generator.
+    schema: merchandising
+    tables:
+      - name: products
+        description: SKU master with vendor / category / cost / MSRP.
+        columns:
+          - name: sku
+            tests: [unique, not_null]
+          - name: vendor_id
+            tests: [not_null]
+      - name: stores
+        description: Brick-and-mortar / DC / ecom store master.
+        columns:
+          - name: store_id
+            tests: [unique, not_null]
+      - name: vendors
+        description: Vendor master with tier and lead-time metadata.
+        columns:
+          - name: vendor_id
+            tests: [unique, not_null]
+      - name: prices
+        description: Effective-dated list price per SKU/store/channel.
+        columns:
+          - name: price_id
+            tests: [unique, not_null]
+          - name: sku
+            tests: [not_null]
+      - name: promotions
+        description: SKU-level promotional offers and durations.
+        columns:
+          - name: promo_id
+            tests: [unique, not_null]
+          - name: sku
+            tests: [not_null]
+      - name: inventory_snapshots
+        description: Periodic on-hand / on-order positions per SKU/store.
+        columns:
+          - name: snapshot_id
+            tests: [unique, not_null]
+      - name: sales_lines
+        description: POS line-level sales transactions.
+        columns:
+          - name: sale_line_id
+            tests: [unique, not_null]
+          - name: sku
+            tests: [not_null]
+      - name: returns
+        description: Return events tied to original sale lines.
+        columns:
+          - name: return_id
+            tests: [unique, not_null]
+      - name: markdowns
+        description: SKU-level markdown / clearance events.
+        columns:
+          - name: markdown_id
+            tests: [unique, not_null]
+          - name: sku
+            tests: [not_null]
+      - name: replenishment_orders
+        description: Replenishment POs to stores / DCs.
+        columns:
+          - name: po_id
+            tests: [unique, not_null]

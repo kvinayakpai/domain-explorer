@@ -14,6 +14,11 @@ export interface DqResult {
   passed: boolean;
   duration_ms: number;
   error?: string | null;
+  // Optional: rules whose backing data hasn't been generated yet are marked
+  // pending in the snapshot. The live FastAPI never emits these — pending is
+  // a snapshot-only concept set by the static last_run.json.
+  status?: string | null;
+  count?: number | null;
 }
 
 export interface DqReport {
@@ -23,10 +28,22 @@ export interface DqReport {
   passed: number;
   failed: number;
   errored: number;
+  pending?: number;
   pass_rate: number;
-  by_severity: Record<string, { passed: number; failed: number; errored: number }>;
-  by_subdomain: Record<string, { passed: number; failed: number; errored: number }>;
+  by_severity: Record<
+    string,
+    { passed: number; failed: number; errored: number; pending?: number }
+  >;
+  by_subdomain: Record<
+    string,
+    { passed: number; failed: number; errored: number; pending?: number }
+  >;
   results: DqResult[];
+}
+
+/** Treat any DqResult whose status starts with "pending" as awaiting data generation. */
+export function isPending(r: DqResult): boolean {
+  return typeof r.status === "string" && r.status.toLowerCase().startsWith("pending");
 }
 
 function findRepoRoot(): string {

@@ -152,7 +152,15 @@ export default async function GovernancePage() {
         </div>
         {dqReport ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            <Metric label="Total rules" value={dqReport.total_rules} />
+            <Metric
+              label="Total rules"
+              value={dqReport.total_rules}
+              hint={
+                dqReport.pending && dqReport.pending > 0
+                  ? `${dqReport.pending} pending data generation`
+                  : undefined
+              }
+            />
             <Metric
               label="Pass rate"
               value={`${(dqReport.pass_rate * 100).toFixed(1)}%`}
