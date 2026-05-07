@@ -3,35 +3,409 @@ name: Capital Markets
 vertical: BFSI
 oneLiner: Front-to-back trade lifecycle for equities, FICC, and derivatives across execution, clearing, and settlement.
 
+# Authoritative sources:
+#   FIX 4.4 / 5.0 SP2 (https://www.fixtrading.org/standards/) for pre-trade,
+#     order routing, and execution reporting (NewOrderSingle 35=D, ExecutionReport 35=8).
+#   FpML 5.x (https://www.fpml.org/spec/) for derivative trade representation
+#     (Trade, TradeHeader, FpML lifecycle events).
+#   ISO 20022 securities messages (semt.*, sese.*, setr.*) for clearing/settlement
+#     (https://www.iso20022.org/).
+#   CFTC Part 43/45 swap data reporting fields list.
+
 personas:
   - { name: Head of Trading, title: Head of Trading, level: VP }
   - { name: Operations COO, title: COO Capital Markets Operations, level: C-suite }
   - { name: Head of Quant Risk, title: Head of Quantitative Risk, level: Director }
+  - { name: Trade Support Lead, title: Trade Support Manager, level: Manager }
+  - { name: Regulatory Reporting Lead, title: Head of Regulatory Reporting, level: Director }
+
+decisions:
+  - { id: cm.d.venue, statement: Route an order to the venue with best expected fill quality. }
+  - { id: cm.d.tca, statement: Reroute residual to a dark pool when arrival-price slippage exceeds threshold. }
+  - { id: cm.d.allocation, statement: Allocate executed block to client accounts using average price. }
+  - { id: cm.d.affirmation, statement: Auto-affirm trade vs send for manual matching. }
+  - { id: cm.d.margin_call, statement: Issue intraday margin call vs wait for end-of-day. }
+  - { id: cm.d.fail_buyin, statement: Initiate buy-in on a fail vs continue claiming compensation. }
+  - { id: cm.d.lifecycle, statement: Process FpML lifecycle event in batch vs same-day. }
 
 kpis:
-  - { id: cm.kpi.trade_break_rate, name: Trade Break Rate, formula: breaks / total_trades, unit: "%", direction: lower_is_better }
-  - { id: cm.kpi.t_plus_1_settlement, name: T+1 Settlement Rate, formula: settled_t1 / eligible_trades, unit: "%", direction: higher_is_better }
-  - { id: cm.kpi.var, name: Value at Risk (1d 99%), formula: var_1d_99, unit: USD, direction: target_band }
-  - { id: cm.kpi.execution_slippage, name: Execution Slippage vs Arrival, formula: avg(arrival_px - exec_px) / arrival_px, unit: bps, direction: lower_is_better }
-  - { id: cm.kpi.regulatory_breaches, name: Regulatory Breaches, formula: count(breach_events), unit: events, direction: lower_is_better }
+  - id: cm.kpi.trade_break_rate
+    name: Trade Break Rate
+    formula: breaks / matched_trades
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [cm.d.affirmation]
+  - id: cm.kpi.t_plus_1_settlement
+    name: T+1 Settlement Rate
+    formula: settled_t1 / eligible_trades
+    unit: "%"
+    direction: higher_is_better
+  - id: cm.kpi.var
+    name: Value at Risk (1d 99%)
+    formula: var_1d_99
+    unit: USD
+    direction: target_band
+  - id: cm.kpi.execution_slippage
+    name: Execution Slippage vs Arrival
+    formula: avg(arrival_px - exec_px) / arrival_px
+    unit: bps
+    direction: lower_is_better
+    decisionsSupported: [cm.d.tca, cm.d.venue]
+  - id: cm.kpi.regulatory_breaches
+    name: Regulatory Breaches
+    formula: count(breach_events)
+    unit: events
+    direction: lower_is_better
+  - id: cm.kpi.fill_rate
+    name: Order Fill Rate
+    formula: filled_qty / order_qty
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [cm.d.venue]
+  - id: cm.kpi.affirmation_rate
+    name: T+0 Affirmation Rate
+    formula: affirmed_t0 / eligible_trades
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [cm.d.affirmation]
+  - id: cm.kpi.cleared_share
+    name: Cleared / Centrally-Settled Share
+    formula: cleared_notional / total_notional
+    unit: "%"
+    direction: higher_is_better
+  - id: cm.kpi.lifecycle_event_lag
+    name: FpML Lifecycle Event Lag
+    formula: avg(processed_ts - effective_ts)
+    unit: hours
+    direction: lower_is_better
+    decisionsSupported: [cm.d.lifecycle]
+  - id: cm.kpi.collateral_optimization
+    name: Collateral Optimization Cheapest-to-Deliver Index
+    formula: cheapest_collateral_used / collateral_demanded
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [cm.d.margin_call]
 
 dataModel:
   entities:
-    - { name: Trade, description: 'Executed trade' }
-    - { name: Order, description: 'Order to trade' }
-    - { name: Position, description: 'End-of-day position' }
-    - { name: Instrument, description: 'Tradeable instrument' }
-    - { name: MarketData, description: 'Market data tick' }
-    - { name: SettlementInstruction, description: 'SSI for clearing' }
+    - name: counterparty
+      description: Trading counterparty / legal entity. FpML PartyReference + LEI register.
+      keys: [counterparty_id]
+      attributes:
+        - { name: counterparty_id, type: varchar, isPrimaryKey: true }
+        - { name: lei, type: varchar(20), description: "ISO 17442 Legal Entity Identifier" }
+        - { name: legal_name, type: varchar(255) }
+        - { name: bic, type: varchar(11), description: "ISO 9362 BIC" }
+        - { name: party_type, type: varchar(16), description: "ExecutingBroker|Client|CCP|CSD" }
+        - { name: jurisdiction_iso, type: varchar(2) }
+        - { name: credit_rating, type: varchar(8) }
+        - { name: parent_lei, type: varchar(20) }
+        - { name: status, type: varchar(16) }
+        - { name: onboarded_at, type: timestamp }
+
+    - name: instrument
+      description: Tradeable instrument master. Combines FIX SecurityDefinition (35=d) and FpML productType.
+      keys: [instrument_id]
+      attributes:
+        - { name: instrument_id, type: varchar, isPrimaryKey: true }
+        - { name: isin, type: varchar(12), description: "ISO 6166 ISIN" }
+        - { name: cusip, type: varchar(9) }
+        - { name: figi, type: varchar(12) }
+        - { name: ric, type: varchar(16), description: "Refinitiv Instrument Code" }
+        - { name: symbol, type: varchar(16), description: "FIX tag 55 Symbol" }
+        - { name: security_type, type: varchar(16), description: "FIX tag 167 SecurityType (CS|FUT|OPT|CD|GOVT)" }
+        - { name: cfi_code, type: varchar(6), description: "ISO 10962 CFI" }
+        - { name: currency, type: varchar(3) }
+        - { name: country_of_issue, type: varchar(2) }
+        - { name: maturity_date, type: date, description: "FIX tag 541 MaturityDate" }
+        - { name: contract_multiplier, type: "decimal(18,6)" }
+        - { name: tick_size, type: "decimal(18,8)" }
+        - { name: lot_size, type: integer }
+        - { name: underlying_instrument_id, type: varchar }
+        - { name: product_type_fpml, type: varchar(64), description: "FpML productType" }
+        - { name: status, type: varchar(16), description: "active|matured|delisted" }
+
+    - name: execution_venue
+      description: Execution venue / exchange. ISO 10383 MIC.
+      keys: [venue_id]
+      attributes:
+        - { name: venue_id, type: varchar, isPrimaryKey: true }
+        - { name: mic, type: varchar(4), description: "ISO 10383 Market Identifier Code" }
+        - { name: name, type: varchar(64) }
+        - { name: country_iso, type: varchar(2) }
+        - { name: venue_type, type: varchar(16), description: "Lit|Dark|MTF|OTF|SI|RM" }
+        - { name: operating_mic, type: varchar(4) }
+        - { name: status, type: varchar(16) }
+
+    - name: account
+      description: Trading account (client or proprietary). FIX tag 1 Account.
+      keys: [account_id]
+      attributes:
+        - { name: account_id, type: varchar, isPrimaryKey: true }
+        - { name: counterparty_id, type: varchar, isForeignKey: true, references: counterparty.counterparty_id }
+        - { name: account_type, type: varchar(16), description: "Cash|Margin|Discretionary" }
+        - { name: base_currency, type: varchar(3) }
+        - { name: clearing_account, type: varchar(32) }
+        - { name: opened_at, type: date }
+        - { name: closed_at, type: date }
+        - { name: investment_objective, type: varchar(64) }
+
+    - name: order
+      description: Trading order — FIX 4.4 NewOrderSingle (35=D). Field tags inline.
+      keys: [order_id]
+      attributes:
+        - { name: order_id, type: varchar, isPrimaryKey: true, description: "FIX 11 ClOrdID" }
+        - { name: parent_order_id, type: varchar, isForeignKey: true, references: order.order_id, description: "FIX 526 SecondaryClOrdID" }
+        - { name: orig_cl_ord_id, type: varchar, description: "FIX 41 OrigClOrdID for replace/cancel" }
+        - { name: account_id, type: varchar, isForeignKey: true, references: account.account_id }
+        - { name: instrument_id, type: varchar, isForeignKey: true, references: instrument.instrument_id }
+        - { name: venue_id, type: varchar, isForeignKey: true, references: execution_venue.venue_id }
+        - { name: side, type: varchar(8), description: "FIX 54 Side (Buy|Sell|SellShort)" }
+        - { name: order_qty, type: "decimal(20,4)", description: "FIX 38 OrderQty" }
+        - { name: price, type: "decimal(20,8)", description: "FIX 44 Price" }
+        - { name: stop_price, type: "decimal(20,8)" }
+        - { name: ord_type, type: varchar(8), description: "FIX 40 OrdType (1=Market 2=Limit 3=Stop 4=StopLimit)" }
+        - { name: time_in_force, type: varchar(8), description: "FIX 59 TimeInForce (DAY|GTC|IOC|FOK|GTD)" }
+        - { name: handl_inst, type: varchar(4), description: "FIX 21 HandlInst" }
+        - { name: exec_inst, type: varchar(8), description: "FIX 18 ExecInst" }
+        - { name: order_status, type: varchar(8), description: "FIX 39 OrdStatus (0=New 1=Partial 2=Filled 4=Cancelled 8=Rejected)" }
+        - { name: arrival_price, type: "decimal(20,8)" }
+        - { name: transact_time, type: timestamp, description: "FIX 60 TransactTime" }
+        - { name: sender_comp_id, type: varchar(32) }
+        - { name: target_comp_id, type: varchar(32) }
+        - { name: text_memo, type: varchar(255) }
+      relationships:
+        - { to: execution_report, kind: one_to_many, via: order_id }
+
+    - name: execution_report
+      description: FIX 4.4 ExecutionReport (35=8) — every state transition / fill.
+      keys: [exec_id]
+      attributes:
+        - { name: exec_id, type: varchar, isPrimaryKey: true, description: "FIX 17 ExecID" }
+        - { name: order_id, type: varchar, isForeignKey: true, references: order.order_id }
+        - { name: exec_type, type: varchar(8), description: "FIX 150 ExecType (0=New 4=Cancelled F=Trade)" }
+        - { name: ord_status, type: varchar(8), description: "FIX 39 OrdStatus" }
+        - { name: leaves_qty, type: "decimal(20,4)", description: "FIX 151 LeavesQty" }
+        - { name: cum_qty, type: "decimal(20,4)", description: "FIX 14 CumQty" }
+        - { name: avg_px, type: "decimal(20,8)", description: "FIX 6 AvgPx" }
+        - { name: last_qty, type: "decimal(20,4)", description: "FIX 32 LastQty" }
+        - { name: last_px, type: "decimal(20,8)", description: "FIX 31 LastPx" }
+        - { name: trade_date, type: date, description: "FIX 75 TradeDate" }
+        - { name: transact_time, type: timestamp }
+        - { name: venue_id, type: varchar, isForeignKey: true, references: execution_venue.venue_id }
+        - { name: liquidity_indicator, type: varchar(8), description: "FIX 851 LastLiquidityInd" }
+        - { name: trade_capacity, type: varchar(8), description: "FIX 528 OrderCapacity" }
+
+    - name: trade
+      description: Booked trade — derived from filled execution(s). Maps to FpML Trade, TradeHeader.
+      keys: [trade_id]
+      attributes:
+        - { name: trade_id, type: varchar, isPrimaryKey: true, description: "FpML tradeId" }
+        - { name: trade_id_scheme, type: varchar(64), description: "FpML tradeId scheme (e.g. UTI for swaps)" }
+        - { name: usi, type: varchar(64), description: "Unique Swap Identifier (CFTC Part 45)" }
+        - { name: account_id, type: varchar, isForeignKey: true, references: account.account_id }
+        - { name: instrument_id, type: varchar, isForeignKey: true, references: instrument.instrument_id }
+        - { name: counterparty_id, type: varchar, isForeignKey: true, references: counterparty.counterparty_id, description: "FpML party2" }
+        - { name: side, type: varchar(8) }
+        - { name: trade_qty, type: "decimal(20,4)" }
+        - { name: trade_price, type: "decimal(20,8)" }
+        - { name: notional, type: "decimal(20,4)" }
+        - { name: notional_currency, type: varchar(3) }
+        - { name: trade_date, type: date, description: "FpML tradeHeader.tradeDate" }
+        - { name: execution_ts, type: timestamp }
+        - { name: settlement_date, type: date, description: "FpML settlementDate" }
+        - { name: settlement_currency, type: varchar(3) }
+        - { name: clearing_status, type: varchar(16), description: "Cleared|Bilateral|PendingCCP" }
+        - { name: ccp_id, type: varchar }
+        - { name: product_type_fpml, type: varchar(64) }
+        - { name: master_agreement_id, type: varchar }
+        - { name: regulatory_jurisdiction, type: varchar(8), description: "EMIR|CFTC|MAS|ASIC" }
+
+    - name: allocation
+      description: Block-trade allocation to underlying account. FIX 4.4 AllocationInstruction (35=J).
+      keys: [allocation_id]
+      attributes:
+        - { name: allocation_id, type: varchar, isPrimaryKey: true, description: "FIX 70 AllocID" }
+        - { name: trade_id, type: varchar, isForeignKey: true, references: trade.trade_id }
+        - { name: account_id, type: varchar, isForeignKey: true, references: account.account_id }
+        - { name: alloc_qty, type: "decimal(20,4)", description: "FIX 80 AllocQty" }
+        - { name: alloc_avg_price, type: "decimal(20,8)" }
+        - { name: alloc_status, type: varchar(8), description: "FIX 87 AllocStatus" }
+        - { name: settlement_instructions_id, type: varchar }
+        - { name: created_at, type: timestamp }
+
+    - name: confirmation
+      description: Trade confirmation. FIX 4.4 Confirmation (35=AK) / FpML confirmation message.
+      keys: [confirmation_id]
+      attributes:
+        - { name: confirmation_id, type: varchar, isPrimaryKey: true }
+        - { name: trade_id, type: varchar, isForeignKey: true, references: trade.trade_id }
+        - { name: counterparty_id, type: varchar, isForeignKey: true, references: counterparty.counterparty_id }
+        - { name: confirmation_status, type: varchar(8), description: "Confirmed|Disputed|Cancelled" }
+        - { name: confirmation_method, type: varchar(16), description: "Electronic|Manual|MarkitWire" }
+        - { name: confirmed_at, type: timestamp }
+
+    - name: settlement_instruction
+      description: ISO 20022 sese.023 SecuritiesSettlementTransactionInstruction.
+      keys: [ssi_id]
+      attributes:
+        - { name: ssi_id, type: varchar, isPrimaryKey: true, description: "MessageIdentification" }
+        - { name: trade_id, type: varchar, isForeignKey: true, references: trade.trade_id }
+        - { name: account_owner, type: varchar }
+        - { name: safekeeping_account, type: varchar(35), description: "AccountIdentification" }
+        - { name: csd_bic, type: varchar(11) }
+        - { name: instrument_id, type: varchar, isForeignKey: true, references: instrument.instrument_id }
+        - { name: settlement_amount, type: "decimal(20,4)" }
+        - { name: settlement_currency, type: varchar(3) }
+        - { name: settlement_quantity, type: "decimal(20,4)" }
+        - { name: trade_date, type: date }
+        - { name: settlement_date, type: date }
+        - { name: delivery_type, type: varchar(8), description: "DVP|RVP|FOP" }
+        - { name: payment_type, type: varchar(8), description: "APMT|FREE" }
+        - { name: priority, type: varchar(8) }
+        - { name: status, type: varchar(16), description: "Matched|Unmatched|Settled|Failed" }
+        - { name: matched_ts, type: timestamp }
+        - { name: settled_ts, type: timestamp }
+
+    - name: position
+      description: End-of-day open position by account / instrument.
+      keys: [position_id]
+      attributes:
+        - { name: position_id, type: varchar, isPrimaryKey: true }
+        - { name: account_id, type: varchar, isForeignKey: true, references: account.account_id }
+        - { name: instrument_id, type: varchar, isForeignKey: true, references: instrument.instrument_id }
+        - { name: position_date, type: date, isPrimaryKey: false }
+        - { name: long_qty, type: "decimal(20,4)" }
+        - { name: short_qty, type: "decimal(20,4)" }
+        - { name: net_qty, type: "decimal(20,4)" }
+        - { name: avg_cost, type: "decimal(20,8)" }
+        - { name: market_price, type: "decimal(20,8)" }
+        - { name: market_value, type: "decimal(20,4)" }
+        - { name: unrealized_pnl, type: "decimal(20,4)" }
+        - { name: realized_pnl, type: "decimal(20,4)" }
+        - { name: currency, type: varchar(3) }
+
+    - name: lifecycle_event
+      description: FpML 5.x lifecycle event (TermEvent, NotionalChange, Reset, FixingEvent, etc.).
+      keys: [event_id]
+      attributes:
+        - { name: event_id, type: varchar, isPrimaryKey: true }
+        - { name: trade_id, type: varchar, isForeignKey: true, references: trade.trade_id }
+        - { name: event_type, type: varchar(32), description: "FpML eventType (TermEvent|Reset|NotionalChange|Allocation)" }
+        - { name: effective_date, type: date }
+        - { name: payment_date, type: date }
+        - { name: payment_amount, type: "decimal(20,4)" }
+        - { name: payment_currency, type: varchar(3) }
+        - { name: reset_rate, type: "decimal(12,9)" }
+        - { name: index_name, type: varchar(32), description: "USD-LIBOR-BBA|SOFR|EURIBOR" }
+        - { name: processed_ts, type: timestamp }
+        - { name: source_message_id, type: varchar }
+
+    - name: margin_call
+      description: CCP / bilateral margin call. ISO 20022 colr.003 CollateralManagementCancellationStatus etc.
+      keys: [margin_call_id]
+      attributes:
+        - { name: margin_call_id, type: varchar, isPrimaryKey: true }
+        - { name: counterparty_id, type: varchar, isForeignKey: true, references: counterparty.counterparty_id }
+        - { name: ccp_id, type: varchar }
+        - { name: call_type, type: varchar(16), description: "Initial|Variation|MTM" }
+        - { name: call_amount, type: "decimal(20,4)" }
+        - { name: call_currency, type: varchar(3) }
+        - { name: call_ts, type: timestamp }
+        - { name: due_ts, type: timestamp }
+        - { name: status, type: varchar(16), description: "Issued|Acknowledged|Met|Disputed" }
+        - { name: collateral_pledged_value, type: "decimal(20,4)" }
+
+    - name: trade_break
+      description: Reconciliation break (matching mismatch trade vs counterparty record).
+      keys: [break_id]
+      attributes:
+        - { name: break_id, type: varchar, isPrimaryKey: true }
+        - { name: trade_id, type: varchar, isForeignKey: true, references: trade.trade_id }
+        - { name: break_type, type: varchar(16), description: "Quantity|Price|SettleDate|SSI|Counterparty" }
+        - { name: detected_at, type: timestamp }
+        - { name: assignee_id, type: varchar }
+        - { name: status, type: varchar(16), description: "Open|InProgress|Resolved|Aged" }
+        - { name: resolved_at, type: timestamp }
+        - { name: resolution_notes, type: text }
+
+    - name: regulatory_report
+      description: CFTC Part 43/45 swap data submission or MiFIR RTS 22 transaction report.
+      keys: [report_id]
+      attributes:
+        - { name: report_id, type: varchar, isPrimaryKey: true }
+        - { name: trade_id, type: varchar, isForeignKey: true, references: trade.trade_id }
+        - { name: regime, type: varchar(8), description: "CFTC|EMIR|MiFIR|MAS|ASIC" }
+        - { name: report_type, type: varchar(16), description: "Creation|Modification|Cancel" }
+        - { name: utis_uti, type: varchar(64) }
+        - { name: trade_repository, type: varchar(32), description: "DTCC|REGIS-TR|UnaVista" }
+        - { name: submission_ts, type: timestamp }
+        - { name: ack_status, type: varchar(8) }
+        - { name: ack_ts, type: timestamp }
+        - { name: error_code, type: varchar(16) }
+
+    - name: market_data_tick
+      description: Last-trade / quote tick used for TCA & MTM. Time-series.
+      keys: [tick_id]
+      attributes:
+        - { name: tick_id, type: bigint, isPrimaryKey: true }
+        - { name: instrument_id, type: varchar, isForeignKey: true, references: instrument.instrument_id }
+        - { name: venue_id, type: varchar, isForeignKey: true, references: execution_venue.venue_id }
+        - { name: tick_ts, type: timestamp }
+        - { name: bid_px, type: "decimal(20,8)" }
+        - { name: bid_sz, type: "decimal(20,4)" }
+        - { name: ask_px, type: "decimal(20,8)" }
+        - { name: ask_sz, type: "decimal(20,4)" }
+        - { name: last_px, type: "decimal(20,8)" }
+        - { name: last_sz, type: "decimal(20,4)" }
+        - { name: condition_codes, type: varchar(16) }
+
+  relationships:
+    - { from: order, to: execution_report, kind: one_to_many }
+    - { from: execution_report, to: trade, kind: many_to_many }
+    - { from: trade, to: allocation, kind: one_to_many }
+    - { from: trade, to: confirmation, kind: one_to_one }
+    - { from: trade, to: settlement_instruction, kind: one_to_one }
+    - { from: trade, to: lifecycle_event, kind: one_to_many }
+    - { from: trade, to: regulatory_report, kind: one_to_many }
+    - { from: account, to: position, kind: one_to_many }
+    - { from: counterparty, to: margin_call, kind: one_to_many }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/capital_markets_3nf.sql
+  vault: modeling/ddl/capital_markets_vault.sql
+  dimensional: modeling/ddl/capital_markets_dim.sql
 
 sourceSystems:
   - { vendor: Murex, product: MX.3, category: Trading Platform }
-  - { vendor: Calypso, product: Calypso, category: Trading Platform }
+  - { vendor: Calypso (Adenza), product: Calypso, category: Trading Platform }
   - { vendor: Bloomberg, product: AIM, category: OMS }
   - { vendor: ION, product: Fidessa, category: OEMS }
-  - { vendor: DTCC, product: CTM, category: Settlement Network }
+  - { vendor: FlexTrade, product: FlexTRADER, category: EMS }
+  - { vendor: DTCC, product: CTM, category: Affirmation/Confirmation }
+  - { vendor: SWIFT, product: Alliance, category: Messaging Network }
+  - { vendor: TraditionAlly (MarkitWire), product: MarkitSERV, category: FpML Confirmation }
 
 connectors:
-  - { type: FIX, protocol: TCP, auth: PKI }
-  - { type: SWIFT MT/ISO20022, protocol: MQ/file, auth: PKI }
-  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: FIX 4.4 / 5.0 SP2, protocol: TCP, auth: PKI }
+  - { type: FpML 5.x, protocol: HTTPS/MQ, auth: mTLS }
+  - { type: SWIFT MT5xx / MX, protocol: MQ/file, auth: PKI }
+  - { type: ISO 20022 securities (sese/semt/setr), protocol: MQ/file, auth: PKI }
+  - { type: REST/Webhook, protocol: HTTPS, auth: OAuth2 }
+  - { type: Trade Repository ack feed, protocol: SFTP, auth: SSH key }
+
+ingestionChallenges:
+  - FIX session sequence numbers must be reconstructed if the gateway restarts mid-session.
+  - FpML lifecycle events for swaps can amend trades retroactively (T-30 days+).
+  - ISO 20022 settlement messages can arrive out-of-order vs original trade booking.
+  - Reference data drift — ISIN reuse across delisted/relisted issues.
+  - Tick volume scales to millions/sec at market open requiring kdb+/Q-style stores.
+  - Late-trade-reporting rules (CAT, MiFIR) require reconstructed audit trail.
+
+integrationChallenges:
+  - Cross-asset normalization between FIX equity executions and FpML derivative trades.
+  - CCP cleared vs bilateral booking variants (initial margin, default fund).
+  - Reg-jurisdiction overlap (EMIR + MiFIR + Dodd-Frank double reporting).
+  - Time-series replays require deterministic ordering by venue clock.
+  - 21+ regulatory regime mappings for transaction reporting drift quarterly.
+  - Allocation netting models differ across asset classes (gross vs net for swaps).

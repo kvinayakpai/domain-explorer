@@ -3,34 +3,461 @@ name: EHR Integrations
 vertical: Healthcare
 oneLiner: Bidirectional clinical data flow between EHRs (Epic, Cerner) and downstream analytics, payer, and engagement systems.
 
+# Authoritative source: HL7 FHIR R4 (https://hl7.org/fhir/R4/) and USCDI v3
+# (https://www.healthit.gov/isa/united-states-core-data-interoperability-uscdi).
+# Entities and attributes below are drawn directly from FHIR resource definitions;
+# datatypes are simplified to relational equivalents but the names, cardinalities
+# and FHIR references are preserved.
+
 personas:
   - { name: Director Clinical IT, title: "Director, Clinical Informatics", level: Director }
   - { name: Interface Engineer, title: Senior Interface Engineer, level: Manager }
   - { name: FHIR Architect, title: FHIR Integration Architect, level: Director }
+  - { name: Chief Medical Information Officer, title: CMIO, level: C-suite }
+  - { name: Privacy Officer, title: HIPAA Privacy Officer, level: Director }
+
+decisions:
+  - { id: ehr.d.routing, statement: Route HL7 v2 vs FHIR vs C-CDA per downstream consumer capability. }
+  - { id: ehr.d.match, statement: Auto-match patient identity vs queue for steward review. }
+  - { id: ehr.d.replay, statement: Replay failed ADT events from raw store vs source EHR. }
+  - { id: ehr.d.scope, statement: Grant SMART-on-FHIR scope to a third-party app. }
+  - { id: ehr.d.uscdi_gap, statement: Backfill missing USCDI v3 elements via patient outreach vs accept gap. }
+  - { id: ehr.d.consent, statement: Honor / reject a Consent resource for a specific data class. }
 
 kpis:
-  - { id: ehr.kpi.message_success, name: HL7 Message Success, formula: acked / sent, unit: "%", direction: higher_is_better }
-  - { id: ehr.kpi.fhir_latency, name: FHIR API Latency P95, formula: p95(fhir_response_ms), unit: ms, direction: lower_is_better }
-  - { id: ehr.kpi.dq_match_rate, name: Patient Match Rate, formula: matched / total, unit: "%", direction: higher_is_better }
-  - { id: ehr.kpi.adt_lag, name: ADT Event Lag, formula: avg(received_ts - event_ts), unit: minutes, direction: lower_is_better }
-  - { id: ehr.kpi.usable_obs, name: Usable Observation Rate, formula: structured_codes / observations, unit: "%", direction: higher_is_better }
+  - id: ehr.kpi.message_success
+    name: HL7 Message Success
+    formula: acked_messages / sent_messages
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [ehr.d.replay]
+  - id: ehr.kpi.fhir_latency
+    name: FHIR API Latency P95
+    formula: p95(fhir_response_ms)
+    unit: ms
+    direction: lower_is_better
+  - id: ehr.kpi.dq_match_rate
+    name: Patient Match Rate
+    formula: matched_patients / candidate_pairs
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [ehr.d.match]
+  - id: ehr.kpi.adt_lag
+    name: ADT Event Lag
+    formula: avg(received_ts - event_effective_ts)
+    unit: minutes
+    direction: lower_is_better
+    decisionsSupported: [ehr.d.replay]
+  - id: ehr.kpi.usable_obs
+    name: Usable Observation Rate
+    formula: observations_with_loinc / total_observations
+    unit: "%"
+    direction: higher_is_better
+  - id: ehr.kpi.uscdi_completeness
+    name: USCDI v3 Element Completeness
+    formula: populated_elements / required_elements
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [ehr.d.uscdi_gap]
+  - id: ehr.kpi.smart_token_revocations
+    name: SMART Token Revocations
+    formula: revoked_tokens / issued_tokens
+    unit: "%"
+    direction: lower_is_better
+  - id: ehr.kpi.consent_honor_rate
+    name: Consent Honor Rate
+    formula: respected_consents / consent_decisions
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [ehr.d.consent]
+  - id: ehr.kpi.bulk_export_throughput
+    name: Bulk FHIR Export Throughput
+    formula: exported_resources / hour
+    unit: resources/h
+    direction: higher_is_better
+  - id: ehr.kpi.duplicate_record_rate
+    name: Duplicate Patient Record Rate
+    formula: duplicate_clusters / unique_patients
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [ehr.d.match]
 
 dataModel:
   entities:
-    - { name: Patient, description: 'Patient record' }
-    - { name: Encounter, description: 'Clinical encounter' }
-    - { name: Observation, description: 'FHIR observation' }
-    - { name: MedicationOrder, description: 'Medication order' }
-    - { name: LabResult, description: 'Laboratory result' }
+    - name: patient
+      description: FHIR R4 Patient resource (https://hl7.org/fhir/R4/patient.html). USCDI v3 'Patient Demographics' data class.
+      keys: [patient_id]
+      attributes:
+        - { name: patient_id, type: varchar, isPrimaryKey: true, description: "FHIR Patient.id" }
+        - { name: identifier_mrn, type: varchar(64), description: "FHIR Patient.identifier (use=usual)" }
+        - { name: identifier_ssn_hash, type: varchar(64), description: "Hashed SSN identifier" }
+        - { name: family_name, type: varchar(128), description: "Patient.name.family" }
+        - { name: given_names, type: varchar(255), description: "Patient.name.given (joined)" }
+        - { name: gender, type: varchar(16), description: "Patient.gender (male|female|other|unknown)" }
+        - { name: birth_date, type: date, description: "Patient.birthDate" }
+        - { name: deceased_date_time, type: timestamp, description: "Patient.deceasedDateTime" }
+        - { name: marital_status_code, type: varchar(16), description: "Patient.maritalStatus" }
+        - { name: race_code, type: varchar(16), description: "us-core-race extension" }
+        - { name: ethnicity_code, type: varchar(16), description: "us-core-ethnicity extension" }
+        - { name: address_line, type: varchar(255), description: "Patient.address.line" }
+        - { name: address_city, type: varchar(64) }
+        - { name: address_state, type: varchar(8) }
+        - { name: address_postal_code, type: varchar(16) }
+        - { name: address_country, type: varchar(2) }
+        - { name: phone_e164, type: varchar(32) }
+        - { name: email, type: varchar(255) }
+        - { name: managing_organization_id, type: varchar, isForeignKey: true, references: organization.organization_id }
+        - { name: language_code, type: varchar(8), description: "Patient.communication.language" }
+      relationships:
+        - { to: encounter, kind: one_to_many, via: patient_id }
+        - { to: condition, kind: one_to_many, via: patient_id }
+        - { to: observation, kind: one_to_many, via: patient_id }
+        - { to: medication_request, kind: one_to_many, via: patient_id }
+        - { to: coverage, kind: one_to_many, via: patient_id }
+        - { to: consent, kind: one_to_many, via: patient_id }
+
+    - name: practitioner
+      description: FHIR R4 Practitioner (https://hl7.org/fhir/R4/practitioner.html). USCDI 'Provider'.
+      keys: [practitioner_id]
+      attributes:
+        - { name: practitioner_id, type: varchar, isPrimaryKey: true, description: "Practitioner.id" }
+        - { name: npi, type: varchar(10), description: "Practitioner.identifier system=http://hl7.org/fhir/sid/us-npi" }
+        - { name: family_name, type: varchar(128) }
+        - { name: given_names, type: varchar(255) }
+        - { name: gender, type: varchar(16) }
+        - { name: qualification_code, type: varchar(32), description: "Practitioner.qualification.code" }
+        - { name: qualification_issuer_org_id, type: varchar }
+        - { name: qualification_period_start, type: date }
+        - { name: qualification_period_end, type: date }
+        - { name: active, type: boolean }
+      relationships:
+        - { to: encounter, kind: one_to_many, via: primary_practitioner_id }
+        - { to: medication_request, kind: one_to_many, via: requester_id }
+
+    - name: organization
+      description: FHIR R4 Organization (https://hl7.org/fhir/R4/organization.html).
+      keys: [organization_id]
+      attributes:
+        - { name: organization_id, type: varchar, isPrimaryKey: true }
+        - { name: identifier_npi, type: varchar(10) }
+        - { name: type_code, type: varchar(32), description: "Organization.type CodeableConcept (prov, hosp, ins)" }
+        - { name: name, type: varchar(255) }
+        - { name: telecom_phone, type: varchar(32) }
+        - { name: address_line, type: varchar(255) }
+        - { name: address_city, type: varchar(64) }
+        - { name: address_state, type: varchar(8) }
+        - { name: address_postal_code, type: varchar(16) }
+        - { name: part_of_organization_id, type: varchar, isForeignKey: true, references: organization.organization_id }
+        - { name: active, type: boolean }
+
+    - name: location
+      description: FHIR R4 Location (https://hl7.org/fhir/R4/location.html).
+      keys: [location_id]
+      attributes:
+        - { name: location_id, type: varchar, isPrimaryKey: true }
+        - { name: name, type: varchar(255) }
+        - { name: status, type: varchar(16), description: "active|suspended|inactive" }
+        - { name: mode, type: varchar(16), description: "instance|kind" }
+        - { name: type_code, type: varchar(32) }
+        - { name: managing_organization_id, type: varchar, isForeignKey: true, references: organization.organization_id }
+        - { name: address_line, type: varchar(255) }
+        - { name: address_city, type: varchar(64) }
+        - { name: address_state, type: varchar(8) }
+        - { name: position_latitude, type: "decimal(9,6)" }
+        - { name: position_longitude, type: "decimal(9,6)" }
+
+    - name: encounter
+      description: FHIR R4 Encounter (https://hl7.org/fhir/R4/encounter.html). USCDI 'Encounter Information'.
+      keys: [encounter_id]
+      attributes:
+        - { name: encounter_id, type: varchar, isPrimaryKey: true, description: "Encounter.id" }
+        - { name: patient_id, type: varchar, isForeignKey: true, references: patient.patient_id, description: "Encounter.subject" }
+        - { name: status, type: varchar(16), description: "planned|arrived|in-progress|finished|cancelled" }
+        - { name: class_code, type: varchar(8), description: "Encounter.class (AMB|EMER|IMP|VR)" }
+        - { name: type_code, type: varchar(32), description: "Encounter.type" }
+        - { name: priority_code, type: varchar(16) }
+        - { name: primary_practitioner_id, type: varchar, isForeignKey: true, references: practitioner.practitioner_id }
+        - { name: service_provider_org_id, type: varchar, isForeignKey: true, references: organization.organization_id }
+        - { name: location_id, type: varchar, isForeignKey: true, references: location.location_id }
+        - { name: period_start, type: timestamp, description: "Encounter.period.start" }
+        - { name: period_end, type: timestamp, description: "Encounter.period.end" }
+        - { name: length_minutes, type: integer }
+        - { name: hospitalization_admit_source, type: varchar(16) }
+        - { name: hospitalization_discharge_disposition, type: varchar(16) }
+        - { name: reason_code, type: varchar(32), description: "Encounter.reasonCode (SNOMED)" }
+      relationships:
+        - { to: observation, kind: one_to_many, via: encounter_id }
+        - { to: condition, kind: one_to_many, via: encounter_id }
+        - { to: procedure, kind: one_to_many, via: encounter_id }
+        - { to: medication_request, kind: one_to_many, via: encounter_id }
+        - { to: diagnostic_report, kind: one_to_many, via: encounter_id }
+
+    - name: condition
+      description: FHIR R4 Condition (https://hl7.org/fhir/R4/condition.html). USCDI 'Problems'.
+      keys: [condition_id]
+      attributes:
+        - { name: condition_id, type: varchar, isPrimaryKey: true }
+        - { name: patient_id, type: varchar, isForeignKey: true, references: patient.patient_id }
+        - { name: encounter_id, type: varchar, isForeignKey: true, references: encounter.encounter_id }
+        - { name: clinical_status_code, type: varchar(16), description: "active|recurrence|relapse|inactive|remission|resolved" }
+        - { name: verification_status_code, type: varchar(16), description: "unconfirmed|provisional|differential|confirmed|refuted|entered-in-error" }
+        - { name: category_code, type: varchar(32), description: "problem-list-item|encounter-diagnosis" }
+        - { name: severity_code, type: varchar(16), description: "Condition.severity (SNOMED)" }
+        - { name: code_system, type: varchar(64), description: "Condition.code.coding.system (ICD-10-CM, SNOMED CT)" }
+        - { name: code_value, type: varchar(32), description: "Condition.code.coding.code" }
+        - { name: code_display, type: varchar(255) }
+        - { name: onset_date_time, type: timestamp }
+        - { name: abatement_date_time, type: timestamp }
+        - { name: recorded_date, type: date }
+        - { name: recorder_id, type: varchar }
+
+    - name: observation
+      description: FHIR R4 Observation (https://hl7.org/fhir/R4/observation.html). USCDI 'Laboratory', 'Vital Signs', 'Smoking Status'.
+      keys: [observation_id]
+      attributes:
+        - { name: observation_id, type: varchar, isPrimaryKey: true }
+        - { name: patient_id, type: varchar, isForeignKey: true, references: patient.patient_id }
+        - { name: encounter_id, type: varchar, isForeignKey: true, references: encounter.encounter_id }
+        - { name: status, type: varchar(16), description: "registered|preliminary|final|amended" }
+        - { name: category_code, type: varchar(32), description: "vital-signs|laboratory|imaging|social-history" }
+        - { name: code_system, type: varchar(64), description: "LOINC system URI" }
+        - { name: code_value, type: varchar(32), description: "Observation.code.coding.code (LOINC)" }
+        - { name: code_display, type: varchar(255) }
+        - { name: effective_date_time, type: timestamp }
+        - { name: issued, type: timestamp }
+        - { name: value_quantity_value, type: "decimal(18,6)" }
+        - { name: value_quantity_unit, type: varchar(16), description: "UCUM unit" }
+        - { name: value_codeable_concept_code, type: varchar(32) }
+        - { name: value_string, type: text }
+        - { name: interpretation_code, type: varchar(8), description: "L|H|N|A|C" }
+        - { name: reference_range_low, type: "decimal(18,6)" }
+        - { name: reference_range_high, type: "decimal(18,6)" }
+        - { name: performer_id, type: varchar, isForeignKey: true, references: practitioner.practitioner_id }
+        - { name: data_absent_reason_code, type: varchar(16) }
+      relationships:
+        - { to: diagnostic_report, kind: many_to_many, via: observation_id }
+
+    - name: medication_request
+      description: FHIR R4 MedicationRequest (https://hl7.org/fhir/R4/medicationrequest.html). USCDI 'Medications'.
+      keys: [medication_request_id]
+      attributes:
+        - { name: medication_request_id, type: varchar, isPrimaryKey: true }
+        - { name: patient_id, type: varchar, isForeignKey: true, references: patient.patient_id }
+        - { name: encounter_id, type: varchar, isForeignKey: true, references: encounter.encounter_id }
+        - { name: requester_id, type: varchar, isForeignKey: true, references: practitioner.practitioner_id }
+        - { name: status, type: varchar(16), description: "active|on-hold|cancelled|completed|stopped|draft" }
+        - { name: intent, type: varchar(16), description: "proposal|plan|order|original-order|reflex-order|filler-order|instance-order" }
+        - { name: priority, type: varchar(16) }
+        - { name: medication_code_system, type: varchar(64), description: "RxNorm" }
+        - { name: medication_code_value, type: varchar(32), description: "RxNorm RXCUI" }
+        - { name: medication_display, type: varchar(255) }
+        - { name: dose_quantity_value, type: "decimal(12,4)" }
+        - { name: dose_quantity_unit, type: varchar(16) }
+        - { name: route_code, type: varchar(16), description: "SNOMED route" }
+        - { name: frequency_text, type: varchar(64) }
+        - { name: authored_on, type: timestamp }
+        - { name: validity_period_start, type: timestamp }
+        - { name: validity_period_end, type: timestamp }
+        - { name: dispense_quantity, type: "decimal(12,4)" }
+        - { name: dispense_refills_allowed, type: smallint }
+        - { name: substitution_allowed, type: boolean }
+
+    - name: procedure
+      description: FHIR R4 Procedure (https://hl7.org/fhir/R4/procedure.html). USCDI 'Procedures'.
+      keys: [procedure_id]
+      attributes:
+        - { name: procedure_id, type: varchar, isPrimaryKey: true }
+        - { name: patient_id, type: varchar, isForeignKey: true, references: patient.patient_id }
+        - { name: encounter_id, type: varchar, isForeignKey: true, references: encounter.encounter_id }
+        - { name: status, type: varchar(16), description: "preparation|in-progress|completed|stopped" }
+        - { name: code_system, type: varchar(64), description: "CPT|HCPCS|SNOMED" }
+        - { name: code_value, type: varchar(16) }
+        - { name: code_display, type: varchar(255) }
+        - { name: performed_period_start, type: timestamp }
+        - { name: performed_period_end, type: timestamp }
+        - { name: performer_id, type: varchar, isForeignKey: true, references: practitioner.practitioner_id }
+        - { name: location_id, type: varchar, isForeignKey: true, references: location.location_id }
+        - { name: outcome_code, type: varchar(32) }
+        - { name: complication_code, type: varchar(32) }
+
+    - name: allergy_intolerance
+      description: FHIR R4 AllergyIntolerance (https://hl7.org/fhir/R4/allergyintolerance.html). USCDI 'Allergies and Intolerances'.
+      keys: [allergy_id]
+      attributes:
+        - { name: allergy_id, type: varchar, isPrimaryKey: true }
+        - { name: patient_id, type: varchar, isForeignKey: true, references: patient.patient_id }
+        - { name: clinical_status_code, type: varchar(16) }
+        - { name: verification_status_code, type: varchar(16) }
+        - { name: type, type: varchar(16), description: "allergy|intolerance" }
+        - { name: category, type: varchar(16), description: "food|medication|environment|biologic" }
+        - { name: criticality, type: varchar(16), description: "low|high|unable-to-assess" }
+        - { name: substance_code_system, type: varchar(64), description: "RxNorm|SNOMED|UNII" }
+        - { name: substance_code_value, type: varchar(32) }
+        - { name: substance_display, type: varchar(255) }
+        - { name: reaction_manifestation_code, type: varchar(32) }
+        - { name: reaction_severity, type: varchar(16) }
+        - { name: onset_date_time, type: timestamp }
+        - { name: recorded_date, type: timestamp }
+
+    - name: immunization
+      description: FHIR R4 Immunization (https://hl7.org/fhir/R4/immunization.html). USCDI 'Immunizations'.
+      keys: [immunization_id]
+      attributes:
+        - { name: immunization_id, type: varchar, isPrimaryKey: true }
+        - { name: patient_id, type: varchar, isForeignKey: true, references: patient.patient_id }
+        - { name: encounter_id, type: varchar, isForeignKey: true, references: encounter.encounter_id }
+        - { name: status, type: varchar(16), description: "completed|entered-in-error|not-done" }
+        - { name: vaccine_code_system, type: varchar(64), description: "CVX|NDC" }
+        - { name: vaccine_code_value, type: varchar(16) }
+        - { name: occurrence_date_time, type: timestamp }
+        - { name: lot_number, type: varchar(32) }
+        - { name: expiration_date, type: date }
+        - { name: site_code, type: varchar(16) }
+        - { name: route_code, type: varchar(16) }
+        - { name: dose_quantity, type: "decimal(8,3)" }
+        - { name: dose_quantity_unit, type: varchar(16) }
+        - { name: performer_id, type: varchar, isForeignKey: true, references: practitioner.practitioner_id }
+
+    - name: diagnostic_report
+      description: FHIR R4 DiagnosticReport (https://hl7.org/fhir/R4/diagnosticreport.html). USCDI 'Diagnostic Imaging' / 'Lab'.
+      keys: [diagnostic_report_id]
+      attributes:
+        - { name: diagnostic_report_id, type: varchar, isPrimaryKey: true }
+        - { name: patient_id, type: varchar, isForeignKey: true, references: patient.patient_id }
+        - { name: encounter_id, type: varchar, isForeignKey: true, references: encounter.encounter_id }
+        - { name: status, type: varchar(16), description: "registered|partial|preliminary|final|amended" }
+        - { name: category_code, type: varchar(32) }
+        - { name: code_system, type: varchar(64), description: "LOINC" }
+        - { name: code_value, type: varchar(16) }
+        - { name: code_display, type: varchar(255) }
+        - { name: effective_date_time, type: timestamp }
+        - { name: issued, type: timestamp }
+        - { name: performer_org_id, type: varchar, isForeignKey: true, references: organization.organization_id }
+        - { name: results_interpreter_id, type: varchar, isForeignKey: true, references: practitioner.practitioner_id }
+        - { name: conclusion, type: text }
+
+    - name: coverage
+      description: FHIR R4 Coverage (https://hl7.org/fhir/R4/coverage.html). USCDI 'Health Insurance Information'.
+      keys: [coverage_id]
+      attributes:
+        - { name: coverage_id, type: varchar, isPrimaryKey: true }
+        - { name: patient_id, type: varchar, isForeignKey: true, references: patient.patient_id, description: "Coverage.beneficiary" }
+        - { name: status, type: varchar(16), description: "active|cancelled|draft|entered-in-error" }
+        - { name: type_code, type: varchar(32), description: "Coverage.type (medical, dental, etc.)" }
+        - { name: subscriber_id, type: varchar(64), description: "Coverage.subscriberId" }
+        - { name: payor_org_id, type: varchar, isForeignKey: true, references: organization.organization_id }
+        - { name: relationship_code, type: varchar(16), description: "Coverage.relationship" }
+        - { name: period_start, type: date }
+        - { name: period_end, type: date }
+        - { name: plan_group, type: varchar(32) }
+        - { name: plan_name, type: varchar(64) }
+        - { name: order_position, type: smallint, description: "Coverage.order (1=primary)" }
+        - { name: network, type: varchar(64) }
+
+    - name: consent
+      description: FHIR R4 Consent (https://hl7.org/fhir/R4/consent.html). 21st Century Cures information blocking compliance.
+      keys: [consent_id]
+      attributes:
+        - { name: consent_id, type: varchar, isPrimaryKey: true }
+        - { name: patient_id, type: varchar, isForeignKey: true, references: patient.patient_id }
+        - { name: status, type: varchar(16), description: "draft|proposed|active|rejected|inactive|entered-in-error" }
+        - { name: scope_code, type: varchar(32), description: "patient-privacy|treatment|research" }
+        - { name: category_code, type: varchar(32) }
+        - { name: date_time, type: timestamp }
+        - { name: organization_id, type: varchar, isForeignKey: true, references: organization.organization_id }
+        - { name: source_attachment_uri, type: varchar(255) }
+        - { name: policy_uri, type: varchar(255) }
+        - { name: provision_type, type: varchar(8), description: "deny|permit" }
+        - { name: provision_period_start, type: timestamp }
+        - { name: provision_period_end, type: timestamp }
+        - { name: provision_purpose_code, type: varchar(32) }
+        - { name: provision_action_code, type: varchar(32) }
+
+    - name: hl7v2_message
+      description: HL7 v2.x message envelope (ADT, ORM, ORU, SIU). Operational envelope for legacy interface engine throughput.
+      keys: [message_control_id]
+      attributes:
+        - { name: message_control_id, type: varchar(64), isPrimaryKey: true, description: "MSH-10" }
+        - { name: message_type, type: varchar(8), description: "MSH-9.1 (ADT, ORM, ORU, SIU)" }
+        - { name: trigger_event, type: varchar(8), description: "MSH-9.2 (A01, A03, A08, R01)" }
+        - { name: sending_application, type: varchar(32) }
+        - { name: sending_facility, type: varchar(32) }
+        - { name: receiving_application, type: varchar(32) }
+        - { name: receiving_facility, type: varchar(32) }
+        - { name: message_datetime, type: timestamp, description: "MSH-7" }
+        - { name: processing_id, type: varchar(8), description: "P|D|T" }
+        - { name: version_id, type: varchar(8), description: "2.3|2.5.1|2.7" }
+        - { name: ack_status, type: varchar(8), description: "AA|AE|AR" }
+        - { name: ack_received_at, type: timestamp }
+        - { name: payload_uri, type: varchar(255) }
+        - { name: patient_id, type: varchar, isForeignKey: true, references: patient.patient_id }
+        - { name: encounter_id, type: varchar, isForeignKey: true, references: encounter.encounter_id }
+
+    - name: smart_authorization
+      description: SMART-on-FHIR app launch token issued/exchanged via the SMART App Launch IG.
+      keys: [authorization_id]
+      attributes:
+        - { name: authorization_id, type: varchar, isPrimaryKey: true }
+        - { name: client_id, type: varchar(64) }
+        - { name: patient_id, type: varchar, isForeignKey: true, references: patient.patient_id }
+        - { name: practitioner_id, type: varchar, isForeignKey: true, references: practitioner.practitioner_id }
+        - { name: scope, type: varchar(255), description: "patient/*.read user/Patient.read launch/patient" }
+        - { name: launch_context, type: varchar(255) }
+        - { name: token_type, type: varchar(16), description: "Bearer" }
+        - { name: issued_at, type: timestamp }
+        - { name: expires_at, type: timestamp }
+        - { name: revoked_at, type: timestamp }
+        - { name: refresh_token_hash, type: varchar(64) }
+
+  relationships:
+    - { from: patient, to: encounter, kind: one_to_many }
+    - { from: patient, to: condition, kind: one_to_many }
+    - { from: patient, to: observation, kind: one_to_many }
+    - { from: patient, to: medication_request, kind: one_to_many }
+    - { from: patient, to: coverage, kind: one_to_many }
+    - { from: patient, to: consent, kind: one_to_many }
+    - { from: encounter, to: observation, kind: one_to_many }
+    - { from: encounter, to: condition, kind: one_to_many }
+    - { from: encounter, to: procedure, kind: one_to_many }
+    - { from: encounter, to: diagnostic_report, kind: one_to_many }
+    - { from: organization, to: location, kind: one_to_many }
+    - { from: practitioner, to: encounter, kind: one_to_many }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/ehr_integrations_3nf.sql
+  vault: modeling/ddl/ehr_integrations_vault.sql
+  dimensional: modeling/ddl/ehr_integrations_dim.sql
 
 sourceSystems:
   - { vendor: Epic, product: EpicCare, category: EHR }
   - { vendor: Oracle Health, product: Cerner Millennium, category: EHR }
   - { vendor: athenahealth, product: athenaClinicals, category: EHR }
+  - { vendor: MEDITECH, product: Expanse, category: EHR }
+  - { vendor: Allscripts (Veradigm), product: Sunrise, category: EHR }
   - { vendor: Redox, product: Redox Engine, category: Integration Engine }
   - { vendor: InterSystems, product: HealthShare, category: Integration Engine }
+  - { vendor: Mirth (NextGen), product: Connect, category: HL7 v2 Integration Engine }
 
 connectors:
-  - { type: HL7v2, protocol: MLLP, auth: VPN }
-  - { type: FHIR R4, protocol: HTTPS, auth: SMART-OAuth2 }
-  - { type: C-CDA, protocol: HTTPS, auth: mTLS }
+  - { type: HL7 v2.x ADT/ORM/ORU/SIU, protocol: MLLP/TCP, auth: VPN+IPwhitelist }
+  - { type: FHIR R4 REST, protocol: HTTPS, auth: SMART-on-FHIR OAuth2 }
+  - { type: FHIR Bulk Data $export, protocol: HTTPS, auth: SMART backend services JWT }
+  - { type: C-CDA over Direct, protocol: SMTP/Direct, auth: X.509 trust bundle }
+  - { type: IHE XDS.b, protocol: SOAP/HTTPS, auth: SAML+mTLS }
+  - { type: CDS Hooks, protocol: HTTPS, auth: JWT }
+
+ingestionChallenges:
+  - HL7 v2 z-segments and locally-defined fields differ across hospitals — require per-tenant mapping.
+  - High ADT throughput (thousands of msgs/sec) at metro health systems with strict ordering by patient_id.
+  - FHIR Bulk Data exports return NDJSON files that can exceed 100GB per resource type.
+  - Patient identity matching across master patient indexes (MPI) requires probabilistic record linkage.
+  - Rate limits on Epic / Cerner FHIR APIs vary by tenant and require token bucket smoothing.
+  - USCDI v3 element gaps in legacy v2 feeds need separate enrichment pipelines.
+
+integrationChallenges:
+  - 21st Century Cures Act information blocking exceptions — must respect Consent.provision deny rules.
+  - HIPAA minimum-necessary requires SMART scope filtering at the resource level.
+  - Conflict between Epic/Cerner USCDI implementations and downstream payer profile expectations (Da Vinci PDex).
+  - C-CDA narrative drift — only structured sections are reliably parseable.
+  - SMART backend services key rotation across many JWT-issuing apps requires KMS automation.
+  - GDPR/data-residency for cross-border deployments where European tenants share an EHR vendor.

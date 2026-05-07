@@ -3,15 +3,32 @@ name: Tax Administration
 vertical: PublicSector
 oneLiner: Citizen and business tax filing, audit selection, refund processing, and compliance enforcement.
 
+# Authoritative sources:
+#   IRS Modernized e-File (MeF) XML schemas
+#     https://www.irs.gov/e-file-providers/modernized-e-file-mef-schemas-and-business-rules
+#     — IRS-Forms namespace, ReturnHeader / ReturnData wrappers, Forms 1040,
+#       1120, 1065, 941, plus Information Returns 1099/W-2.
+#   IRS Forms instructions (1040, 1099, W-2, 1120, 941).
+#   SSA EFW2 / EFW2C wage reporting.
+#   OECD Standard Audit File for Tax (SAF-T) and Common Reporting Standard
+#     (CRS) XML schemas for cross-border financial-account reporting.
+#   FATCA XML Schema v2.0 (IRS).
+#   State DOR MeF state schemas.
+
 personas:
   - { name: Commissioner, title: Tax Commissioner, level: C-suite }
   - { name: Compliance Director, title: Director of Compliance, level: Director }
-  - { name: Audit Lead, title: Audit Lead, level: Manager }
+  - { name: Audit Lead, title: Field Audit Lead, level: Manager }
+  - { name: Refund Operations Lead, title: Refund Operations Lead, level: Manager }
+  - { name: Information Reporting Lead, title: Information Returns Lead, level: Manager }
 
 decisions:
-  - { id: tax.d.audit_select, statement: Select returns for audit using risk score. }
-  - { id: tax.d.refund_release, statement: Release refund vs hold for review. }
+  - { id: tax.d.audit_select, statement: Promote a return to audit using risk-engine score. }
+  - { id: tax.d.refund_release, statement: Release refund vs hold for identity / fraud review. }
   - { id: tax.d.outreach, statement: Trigger taxpayer outreach for delinquency. }
+  - { id: tax.d.match_1099, statement: Issue automated AUR notice when 1099/W-2 mismatch found. }
+  - { id: tax.d.installment, statement: Approve installment agreement vs lien. }
+  - { id: tax.d.crs_exchange, statement: Exchange CRS records with partner jurisdiction. }
 
 kpis:
   - id: tax.kpi.voluntary_compliance
@@ -24,9 +41,10 @@ kpis:
     formula: collected / assessed
     unit: "%"
     direction: higher_is_better
+    decisionsSupported: [tax.d.installment]
   - id: tax.kpi.refund_cycle_time
     name: Refund Cycle Time
-    formula: avg(refund_ts - filed_ts)
+    formula: avg(refund_disbursed_ts - filed_ts)
     unit: days
     direction: lower_is_better
     decisionsSupported: [tax.d.refund_release]
@@ -35,36 +53,364 @@ kpis:
     formula: fraud_caught / fraud_attempted
     unit: "%"
     direction: higher_is_better
-    decisionsSupported: [tax.d.audit_select]
+    decisionsSupported: [tax.d.audit_select, tax.d.refund_release]
   - id: tax.kpi.taxpayer_sat
     name: Taxpayer Satisfaction
     formula: csat_score
     unit: index
     direction: higher_is_better
+  - id: tax.kpi.efile_rate
+    name: e-File Adoption Rate
+    formula: mef_returns / total_returns
+    unit: "%"
+    direction: higher_is_better
+  - id: tax.kpi.aur_match_rate
+    name: AUR (Auto Under-Reporter) Match Rate
+    formula: matched_information_returns / sourced_information_returns
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [tax.d.match_1099]
+  - id: tax.kpi.audit_no_change_rate
+    name: Audit No-Change Rate
+    formula: no_change_audits / closed_audits
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [tax.d.audit_select]
+  - id: tax.kpi.crs_records_exchanged
+    name: CRS Records Exchanged
+    formula: count(crs_records_sent_yoy)
+    unit: count
+    direction: target_band
+    decisionsSupported: [tax.d.crs_exchange]
+  - id: tax.kpi.lien_release_cycle
+    name: Lien Release Cycle Time
+    formula: avg(lien_released_ts - paid_ts)
+    unit: days
+    direction: lower_is_better
 
 dataModel:
   entities:
-    - { name: Taxpayer, keys: [taxpayer_id] }
-    - { name: Return, keys: [return_id] }
-    - { name: Assessment, keys: [assessment_id] }
-    - { name: Refund, keys: [refund_id] }
-    - { name: Audit, keys: [audit_id] }
+    - name: taxpayer
+      description: Individual or business taxpayer. Identified by SSN/EIN/ITIN.
+      keys: [taxpayer_id]
+      attributes:
+        - { name: taxpayer_id, type: varchar, isPrimaryKey: true, description: "Internal taxpayer master id" }
+        - { name: tin, type: varchar(11), description: "SSN/EIN/ITIN" }
+        - { name: tin_type, type: varchar(8), description: "SSN|EIN|ITIN|ATIN" }
+        - { name: legal_name, type: varchar(255) }
+        - { name: dba, type: varchar(255) }
+        - { name: entity_type, type: varchar(16), description: "Individual|Corporation|Partnership|LLC|Trust|Estate" }
+        - { name: filing_status, type: varchar(16), description: "Single|MarriedFilingJoint|HeadHousehold|MarriedFilingSeparate|QualifyingWidow" }
+        - { name: tax_year_end_month, type: smallint }
+        - { name: address_line1, type: varchar(255) }
+        - { name: address_line2, type: varchar(255) }
+        - { name: city, type: varchar(64) }
+        - { name: state_code, type: varchar(2) }
+        - { name: postal_code, type: varchar(10) }
+        - { name: country_iso, type: varchar(2) }
+        - { name: foreign_country, type: varchar(64) }
+        - { name: status, type: varchar(16), description: "active|deceased|dissolved" }
+        - { name: registered_at, type: date }
+
+    - name: filing_period
+      description: A tax period (year, quarter, month) associated with a return obligation.
+      keys: [filing_period_id]
+      attributes:
+        - { name: filing_period_id, type: varchar, isPrimaryKey: true }
+        - { name: tax_year, type: smallint }
+        - { name: period_type, type: varchar(8), description: "Annual|Quarterly|Monthly" }
+        - { name: period_start, type: date }
+        - { name: period_end, type: date }
+        - { name: due_date, type: date }
+        - { name: extended_due_date, type: date }
+
+    - name: return_header
+      description: IRS MeF ReturnHeader element (TaxYear, ReturnTs, OriginatorEFIN, IRSSubmissionId).
+      keys: [submission_id]
+      attributes:
+        - { name: submission_id, type: varchar(20), isPrimaryKey: true, description: "MeF IRSSubmissionId — 20-byte composite" }
+        - { name: taxpayer_id, type: varchar, isForeignKey: true, references: taxpayer.taxpayer_id }
+        - { name: filing_period_id, type: varchar, isForeignKey: true, references: filing_period.filing_period_id }
+        - { name: form_code, type: varchar(8), description: "1040|1040SR|1120|1120S|1065|941|990|706|709" }
+        - { name: form_version, type: varchar(8) }
+        - { name: tax_year, type: smallint, description: "MeF TaxYear" }
+        - { name: tax_period_begin, type: date }
+        - { name: tax_period_end, type: date }
+        - { name: return_type_code, type: varchar(16) }
+        - { name: filer_type, type: varchar(8), description: "MeF FilerType" }
+        - { name: address_change_indicator, type: boolean }
+        - { name: amended_return_indicator, type: boolean }
+        - { name: originator_efin, type: varchar(6), description: "MeF OriginatorEFIN" }
+        - { name: originator_role, type: varchar(16), description: "ERO|FinancialAgent|IRSAgent" }
+        - { name: ero_signature_pin, type: varchar(11) }
+        - { name: practitioner_pin, type: varchar(11) }
+        - { name: software_id, type: varchar(8), description: "MeF SoftwareId" }
+        - { name: software_version, type: varchar(20) }
+        - { name: filing_security_code, type: varchar(11) }
+        - { name: ip_address, type: varchar(45) }
+        - { name: submitted_at, type: timestamp, description: "MeF ReturnTs" }
+        - { name: ack_status, type: varchar(8), description: "Accepted|Rejected|Duplicate" }
+        - { name: ack_received_at, type: timestamp }
+        - { name: state_submission_indicator, type: boolean }
+
+    - name: return_data
+      description: ReturnData payload with refs to schedules. Per-form line items live in line_item.
+      keys: [return_data_id]
+      attributes:
+        - { name: return_data_id, type: varchar, isPrimaryKey: true }
+        - { name: submission_id, type: varchar(20), isForeignKey: true, references: return_header.submission_id }
+        - { name: total_income, type: "decimal(15,2)" }
+        - { name: agi, type: "decimal(15,2)", description: "1040 AGI line" }
+        - { name: taxable_income, type: "decimal(15,2)" }
+        - { name: total_tax, type: "decimal(15,2)" }
+        - { name: total_payments, type: "decimal(15,2)" }
+        - { name: refund_amount, type: "decimal(15,2)" }
+        - { name: amount_owed, type: "decimal(15,2)" }
+        - { name: dependent_count, type: smallint }
+        - { name: refund_disposition, type: varchar(16), description: "DirectDeposit|Check|AppliedToNextYear|MultipleAccounts" }
+        - { name: bank_routing_number_hash, type: varchar(64) }
+        - { name: bank_account_number_hash, type: varchar(64) }
+
+    - name: line_item
+      description: Individual numeric line on a return. MeF schema lines (e.g. 1040 line 1a wages, 1099-NEC box 1).
+      keys: [line_item_id]
+      attributes:
+        - { name: line_item_id, type: bigint, isPrimaryKey: true }
+        - { name: submission_id, type: varchar(20), isForeignKey: true, references: return_header.submission_id }
+        - { name: schedule_code, type: varchar(8), description: "Main|A|B|C|D|E|SE" }
+        - { name: line_number, type: varchar(16), description: "1a, 12c, etc." }
+        - { name: line_description, type: varchar(255) }
+        - { name: amount, type: "decimal(15,2)" }
+        - { name: data_type, type: varchar(16), description: "Decimal|Integer|Boolean|Text|Date" }
+        - { name: page, type: smallint }
+        - { name: line_token, type: varchar(64), description: "MeF DocumentName/AttachmentName" }
+
+    - name: information_return
+      description: 1099-MISC/NEC/INT/DIV/B/K, W-2, K-1 reported by payer. SSA EFW2 for W-2.
+      keys: [info_return_id]
+      attributes:
+        - { name: info_return_id, type: varchar, isPrimaryKey: true }
+        - { name: payer_tin, type: varchar(11) }
+        - { name: payer_name, type: varchar(255) }
+        - { name: recipient_taxpayer_id, type: varchar, isForeignKey: true, references: taxpayer.taxpayer_id }
+        - { name: form_code, type: varchar(16), description: "1099-NEC|1099-MISC|1099-DIV|1099-INT|1099-B|1099-K|W-2|K-1|1098|1098-T" }
+        - { name: tax_year, type: smallint }
+        - { name: total_amount, type: "decimal(15,2)" }
+        - { name: federal_tax_withheld, type: "decimal(15,2)" }
+        - { name: state_tax_withheld, type: "decimal(15,2)" }
+        - { name: state_code, type: varchar(2) }
+        - { name: corrected_indicator, type: boolean }
+        - { name: source_filing_type, type: varchar(16), description: "FIRE|MeF|Paper|EFW2|EFW2C" }
+        - { name: received_at, type: timestamp }
+        - { name: matched_submission_id, type: varchar(20) }
+        - { name: match_status, type: varchar(16), description: "matched|partial|unmatched" }
+
+    - name: assessment
+      description: Tax assessment (proposed or final) tied to a tax period.
+      keys: [assessment_id]
+      attributes:
+        - { name: assessment_id, type: varchar, isPrimaryKey: true }
+        - { name: taxpayer_id, type: varchar, isForeignKey: true, references: taxpayer.taxpayer_id }
+        - { name: filing_period_id, type: varchar, isForeignKey: true, references: filing_period.filing_period_id }
+        - { name: submission_id, type: varchar(20) }
+        - { name: assessment_type, type: varchar(16), description: "SelfAssessed|MathError|AUR|Examination|Substitute" }
+        - { name: assessed_amount, type: "decimal(15,2)" }
+        - { name: penalty_amount, type: "decimal(15,2)" }
+        - { name: interest_amount, type: "decimal(15,2)" }
+        - { name: assessment_date, type: date }
+        - { name: notice_code, type: varchar(8), description: "CP2000|CP90|CP504|LT11|LT38" }
+        - { name: status, type: varchar(16), description: "open|paid|abated|appealed" }
+
+    - name: payment
+      description: Taxpayer payment (estimated, balance due, withholding).
+      keys: [payment_id]
+      attributes:
+        - { name: payment_id, type: varchar, isPrimaryKey: true }
+        - { name: taxpayer_id, type: varchar, isForeignKey: true, references: taxpayer.taxpayer_id }
+        - { name: filing_period_id, type: varchar, isForeignKey: true, references: filing_period.filing_period_id }
+        - { name: payment_type, type: varchar(16), description: "EstTax|BalanceDue|Withholding|InstallmentAgreement|Levy" }
+        - { name: payment_method, type: varchar(16), description: "EFTPS|DirectPay|CreditCard|Check|Wire" }
+        - { name: amount, type: "decimal(15,2)" }
+        - { name: posted_at, type: timestamp }
+        - { name: status, type: varchar(16) }
+        - { name: confirmation_number, type: varchar(32) }
+
+    - name: refund_disbursement
+      description: Refund issued to taxpayer (RFND).
+      keys: [refund_id]
+      attributes:
+        - { name: refund_id, type: varchar, isPrimaryKey: true }
+        - { name: submission_id, type: varchar(20), isForeignKey: true, references: return_header.submission_id }
+        - { name: taxpayer_id, type: varchar, isForeignKey: true, references: taxpayer.taxpayer_id }
+        - { name: refund_amount, type: "decimal(15,2)" }
+        - { name: hold_reason_code, type: varchar(8) }
+        - { name: held_until, type: date }
+        - { name: disbursed_at, type: timestamp }
+        - { name: disbursement_method, type: varchar(16), description: "ACH|Check|Card" }
+        - { name: ach_trace_number, type: varchar(15) }
+        - { name: status, type: varchar(16), description: "queued|held|disbursed|returned" }
+
+    - name: audit_case
+      description: Examination case selected for audit; correspondence or office or field.
+      keys: [audit_case_id]
+      attributes:
+        - { name: audit_case_id, type: varchar, isPrimaryKey: true }
+        - { name: taxpayer_id, type: varchar, isForeignKey: true, references: taxpayer.taxpayer_id }
+        - { name: submission_id, type: varchar(20) }
+        - { name: filing_period_id, type: varchar, isForeignKey: true, references: filing_period.filing_period_id }
+        - { name: audit_type, type: varchar(16), description: "Correspondence|Office|Field|RAR" }
+        - { name: risk_score, type: "decimal(6,4)" }
+        - { name: selection_program, type: varchar(32), description: "DIF|UIDIF|NRP|FATCA|Whistleblower" }
+        - { name: opened_at, type: date }
+        - { name: closed_at, type: date }
+        - { name: examiner_id, type: varchar }
+        - { name: status, type: varchar(16), description: "selected|opened|closed|appealed|noContact" }
+        - { name: outcome, type: varchar(16), description: "noChange|adjustment|fraudReferral|noResponse" }
+        - { name: adjusted_tax_amount, type: "decimal(15,2)" }
+
+    - name: examination_finding
+      description: Detailed line-level adjustment from an audit case.
+      keys: [finding_id]
+      attributes:
+        - { name: finding_id, type: varchar, isPrimaryKey: true }
+        - { name: audit_case_id, type: varchar, isForeignKey: true, references: audit_case.audit_case_id }
+        - { name: line_token, type: varchar(64) }
+        - { name: original_amount, type: "decimal(15,2)" }
+        - { name: adjusted_amount, type: "decimal(15,2)" }
+        - { name: variance, type: "decimal(15,2)" }
+        - { name: code_section, type: varchar(16), description: "IRC § cited" }
+        - { name: penalty_code, type: varchar(16), description: "IRC § 6662|6651|6663" }
+        - { name: agreed_indicator, type: boolean }
+
+    - name: collection_lien
+      description: Federal Tax Lien (NFTL) record.
+      keys: [lien_id]
+      attributes:
+        - { name: lien_id, type: varchar, isPrimaryKey: true }
+        - { name: taxpayer_id, type: varchar, isForeignKey: true, references: taxpayer.taxpayer_id }
+        - { name: assessment_id, type: varchar, isForeignKey: true, references: assessment.assessment_id }
+        - { name: lien_amount, type: "decimal(15,2)" }
+        - { name: filed_at, type: date }
+        - { name: county_recorder, type: varchar(64) }
+        - { name: state_code, type: varchar(2) }
+        - { name: serial_number, type: varchar(32) }
+        - { name: released_at, type: date }
+        - { name: status, type: varchar(16), description: "filed|released|withdrawn|subordinated" }
+
+    - name: installment_agreement
+      description: Form 9465 installment agreement.
+      keys: [agreement_id]
+      attributes:
+        - { name: agreement_id, type: varchar, isPrimaryKey: true }
+        - { name: taxpayer_id, type: varchar, isForeignKey: true, references: taxpayer.taxpayer_id }
+        - { name: total_balance, type: "decimal(15,2)" }
+        - { name: monthly_payment, type: "decimal(15,2)" }
+        - { name: payment_method, type: varchar(16) }
+        - { name: status, type: varchar(16), description: "pending|active|defaulted|completed|terminated" }
+        - { name: effective_date, type: date }
+        - { name: closed_date, type: date }
+
+    - name: crs_account_record
+      description: OECD CRS Account Report (CrsAccountReport / CrsBody) — financial account info exchanged.
+      keys: [crs_record_id]
+      attributes:
+        - { name: crs_record_id, type: varchar, isPrimaryKey: true }
+        - { name: account_holder_taxpayer_id, type: varchar, isForeignKey: true, references: taxpayer.taxpayer_id }
+        - { name: reporting_fi_giin, type: varchar(19) }
+        - { name: reporting_fi_name, type: varchar(255) }
+        - { name: account_number, type: varchar(64) }
+        - { name: account_holder_type, type: varchar(8), description: "CRS101|CRS102|CRS103" }
+        - { name: residence_country_iso, type: varchar(2) }
+        - { name: account_balance, type: "decimal(20,2)" }
+        - { name: balance_currency, type: varchar(3) }
+        - { name: payment_dividends, type: "decimal(20,2)" }
+        - { name: payment_interest, type: "decimal(20,2)" }
+        - { name: payment_gross_proceeds, type: "decimal(20,2)" }
+        - { name: payment_other, type: "decimal(20,2)" }
+        - { name: report_period_end, type: date }
+        - { name: docref_id, type: varchar(64), description: "CRS DocRefId" }
+        - { name: corr_docref_id, type: varchar(64) }
+        - { name: status, type: varchar(16) }
+
+    - name: fatca_record
+      description: IRS FATCA XML schema v2.0 record.
+      keys: [fatca_record_id]
+      attributes:
+        - { name: fatca_record_id, type: varchar, isPrimaryKey: true }
+        - { name: account_holder_taxpayer_id, type: varchar, isForeignKey: true, references: taxpayer.taxpayer_id }
+        - { name: reporting_fi_giin, type: varchar(19) }
+        - { name: account_number, type: varchar(64) }
+        - { name: account_balance_usd, type: "decimal(20,2)" }
+        - { name: payments_dividends_usd, type: "decimal(20,2)" }
+        - { name: payments_interest_usd, type: "decimal(20,2)" }
+        - { name: report_period_end, type: date }
+        - { name: docref_id, type: varchar(64) }
+        - { name: corr_docref_id, type: varchar(64) }
+        - { name: status, type: varchar(16) }
+
+    - name: notice
+      description: Generated notice to a taxpayer (CP-series, LT-series).
+      keys: [notice_id]
+      attributes:
+        - { name: notice_id, type: varchar, isPrimaryKey: true }
+        - { name: taxpayer_id, type: varchar, isForeignKey: true, references: taxpayer.taxpayer_id }
+        - { name: notice_code, type: varchar(8) }
+        - { name: notice_type, type: varchar(32) }
+        - { name: tax_period_id, type: varchar }
+        - { name: amount_due, type: "decimal(15,2)" }
+        - { name: response_due_date, type: date }
+        - { name: sent_at, type: timestamp }
+        - { name: delivery_channel, type: varchar(16), description: "Mail|Online|Mobile" }
+        - { name: status, type: varchar(16) }
+
+  relationships:
+    - { from: taxpayer, to: return_header, kind: one_to_many }
+    - { from: return_header, to: return_data, kind: one_to_one }
+    - { from: return_header, to: line_item, kind: one_to_many }
+    - { from: return_header, to: refund_disbursement, kind: one_to_one }
+    - { from: taxpayer, to: information_return, kind: one_to_many }
+    - { from: taxpayer, to: assessment, kind: one_to_many }
+    - { from: assessment, to: payment, kind: one_to_many }
+    - { from: assessment, to: collection_lien, kind: one_to_many }
+    - { from: taxpayer, to: audit_case, kind: one_to_many }
+    - { from: audit_case, to: examination_finding, kind: one_to_many }
+    - { from: taxpayer, to: crs_account_record, kind: one_to_many }
+    - { from: taxpayer, to: fatca_record, kind: one_to_many }
+    - { from: taxpayer, to: notice, kind: one_to_many }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/tax_administration_3nf.sql
+  vault: modeling/ddl/tax_administration_vault.sql
+  dimensional: modeling/ddl/tax_administration_dim.sql
 
 sourceSystems:
   - { vendor: SAP, product: Tax & Revenue Management, category: Tax Platform }
   - { vendor: Fast Enterprises, product: GenTax, category: Tax Platform }
-  - { vendor: In-house, product: Mainframe COBOL, category: Legacy }
+  - { vendor: Revenue Solutions, product: REVHUB, category: Tax Platform }
+  - { vendor: Thomson Reuters, product: ONESOURCE, category: Compliance }
+  - { vendor: In-house, product: Mainframe COBOL (IRS IMF/BMF), category: Legacy }
 
 connectors:
+  - { type: IRS MeF SOAP+XML, protocol: HTTPS, auth: WS-Security X.509 }
+  - { type: SSA EFW2/EFW2C, protocol: SFTP / BSO, auth: SSH key }
+  - { type: OECD CRS XML, protocol: HTTPS / IDES, auth: PGP-encrypted package }
+  - { type: FATCA IDES XML, protocol: HTTPS, auth: PGP }
   - { type: SOAP, protocol: HTTPS, auth: WS-Security }
-  - { type: File feeds, protocol: SFTP, auth: SSH key }
+  - { type: File feeds (FIRE), protocol: SFTP, auth: SSH key }
   - { type: IBM MQ, protocol: MQ, auth: SSL + cert }
-  - { type: REST, protocol: HTTPS, auth: OAuth2 }
 
 ingestionChallenges:
-  - Filings spike massively at deadlines; system must autoscale.
+  - Filings spike massively at deadlines (April 15, October 15) — system must autoscale.
   - Mainframe extracts in EBCDIC require conversion and field-level validation.
+  - MeF business-rule rejects need to be classified for taxpayer self-correction.
+  - Information returns from millions of payers vary in completeness.
+  - State MeF schemas differ from federal, requiring per-jurisdiction transforms.
+  - CRS/FATCA cross-border feeds arrive PGP-encrypted, scheduled by partner jurisdiction.
 
 integrationChallenges:
-  - Cross-agency data sharing under strict privacy controls.
+  - Cross-agency data sharing under strict privacy controls (IRC § 6103).
   - Long-lived legacy mainframe + modern API stacks need durable bridging.
+  - Identity proofing (ID.me / Login.gov) before refund release.
+  - Time-zone consistency for ack-time SLAs.
+  - 7-year minimum audit-trail retention.
+  - Multi-state reciprocity for state MeF.

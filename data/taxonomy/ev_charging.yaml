@@ -3,34 +3,416 @@ name: EV Charging Operations
 vertical: Energy
 oneLiner: Public and fleet EV charge point operations — sessions, pricing, demand response, and uptime.
 
+# Authoritative sources:
+#   OCPP 2.0.1 (Open Charge Point Protocol) — IEC 63584 since 2024
+#     https://openchargealliance.org/protocols/open-charge-point-protocol/
+#     — actions: BootNotification, Authorize, MeterValues, TransactionEvent
+#       (Started/Updated/Ended), StatusNotification, NotifyEVChargingNeeds,
+#       NotifyChargingLimit, FirmwareStatusNotification, plus the device model
+#       (PhysicalReference|EVSE|Connector tree, Variables/VariableAttributes).
+#   OCPI 2.2.1 (Open Charge Point Interface) https://evroaming.org/ocpi-protocol/
+#     — modules: Locations, Sessions, CDRs, Tokens, Tariffs, Commands.
+#   ISO 15118 V2G (Plug & Charge) for ContractAuthorizationCertificate.
+#   OpenADR 2.0b for demand-response signals.
+
 personas:
   - { name: VP eMobility, title: VP eMobility, level: VP }
   - { name: Charging Network Manager, title: Charging Network Manager, level: Director }
   - { name: Field Service Lead, title: EV Charger Field Service Lead, level: Manager }
+  - { name: eRoaming Partnerships Lead, title: eRoaming Partnerships Lead, level: Manager }
+  - { name: Smart Charging Engineer, title: Smart Charging Engineer, level: IC }
+
+decisions:
+  - { id: ev.d.dispatch_truck, statement: Dispatch a field tech for an OCPP-down station vs remote reboot. }
+  - { id: ev.d.smart_charging, statement: Curtail a session via SetChargingProfile vs accept full draw. }
+  - { id: ev.d.tariff_uplift, statement: Raise dynamic tariff at peak vs hold steady. }
+  - { id: ev.d.roaming_block, statement: Block a roaming token after suspect activity vs allow. }
+  - { id: ev.d.firmware, statement: Schedule firmware OTA via UpdateFirmware vs hold. }
+  - { id: ev.d.openadr_event, statement: Honour an OpenADR demand response event vs decline. }
 
 kpis:
-  - { id: ev.kpi.uptime, name: Charger Uptime, formula: in_service_hours / total_hours, unit: "%", direction: higher_is_better }
-  - { id: ev.kpi.utilization, name: Connector Utilization, formula: charging_minutes / available_minutes, unit: "%", direction: higher_is_better }
-  - { id: ev.kpi.kwh_per_session, name: kWh per Session, formula: total_kwh / sessions, unit: kWh, direction: higher_is_better }
-  - { id: ev.kpi.ttr, name: Time-to-Repair Faulted Stations, formula: avg(repair_dt - fault_dt), unit: hours, direction: lower_is_better }
-  - { id: ev.kpi.payment_failure, name: Payment Failure Rate, formula: failed / attempts, unit: "%", direction: lower_is_better }
+  - id: ev.kpi.uptime
+    name: Charger Uptime
+    formula: in_service_hours / total_hours
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [ev.d.dispatch_truck]
+  - id: ev.kpi.utilization
+    name: Connector Utilization
+    formula: charging_minutes / available_minutes
+    unit: "%"
+    direction: higher_is_better
+  - id: ev.kpi.kwh_per_session
+    name: kWh per Session
+    formula: total_kwh / sessions
+    unit: kWh
+    direction: higher_is_better
+  - id: ev.kpi.ttr
+    name: Time-to-Repair Faulted Stations
+    formula: avg(repair_dt - fault_dt)
+    unit: hours
+    direction: lower_is_better
+    decisionsSupported: [ev.d.dispatch_truck]
+  - id: ev.kpi.payment_failure
+    name: Payment Failure Rate
+    formula: failed_authorizations / authorize_attempts
+    unit: "%"
+    direction: lower_is_better
+  - id: ev.kpi.session_success_rate
+    name: Session Success Rate
+    formula: completed_sessions / started_sessions
+    unit: "%"
+    direction: higher_is_better
+  - id: ev.kpi.smart_charging_adoption
+    name: Smart-Charging Profile Adoption
+    formula: sessions_with_profile / total_sessions
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [ev.d.smart_charging]
+  - id: ev.kpi.roaming_share
+    name: Roaming CDR Share
+    formula: roaming_cdr_count / total_cdrs
+    unit: "%"
+    direction: target_band
+  - id: ev.kpi.avg_revenue_per_session
+    name: Average Revenue per Session
+    formula: revenue / sessions
+    unit: USD
+    direction: higher_is_better
+    decisionsSupported: [ev.d.tariff_uplift]
+  - id: ev.kpi.dr_event_compliance
+    name: DR Event Compliance
+    formula: honoured_events / received_events
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [ev.d.openadr_event]
 
 dataModel:
   entities:
-    - { name: ChargingStation, description: 'Physical charging station' }
-    - { name: Charger, description: 'Charger / dispenser' }
-    - { name: Session, description: 'Charging session' }
-    - { name: Driver, description: 'Registered driver' }
-    - { name: Tariff, description: 'Pricing tariff' }
+    - name: location
+      description: OCPI 2.2.1 Location object — a physical site with one or more EVSEs.
+      keys: [location_id]
+      attributes:
+        - { name: location_id, type: varchar, isPrimaryKey: true, description: "OCPI Location.id" }
+        - { name: country_code, type: varchar(2), description: "OCPI country_code" }
+        - { name: party_id, type: varchar(3), description: "OCPI party_id" }
+        - { name: name, type: varchar(255) }
+        - { name: address, type: varchar(255) }
+        - { name: city, type: varchar(64) }
+        - { name: postal_code, type: varchar(16) }
+        - { name: country_iso, type: varchar(3) }
+        - { name: latitude, type: "decimal(9,6)" }
+        - { name: longitude, type: "decimal(9,6)" }
+        - { name: time_zone, type: varchar(32) }
+        - { name: parking_type, type: varchar(32), description: "ALONG_MOTORWAY|ON_DRIVEWAY|PARKING_GARAGE|ON_STREET" }
+        - { name: facilities, type: text }
+        - { name: opening_times, type: text }
+        - { name: publish, type: boolean, description: "OCPI publish flag" }
+        - { name: last_updated, type: timestamp }
+
+    - name: charging_station
+      description: OCPP 2.0.1 ChargingStation logical device. BootNotification reports model/vendorName.
+      keys: [station_id]
+      attributes:
+        - { name: station_id, type: varchar, isPrimaryKey: true, description: "OCPP chargingStation.id" }
+        - { name: location_id, type: varchar, isForeignKey: true, references: location.location_id }
+        - { name: vendor_name, type: varchar(64), description: "OCPP BootNotification.chargingStation.vendorName" }
+        - { name: model, type: varchar(64) }
+        - { name: serial_number, type: varchar(64) }
+        - { name: firmware_version, type: varchar(64) }
+        - { name: modem_iccid, type: varchar(20) }
+        - { name: modem_imsi, type: varchar(20) }
+        - { name: registration_status, type: varchar(16), description: "Accepted|Pending|Rejected" }
+        - { name: boot_reason, type: varchar(32), description: "OCPP BootNotification.reason" }
+        - { name: last_boot_at, type: timestamp }
+        - { name: last_heartbeat_at, type: timestamp }
+        - { name: status, type: varchar(16) }
+        - { name: ocpp_version, type: varchar(8), description: "1.6|2.0.1" }
+
+    - name: evse
+      description: OCPI EVSE / OCPP 2.0.1 EVSE in the device model (DM ComponentType=EVSE, evseId).
+      keys: [evse_id]
+      attributes:
+        - { name: evse_id, type: varchar, isPrimaryKey: true, description: "OCPI evse_id (eMI3 format)" }
+        - { name: station_id, type: varchar, isForeignKey: true, references: charging_station.station_id }
+        - { name: physical_reference, type: varchar(16) }
+        - { name: status, type: varchar(16), description: "OCPI status (AVAILABLE|OCCUPIED|RESERVED|UNAVAILABLE|FAULT)" }
+        - { name: status_schedule, type: text }
+        - { name: capabilities, type: text, description: "OCPI capabilities array" }
+        - { name: floor_level, type: varchar(8) }
+        - { name: directions, type: text }
+        - { name: parking_restrictions, type: text }
+        - { name: last_updated, type: timestamp }
+
+    - name: connector
+      description: OCPI Connector / OCPP 2.0.1 Connector. Standard, format, power_type, max amperage/voltage.
+      keys: [connector_id]
+      attributes:
+        - { name: connector_id, type: varchar, isPrimaryKey: true }
+        - { name: evse_id, type: varchar, isForeignKey: true, references: evse.evse_id }
+        - { name: standard, type: varchar(16), description: "OCPI standard (IEC_62196_T2|CHADEMO|CCS_COMBO_2|TESLA_S)" }
+        - { name: format, type: varchar(8), description: "SOCKET|CABLE" }
+        - { name: power_type, type: varchar(16), description: "AC_1_PHASE|AC_3_PHASE|DC" }
+        - { name: max_voltage_v, type: integer }
+        - { name: max_amperage_a, type: integer }
+        - { name: max_electric_power_w, type: integer }
+        - { name: tariff_ids, type: text }
+        - { name: last_updated, type: timestamp }
+
+    - name: token
+      description: OCPI 2.2.1 Token (RFID, AppUser, OtherToken). ISO 15118 cert mapping for Plug&Charge.
+      keys: [token_uid]
+      attributes:
+        - { name: token_uid, type: varchar(36), isPrimaryKey: true }
+        - { name: country_code, type: varchar(2) }
+        - { name: party_id, type: varchar(3) }
+        - { name: type, type: varchar(16), description: "RFID|APP_USER|OTHER|AD_HOC_USER" }
+        - { name: contract_id, type: varchar(36), description: "OCPI contract_id (eMI3)" }
+        - { name: visual_number, type: varchar(64) }
+        - { name: issuer, type: varchar(64) }
+        - { name: group_id, type: varchar(36) }
+        - { name: valid, type: boolean }
+        - { name: whitelist, type: varchar(16), description: "ALWAYS|ALLOWED|ALLOWED_OFFLINE|NEVER" }
+        - { name: language, type: varchar(2) }
+        - { name: default_profile_type, type: varchar(16), description: "FAST|GREEN|REGULAR|CHEAP" }
+        - { name: last_updated, type: timestamp }
+
+    - name: tariff
+      description: OCPI 2.2.1 Tariff with tariff_alt_text, min_price, max_price, elements.
+      keys: [tariff_id]
+      attributes:
+        - { name: tariff_id, type: varchar(36), isPrimaryKey: true }
+        - { name: country_code, type: varchar(2) }
+        - { name: party_id, type: varchar(3) }
+        - { name: currency, type: varchar(3) }
+        - { name: tariff_type, type: varchar(16), description: "AD_HOC_PAYMENT|REGULAR|PROFILE_CHEAP|PROFILE_FAST|PROFILE_GREEN" }
+        - { name: name, type: varchar(255) }
+        - { name: min_price_excl_vat, type: "decimal(8,2)" }
+        - { name: min_price_incl_vat, type: "decimal(8,2)" }
+        - { name: max_price_excl_vat, type: "decimal(8,2)" }
+        - { name: max_price_incl_vat, type: "decimal(8,2)" }
+        - { name: start_date_time, type: timestamp }
+        - { name: end_date_time, type: timestamp }
+        - { name: energy_mix_supplier_name, type: varchar(64) }
+        - { name: last_updated, type: timestamp }
+
+    - name: tariff_element
+      description: OCPI Tariff.element with price_components and restrictions.
+      keys: [tariff_element_id]
+      attributes:
+        - { name: tariff_element_id, type: varchar, isPrimaryKey: true }
+        - { name: tariff_id, type: varchar(36), isForeignKey: true, references: tariff.tariff_id }
+        - { name: element_index, type: smallint }
+        - { name: price_component_type, type: varchar(16), description: "ENERGY|FLAT|PARKING_TIME|TIME" }
+        - { name: price_per_unit, type: "decimal(10,5)" }
+        - { name: vat_pct, type: "decimal(5,2)" }
+        - { name: step_size, type: integer }
+        - { name: restriction_min_kwh, type: "decimal(10,3)" }
+        - { name: restriction_max_kwh, type: "decimal(10,3)" }
+        - { name: restriction_min_power, type: "decimal(10,3)" }
+        - { name: restriction_max_power, type: "decimal(10,3)" }
+        - { name: restriction_start_time, type: varchar(8) }
+        - { name: restriction_end_time, type: varchar(8) }
+        - { name: restriction_day_of_week, type: varchar(32) }
+
+    - name: charging_session
+      description: OCPI 2.2.1 Session. Lifecycle from Authorize -> TransactionEvent(Started) -> Ended.
+      keys: [session_id]
+      attributes:
+        - { name: session_id, type: varchar(36), isPrimaryKey: true }
+        - { name: country_code, type: varchar(2) }
+        - { name: party_id, type: varchar(3) }
+        - { name: location_id, type: varchar, isForeignKey: true, references: location.location_id }
+        - { name: evse_id, type: varchar, isForeignKey: true, references: evse.evse_id }
+        - { name: connector_id, type: varchar, isForeignKey: true, references: connector.connector_id }
+        - { name: token_uid, type: varchar(36), isForeignKey: true, references: token.token_uid }
+        - { name: meter_id, type: varchar(64), description: "OCPI meter_id" }
+        - { name: start_date_time, type: timestamp }
+        - { name: end_date_time, type: timestamp }
+        - { name: kwh, type: "decimal(12,3)" }
+        - { name: cdr_token_contract_id, type: varchar(36) }
+        - { name: auth_method, type: varchar(16), description: "OCPI auth_method (AUTH_REQUEST|COMMAND|WHITELIST)" }
+        - { name: authorization_reference, type: varchar(36) }
+        - { name: status, type: varchar(16), description: "OCPI status (ACTIVE|COMPLETED|INVALID|PENDING|RESERVATION)" }
+        - { name: charging_periods_count, type: integer }
+        - { name: total_cost_excl_vat, type: "decimal(10,4)" }
+        - { name: total_cost_incl_vat, type: "decimal(10,4)" }
+        - { name: currency, type: varchar(3) }
+        - { name: last_updated, type: timestamp }
+
+    - name: charging_period
+      description: OCPI ChargingPeriod within a Session. price/dimension breakdown.
+      keys: [period_id]
+      attributes:
+        - { name: period_id, type: varchar, isPrimaryKey: true }
+        - { name: session_id, type: varchar(36), isForeignKey: true, references: charging_session.session_id }
+        - { name: start_date_time, type: timestamp }
+        - { name: dimension_type, type: varchar(16), description: "OCPI cdr_dimension type (ENERGY|FLAT|PARKING_TIME|TIME)" }
+        - { name: dimension_volume, type: "decimal(12,3)" }
+        - { name: tariff_id, type: varchar(36), isForeignKey: true, references: tariff.tariff_id }
+
+    - name: meter_value
+      description: OCPP 2.0.1 MeterValues / TransactionEvent.meterValue array (sampled values per session).
+      keys: [meter_value_id]
+      attributes:
+        - { name: meter_value_id, type: bigint, isPrimaryKey: true }
+        - { name: session_id, type: varchar(36), isForeignKey: true, references: charging_session.session_id }
+        - { name: timestamp, type: timestamp }
+        - { name: measurand, type: varchar(32), description: "OCPP MeasurandEnumType (Energy.Active.Import.Register|Power.Active.Import|Voltage|Current.Import|SoC|Temperature)" }
+        - { name: phase, type: varchar(8), description: "OCPP PhaseEnumType (L1|L2|L3|N|L1-L2)" }
+        - { name: location, type: varchar(8), description: "OCPP LocationEnumType (Body|Cable|EV|Inlet|Outlet)" }
+        - { name: context, type: varchar(16), description: "OCPP ReadingContextEnumType (Sample.Periodic|Transaction.Begin|Transaction.End|Trigger)" }
+        - { name: unit, type: varchar(8), description: "OCPP UnitOfMeasureType" }
+        - { name: value_numeric, type: "decimal(20,6)" }
+        - { name: signed_meter_value, type: text, description: "OCPP signedMeterValue (signature for billing)" }
+
+    - name: cdr
+      description: OCPI 2.2.1 CDR (Charge Detail Record) — settled session for billing/roaming.
+      keys: [cdr_id]
+      attributes:
+        - { name: cdr_id, type: varchar(36), isPrimaryKey: true }
+        - { name: country_code, type: varchar(2) }
+        - { name: party_id, type: varchar(3) }
+        - { name: start_date_time, type: timestamp }
+        - { name: end_date_time, type: timestamp }
+        - { name: session_id, type: varchar(36), isForeignKey: true, references: charging_session.session_id }
+        - { name: cdr_token_uid, type: varchar(36) }
+        - { name: cdr_token_type, type: varchar(16) }
+        - { name: cdr_location_id, type: varchar }
+        - { name: meter_id, type: varchar(64) }
+        - { name: total_cost_excl_vat, type: "decimal(10,4)" }
+        - { name: total_cost_incl_vat, type: "decimal(10,4)" }
+        - { name: total_energy_kwh, type: "decimal(12,3)" }
+        - { name: total_time_hours, type: "decimal(8,3)" }
+        - { name: total_parking_time_hours, type: "decimal(8,3)" }
+        - { name: currency, type: varchar(3) }
+        - { name: invoice_reference_id, type: varchar(36) }
+        - { name: roaming_cdr, type: boolean }
+        - { name: last_updated, type: timestamp }
+
+    - name: charging_profile
+      description: OCPP 2.0.1 ChargingProfile (SetChargingProfile request) — smart charging schedule.
+      keys: [charging_profile_id]
+      attributes:
+        - { name: charging_profile_id, type: varchar, isPrimaryKey: true }
+        - { name: station_id, type: varchar, isForeignKey: true, references: charging_station.station_id }
+        - { name: evse_id, type: varchar, isForeignKey: true, references: evse.evse_id }
+        - { name: stack_level, type: smallint }
+        - { name: charging_profile_purpose, type: varchar(32), description: "ChargePointMaxProfile|TxDefaultProfile|TxProfile|ChargingStationExternalConstraints" }
+        - { name: charging_profile_kind, type: varchar(16), description: "Absolute|Recurring|Relative" }
+        - { name: recurrency_kind, type: varchar(8), description: "Daily|Weekly" }
+        - { name: valid_from, type: timestamp }
+        - { name: valid_to, type: timestamp }
+        - { name: charging_rate_unit, type: varchar(8), description: "A|W" }
+        - { name: schedule_period_count, type: integer }
+        - { name: created_at, type: timestamp }
+
+    - name: status_notification
+      description: OCPP 2.0.1 StatusNotification (component-level Available|Occupied|Faulted|Unavailable|Reserved).
+      keys: [status_notification_id]
+      attributes:
+        - { name: status_notification_id, type: bigint, isPrimaryKey: true }
+        - { name: station_id, type: varchar, isForeignKey: true, references: charging_station.station_id }
+        - { name: evse_id, type: varchar, isForeignKey: true, references: evse.evse_id }
+        - { name: connector_id, type: varchar, isForeignKey: true, references: connector.connector_id }
+        - { name: timestamp, type: timestamp }
+        - { name: connector_status, type: varchar(16) }
+        - { name: error_code, type: varchar(32), description: "OCPP ChargePointErrorCode" }
+        - { name: info, type: varchar(255) }
+        - { name: vendor_id, type: varchar(64) }
+        - { name: vendor_error_code, type: varchar(64) }
+
+    - name: firmware_release
+      description: Firmware release for OCPP UpdateFirmware action.
+      keys: [firmware_release_id]
+      attributes:
+        - { name: firmware_release_id, type: varchar, isPrimaryKey: true }
+        - { name: vendor_name, type: varchar(64) }
+        - { name: model, type: varchar(64) }
+        - { name: version, type: varchar(64) }
+        - { name: release_notes_uri, type: varchar(255) }
+        - { name: signed_firmware_uri, type: varchar(255), description: "OCPP signed firmware download URL" }
+        - { name: signature, type: varchar(255) }
+        - { name: signing_certificate, type: text }
+        - { name: released_at, type: timestamp }
+
+    - name: firmware_update
+      description: OCPP UpdateFirmware request lifecycle.
+      keys: [update_id]
+      attributes:
+        - { name: update_id, type: varchar, isPrimaryKey: true }
+        - { name: station_id, type: varchar, isForeignKey: true, references: charging_station.station_id }
+        - { name: firmware_release_id, type: varchar, isForeignKey: true, references: firmware_release.firmware_release_id }
+        - { name: requested_at, type: timestamp }
+        - { name: retrieve_date_time, type: timestamp }
+        - { name: firmware_status, type: varchar(32), description: "OCPP FirmwareStatusEnumType (Downloaded|DownloadFailed|Installing|Installed|InstallationFailed|Idle)" }
+        - { name: completed_at, type: timestamp }
+
+    - name: dr_event
+      description: OpenADR 2.0b demand response signal targeted at a station/EVSE.
+      keys: [dr_event_id]
+      attributes:
+        - { name: dr_event_id, type: varchar, isPrimaryKey: true }
+        - { name: program_id, type: varchar(64) }
+        - { name: vtn_party_id, type: varchar(64) }
+        - { name: ven_party_id, type: varchar(64) }
+        - { name: signal_type, type: varchar(16), description: "OpenADR signal (level|delta|setpoint)" }
+        - { name: signal_units, type: varchar(8) }
+        - { name: dtstart, type: timestamp }
+        - { name: duration, type: varchar(16), description: "ISO8601 duration" }
+        - { name: priority, type: smallint }
+        - { name: opt_in, type: boolean }
+        - { name: response_required, type: boolean }
+        - { name: created_at, type: timestamp }
+
+  relationships:
+    - { from: location, to: charging_station, kind: one_to_many }
+    - { from: charging_station, to: evse, kind: one_to_many }
+    - { from: evse, to: connector, kind: one_to_many }
+    - { from: connector, to: charging_session, kind: one_to_many }
+    - { from: token, to: charging_session, kind: one_to_many }
+    - { from: charging_session, to: charging_period, kind: one_to_many }
+    - { from: charging_session, to: meter_value, kind: one_to_many }
+    - { from: charging_session, to: cdr, kind: one_to_one }
+    - { from: tariff, to: tariff_element, kind: one_to_many }
+    - { from: charging_station, to: status_notification, kind: one_to_many }
+    - { from: firmware_release, to: firmware_update, kind: one_to_many }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/ev_charging_3nf.sql
+  vault: modeling/ddl/ev_charging_vault.sql
+  dimensional: modeling/ddl/ev_charging_dim.sql
 
 sourceSystems:
   - { vendor: ChargePoint, product: ChargePoint Network, category: CPO Platform }
-  - { vendor: ABB, product: e-mobility, category: Hardware/CPO }
-  - { vendor: Driivz, product: EV Mgmt, category: CPO Platform }
-  - { vendor: AMPECO, product: Charge Point Mgmt, category: CPO Platform }
-  - { vendor: Hubject, product: intercharge, category: Roaming Hub }
+  - { vendor: ABB, product: e-mobility ABB Ability, category: Hardware/CPO }
+  - { vendor: Driivz (Vontier), product: EV Mgmt Platform, category: CPO Platform }
+  - { vendor: AMPECO, product: AMPECO Charge Point Mgmt, category: CPO Platform }
+  - { vendor: Hubject, product: intercharge, category: Roaming Hub (OCPI/OICP) }
+  - { vendor: GIREVE, product: e-Roaming Hub, category: Roaming Hub }
+  - { vendor: Tesla, product: Tesla Magic Dock, category: Hardware }
+  - { vendor: Wallbox, product: myWallbox, category: AC Hardware }
 
 connectors:
-  - { type: OCPP 1.6/2.0.1, protocol: WebSocket, auth: TLS-cert }
-  - { type: OCPI, protocol: HTTPS, auth: APIKey }
-  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: OCPP 1.6 / 2.0.1, protocol: WebSocket (WS/WSS), auth: TLS-cert + BasicAuth }
+  - { type: OCPI 2.2.1, protocol: HTTPS REST, auth: Bearer token (TokenA/B/C) }
+  - { type: ISO 15118 V2G (Plug & Charge), protocol: PLC over CCS, auth: V2G Contract Cert }
+  - { type: OpenADR 2.0b, protocol: HTTPS, auth: TLS mutual auth + XML-DSIG }
+  - { type: REST (CPO admin), protocol: HTTPS, auth: OAuth2 }
+  - { type: SFTP CDR file feed, protocol: SFTP, auth: SSH key }
+
+ingestionChallenges:
+  - OCPP messages can race-condition between station and CSMS during reconnection.
+  - MeterValue arrays inside TransactionEvent are deeply nested and dense.
+  - Roaming CDRs can arrive days late and re-attribute revenue across EMSPs.
+  - Time-zone handling for sessions crossing DST boundaries.
+  - OCPP 1.6 -> 2.0.1 schema differences (action name churn, device model addition).
+  - Tariff lookups during session must be deterministic — Tariff.last_updated drift breaks billing.
+
+integrationChallenges:
+  - eMI3 contract_id format consistency across EMSPs and roaming hubs.
+  - Plug & Charge certificate authority chain (V2G Root, V2G Sub, CPS, OEMs).
+  - Smart charging coordination with utility DR programs (OpenADR + SetChargingProfile).
+  - GDPR — token data (visual_number, contract_id) is PII.
+  - Multi-CPO settlement reconciliation when sessions span multiple operators.
+  - Hardware vendor variability of OCPP profile compliance (Core / Smart Charging / DataTransfer).

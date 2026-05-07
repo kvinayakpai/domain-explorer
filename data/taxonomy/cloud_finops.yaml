@@ -3,35 +3,355 @@ name: Cloud FinOps
 vertical: HiTech
 oneLiner: Cloud cost visibility, allocation, optimisation, and unit economics across AWS, Azure, and GCP.
 
+# Authoritative source: FinOps Open Cost & Usage Specification (FOCUS) 1.2/1.3
+# (https://focus.finops.org/focus-specification/). The FOCUS spec ratifies a
+# vendor-neutral set of ~50 dimensional and metric columns published by AWS CUR,
+# Azure Cost Management exports, GCP Billing Export, OCI, IBM Cloud and
+# OpenCost. Column names below match the FOCUS spec verbatim.
+
 personas:
   - { name: Head of FinOps, title: Head of Cloud FinOps, level: Director }
   - { name: Cloud Economist, title: Senior Cloud Economist, level: Manager }
   - { name: Engineering Cost Owner, title: Engineering Cost Champion, level: Manager }
+  - { name: VP Engineering, title: VP Engineering, level: VP }
+  - { name: CFO, title: Chief Financial Officer, level: C-suite }
+
+decisions:
+  - { id: fo.d.commit_buy, statement: Buy a 1y/3y Reserved/Savings/Committed-use commitment vs stay on-demand. }
+  - { id: fo.d.allocate, statement: Allocate untagged spend by tenancy heuristic vs hold in shared bucket. }
+  - { id: fo.d.budget_alert, statement: Trigger budget breach alert vs raise threshold. }
+  - { id: fo.d.idle_kill, statement: Terminate / right-size an idle resource vs notify owner. }
+  - { id: fo.d.region, statement: Migrate workload to cheaper region vs accept latency tradeoff. }
+  - { id: fo.d.unit_econ, statement: Surface unit-cost regression to product team vs absorb. }
 
 kpis:
-  - { id: fo.kpi.unit_cost, name: Cost per Active User, formula: cloud_spend / mau, unit: USD, direction: lower_is_better }
-  - { id: fo.kpi.tag_coverage, name: Resource Tag Coverage, formula: tagged / total_resources, unit: "%", direction: higher_is_better }
-  - { id: fo.kpi.savings_plan_coverage, name: Reserved/Savings Coverage, formula: covered_hours / on_demand_hours, unit: "%", direction: higher_is_better }
-  - { id: fo.kpi.idle_spend, name: Idle Resource Spend, formula: idle_cost / total_cost, unit: "%", direction: lower_is_better }
-  - { id: fo.kpi.budget_variance, name: Budget Variance, formula: actual / forecast - 1, unit: "%", direction: target_band }
+  - id: fo.kpi.unit_cost
+    name: Cost per Active User
+    formula: cloud_spend / mau
+    unit: USD/user
+    direction: lower_is_better
+    decisionsSupported: [fo.d.unit_econ]
+  - id: fo.kpi.tag_coverage
+    name: Resource Tag Coverage
+    formula: tagged_cost / total_cost
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [fo.d.allocate]
+  - id: fo.kpi.savings_plan_coverage
+    name: Reserved/Savings Coverage
+    formula: covered_eligible_hours / total_eligible_hours
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [fo.d.commit_buy]
+  - id: fo.kpi.idle_spend
+    name: Idle Resource Spend
+    formula: idle_cost / total_cost
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [fo.d.idle_kill]
+  - id: fo.kpi.budget_variance
+    name: Budget Variance
+    formula: actual_to_date / forecast_to_date - 1
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [fo.d.budget_alert]
+  - id: fo.kpi.commitment_utilization
+    name: Commitment Utilization
+    formula: used_commitment_hours / purchased_commitment_hours
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [fo.d.commit_buy]
+  - id: fo.kpi.effective_savings_rate
+    name: Effective Savings Rate
+    formula: (list_cost - billed_cost) / list_cost
+    unit: "%"
+    direction: higher_is_better
+  - id: fo.kpi.shared_cost_share
+    name: Shared / Untagged Cost Share
+    formula: shared_cost / total_cost
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [fo.d.allocate]
+  - id: fo.kpi.anomaly_count
+    name: Spend Anomalies Detected
+    formula: count(anomaly_open) per period
+    unit: count
+    direction: lower_is_better
+  - id: fo.kpi.charge_class_split
+    name: Usage / Tax / Adjustment Mix
+    formula: by(ChargeClass) sum(BilledCost) / total
+    unit: "%"
+    direction: target_band
 
 dataModel:
   entities:
-    - { name: Account, description: 'Cloud billing account' }
-    - { name: Resource, description: 'Tagged cloud resource' }
-    - { name: CostLineItem, description: 'CUR/billing line item' }
-    - { name: Budget, description: 'Configured budget' }
-    - { name: Anomaly, description: 'Spend anomaly' }
-    - { name: Commitment, description: 'Reserved/savings commitment' }
+    - name: provider
+      description: Cloud service provider. FOCUS 1.x ProviderName / PublisherName.
+      keys: [provider_id]
+      attributes:
+        - { name: provider_id, type: varchar, isPrimaryKey: true }
+        - { name: provider_name, type: varchar(64), description: "FOCUS ProviderName (AWS|Microsoft|Google|OCI|IBM)" }
+        - { name: publisher_name, type: varchar(64), description: "FOCUS PublisherName" }
+        - { name: invoice_currency_default, type: varchar(3) }
+        - { name: connector_status, type: varchar(16) }
+
+    - name: billing_account
+      description: FOCUS BillingAccountId / BillingAccountName.
+      keys: [billing_account_id]
+      attributes:
+        - { name: billing_account_id, type: varchar, isPrimaryKey: true, description: "FOCUS BillingAccountId" }
+        - { name: provider_id, type: varchar, isForeignKey: true, references: provider.provider_id }
+        - { name: billing_account_name, type: varchar(255), description: "FOCUS BillingAccountName" }
+        - { name: billing_currency, type: varchar(3), description: "FOCUS BillingCurrency" }
+        - { name: agreement_id, type: varchar(64) }
+        - { name: payer_account_id, type: varchar }
+        - { name: status, type: varchar(16) }
+
+    - name: sub_account
+      description: FOCUS SubAccountId / SubAccountName (AWS account, Azure subscription, GCP project).
+      keys: [sub_account_id]
+      attributes:
+        - { name: sub_account_id, type: varchar, isPrimaryKey: true, description: "FOCUS SubAccountId" }
+        - { name: billing_account_id, type: varchar, isForeignKey: true, references: billing_account.billing_account_id }
+        - { name: sub_account_name, type: varchar(255), description: "FOCUS SubAccountName" }
+        - { name: sub_account_type, type: varchar(32), description: "AWS Account|Azure Subscription|GCP Project" }
+        - { name: parent_org_unit, type: varchar(255) }
+        - { name: status, type: varchar(16) }
+
+    - name: service
+      description: FOCUS ServiceName / ServiceCategory / ProductName.
+      keys: [service_id]
+      attributes:
+        - { name: service_id, type: varchar, isPrimaryKey: true }
+        - { name: provider_id, type: varchar, isForeignKey: true, references: provider.provider_id }
+        - { name: service_name, type: varchar(128), description: "FOCUS ServiceName (Amazon EC2)" }
+        - { name: service_category, type: varchar(64), description: "FOCUS ServiceCategory (Compute, Storage, Networking)" }
+        - { name: service_subcategory, type: varchar(64), description: "FOCUS ServiceSubcategory" }
+        - { name: product_name, type: varchar(128), description: "FOCUS ProductName" }
+
+    - name: sku
+      description: FOCUS SkuId / SkuPriceId / SkuPriceDetails.
+      keys: [sku_id]
+      attributes:
+        - { name: sku_id, type: varchar, isPrimaryKey: true, description: "FOCUS SkuId" }
+        - { name: service_id, type: varchar, isForeignKey: true, references: service.service_id }
+        - { name: sku_price_id, type: varchar(128), description: "FOCUS SkuPriceId" }
+        - { name: sku_meter, type: varchar(255), description: "FOCUS SkuMeter (e.g. EC2.compute.hours)" }
+        - { name: pricing_unit, type: varchar(32), description: "FOCUS PricingUnit (Hour|GB-Mo|Request)" }
+        - { name: list_unit_price, type: "decimal(18,8)", description: "FOCUS ListUnitPrice" }
+        - { name: contracted_unit_price, type: "decimal(18,8)", description: "FOCUS ContractedUnitPrice" }
+
+    - name: resource
+      description: FOCUS ResourceId / ResourceName / ResourceType + RegionId.
+      keys: [resource_id]
+      attributes:
+        - { name: resource_id, type: varchar, isPrimaryKey: true, description: "FOCUS ResourceId (ARN, Azure resource id)" }
+        - { name: sub_account_id, type: varchar, isForeignKey: true, references: sub_account.sub_account_id }
+        - { name: resource_name, type: varchar(255), description: "FOCUS ResourceName" }
+        - { name: resource_type, type: varchar(64), description: "FOCUS ResourceType" }
+        - { name: region_id, type: varchar(32), description: "FOCUS RegionId" }
+        - { name: region_name, type: varchar(64) }
+        - { name: availability_zone, type: varchar(32), description: "FOCUS AvailabilityZone" }
+        - { name: tagging_status, type: varchar(16), description: "Tagged|Partial|Untagged" }
+        - { name: created_ts, type: timestamp }
+        - { name: terminated_ts, type: timestamp }
+
+    - name: tag
+      description: Resource tag — FOCUS Tags JSON unwound to key/value rows.
+      keys: [resource_id, tag_key]
+      attributes:
+        - { name: resource_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: resource.resource_id }
+        - { name: tag_key, type: varchar(128), isPrimaryKey: true }
+        - { name: tag_value, type: varchar(255) }
+        - { name: tag_source, type: varchar(16), description: "user|aws-system|provider-default|imputed" }
+        - { name: imputation_rule, type: varchar(64) }
+        - { name: applied_at, type: timestamp }
+
+    - name: charge_line
+      description: One row per FOCUS charge line. Grain = ChargePeriodStart x ResourceId x SkuPriceId x ChargeCategory.
+      keys: [charge_line_id]
+      attributes:
+        - { name: charge_line_id, type: varchar, isPrimaryKey: true }
+        - { name: provider_id, type: varchar, isForeignKey: true, references: provider.provider_id }
+        - { name: billing_account_id, type: varchar, isForeignKey: true, references: billing_account.billing_account_id }
+        - { name: sub_account_id, type: varchar, isForeignKey: true, references: sub_account.sub_account_id }
+        - { name: service_id, type: varchar, isForeignKey: true, references: service.service_id }
+        - { name: sku_id, type: varchar, isForeignKey: true, references: sku.sku_id }
+        - { name: resource_id, type: varchar, isForeignKey: true, references: resource.resource_id }
+        - { name: charge_period_start, type: timestamp, description: "FOCUS ChargePeriodStart" }
+        - { name: charge_period_end, type: timestamp, description: "FOCUS ChargePeriodEnd" }
+        - { name: billing_period_start, type: timestamp }
+        - { name: billing_period_end, type: timestamp }
+        - { name: charge_category, type: varchar(16), description: "FOCUS ChargeCategory (Usage|Purchase|Tax|Credit|Adjustment)" }
+        - { name: charge_class, type: varchar(16), description: "FOCUS ChargeClass (Correction|None)" }
+        - { name: charge_frequency, type: varchar(16), description: "FOCUS ChargeFrequency (One-Time|Recurring|Usage-Based)" }
+        - { name: charge_description, type: varchar(255), description: "FOCUS ChargeDescription" }
+        - { name: pricing_category, type: varchar(16), description: "FOCUS PricingCategory (Standard|Spot|Committed)" }
+        - { name: pricing_quantity, type: "decimal(20,6)", description: "FOCUS PricingQuantity" }
+        - { name: pricing_unit, type: varchar(32) }
+        - { name: consumed_quantity, type: "decimal(20,6)", description: "FOCUS ConsumedQuantity" }
+        - { name: consumed_unit, type: varchar(32), description: "FOCUS ConsumedUnit" }
+        - { name: list_unit_price, type: "decimal(18,8)" }
+        - { name: contracted_unit_price, type: "decimal(18,8)" }
+        - { name: list_cost, type: "decimal(18,6)", description: "FOCUS ListCost" }
+        - { name: contracted_cost, type: "decimal(18,6)", description: "FOCUS ContractedCost" }
+        - { name: billed_cost, type: "decimal(18,6)", description: "FOCUS BilledCost" }
+        - { name: effective_cost, type: "decimal(18,6)", description: "FOCUS EffectiveCost" }
+        - { name: invoice_id, type: varchar(64), description: "FOCUS InvoiceId" }
+        - { name: invoice_issuer_name, type: varchar(128), description: "FOCUS InvoiceIssuerName" }
+        - { name: billing_currency, type: varchar(3) }
+        - { name: capacity_reservation_id, type: varchar }
+        - { name: commitment_discount_id, type: varchar, isForeignKey: true, references: commitment.commitment_id }
+        - { name: commitment_discount_status, type: varchar(16), description: "FOCUS CommitmentDiscountStatus (Used|Unused)" }
+
+    - name: commitment
+      description: FOCUS CommitmentDiscountId — RI / Savings Plan / GCP CUD / Azure Reservation.
+      keys: [commitment_id]
+      attributes:
+        - { name: commitment_id, type: varchar, isPrimaryKey: true, description: "FOCUS CommitmentDiscountId" }
+        - { name: provider_id, type: varchar, isForeignKey: true, references: provider.provider_id }
+        - { name: billing_account_id, type: varchar, isForeignKey: true, references: billing_account.billing_account_id }
+        - { name: name, type: varchar(255), description: "FOCUS CommitmentDiscountName" }
+        - { name: type, type: varchar(32), description: "FOCUS CommitmentDiscountType (Reserved|Savings Plan|CUD)" }
+        - { name: category, type: varchar(32), description: "FOCUS CommitmentDiscountCategory (Spend|Usage)" }
+        - { name: term, type: varchar(8), description: "1y|3y" }
+        - { name: payment_option, type: varchar(16), description: "All Upfront|Partial|No Upfront" }
+        - { name: hourly_commitment, type: "decimal(12,4)" }
+        - { name: total_commitment, type: "decimal(18,4)" }
+        - { name: currency, type: varchar(3) }
+        - { name: scope, type: varchar(32), description: "Account|Region|Service|Family" }
+        - { name: start_date, type: date }
+        - { name: end_date, type: date }
+        - { name: status, type: varchar(16) }
+
+    - name: cost_center
+      description: Internal cost center (not from FOCUS — augmentation for chargeback).
+      keys: [cost_center_id]
+      attributes:
+        - { name: cost_center_id, type: varchar, isPrimaryKey: true }
+        - { name: name, type: varchar(64) }
+        - { name: parent_cost_center_id, type: varchar }
+        - { name: owner_email, type: varchar(255) }
+        - { name: business_unit, type: varchar(64) }
+        - { name: gl_code, type: varchar(32) }
+
+    - name: allocation_rule
+      description: Mapping rule that distributes shared / untagged cost to cost centers.
+      keys: [rule_id]
+      attributes:
+        - { name: rule_id, type: varchar, isPrimaryKey: true }
+        - { name: name, type: varchar(64) }
+        - { name: priority, type: smallint }
+        - { name: condition_json, type: text, description: "JSON condition over FOCUS dimensions" }
+        - { name: split_method, type: varchar(16), description: "even|proportional|fixed" }
+        - { name: target_cost_centers, type: text }
+        - { name: enabled, type: boolean }
+        - { name: effective_from, type: date }
+        - { name: effective_to, type: date }
+
+    - name: budget
+      description: Cost budget at account/service/cost-center level.
+      keys: [budget_id]
+      attributes:
+        - { name: budget_id, type: varchar, isPrimaryKey: true }
+        - { name: scope_type, type: varchar(16), description: "BillingAccount|SubAccount|Service|CostCenter|Tag" }
+        - { name: scope_value, type: varchar(255) }
+        - { name: period_grain, type: varchar(8), description: "Monthly|Quarterly|Annual" }
+        - { name: period_start, type: date }
+        - { name: period_end, type: date }
+        - { name: amount, type: "decimal(18,2)" }
+        - { name: currency, type: varchar(3) }
+        - { name: alert_threshold_pct, type: smallint }
+        - { name: owner_email, type: varchar(255) }
+
+    - name: anomaly
+      description: Detected spend anomaly tied to a service / sub-account.
+      keys: [anomaly_id]
+      attributes:
+        - { name: anomaly_id, type: varchar, isPrimaryKey: true }
+        - { name: detected_at, type: timestamp }
+        - { name: scope_type, type: varchar(16) }
+        - { name: scope_value, type: varchar(255) }
+        - { name: detection_method, type: varchar(32), description: "stl|prophet|rolling-zscore" }
+        - { name: anomaly_score, type: "decimal(8,4)" }
+        - { name: expected_spend, type: "decimal(18,2)" }
+        - { name: observed_spend, type: "decimal(18,2)" }
+        - { name: status, type: varchar(16), description: "open|acknowledged|resolved|dismissed" }
+        - { name: resolution_notes, type: text }
+
+    - name: forecast
+      description: Spend forecast generated by the FinOps platform.
+      keys: [forecast_id]
+      attributes:
+        - { name: forecast_id, type: varchar, isPrimaryKey: true }
+        - { name: scope_type, type: varchar(16) }
+        - { name: scope_value, type: varchar(255) }
+        - { name: forecast_method, type: varchar(32), description: "linear|prophet|arima|run-rate" }
+        - { name: forecast_horizon, type: smallint }
+        - { name: granularity, type: varchar(8), description: "Daily|Monthly" }
+        - { name: generated_at, type: timestamp }
+        - { name: forecast_json, type: text, description: "Per-period predicted spend with PI bands" }
+        - { name: mape, type: "decimal(8,4)", description: "Backtest MAPE" }
+
+    - name: utilization_metric
+      description: Resource utilization sample from CloudWatch / Azure Monitor / GCP Monitoring.
+      keys: [resource_id, metric_name, sample_ts]
+      attributes:
+        - { name: resource_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: resource.resource_id }
+        - { name: metric_name, type: varchar(64), isPrimaryKey: true }
+        - { name: sample_ts, type: timestamp, isPrimaryKey: true }
+        - { name: avg_value, type: "decimal(18,6)" }
+        - { name: max_value, type: "decimal(18,6)" }
+        - { name: unit, type: varchar(16) }
+        - { name: idle_flag, type: boolean }
+
+  relationships:
+    - { from: provider, to: billing_account, kind: one_to_many }
+    - { from: billing_account, to: sub_account, kind: one_to_many }
+    - { from: sub_account, to: resource, kind: one_to_many }
+    - { from: resource, to: tag, kind: one_to_many }
+    - { from: resource, to: charge_line, kind: one_to_many }
+    - { from: sku, to: charge_line, kind: one_to_many }
+    - { from: commitment, to: charge_line, kind: one_to_many }
+    - { from: cost_center, to: allocation_rule, kind: one_to_many }
+    - { from: resource, to: utilization_metric, kind: one_to_many }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/cloud_finops_3nf.sql
+  vault: modeling/ddl/cloud_finops_vault.sql
+  dimensional: modeling/ddl/cloud_finops_dim.sql
 
 sourceSystems:
-  - { vendor: AWS, product: Cost & Usage Report, category: Cloud Billing }
-  - { vendor: Microsoft, product: Azure Cost Mgmt, category: Cloud Billing }
-  - { vendor: Google, product: GCP Billing Export, category: Cloud Billing }
+  - { vendor: AWS, product: Cost & Usage Report (CUR / FOCUS export), category: Cloud Billing }
+  - { vendor: Microsoft, product: Azure Cost Management Exports (FOCUS), category: Cloud Billing }
+  - { vendor: Google, product: GCP BigQuery Billing Export (FOCUS), category: Cloud Billing }
+  - { vendor: Oracle, product: OCI Cost Analysis, category: Cloud Billing }
+  - { vendor: IBM, product: IBM Cloud Billing, category: Cloud Billing }
   - { vendor: Apptio, product: IBM Cloudability, category: FinOps Platform }
-  - { vendor: CloudHealth, product: VMware Tanzu, category: FinOps Platform }
+  - { vendor: VMware, product: CloudHealth, category: FinOps Platform }
+  - { vendor: CNCF, product: OpenCost, category: FinOps Platform }
+  - { vendor: Kubecost, product: Kubecost, category: FinOps Platform }
 
 connectors:
-  - { type: S3 export, protocol: HTTPS, auth: IAM }
-  - { type: BigQuery export, protocol: HTTPS, auth: ServiceAccount }
-  - { type: REST, protocol: HTTPS, auth: OAuth2 }
+  - { type: AWS CUR (FOCUS), protocol: S3 (Parquet), auth: IAM cross-account role }
+  - { type: Azure Exports (FOCUS), protocol: HTTPS / Storage Account, auth: ServicePrincipal }
+  - { type: GCP Billing Export (FOCUS), protocol: BigQuery, auth: ServiceAccount }
+  - { type: OCI Cost & Usage, protocol: Object Storage, auth: API Key }
+  - { type: OpenCost / Kubecost API, protocol: HTTPS, auth: Bearer / ServiceAccount }
+  - { type: Cloud Monitoring metrics, protocol: HTTPS, auth: OAuth2 / IAM }
+
+ingestionChallenges:
+  - FOCUS export refreshes lag actuals by 24-48 hours; reconciliation needed at month-end.
+  - Pre-FOCUS native CUR / Azure / GCP schemas remain in production; mapping is per-vendor.
+  - Resource ID stability across stop/start (Azure VM IDs change on resize).
+  - Tag inheritance differs (AWS user vs system tags, Azure inheritance, GCP labels).
+  - Currency conversion when commitments span multi-currency invoices.
+  - Multi-cloud joins on `Provider × ServiceCategory` require canonicalised category mapping.
+
+integrationChallenges:
+  - Mapping commitment savings back to the consuming workload requires a deterministic apportionment.
+  - Untagged spend allocation policy (proportional vs even) is contentious — needs governance.
+  - Showback vs chargeback finance-system integration (NetSuite, Workday, SAP CO).
+  - Container-level (Kubernetes) cost requires OpenCost overlay on top of FOCUS.
+  - Spot interruption behaviour affects expected effective cost vs realised cost.
+  - Data-residency: per-tenant FOCUS exports may need region-pinned warehouses.

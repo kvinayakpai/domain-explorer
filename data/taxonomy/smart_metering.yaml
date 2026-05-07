@@ -3,15 +3,31 @@ name: Smart Metering
 vertical: Energy
 oneLiner: AMI head-end + meter data management for billing, outage, and grid analytics.
 
+# Authoritative sources:
+#   ANSI C12.19 Utility Industry End Device Data Tables (Tables 0..119, decade
+#     organisation; Table 23/24 register data, Table 64 LP set, Table 25 events).
+#   ANSI C12.22 application-layer messaging.
+#   DLMS/COSEM — IEC 62056 Blue/Green/Yellow/White Books; COSEM logical name
+#     OBIS codes (e.g. 1-0:1.8.0 = imported active energy).
+#   IEC 61968-9 (CIM messages for meter reading and control); event types:
+#     EndDeviceEvent, MeterReadings, EndDeviceControl.
+#   IEEE 2030.5 / SEP 2.0 for HEMS / customer-facing.
+#   MultiSpeak v5.2 for rural co-op interop.
+
 personas:
   - { name: Head of AMI, title: Head of Advanced Metering Infrastructure, level: Director }
   - { name: Meter Data Manager, title: Meter Data Manager, level: Manager }
   - { name: Field Ops Lead, title: Field Operations Lead, level: Manager }
+  - { name: Revenue Assurance Lead, title: Revenue Assurance Lead, level: Manager }
+  - { name: Grid Modernisation Architect, title: Grid Modernisation Architect, level: Director }
 
 decisions:
-  - { id: ami.d.estimate, statement: Replace missing reads with estimates vs re-read. }
+  - { id: ami.d.estimate, statement: Replace missing reads with VEE estimates vs schedule re-read. }
   - { id: ami.d.truck_roll, statement: Schedule truck roll for read failures vs OTA fix. }
   - { id: ami.d.ntl_invest, statement: Investigate non-technical loss anomaly. }
+  - { id: ami.d.disconnect, statement: Issue remote disconnect command vs grace period. }
+  - { id: ami.d.firmware, statement: Roll out firmware to a meter cohort vs hold for re-test. }
+  - { id: ami.d.tou_billing, statement: Apply TOU bucket vs flat rate when interval data is partial. }
 
 kpis:
   - id: ami.kpi.read_success
@@ -38,33 +54,358 @@ kpis:
     direction: lower_is_better
     decisionsSupported: [ami.d.truck_roll]
   - id: ami.kpi.ami_uptime
-    name: AMI Uptime
+    name: AMI Head-End Uptime
     formula: head_end_uptime / total_time
     unit: "%"
     direction: higher_is_better
+  - id: ami.kpi.late_arrival_rate
+    name: Late-Arrival Read Rate
+    formula: late_reads / total_reads
+    unit: "%"
+    direction: lower_is_better
+  - id: ami.kpi.vee_pass_rate
+    name: VEE Validation Pass Rate
+    formula: validated / total_reads
+    unit: "%"
+    direction: higher_is_better
+  - id: ami.kpi.tamper_alarm_rate
+    name: Tamper Alarm Rate
+    formula: tamper_events / active_meters
+    unit: per meter/year
+    direction: lower_is_better
+  - id: ami.kpi.firmware_compliance
+    name: Firmware Compliance %
+    formula: meters_on_target_fw / active_meters
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [ami.d.firmware]
+  - id: ami.kpi.disconnect_to_recon
+    name: Disconnect-to-Reconnect Cycle Time
+    formula: avg(reconnect_ts - disconnect_ts)
+    unit: hours
+    direction: lower_is_better
+    decisionsSupported: [ami.d.disconnect]
 
 dataModel:
   entities:
-    - { name: Meter, keys: [meter_id] }
-    - { name: IntervalRead, keys: [meter_id, interval_start] }
-    - { name: Outage, keys: [outage_id] }
-    - { name: ServiceOrder, keys: [so_id] }
+    - name: service_point
+      description: CIM IEC 61968 ServiceLocation / UsagePoint — physical premises with one or more meters.
+      keys: [service_point_id]
+      attributes:
+        - { name: service_point_id, type: varchar, isPrimaryKey: true, description: "CIM UsagePoint.mRID" }
+        - { name: usage_point_kind, type: varchar(16), description: "CIM electricMeter|gasMeter|waterMeter" }
+        - { name: service_category, type: varchar(16), description: "CIM serviceCategory (Energy|Gas|Water)" }
+        - { name: nominal_voltage_v, type: integer, description: "CIM nominalServiceVoltage" }
+        - { name: phase_code, type: varchar(8), description: "CIM phaseCode (ABC|AB|A|B|C|N|S1N|S2N)" }
+        - { name: connection_state, type: varchar(16), description: "CIM ConnectionState (connected|disconnected|armedDisconnect)" }
+        - { name: latitude, type: "decimal(9,6)" }
+        - { name: longitude, type: "decimal(9,6)" }
+        - { name: address_line, type: varchar(255) }
+        - { name: address_city, type: varchar(64) }
+        - { name: address_postal_code, type: varchar(16) }
+        - { name: rate_class_id, type: varchar }
+        - { name: customer_id, type: varchar }
+        - { name: feeder_id, type: varchar }
+        - { name: transformer_id, type: varchar }
+
+    - name: meter
+      description: ANSI C12.19 end device. Table 0 device identification + Table 1 manufacturer info.
+      keys: [meter_id]
+      attributes:
+        - { name: meter_id, type: varchar, isPrimaryKey: true, description: "C12.19 Table 0 GEN_CONFIG.DEVICE_ID" }
+        - { name: serial_number, type: varchar(32), description: "C12.19 Table 1 MFG_NAME / SERIAL_NUMBER" }
+        - { name: service_point_id, type: varchar, isForeignKey: true, references: service_point.service_point_id }
+        - { name: manufacturer_code, type: varchar(8), description: "ANSI C12.10 manufacturer code" }
+        - { name: model, type: varchar(32) }
+        - { name: hardware_version, type: varchar(16) }
+        - { name: firmware_version, type: varchar(16) }
+        - { name: meter_form, type: varchar(8), description: "ANSI form designation (1S|2S|9S|12S)" }
+        - { name: meter_type, type: varchar(16), description: "Electric|Gas|Water" }
+        - { name: phases, type: smallint }
+        - { name: ct_ratio, type: "decimal(8,3)" }
+        - { name: vt_ratio, type: "decimal(8,3)" }
+        - { name: install_date, type: date }
+        - { name: removal_date, type: date }
+        - { name: status, type: varchar(16), description: "active|removed|replaced|stored" }
+        - { name: communication_module_id, type: varchar }
+        - { name: timezone, type: varchar(32) }
+
+    - name: communication_module
+      description: AMI radio / cellular / PLC module attached to a meter.
+      keys: [communication_module_id]
+      attributes:
+        - { name: communication_module_id, type: varchar, isPrimaryKey: true }
+        - { name: meter_id, type: varchar, isForeignKey: true, references: meter.meter_id }
+        - { name: media_type, type: varchar(16), description: "RF Mesh|Cellular|PLC|LoRa" }
+        - { name: imei, type: varchar(16) }
+        - { name: imsi, type: varchar(16) }
+        - { name: mac_address, type: varchar(20) }
+        - { name: firmware_version, type: varchar(16) }
+        - { name: signal_strength_dbm, type: smallint }
+        - { name: head_end_ip, type: varchar(64) }
+        - { name: last_seen_ts, type: timestamp }
+        - { name: status, type: varchar(16) }
+
+    - name: register_reading
+      description: ANSI C12.19 Table 23/24 STD_DATA_TABLE/STD_REG_DATA — cumulative register snapshot.
+      keys: [reading_id]
+      attributes:
+        - { name: reading_id, type: bigint, isPrimaryKey: true }
+        - { name: meter_id, type: varchar, isForeignKey: true, references: meter.meter_id }
+        - { name: read_ts, type: timestamp, description: "Snapshot timestamp" }
+        - { name: source, type: varchar(16), description: "Scheduled|OnDemand|FieldRead" }
+        - { name: obis_code, type: varchar(20), description: "DLMS/COSEM OBIS (e.g. 1-0:1.8.0)" }
+        - { name: register_value, type: "decimal(20,6)" }
+        - { name: register_uom, type: varchar(8), description: "kWh|kVArh|m3|gal" }
+        - { name: register_multiplier, type: "decimal(8,3)" }
+        - { name: status_flags, type: varchar(16), description: "C12.19 status octet (overflow|outage|reset|tamper)" }
+        - { name: vee_status, type: varchar(8), description: "raw|estimated|edited|validated" }
+
+    - name: interval_reading
+      description: ANSI C12.19 Table 64 LOAD_PROFILE — typically 5/15/30/60 min channels. CIM IntervalReading.
+      keys: [meter_id, channel_no, interval_start]
+      attributes:
+        - { name: meter_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: meter.meter_id }
+        - { name: channel_no, type: smallint, isPrimaryKey: true, description: "C12.19 LP set channel number" }
+        - { name: interval_start, type: timestamp, isPrimaryKey: true }
+        - { name: interval_end, type: timestamp }
+        - { name: interval_minutes, type: smallint, description: "5|15|30|60" }
+        - { name: obis_code, type: varchar(20) }
+        - { name: kwh_value, type: "decimal(18,6)" }
+        - { name: pulse_count, type: bigint }
+        - { name: status_byte, type: varchar(4), description: "C12.19 LP status byte (power-fail|overflow|missing)" }
+        - { name: vee_status, type: varchar(8) }
+        - { name: source_ts, type: timestamp }
+
+    - name: demand_reading
+      description: Peak demand register (max demand in kW per interval). C12.19 Table 23 demand values.
+      keys: [demand_id]
+      attributes:
+        - { name: demand_id, type: bigint, isPrimaryKey: true }
+        - { name: meter_id, type: varchar, isForeignKey: true, references: meter.meter_id }
+        - { name: read_ts, type: timestamp }
+        - { name: obis_code, type: varchar(20), description: "1-0:1.6.0 maximum demand" }
+        - { name: demand_value_kw, type: "decimal(12,4)" }
+        - { name: demand_window_minutes, type: smallint }
+        - { name: occurrence_ts, type: timestamp }
+        - { name: tou_bucket, type: varchar(8) }
+
+    - name: meter_event
+      description: ANSI C12.19 Table 25/26 history log; CIM EndDeviceEvent.
+      keys: [event_id]
+      attributes:
+        - { name: event_id, type: bigint, isPrimaryKey: true }
+        - { name: meter_id, type: varchar, isForeignKey: true, references: meter.meter_id }
+        - { name: event_ts, type: timestamp }
+        - { name: received_ts, type: timestamp }
+        - { name: event_code, type: varchar(8), description: "C12.19 event-history table code" }
+        - { name: event_type, type: varchar(32), description: "Tamper|Outage|Restoration|Reset|FirmwareUpdate|Disconnect|Reconnect|HighTemp" }
+        - { name: severity, type: varchar(8), description: "info|warn|alarm" }
+        - { name: source, type: varchar(8), description: "Meter|HeadEnd|MDM" }
+        - { name: argument_data, type: text, description: "Hex argument bytes per C12.19 spec" }
+
+    - name: tou_schedule
+      description: Time-of-Use schedule. ANSI C12.19 Table 51 (special schedule), DLMS Activity Calendar.
+      keys: [tou_schedule_id]
+      attributes:
+        - { name: tou_schedule_id, type: varchar, isPrimaryKey: true }
+        - { name: name, type: varchar(64) }
+        - { name: effective_from, type: date }
+        - { name: effective_to, type: date }
+        - { name: tariff_class, type: varchar(32) }
+        - { name: number_of_buckets, type: smallint }
+        - { name: timezone, type: varchar(32) }
+
+    - name: tou_bucket
+      description: Bucket within a TOU schedule (e.g. on-peak, off-peak, shoulder).
+      keys: [bucket_id]
+      attributes:
+        - { name: bucket_id, type: varchar, isPrimaryKey: true }
+        - { name: tou_schedule_id, type: varchar, isForeignKey: true, references: tou_schedule.tou_schedule_id }
+        - { name: bucket_code, type: varchar(8) }
+        - { name: bucket_label, type: varchar(32) }
+        - { name: start_minute_of_day, type: smallint }
+        - { name: end_minute_of_day, type: smallint }
+        - { name: applicable_days, type: varchar(8) }
+        - { name: applicable_months, type: varchar(16) }
+        - { name: rate_currency, type: varchar(3) }
+        - { name: rate_per_kwh, type: "decimal(10,5)" }
+
+    - name: rate_class
+      description: Tariff / rate class assigned to a service point.
+      keys: [rate_class_id]
+      attributes:
+        - { name: rate_class_id, type: varchar, isPrimaryKey: true }
+        - { name: name, type: varchar(64) }
+        - { name: customer_segment, type: varchar(16), description: "Residential|SmallC&I|LargeC&I|Industrial" }
+        - { name: tou_schedule_id, type: varchar, isForeignKey: true, references: tou_schedule.tou_schedule_id }
+        - { name: demand_charge_kw, type: "decimal(10,4)" }
+        - { name: customer_charge, type: "decimal(10,4)" }
+        - { name: effective_from, type: date }
+        - { name: effective_to, type: date }
+        - { name: regulatory_filing_id, type: varchar }
+
+    - name: service_order
+      description: Field service order — install, remove, exchange, investigate. CIM ScheduledEvent / WorkOrder.
+      keys: [service_order_id]
+      attributes:
+        - { name: service_order_id, type: varchar, isPrimaryKey: true }
+        - { name: service_point_id, type: varchar, isForeignKey: true, references: service_point.service_point_id }
+        - { name: meter_id, type: varchar }
+        - { name: order_type, type: varchar(16), description: "install|remove|exchange|inspect|reread|investigate_NTL" }
+        - { name: priority, type: varchar(8) }
+        - { name: scheduled_date, type: date }
+        - { name: assigned_crew, type: varchar(32) }
+        - { name: status, type: varchar(16), description: "open|inProgress|completed|cancelled" }
+        - { name: completion_ts, type: timestamp }
+        - { name: completion_notes, type: text }
+
+    - name: outage_event
+      description: AMI-detected outage (last-gasp). CIM EndDeviceEvent eventType=PowerOff/PowerOn aggregated.
+      keys: [outage_event_id]
+      attributes:
+        - { name: outage_event_id, type: varchar, isPrimaryKey: true }
+        - { name: meter_id, type: varchar, isForeignKey: true, references: meter.meter_id }
+        - { name: outage_start_ts, type: timestamp }
+        - { name: restoration_ts, type: timestamp }
+        - { name: cause_code, type: varchar(16) }
+        - { name: feeder_id, type: varchar }
+        - { name: confirmed_oms_event_id, type: varchar }
+        - { name: nominal_voltage_v, type: integer }
+
+    - name: disconnect_command
+      description: ANSI C12.19 Table 110 (Service Switch) / DLMS Disconnect Control.
+      keys: [command_id]
+      attributes:
+        - { name: command_id, type: varchar, isPrimaryKey: true }
+        - { name: meter_id, type: varchar, isForeignKey: true, references: meter.meter_id }
+        - { name: command_type, type: varchar(16), description: "Disconnect|Reconnect|ArmedDisconnect" }
+        - { name: requested_ts, type: timestamp }
+        - { name: dispatched_ts, type: timestamp }
+        - { name: confirmed_ts, type: timestamp }
+        - { name: result_code, type: varchar(16), description: "success|failed|notAcknowledged" }
+        - { name: requested_by, type: varchar }
+        - { name: reason_code, type: varchar(16) }
+
+    - name: vee_rule
+      description: Validation/Estimation/Editing rule applied to readings (CIM MeterReadingQuality).
+      keys: [vee_rule_id]
+      attributes:
+        - { name: vee_rule_id, type: varchar, isPrimaryKey: true }
+        - { name: name, type: varchar(64) }
+        - { name: rule_type, type: varchar(16), description: "spike|spike-percent|sum-check|zero-consumption|max-demand" }
+        - { name: parameter_json, type: text }
+        - { name: action, type: varchar(16), description: "flag|estimate|reject" }
+        - { name: enabled, type: boolean }
+
+    - name: vee_violation
+      description: Per-reading VEE failure (linked to register / interval reading).
+      keys: [violation_id]
+      attributes:
+        - { name: violation_id, type: bigint, isPrimaryKey: true }
+        - { name: meter_id, type: varchar, isForeignKey: true, references: meter.meter_id }
+        - { name: vee_rule_id, type: varchar, isForeignKey: true, references: vee_rule.vee_rule_id }
+        - { name: reading_id, type: bigint }
+        - { name: violation_ts, type: timestamp }
+        - { name: original_value, type: "decimal(20,6)" }
+        - { name: corrected_value, type: "decimal(20,6)" }
+        - { name: action_taken, type: varchar(16) }
+        - { name: reviewer_id, type: varchar }
+
+    - name: firmware_release
+      description: Firmware build catalog with target eligibility.
+      keys: [firmware_release_id]
+      attributes:
+        - { name: firmware_release_id, type: varchar, isPrimaryKey: true }
+        - { name: vendor, type: varchar(64) }
+        - { name: model, type: varchar(64) }
+        - { name: version, type: varchar(16) }
+        - { name: release_notes_uri, type: varchar(255) }
+        - { name: release_ts, type: timestamp }
+        - { name: status, type: varchar(16), description: "draft|piloting|approved|deprecated" }
+
+    - name: firmware_deployment
+      description: Per-meter OTA firmware deployment lifecycle.
+      keys: [deployment_id]
+      attributes:
+        - { name: deployment_id, type: varchar, isPrimaryKey: true }
+        - { name: meter_id, type: varchar, isForeignKey: true, references: meter.meter_id }
+        - { name: firmware_release_id, type: varchar, isForeignKey: true, references: firmware_release.firmware_release_id }
+        - { name: scheduled_ts, type: timestamp }
+        - { name: started_ts, type: timestamp }
+        - { name: completed_ts, type: timestamp }
+        - { name: result, type: varchar(16), description: "queued|inProgress|success|failed|rolledBack" }
+        - { name: bytes_transferred, type: integer }
+        - { name: error_code, type: varchar(16) }
+
+    - name: bill
+      description: Customer bill derived from validated reads + tariff.
+      keys: [bill_id]
+      attributes:
+        - { name: bill_id, type: varchar, isPrimaryKey: true }
+        - { name: service_point_id, type: varchar, isForeignKey: true, references: service_point.service_point_id }
+        - { name: bill_period_start, type: date }
+        - { name: bill_period_end, type: date }
+        - { name: opening_register, type: "decimal(20,6)" }
+        - { name: closing_register, type: "decimal(20,6)" }
+        - { name: kwh_consumed, type: "decimal(18,6)" }
+        - { name: peak_demand_kw, type: "decimal(12,4)" }
+        - { name: amount_currency, type: varchar(3) }
+        - { name: energy_charge, type: "decimal(12,2)" }
+        - { name: demand_charge, type: "decimal(12,2)" }
+        - { name: customer_charge, type: "decimal(12,2)" }
+        - { name: total_amount, type: "decimal(12,2)" }
+        - { name: issued_ts, type: timestamp }
+        - { name: status, type: varchar(16) }
+        - { name: adjustment_count, type: smallint }
+
+  relationships:
+    - { from: service_point, to: meter, kind: one_to_many }
+    - { from: meter, to: communication_module, kind: one_to_one }
+    - { from: meter, to: register_reading, kind: one_to_many }
+    - { from: meter, to: interval_reading, kind: one_to_many }
+    - { from: meter, to: meter_event, kind: one_to_many }
+    - { from: meter, to: outage_event, kind: one_to_many }
+    - { from: meter, to: disconnect_command, kind: one_to_many }
+    - { from: meter, to: firmware_deployment, kind: one_to_many }
+    - { from: tou_schedule, to: tou_bucket, kind: one_to_many }
+    - { from: tou_schedule, to: rate_class, kind: one_to_many }
+    - { from: service_point, to: bill, kind: one_to_many }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/smart_metering_3nf.sql
+  vault: modeling/ddl/smart_metering_vault.sql
+  dimensional: modeling/ddl/smart_metering_dim.sql
 
 sourceSystems:
-  - { vendor: Itron, product: Enterprise Edition, category: Head-end / MDM }
-  - { vendor: Landis+Gyr, product: Gridstream, category: Head-end }
+  - { vendor: Itron, product: Itron Enterprise Edition (IEE), category: Head-end / MDM }
+  - { vendor: Landis+Gyr, product: Gridstream Connect, category: Head-end }
+  - { vendor: Honeywell, product: Connexo Insights, category: MDM }
   - { vendor: Oracle, product: Utilities Meter Data Management, category: MDM }
+  - { vendor: Siemens, product: EnergyIP MDM, category: MDM }
+  - { vendor: Cisco, product: IoT FND, category: Network Mgmt }
 
 connectors:
-  - { type: MultiSpeak, protocol: SOAP, auth: WS-Security }
-  - { type: CIM/IEC 61968, protocol: XML/JMS, auth: PKI }
+  - { type: ANSI C12.22, protocol: TCP/UDP, auth: C12.22 Security }
+  - { type: DLMS/COSEM, protocol: TCP/UDP/HDLC, auth: HLS5 / GMAC }
+  - { type: CIM 61968-9 IntervalBlock/MeterReadings, protocol: SOAP/XML over JMS, auth: WS-Security }
+  - { type: MultiSpeak v5.2, protocol: SOAP, auth: WS-Security }
+  - { type: IEEE 2030.5 (SEP 2.0), protocol: HTTPS, auth: mTLS }
   - { type: MQTT, protocol: MQTT, auth: TLS + cred }
-  - { type: File feeds, protocol: SFTP, auth: SSH key }
+  - { type: SFTP file feed, protocol: SFTP, auth: SSH key }
 
 ingestionChallenges:
-  - 96 interval reads/day/meter at millions of meter scale.
-  - Late-arriving reads across 72-hour window.
+  - 96 interval reads/day/meter at multi-million-meter scale = ~1B rows/day per utility.
+  - Late-arriving reads across 72-hour window driven by RF mesh hop count.
+  - Status-byte interpretation differs subtly across C12.19 vendor implementations.
+  - Time-zone handling for service points spanning DST transitions.
+  - Out-of-order intervals when meters re-establish after outage.
+  - Bulk OTA firmware traffic competes with metering traffic on the AMI mesh.
 
 integrationChallenges:
-  - Mesh/cellular network reliability variance by geography.
-  - Regulatory data privacy (consumer usage profiles).
+  - Mesh/cellular network reliability variance by geography (urban vs rural).
+  - Regulatory data privacy (consumer usage profiles — Green Button & state PUC mandates).
+  - DLMS HLS5 key management at scale (per-meter keys with rotation).
+  - CIM payload size when EndDeviceEvent batches grow past JMS limits.
+  - VEE rule overrides need full audit trail for revenue assurance disputes.
+  - Demand-response signals (OpenADR) overlap with the disconnect command channel.

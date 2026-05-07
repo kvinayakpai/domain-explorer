@@ -3,26 +3,420 @@ name: Clinical Trials
 vertical: LifeSciences
 oneLiner: Protocol design, site activation, patient enrollment, and trial data capture for drug development.
 
+# Authoritative sources:
+#   CDISC SDTM v2.0 / IG v3.4 (https://www.cdisc.org/standards/foundational/sdtm)
+#     — domain tables (DM, AE, CM, EX, LB, VS, etc.) with --STDTC/--ENDTC pattern.
+#   CDISC ADaM v1.3 (analysis datasets ADSL, ADAE, ADTTE).
+#   CDISC ODM-XML v2.0 + Define-XML v2.1 (the data dictionary itself).
+#   CDISC CDASH v2.x (data acquisition).
+#   FDA Study Data Standards Catalog.
+#   ClinicalTrials.gov XML/JSON public dataset.
+#   EMA / EU CTIS public IDs and structured data.
+
 personas:
   - { name: VP Clinical Operations, title: VP Clinical Operations, level: VP }
   - { name: Clinical Data Manager, title: Clinical Data Manager, level: Manager }
-  - { name: CRO Lead, title: CRO Engagement Lead, level: Director }
+  - { name: CRO Engagement Lead, title: CRO Engagement Lead, level: Director }
+  - { name: Biostatistician, title: Senior Biostatistician, level: Manager }
+  - { name: Medical Monitor, title: Medical Monitor, level: Director }
+
+decisions:
+  - { id: ct.d.protocol_amend, statement: Issue a protocol amendment vs accept observed deviations. }
+  - { id: ct.d.site_close, statement: Close an underperforming site vs intervene. }
+  - { id: ct.d.dropout_rescue, statement: Outreach to a dropout-risk subject vs accept missing visit. }
+  - { id: ct.d.dbl, statement: Lock the database for snapshot vs queue more cleaning. }
+  - { id: ct.d.unblind, statement: Trigger emergency unblinding for a serious AE. }
+  - { id: ct.d.cdash_remap, statement: Remap a CRF item to a different SDTM domain. }
 
 kpis:
-  - { id: ct.kpi.enrollment_rate, name: Enrollment Rate, formula: enrolled / target_enrolment, unit: "%", direction: higher_is_better }
-  - { id: ct.kpi.site_activation_time, name: Site Activation Cycle Time, formula: avg(active_ts - selected_ts), unit: days, direction: lower_is_better }
-  - { id: ct.kpi.protocol_deviation_rate, name: Protocol Deviation Rate, formula: deviations / patient_visits, unit: per visit, direction: lower_is_better }
-  - { id: ct.kpi.query_resolution_time, name: Data Query Resolution Time, formula: avg(closed_ts - opened_ts), unit: days, direction: lower_is_better }
-  - { id: ct.kpi.dropout_rate, name: Patient Dropout Rate, formula: dropouts / enrolled, unit: "%", direction: lower_is_better }
+  - id: ct.kpi.enrollment_rate
+    name: Enrollment Rate
+    formula: enrolled / target_enrolment
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [ct.d.site_close]
+  - id: ct.kpi.site_activation_time
+    name: Site Activation Cycle Time
+    formula: avg(active_ts - selected_ts)
+    unit: days
+    direction: lower_is_better
+    decisionsSupported: [ct.d.site_close]
+  - id: ct.kpi.protocol_deviation_rate
+    name: Protocol Deviation Rate
+    formula: deviations / patient_visits
+    unit: per visit
+    direction: lower_is_better
+    decisionsSupported: [ct.d.protocol_amend]
+  - id: ct.kpi.query_resolution_time
+    name: Data Query Resolution Time
+    formula: avg(closed_ts - opened_ts)
+    unit: days
+    direction: lower_is_better
+  - id: ct.kpi.dropout_rate
+    name: Patient Dropout Rate
+    formula: dropouts / enrolled
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [ct.d.dropout_rescue]
+  - id: ct.kpi.sdv_rate
+    name: Source Document Verification Rate
+    formula: sdv_items_verified / sdv_items_required
+    unit: "%"
+    direction: higher_is_better
+  - id: ct.kpi.serious_ae_rate
+    name: Serious Adverse Event Rate
+    formula: sae_count / patient_years_exposure
+    unit: per patient-year
+    direction: lower_is_better
+    decisionsSupported: [ct.d.unblind]
+  - id: ct.kpi.dbl_cycle
+    name: Database Lock Cycle Time
+    formula: avg(locked_ts - lpls_ts)
+    unit: days
+    direction: lower_is_better
+    decisionsSupported: [ct.d.dbl]
+  - id: ct.kpi.first_subject_first_visit_lag
+    name: FPI vs Plan
+    formula: actual_fpi_ts - planned_fpi_ts
+    unit: days
+    direction: target_band
+  - id: ct.kpi.protocol_amendment_count
+    name: Protocol Amendment Count
+    formula: amendments_per_trial
+    unit: count
+    direction: lower_is_better
 
 dataModel:
   entities:
-    - { name: Trial, description: 'Clinical trial' }
-    - { name: Site, description: 'Investigator site' }
-    - { name: Subject, description: 'Enrolled subject' }
-    - { name: Visit, description: 'Trial visit' }
-    - { name: AdverseEvent, description: 'Reported adverse event' }
-    - { name: EDCForm, description: 'Electronic data capture form' }
+    - name: study
+      description: Clinical study/trial. ClinicalTrials.gov NCT id + EU CT-IS id; CDISC TS Trial Summary domain.
+      keys: [study_id]
+      attributes:
+        - { name: study_id, type: varchar, isPrimaryKey: true, description: "Sponsor study OID" }
+        - { name: nct_number, type: varchar(11), description: "ClinicalTrials.gov NCT identifier" }
+        - { name: eudract_number, type: varchar(14), description: "EudraCT / EU CTIS number" }
+        - { name: protocol_id, type: varchar(32) }
+        - { name: phase, type: varchar(8), description: "Phase 1|2|3|4" }
+        - { name: therapeutic_area, type: varchar(64) }
+        - { name: indication_meddra_pt, type: varchar(64) }
+        - { name: study_design, type: varchar(64), description: "SDTM TS Trial Design (parallel|crossover|single arm)" }
+        - { name: blinding, type: varchar(16), description: "open|single|double|triple" }
+        - { name: control_type, type: varchar(16), description: "placebo|active|none" }
+        - { name: planned_subjects, type: integer }
+        - { name: planned_sites, type: integer }
+        - { name: sponsor_org, type: varchar(128) }
+        - { name: cro_org, type: varchar(128) }
+        - { name: status, type: varchar(16), description: "planning|active|recruiting|completed|terminated" }
+        - { name: planned_start_date, type: date }
+        - { name: planned_end_date, type: date }
+        - { name: actual_start_date, type: date }
+        - { name: actual_end_date, type: date }
+
+    - name: protocol_version
+      description: Protocol amendments. CDISC TS Trial Summary version chain.
+      keys: [protocol_version_id]
+      attributes:
+        - { name: protocol_version_id, type: varchar, isPrimaryKey: true }
+        - { name: study_id, type: varchar, isForeignKey: true, references: study.study_id }
+        - { name: version, type: varchar(16) }
+        - { name: amendment_number, type: smallint }
+        - { name: effective_date, type: date }
+        - { name: rationale, type: text }
+        - { name: country_specific, type: varchar(2) }
+        - { name: ethics_approval_date, type: date }
+
+    - name: site
+      description: Investigator site. SDTM SI/SV domains; Site Master File.
+      keys: [site_id]
+      attributes:
+        - { name: site_id, type: varchar, isPrimaryKey: true }
+        - { name: study_id, type: varchar, isForeignKey: true, references: study.study_id }
+        - { name: site_number, type: varchar(16) }
+        - { name: name, type: varchar(255) }
+        - { name: country_iso, type: varchar(2) }
+        - { name: city, type: varchar(64) }
+        - { name: principal_investigator_id, type: varchar }
+        - { name: irb_iec_name, type: varchar(255) }
+        - { name: contract_executed_date, type: date }
+        - { name: ssu_complete_date, type: date }
+        - { name: site_activation_date, type: date }
+        - { name: status, type: varchar(16), description: "selected|qualified|initiated|active|closeout|terminated" }
+        - { name: closed_date, type: date }
+
+    - name: investigator
+      description: PI / sub-investigator. Form FDA 1572.
+      keys: [investigator_id]
+      attributes:
+        - { name: investigator_id, type: varchar, isPrimaryKey: true }
+        - { name: site_id, type: varchar, isForeignKey: true, references: site.site_id }
+        - { name: family_name, type: varchar(128) }
+        - { name: given_names, type: varchar(255) }
+        - { name: role, type: varchar(16), description: "PI|SubInv|StudyCoordinator" }
+        - { name: cv_received_date, type: date }
+        - { name: form_1572_signed_date, type: date }
+        - { name: gcp_training_date, type: date }
+        - { name: license_number, type: varchar(32) }
+        - { name: orcid, type: varchar(19) }
+
+    - name: subject
+      description: Trial subject / participant. SDTM DM Demographics — USUBJID, SUBJID, SITEID.
+      keys: [subject_id]
+      attributes:
+        - { name: subject_id, type: varchar, isPrimaryKey: true, description: "SDTM USUBJID" }
+        - { name: study_id, type: varchar, isForeignKey: true, references: study.study_id }
+        - { name: site_id, type: varchar, isForeignKey: true, references: site.site_id }
+        - { name: subject_no, type: varchar(16), description: "SDTM SUBJID" }
+        - { name: screening_id, type: varchar(16) }
+        - { name: arm_code, type: varchar(8), description: "SDTM ARMCD" }
+        - { name: arm, type: varchar(64), description: "SDTM ARM" }
+        - { name: treatment_arm, type: varchar(64), description: "SDTM ACTARM" }
+        - { name: sex, type: varchar(1), description: "SDTM SEX (M|F|U)" }
+        - { name: race_code, type: varchar(8) }
+        - { name: ethnic_code, type: varchar(8) }
+        - { name: birth_year, type: smallint, description: "SDTM BRTHDTC truncated" }
+        - { name: age_at_screening, type: smallint, description: "SDTM AGE" }
+        - { name: country_iso, type: varchar(2) }
+        - { name: rfstdtc, type: timestamp, description: "SDTM RFSTDTC reference start" }
+        - { name: rfendtc, type: timestamp, description: "SDTM RFENDTC reference end" }
+        - { name: dthdtc, type: date, description: "SDTM DTHDTC death date" }
+        - { name: dscompletion_status, type: varchar(16) }
+
+    - name: informed_consent
+      description: Subject consent capture (SDTM DS DSDECOD = INFORMED CONSENT OBTAINED).
+      keys: [consent_id]
+      attributes:
+        - { name: consent_id, type: varchar, isPrimaryKey: true }
+        - { name: subject_id, type: varchar, isForeignKey: true, references: subject.subject_id }
+        - { name: protocol_version_id, type: varchar, isForeignKey: true, references: protocol_version.protocol_version_id }
+        - { name: consent_form_version, type: varchar(16) }
+        - { name: consented_at, type: timestamp }
+        - { name: language, type: varchar(8) }
+        - { name: witnessed_by, type: varchar(128) }
+        - { name: status, type: varchar(16), description: "consented|withdrawn|amended" }
+        - { name: withdrawal_ts, type: timestamp }
+
+    - name: visit
+      description: SDTM SV Subject Visits — VISIT, VISITNUM, VISITDY, SVSTDTC.
+      keys: [visit_occurrence_id]
+      attributes:
+        - { name: visit_occurrence_id, type: varchar, isPrimaryKey: true }
+        - { name: subject_id, type: varchar, isForeignKey: true, references: subject.subject_id }
+        - { name: visit_num, type: smallint, description: "SDTM VISITNUM" }
+        - { name: visit, type: varchar(64), description: "SDTM VISIT label" }
+        - { name: visit_dy, type: smallint, description: "SDTM VISITDY" }
+        - { name: planned_dt, type: date }
+        - { name: actual_dt, type: date }
+        - { name: window_lower_dy, type: smallint }
+        - { name: window_upper_dy, type: smallint }
+        - { name: visit_status, type: varchar(16), description: "scheduled|completed|missed|outOfWindow" }
+        - { name: epoch, type: varchar(32), description: "SDTM EPOCH" }
+
+    - name: crf_item
+      description: ODM-XML/Define-XML ItemDef (CRF field). The dictionary core.
+      keys: [crf_item_id]
+      attributes:
+        - { name: crf_item_id, type: varchar, isPrimaryKey: true }
+        - { name: study_id, type: varchar, isForeignKey: true, references: study.study_id }
+        - { name: form_oid, type: varchar(64), description: "ODM FormDef OID" }
+        - { name: item_oid, type: varchar(64), description: "ODM ItemDef OID" }
+        - { name: item_name, type: varchar(64) }
+        - { name: prompt_text, type: varchar(255) }
+        - { name: data_type, type: varchar(16), description: "ODM DataType (text|integer|float|date|datetime|partialDate)" }
+        - { name: codelist_oid, type: varchar(64) }
+        - { name: sdtm_domain, type: varchar(8), description: "Mapped SDTM domain (DM, AE, CM)" }
+        - { name: sdtm_variable, type: varchar(16), description: "Mapped SDTM variable name" }
+        - { name: cdash_var_name, type: varchar(16) }
+        - { name: required, type: boolean }
+        - { name: define_xml_origin, type: varchar(16), description: "CRF|Derived|Assigned|Predecessor" }
+
+    - name: crf_data_point
+      description: A single captured value (ItemData) tied to a visit + subject + form.
+      keys: [data_point_id]
+      attributes:
+        - { name: data_point_id, type: bigint, isPrimaryKey: true }
+        - { name: subject_id, type: varchar, isForeignKey: true, references: subject.subject_id }
+        - { name: visit_occurrence_id, type: varchar, isForeignKey: true, references: visit.visit_occurrence_id }
+        - { name: crf_item_id, type: varchar, isForeignKey: true, references: crf_item.crf_item_id }
+        - { name: value_text, type: text }
+        - { name: value_numeric, type: "decimal(20,6)" }
+        - { name: value_date, type: date }
+        - { name: value_codelist_code, type: varchar(32) }
+        - { name: source_doc_uri, type: varchar(255) }
+        - { name: entered_by, type: varchar }
+        - { name: entered_ts, type: timestamp }
+        - { name: locked_ts, type: timestamp }
+        - { name: status, type: varchar(16), description: "entered|signed|locked|frozen" }
+
+    - name: data_query
+      description: EDC discrepancy / data clarification query.
+      keys: [query_id]
+      attributes:
+        - { name: query_id, type: varchar, isPrimaryKey: true }
+        - { name: subject_id, type: varchar, isForeignKey: true, references: subject.subject_id }
+        - { name: data_point_id, type: bigint }
+        - { name: opened_ts, type: timestamp }
+        - { name: opened_by, type: varchar }
+        - { name: query_text, type: text }
+        - { name: response_text, type: text }
+        - { name: closed_ts, type: timestamp }
+        - { name: closed_by, type: varchar }
+        - { name: status, type: varchar(16), description: "open|answered|closed|cancelled" }
+
+    - name: adverse_event
+      description: SDTM AE domain (Adverse Events). USUBJID, AESTDTC, AETERM, AEDECOD, AESEV, AESER.
+      keys: [ae_id]
+      attributes:
+        - { name: ae_id, type: varchar, isPrimaryKey: true }
+        - { name: subject_id, type: varchar, isForeignKey: true, references: subject.subject_id }
+        - { name: aeterm, type: varchar(255), description: "SDTM AETERM verbatim" }
+        - { name: aedecod, type: varchar(128), description: "SDTM AEDECOD MedDRA PT" }
+        - { name: aebodsys, type: varchar(128), description: "SDTM AEBODSYS MedDRA SOC" }
+        - { name: aesev, type: varchar(8), description: "SDTM AESEV (MILD|MODERATE|SEVERE)" }
+        - { name: aeser, type: varchar(1), description: "SDTM AESER (Y|N)" }
+        - { name: aerel, type: varchar(16), description: "SDTM AEREL (RELATED|NOT RELATED|POSSIBLE)" }
+        - { name: aeact, type: varchar(64), description: "SDTM AEACN action with study drug" }
+        - { name: aeout, type: varchar(64), description: "SDTM AEOUT outcome" }
+        - { name: aestdtc, type: timestamp, description: "SDTM AESTDTC start dt" }
+        - { name: aeendtc, type: timestamp, description: "SDTM AEENDTC end dt" }
+        - { name: aeongo, type: varchar(1), description: "SDTM AEONGO ongoing flag" }
+
+    - name: concomitant_medication
+      description: SDTM CM domain.
+      keys: [cm_id]
+      attributes:
+        - { name: cm_id, type: varchar, isPrimaryKey: true }
+        - { name: subject_id, type: varchar, isForeignKey: true, references: subject.subject_id }
+        - { name: cmtrt, type: varchar(255), description: "CMTRT reported term" }
+        - { name: cmdecod, type: varchar(128), description: "CMDECOD WHO-DD ATC dictionary" }
+        - { name: cmclas, type: varchar(64), description: "CMCLAS class" }
+        - { name: cmdose, type: "decimal(12,3)" }
+        - { name: cmdosu, type: varchar(16) }
+        - { name: cmroute, type: varchar(16) }
+        - { name: cmstdtc, type: timestamp }
+        - { name: cmendtc, type: timestamp }
+        - { name: cmindc, type: varchar(255) }
+
+    - name: exposure
+      description: SDTM EX domain (Exposure to study treatment).
+      keys: [exposure_id]
+      attributes:
+        - { name: exposure_id, type: varchar, isPrimaryKey: true }
+        - { name: subject_id, type: varchar, isForeignKey: true, references: subject.subject_id }
+        - { name: extrt, type: varchar(64), description: "EXTRT treatment name" }
+        - { name: exdose, type: "decimal(12,3)", description: "EXDOSE" }
+        - { name: exdosu, type: varchar(16), description: "EXDOSU units" }
+        - { name: exdosfrm, type: varchar(16), description: "EXDOSFRM dose form" }
+        - { name: exroute, type: varchar(16), description: "EXROUTE" }
+        - { name: exstdtc, type: timestamp, description: "EXSTDTC start" }
+        - { name: exendtc, type: timestamp, description: "EXENDTC end" }
+        - { name: visit_occurrence_id, type: varchar, isForeignKey: true, references: visit.visit_occurrence_id }
+        - { name: lot_number, type: varchar(32) }
+
+    - name: lab_result
+      description: SDTM LB domain (Laboratory tests).
+      keys: [lb_id]
+      attributes:
+        - { name: lb_id, type: varchar, isPrimaryKey: true }
+        - { name: subject_id, type: varchar, isForeignKey: true, references: subject.subject_id }
+        - { name: visit_occurrence_id, type: varchar, isForeignKey: true, references: visit.visit_occurrence_id }
+        - { name: lbtestcd, type: varchar(8), description: "LBTESTCD short code" }
+        - { name: lbtest, type: varchar(40), description: "LBTEST verbose name" }
+        - { name: lbcat, type: varchar(40), description: "LBCAT category (HEMATOLOGY|CHEMISTRY)" }
+        - { name: lbspec, type: varchar(40), description: "LBSPEC specimen type" }
+        - { name: lborres, type: varchar(64), description: "LBORRES original result" }
+        - { name: lborresu, type: varchar(16) }
+        - { name: lbstresn, type: "decimal(20,6)", description: "LBSTRESN standard numeric" }
+        - { name: lbstresu, type: varchar(16), description: "LBSTRESU standard unit" }
+        - { name: lbornrlo, type: varchar(16) }
+        - { name: lbornrhi, type: varchar(16) }
+        - { name: lbnrind, type: varchar(8), description: "LBNRIND (NORMAL|HIGH|LOW)" }
+        - { name: lbdtc, type: timestamp, description: "LBDTC sample dt" }
+
+    - name: vital_signs
+      description: SDTM VS domain.
+      keys: [vs_id]
+      attributes:
+        - { name: vs_id, type: varchar, isPrimaryKey: true }
+        - { name: subject_id, type: varchar, isForeignKey: true, references: subject.subject_id }
+        - { name: visit_occurrence_id, type: varchar, isForeignKey: true, references: visit.visit_occurrence_id }
+        - { name: vstestcd, type: varchar(8), description: "VSTESTCD (SYSBP|DIABP|HR|TEMP|RESP|WGT|HGT)" }
+        - { name: vstest, type: varchar(40) }
+        - { name: vsorres, type: varchar(32) }
+        - { name: vsstresn, type: "decimal(12,3)" }
+        - { name: vsstresu, type: varchar(16) }
+        - { name: vsdtc, type: timestamp }
+        - { name: vspos, type: varchar(16), description: "VSPOS body position" }
+
+    - name: protocol_deviation
+      description: SDTM DV domain.
+      keys: [deviation_id]
+      attributes:
+        - { name: deviation_id, type: varchar, isPrimaryKey: true }
+        - { name: subject_id, type: varchar, isForeignKey: true, references: subject.subject_id }
+        - { name: dvterm, type: varchar(255) }
+        - { name: dvdecod, type: varchar(64), description: "DVDECOD coded value" }
+        - { name: dvscat, type: varchar(64), description: "DVSCAT subcategory" }
+        - { name: severity, type: varchar(16), description: "minor|major|critical" }
+        - { name: dvstdtc, type: timestamp }
+        - { name: reported_to_irb, type: boolean }
+
+    - name: adam_dataset
+      description: ADaM analysis dataset (ADSL, ADAE, ADTTE) catalog with parameters.
+      keys: [adam_dataset_id]
+      attributes:
+        - { name: adam_dataset_id, type: varchar, isPrimaryKey: true }
+        - { name: study_id, type: varchar, isForeignKey: true, references: study.study_id }
+        - { name: dataset_name, type: varchar(16), description: "ADSL|ADAE|ADTTE|ADLB|ADVS" }
+        - { name: structure, type: varchar(32), description: "ADaM BDS|OCCDS|ADSL" }
+        - { name: parameter_count, type: smallint }
+        - { name: usubjid_count, type: integer }
+        - { name: define_xml_uri, type: varchar(255) }
+        - { name: lock_status, type: varchar(16), description: "draft|qcReady|locked" }
+        - { name: snapshot_ts, type: timestamp }
+
+    - name: define_xml_codelist
+      description: Define-XML 2.1 CodeList (controlled terminology).
+      keys: [codelist_oid]
+      attributes:
+        - { name: codelist_oid, type: varchar(64), isPrimaryKey: true }
+        - { name: study_id, type: varchar, isForeignKey: true, references: study.study_id }
+        - { name: name, type: varchar(64) }
+        - { name: data_type, type: varchar(16) }
+        - { name: nci_codelist_code, type: varchar(16), description: "NCI CDISC CT C-code" }
+        - { name: external_dictionary, type: varchar(32), description: "MedDRA|WHO-DD|SNOMED|LOINC" }
+        - { name: external_dictionary_version, type: varchar(16) }
+
+    - name: database_lock
+      description: Database lock event (snapshot for analysis / submission).
+      keys: [lock_id]
+      attributes:
+        - { name: lock_id, type: varchar, isPrimaryKey: true }
+        - { name: study_id, type: varchar, isForeignKey: true, references: study.study_id }
+        - { name: lock_type, type: varchar(16), description: "interim|final|hard|soft" }
+        - { name: locked_at, type: timestamp }
+        - { name: locked_by, type: varchar }
+        - { name: cutoff_date, type: date }
+        - { name: define_xml_uri, type: varchar(255) }
+        - { name: snapshot_label, type: varchar(64) }
+
+  relationships:
+    - { from: study, to: site, kind: one_to_many }
+    - { from: study, to: subject, kind: one_to_many }
+    - { from: site, to: subject, kind: one_to_many }
+    - { from: subject, to: visit, kind: one_to_many }
+    - { from: subject, to: adverse_event, kind: one_to_many }
+    - { from: subject, to: concomitant_medication, kind: one_to_many }
+    - { from: subject, to: exposure, kind: one_to_many }
+    - { from: subject, to: lab_result, kind: one_to_many }
+    - { from: subject, to: vital_signs, kind: one_to_many }
+    - { from: subject, to: informed_consent, kind: one_to_many }
+    - { from: visit, to: crf_data_point, kind: one_to_many }
+    - { from: crf_item, to: crf_data_point, kind: one_to_many }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/clinical_trials_3nf.sql
+  vault: modeling/ddl/clinical_trials_vault.sql
+  dimensional: modeling/ddl/clinical_trials_dim.sql
 
 sourceSystems:
   - { vendor: Veeva, product: Vault Clinical, category: eClinical Suite }
@@ -30,8 +424,29 @@ sourceSystems:
   - { vendor: Oracle, product: Clinical One, category: eClinical Suite }
   - { vendor: IQVIA, product: CTMS, category: CTMS }
   - { vendor: Signant Health, product: SmartSignals eCOA, category: eCOA }
+  - { vendor: Castor, product: Castor EDC, category: EDC }
+  - { vendor: Florence eHub, product: eTMF / eISF, category: eTMF }
 
 connectors:
-  - { type: CDISC ODM, protocol: HTTPS, auth: OAuth2 }
-  - { type: REST, protocol: HTTPS, auth: OAuth2 }
-  - { type: Secure file transfer, protocol: SFTP, auth: SSH key }
+  - { type: CDISC ODM-XML / Define-XML, protocol: HTTPS, auth: OAuth2 }
+  - { type: SDTM/ADaM Define-XML 2.1, protocol: file, auth: SFTP }
+  - { type: REST (CTMS/EDC), protocol: HTTPS, auth: OAuth2 }
+  - { type: HL7 v2.5 lab feed, protocol: MLLP, auth: VPN }
+  - { type: SAS XPT (transport), protocol: file, auth: SFTP }
+  - { type: ePRO/eCOA REST, protocol: HTTPS, auth: OAuth2 }
+
+ingestionChallenges:
+  - SDTM domain mapping must be redone per study because CRF designs vary.
+  - Long-form lab feeds (HL7 v2.5) need normalization to LBTESTCD short codes.
+  - Source-document verification (SDV) requires linking redacted images to data points.
+  - eCOA streams are dense and dispersed across device manufacturers.
+  - Late-arriving data after database soft-lock requires unlock/relock auditing.
+  - ICH E6(R3) mandates audit-trail for every CRF data-point edit.
+
+integrationChallenges:
+  - 21 CFR Part 11 validation across the EDC + CTMS + eTMF + safety stack.
+  - GxP compliance for cloud-hosted EDCs (computer system validation, IQ/OQ/PQ).
+  - Country-level variations in informed-consent forms and ICH-GCP profiles.
+  - MedDRA + WHO-DD dictionary version drift between trial start and lock.
+  - PII de-identification for cross-border data sharing (HIPAA, GDPR, China PIPL).
+  - Define-XML round-tripping back into the EDC for protocol amendments.

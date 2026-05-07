@@ -3,34 +3,412 @@ name: Settlement & Clearing
 vertical: BFSI
 oneLiner: Net settlement, multilateral clearing, and reconciliation across CSDs, ACHs, and CCPs.
 
+# Authoritative sources:
+#   ISO 20022 securities settlement messages (https://www.iso20022.org/):
+#     sese.023 SecuritiesSettlementTransactionInstruction,
+#     sese.024 SecuritiesSettlementTransactionStatusAdvice,
+#     sese.025 SecuritiesSettlementTransactionConfirmation,
+#     semt.017 ReportingTransactionStatement,
+#     camt.054 BankToCustomerDebitCreditNotification,
+#     setr.027 RedemptionMultiple, colr.* Collateral Management.
+#   DTCC NSCC Continuous Net Settlement (CNS) record specs.
+#   DTCC DTC Settlement (BlueShift, ID Net).
+#   CHIPS / Fedwire Funds Service formats (ISO 20022 migration).
+#   SWIFT MT 535/536/537 statement of holdings (paid; widely echoed).
+
 personas:
   - { name: Head of Settlements, title: Head of Settlements & Clearing, level: VP }
   - { name: Recon Lead, title: Reconciliations Manager, level: Manager }
   - { name: Treasury Liaison, title: Treasury Operations Lead, level: Director }
+  - { name: CCP Risk Manager, title: CCP Risk Manager, level: Director }
+  - { name: Operations COO, title: COO Securities Services, level: C-suite }
+
+decisions:
+  - { id: stl.d.buyin, statement: Initiate buy-in vs continue claiming compensation. }
+  - { id: stl.d.collateral, statement: Pledge cash vs securities for variation margin. }
+  - { id: stl.d.partial, statement: Allow partial settlement on a pending instruction. }
+  - { id: stl.d.cns_optout, statement: Opt out of CNS netting for a specific issue. }
+  - { id: stl.d.recall, statement: Recall securities on loan to satisfy a delivery. }
+  - { id: stl.d.cutoff_extend, statement: Extend cutoff for a critical settlement past CSD deadline. }
 
 kpis:
-  - { id: stl.kpi.same_day_settle, name: Same-Day Settlement Rate, formula: same_day_settled / total_trades, unit: "%", direction: higher_is_better }
-  - { id: stl.kpi.fail_rate, name: Settlement Fail Rate, formula: failed / total_settlements, unit: "%", direction: lower_is_better }
-  - { id: stl.kpi.recon_break_count, name: Recon Break Count, formula: open_breaks_eod, unit: count, direction: lower_is_better }
-  - { id: stl.kpi.aging_breaks, name: Aging Breaks > 5d, formula: breaks_over_5d / total_breaks, unit: "%", direction: lower_is_better }
-  - { id: stl.kpi.intraday_liquidity_use, name: Intraday Liquidity Usage, formula: peak_intraday / committed_facility, unit: "%", direction: target_band }
+  - id: stl.kpi.same_day_settle
+    name: Same-Day Settlement Rate
+    formula: same_day_settled / total_trades
+    unit: "%"
+    direction: higher_is_better
+  - id: stl.kpi.fail_rate
+    name: Settlement Fail Rate
+    formula: failed / total_settlements
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [stl.d.buyin, stl.d.partial]
+  - id: stl.kpi.recon_break_count
+    name: Recon Break Count
+    formula: open_breaks_eod
+    unit: count
+    direction: lower_is_better
+  - id: stl.kpi.aging_breaks
+    name: Aging Breaks > 5d
+    formula: breaks_over_5d / total_breaks
+    unit: "%"
+    direction: lower_is_better
+  - id: stl.kpi.intraday_liquidity_use
+    name: Intraday Liquidity Usage
+    formula: peak_intraday / committed_facility
+    unit: "%"
+    direction: target_band
+  - id: stl.kpi.match_rate
+    name: Pre-Settlement Match Rate
+    formula: matched_t1 / eligible_trades
+    unit: "%"
+    direction: higher_is_better
+  - id: stl.kpi.cns_compression
+    name: CNS Net Compression Ratio
+    formula: gross_obligations / net_obligations
+    unit: ratio
+    direction: higher_is_better
+    decisionsSupported: [stl.d.cns_optout]
+  - id: stl.kpi.collateral_haircut_avg
+    name: Average Collateral Haircut
+    formula: weighted_haircut_pct
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [stl.d.collateral]
+  - id: stl.kpi.buyin_count
+    name: Buy-In Initiations
+    formula: count(buyin_events)
+    unit: count
+    direction: lower_is_better
+    decisionsSupported: [stl.d.buyin]
+  - id: stl.kpi.cutoff_extension_rate
+    name: Cutoff-Extension Rate
+    formula: extensions / total_settlements
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [stl.d.cutoff_extend]
 
 dataModel:
   entities:
-    - { name: Trade, description: 'Trade pending settlement' }
-    - { name: Allocation, description: 'Allocation to underlying account' }
-    - { name: Confirmation, description: 'Trade confirmation' }
-    - { name: Settlement, description: 'Settlement record' }
-    - { name: Fail, description: 'Settlement fail event' }
+    - name: party
+      description: Settlement party — issuer, owner, counterparty, agent. ISO 20022 PartyIdentification.
+      keys: [party_id]
+      attributes:
+        - { name: party_id, type: varchar, isPrimaryKey: true }
+        - { name: lei, type: varchar(20), description: "ISO 17442 LEI" }
+        - { name: bic, type: varchar(11), description: "ISO 9362 BIC11" }
+        - { name: legal_name, type: varchar(255) }
+        - { name: party_role, type: varchar(16), description: "AccountOwner|AccountServicer|CSD|CCP|CashAgent|SettlementAgent" }
+        - { name: country_iso, type: varchar(2) }
+        - { name: status, type: varchar(16) }
+
+    - name: csd
+      description: Central Securities Depository (DTCC, Euroclear, Clearstream, JASDEC).
+      keys: [csd_id]
+      attributes:
+        - { name: csd_id, type: varchar, isPrimaryKey: true }
+        - { name: bic, type: varchar(11) }
+        - { name: name, type: varchar(64) }
+        - { name: country_iso, type: varchar(2) }
+        - { name: timezone, type: varchar(32) }
+        - { name: cutoff_local_time, type: varchar(8) }
+        - { name: t2s_eligible, type: boolean, description: "TARGET2-Securities eligibility" }
+        - { name: status, type: varchar(16) }
+
+    - name: ccp
+      description: Central CounterParty (DTCC NSCC, LCH, ICE Clear, Eurex Clearing).
+      keys: [ccp_id]
+      attributes:
+        - { name: ccp_id, type: varchar, isPrimaryKey: true }
+        - { name: bic, type: varchar(11) }
+        - { name: lei, type: varchar(20) }
+        - { name: name, type: varchar(64) }
+        - { name: country_iso, type: varchar(2) }
+        - { name: clearing_segments, type: text }
+        - { name: default_fund_currency, type: varchar(3) }
+        - { name: status, type: varchar(16) }
+
+    - name: instrument
+      description: Security identifier and master.
+      keys: [instrument_id]
+      attributes:
+        - { name: instrument_id, type: varchar, isPrimaryKey: true }
+        - { name: isin, type: varchar(12) }
+        - { name: cusip, type: varchar(9) }
+        - { name: figi, type: varchar(12) }
+        - { name: cfi_code, type: varchar(6), description: "ISO 10962" }
+        - { name: short_name, type: varchar(64) }
+        - { name: issuer_party_id, type: varchar, isForeignKey: true, references: party.party_id }
+        - { name: currency, type: varchar(3) }
+        - { name: country_of_issue, type: varchar(2) }
+        - { name: maturity_date, type: date }
+        - { name: status, type: varchar(16) }
+
+    - name: safekeeping_account
+      description: Holding account at a CSD. ISO 20022 SafekeepingAccount.
+      keys: [safekeeping_account_id]
+      attributes:
+        - { name: safekeeping_account_id, type: varchar(35), isPrimaryKey: true }
+        - { name: account_owner_party_id, type: varchar, isForeignKey: true, references: party.party_id }
+        - { name: account_servicer_party_id, type: varchar, isForeignKey: true, references: party.party_id }
+        - { name: csd_id, type: varchar, isForeignKey: true, references: csd.csd_id }
+        - { name: account_type, type: varchar(16), description: "Own|Client|Omnibus|Segregated" }
+        - { name: opened_at, type: date }
+        - { name: status, type: varchar(16) }
+
+    - name: cash_account
+      description: Settlement cash account (CSD-linked or correspondent).
+      keys: [cash_account_id]
+      attributes:
+        - { name: cash_account_id, type: varchar(35), isPrimaryKey: true }
+        - { name: account_owner_party_id, type: varchar, isForeignKey: true, references: party.party_id }
+        - { name: bic, type: varchar(11) }
+        - { name: account_servicer_party_id, type: varchar }
+        - { name: currency, type: varchar(3) }
+        - { name: account_type, type: varchar(16), description: "RTGS|Correspondent|Client" }
+        - { name: opened_at, type: date }
+        - { name: status, type: varchar(16) }
+
+    - name: trade
+      description: Trade pending settlement (slim view; full booking in capital_markets).
+      keys: [trade_id]
+      attributes:
+        - { name: trade_id, type: varchar, isPrimaryKey: true }
+        - { name: instrument_id, type: varchar, isForeignKey: true, references: instrument.instrument_id }
+        - { name: account_owner_party_id, type: varchar, isForeignKey: true, references: party.party_id }
+        - { name: counterparty_party_id, type: varchar, isForeignKey: true, references: party.party_id }
+        - { name: side, type: varchar(8) }
+        - { name: quantity, type: "decimal(20,4)" }
+        - { name: trade_price, type: "decimal(20,8)" }
+        - { name: trade_date, type: date }
+        - { name: settlement_date, type: date }
+        - { name: clearing_status, type: varchar(16) }
+        - { name: ccp_id, type: varchar }
+        - { name: csd_id, type: varchar }
+
+    - name: settlement_instruction
+      description: ISO 20022 sese.023 SecuritiesSettlementTransactionInstruction.
+      keys: [ssi_id]
+      attributes:
+        - { name: ssi_id, type: varchar, isPrimaryKey: true, description: "MessageId / TransactionIdentification" }
+        - { name: trade_id, type: varchar, isForeignKey: true, references: trade.trade_id }
+        - { name: account_owner_party_id, type: varchar, isForeignKey: true, references: party.party_id }
+        - { name: safekeeping_account_id, type: varchar(35), isForeignKey: true, references: safekeeping_account.safekeeping_account_id }
+        - { name: cash_account_id, type: varchar(35), isForeignKey: true, references: cash_account.cash_account_id }
+        - { name: instrument_id, type: varchar, isForeignKey: true, references: instrument.instrument_id }
+        - { name: settlement_quantity, type: "decimal(20,4)" }
+        - { name: settlement_amount, type: "decimal(20,4)" }
+        - { name: settlement_currency, type: varchar(3) }
+        - { name: trade_date, type: date }
+        - { name: settlement_date, type: date }
+        - { name: delivery_type, type: varchar(8), description: "DELI|RECE" }
+        - { name: payment_type, type: varchar(8), description: "APMT|FREE" }
+        - { name: settlement_method, type: varchar(8), description: "DVP|RVP|FOP|DWPP" }
+        - { name: priority, type: varchar(8) }
+        - { name: partial_settlement_indicator, type: varchar(8), description: "NPAR|PART" }
+        - { name: hold_indicator, type: boolean }
+        - { name: linkage_id, type: varchar(64) }
+        - { name: status, type: varchar(16), description: "Pending|Matched|Unmatched|Settled|Failed|Cancelled" }
+        - { name: created_at, type: timestamp }
+
+    - name: matching_status
+      description: ISO 20022 sese.024 SecuritiesSettlementTransactionStatusAdvice — matching event log.
+      keys: [matching_status_id]
+      attributes:
+        - { name: matching_status_id, type: varchar, isPrimaryKey: true }
+        - { name: ssi_id, type: varchar, isForeignKey: true, references: settlement_instruction.ssi_id }
+        - { name: status_code, type: varchar(8), description: "MACH|NMAT|UMAC" }
+        - { name: reason_code, type: varchar(8), description: "ISO mismatch reason (DEPT|PRIC|QUTY|VAR|SETR|etc.)" }
+        - { name: reason_description, type: varchar(255) }
+        - { name: status_ts, type: timestamp }
+        - { name: counterparty_match_ts, type: timestamp }
+
+    - name: settlement_confirmation
+      description: ISO 20022 sese.025 SecuritiesSettlementTransactionConfirmation.
+      keys: [confirmation_id]
+      attributes:
+        - { name: confirmation_id, type: varchar, isPrimaryKey: true }
+        - { name: ssi_id, type: varchar, isForeignKey: true, references: settlement_instruction.ssi_id }
+        - { name: settled_quantity, type: "decimal(20,4)" }
+        - { name: settled_amount, type: "decimal(20,4)" }
+        - { name: settled_currency, type: varchar(3) }
+        - { name: settlement_ts, type: timestamp }
+        - { name: corporate_action_event_id, type: varchar }
+        - { name: status_code, type: varchar(8), description: "SETT|PSET (partially settled)" }
+
+    - name: failed_settlement
+      description: Failed settlement event with reason.
+      keys: [fail_id]
+      attributes:
+        - { name: fail_id, type: varchar, isPrimaryKey: true }
+        - { name: ssi_id, type: varchar, isForeignKey: true, references: settlement_instruction.ssi_id }
+        - { name: failed_quantity, type: "decimal(20,4)" }
+        - { name: failed_amount, type: "decimal(20,4)" }
+        - { name: fail_reason_code, type: varchar(8), description: "LACK|CASH|NCRR|CSDH|LATE|OTHR" }
+        - { name: fail_ts, type: timestamp }
+        - { name: age_days, type: smallint }
+        - { name: csd_penalty_applied, type: "decimal(15,4)" }
+        - { name: csdr_penalty_currency, type: varchar(3) }
+        - { name: status, type: varchar(16) }
+
+    - name: buyin
+      description: CSDR Buy-In execution (penalty regime under EU Settlement Discipline).
+      keys: [buyin_id]
+      attributes:
+        - { name: buyin_id, type: varchar, isPrimaryKey: true }
+        - { name: fail_id, type: varchar, isForeignKey: true, references: failed_settlement.fail_id }
+        - { name: instrument_id, type: varchar, isForeignKey: true, references: instrument.instrument_id }
+        - { name: bought_in_quantity, type: "decimal(20,4)" }
+        - { name: buyin_price, type: "decimal(20,8)" }
+        - { name: buyin_currency, type: varchar(3) }
+        - { name: extension_period_days, type: smallint }
+        - { name: triggered_by, type: varchar(16) }
+        - { name: executed_at, type: timestamp }
+        - { name: status, type: varchar(16) }
+
+    - name: cns_obligation
+      description: DTCC NSCC Continuous Net Settlement (CNS) — daily netted obligation per participant per CUSIP.
+      keys: [cns_obligation_id]
+      attributes:
+        - { name: cns_obligation_id, type: varchar, isPrimaryKey: true }
+        - { name: participant_party_id, type: varchar, isForeignKey: true, references: party.party_id }
+        - { name: cusip, type: varchar(9) }
+        - { name: business_date, type: date }
+        - { name: long_position_qty, type: "decimal(20,4)" }
+        - { name: short_position_qty, type: "decimal(20,4)" }
+        - { name: net_position_qty, type: "decimal(20,4)" }
+        - { name: net_money, type: "decimal(20,4)" }
+        - { name: net_money_currency, type: varchar(3) }
+        - { name: aged_failures_qty, type: "decimal(20,4)" }
+        - { name: status, type: varchar(16) }
+
+    - name: ccp_margin_call
+      description: CCP-issued margin call (Initial / Variation / Default Fund). ISO 20022 colr.022.
+      keys: [margin_call_id]
+      attributes:
+        - { name: margin_call_id, type: varchar, isPrimaryKey: true }
+        - { name: ccp_id, type: varchar, isForeignKey: true, references: ccp.ccp_id }
+        - { name: clearing_member_party_id, type: varchar, isForeignKey: true, references: party.party_id }
+        - { name: call_type, type: varchar(16), description: "Initial|Variation|DefaultFund|Concentration" }
+        - { name: call_amount, type: "decimal(20,4)" }
+        - { name: call_currency, type: varchar(3) }
+        - { name: call_ts, type: timestamp }
+        - { name: due_ts, type: timestamp }
+        - { name: status, type: varchar(16), description: "Issued|Acknowledged|Met|Disputed" }
+        - { name: collateral_amount_pledged, type: "decimal(20,4)" }
+        - { name: variation_pnl, type: "decimal(20,4)" }
+
+    - name: collateral_movement
+      description: Pledge/return of collateral. ISO 20022 colr.005 / colr.006.
+      keys: [collateral_movement_id]
+      attributes:
+        - { name: collateral_movement_id, type: varchar, isPrimaryKey: true }
+        - { name: margin_call_id, type: varchar, isForeignKey: true, references: ccp_margin_call.margin_call_id }
+        - { name: collateral_type, type: varchar(16), description: "Cash|Securities" }
+        - { name: instrument_id, type: varchar }
+        - { name: quantity, type: "decimal(20,4)" }
+        - { name: market_value, type: "decimal(20,4)" }
+        - { name: haircut_pct, type: "decimal(6,4)" }
+        - { name: post_haircut_value, type: "decimal(20,4)" }
+        - { name: currency, type: varchar(3) }
+        - { name: direction, type: varchar(8), description: "Pledge|Return" }
+        - { name: movement_ts, type: timestamp }
+        - { name: csd_id, type: varchar }
+
+    - name: cash_movement
+      description: ISO 20022 camt.054 BankToCustomerDebitCreditNotification — settlement cash leg.
+      keys: [cash_movement_id]
+      attributes:
+        - { name: cash_movement_id, type: varchar, isPrimaryKey: true }
+        - { name: cash_account_id, type: varchar(35), isForeignKey: true, references: cash_account.cash_account_id }
+        - { name: ssi_id, type: varchar, isForeignKey: true, references: settlement_instruction.ssi_id }
+        - { name: credit_debit_indicator, type: varchar(4), description: "DBIT|CRDT" }
+        - { name: amount, type: "decimal(20,4)" }
+        - { name: currency, type: varchar(3) }
+        - { name: value_date, type: date }
+        - { name: booking_date, type: date }
+        - { name: end_to_end_id, type: varchar(35) }
+        - { name: status, type: varchar(16) }
+
+    - name: holding_statement
+      description: ISO 20022 semt.017 ReportingTransactionStatement (statement of holdings).
+      keys: [statement_id]
+      attributes:
+        - { name: statement_id, type: varchar, isPrimaryKey: true }
+        - { name: safekeeping_account_id, type: varchar(35), isForeignKey: true, references: safekeeping_account.safekeeping_account_id }
+        - { name: instrument_id, type: varchar, isForeignKey: true, references: instrument.instrument_id }
+        - { name: as_of_date, type: date }
+        - { name: opening_balance, type: "decimal(20,4)" }
+        - { name: closing_balance, type: "decimal(20,4)" }
+        - { name: pending_in, type: "decimal(20,4)" }
+        - { name: pending_out, type: "decimal(20,4)" }
+        - { name: settlement_status, type: varchar(16) }
+
+    - name: reconciliation_break
+      description: Recon break between internal book and CSD/CCP statement.
+      keys: [break_id]
+      attributes:
+        - { name: break_id, type: varchar, isPrimaryKey: true }
+        - { name: account_id, type: varchar }
+        - { name: instrument_id, type: varchar, isForeignKey: true, references: instrument.instrument_id }
+        - { name: break_type, type: varchar(16), description: "Quantity|Price|Currency|SettleDate|Counterparty" }
+        - { name: break_amount, type: "decimal(20,4)" }
+        - { name: detected_at, type: timestamp }
+        - { name: source_system, type: varchar(32) }
+        - { name: assignee_id, type: varchar }
+        - { name: status, type: varchar(16), description: "Open|InProgress|Resolved|Aged" }
+        - { name: resolved_at, type: timestamp }
+        - { name: resolution_notes, type: text }
+
+  relationships:
+    - { from: csd, to: safekeeping_account, kind: one_to_many }
+    - { from: party, to: safekeeping_account, kind: one_to_many }
+    - { from: party, to: cash_account, kind: one_to_many }
+    - { from: trade, to: settlement_instruction, kind: one_to_many }
+    - { from: settlement_instruction, to: matching_status, kind: one_to_many }
+    - { from: settlement_instruction, to: settlement_confirmation, kind: one_to_one }
+    - { from: settlement_instruction, to: failed_settlement, kind: one_to_one }
+    - { from: failed_settlement, to: buyin, kind: one_to_one }
+    - { from: ccp, to: ccp_margin_call, kind: one_to_many }
+    - { from: ccp_margin_call, to: collateral_movement, kind: one_to_many }
+    - { from: cash_account, to: cash_movement, kind: one_to_many }
+    - { from: safekeeping_account, to: holding_statement, kind: one_to_many }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/settlement_clearing_3nf.sql
+  vault: modeling/ddl/settlement_clearing_vault.sql
+  dimensional: modeling/ddl/settlement_clearing_dim.sql
 
 sourceSystems:
-  - { vendor: DTCC, product: NSCC/CNS, category: CCP }
-  - { vendor: Euroclear, product: Settlement, category: CSD }
+  - { vendor: DTCC, product: NSCC CNS / DTC Settlement, category: CCP / CSD }
+  - { vendor: Euroclear, product: Settlement / EB, category: CSD }
+  - { vendor: Clearstream, product: CASCADE / Creation, category: CSD }
   - { vendor: Broadridge, product: Impact, category: Post-trade Platform }
-  - { vendor: Calypso, product: Calypso, category: Post-trade Platform }
-  - { vendor: SWIFT, product: gpi, category: Messaging Network }
+  - { vendor: Calypso (Adenza), product: Calypso, category: Post-trade Platform }
+  - { vendor: SWIFT, product: Alliance / gpi, category: Messaging Network }
+  - { vendor: LCH, product: SwapClear / RepoClear, category: CCP }
+  - { vendor: ICE Clear, product: ICE Clear Credit, category: CCP }
 
 connectors:
-  - { type: SWIFT MT/MX, protocol: MQ, auth: PKI }
-  - { type: ISO20022, protocol: MQ/file, auth: PKI }
+  - { type: SWIFT MT5xx (paid), protocol: MQ, auth: PKI }
+  - { type: ISO 20022 securities (sese/semt/setr/colr), protocol: MQ/file, auth: PKI }
   - { type: SFTP file feed, protocol: SFTP, auth: SSH key }
+  - { type: REST (CCP/CSD portals), protocol: HTTPS, auth: OAuth2 + mTLS }
+  - { type: DTCC CTM API, protocol: HTTPS, auth: OAuth2 }
+  - { type: T2S U2A / A2A, protocol: SWIFT/MQ, auth: PKI }
+
+ingestionChallenges:
+  - SWIFT MT5xx vs MX (ISO 20022) parallel running during the migration window.
+  - Late-arriving ack/nack messages from CSDs across timezones.
+  - Out-of-order matching status updates require state machine reconciliation.
+  - CSDR penalty regime applies to fails — penalty rates change by instrument class.
+  - DTCC CNS netting batch arrives once per day and rewrites obligations.
+  - Corporate action events alter pending settlements retroactively.
+
+integrationChallenges:
+  - Multi-CSD/CCP topology — each with proprietary status code sets.
+  - Linkage id management across instructions to enable gross-vs-net linking.
+  - Collateral haircuts vary by instrument and jurisdiction.
+  - Recon scope expansion as buy-side T+1 mandates compress windows.
+  - Distinct statement formats from each CSD make recon a per-source transform.
+  - Real-time intraday liquidity reporting (BCBS 248) requires sub-minute aggregation.

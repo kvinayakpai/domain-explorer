@@ -3,34 +3,462 @@ name: Real-World Evidence
 vertical: LifeSciences
 oneLiner: Curated EHR, claims, and registry data for outcomes research, label expansion, and HEOR studies.
 
+# Authoritative source: OHDSI OMOP Common Data Model v5.4
+# (https://ohdsi.github.io/CommonDataModel/cdm54.html)
+# All entity and column names below match the OMOP CDM v5.4 schema verbatim.
+# OMOP Vocabulary (Athena) provides standard concepts (SNOMED, RxNorm, LOINC, ICD).
+# Compatible with FDA Sentinel Common Data Model and PCORnet CDM v6 (mappings).
+
 personas:
   - { name: Head of RWE, title: Head of Real-World Evidence, level: VP }
   - { name: Epidemiologist, title: Senior Epidemiologist, level: Director }
   - { name: Data Acquisition Lead, title: RWD Acquisition Lead, level: Manager }
+  - { name: HEOR Lead, title: Head of Health Economics & Outcomes Research, level: Director }
+  - { name: Vocabulary Steward, title: OMOP Vocabulary Steward, level: Manager }
+
+decisions:
+  - { id: rwe.d.cohort_definition, statement: Lock a cohort definition vs broaden inclusion criteria. }
+  - { id: rwe.d.linkage, statement: Use a probabilistic linkage between data assets vs deterministic only. }
+  - { id: rwe.d.vocab_uplift, statement: Upgrade Athena vocabulary version vs hold for in-flight studies. }
+  - { id: rwe.d.publication, statement: Submit study for peer review vs internal report. }
+  - { id: rwe.d.reg_use, statement: Use the dataset for FDA submission vs label-expansion only. }
+  - { id: rwe.d.privacy_release, statement: Release k-anonymised slice vs require DUA negotiation. }
 
 kpis:
-  - { id: rwe.kpi.cohort_match, name: Cohort Match Rate, formula: matched_patients / target, unit: "%", direction: higher_is_better }
-  - { id: rwe.kpi.data_freshness, name: Data Freshness, formula: avg(today - latest_record_dt), unit: days, direction: lower_is_better }
-  - { id: rwe.kpi.linkage_rate, name: Cross-Source Linkage Rate, formula: linked / total, unit: "%", direction: higher_is_better }
-  - { id: rwe.kpi.publication_count, name: Peer-Reviewed Publications, formula: publications_yoy, unit: count, direction: higher_is_better }
-  - { id: rwe.kpi.regulatory_acceptance, name: Reg Submission Acceptance, formula: accepted / submitted, unit: "%", direction: higher_is_better }
+  - id: rwe.kpi.cohort_match
+    name: Cohort Match Rate
+    formula: matched_persons / target_n
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [rwe.d.cohort_definition]
+  - id: rwe.kpi.data_freshness
+    name: Data Freshness
+    formula: avg(today - max(condition_start_date))
+    unit: days
+    direction: lower_is_better
+  - id: rwe.kpi.linkage_rate
+    name: Cross-Source Linkage Rate
+    formula: linked_persons / total_persons
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [rwe.d.linkage]
+  - id: rwe.kpi.publication_count
+    name: Peer-Reviewed Publications
+    formula: publications_yoy
+    unit: count
+    direction: higher_is_better
+  - id: rwe.kpi.regulatory_acceptance
+    name: Regulatory Submission Acceptance
+    formula: accepted_submissions / total_submissions
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [rwe.d.reg_use]
+  - id: rwe.kpi.standard_concept_coverage
+    name: Standard-Concept Coverage
+    formula: rows_with_standard_concept / total_rows
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [rwe.d.vocab_uplift]
+  - id: rwe.kpi.observation_period_completeness
+    name: Observation-Period Completeness
+    formula: persons_with_observation_period / persons
+    unit: "%"
+    direction: higher_is_better
+  - id: rwe.kpi.median_followup_years
+    name: Median Follow-Up Years
+    formula: median(observation_period_end - observation_period_start)
+    unit: years
+    direction: target_band
+  - id: rwe.kpi.dq_check_pass
+    name: Data Quality Check Pass Rate (Achilles)
+    formula: passed_checks / total_checks
+    unit: "%"
+    direction: higher_is_better
+  - id: rwe.kpi.cdm_version_lag
+    name: CDM Version Lag
+    formula: months_since_target_cdm_release
+    unit: months
+    direction: lower_is_better
 
 dataModel:
   entities:
-    - { name: Patient, description: 'RWE patient cohort member' }
-    - { name: ClaimsRecord, description: 'Linked claims record' }
-    - { name: EhrRecord, description: 'Linked EHR record' }
-    - { name: Cohort, description: 'Defined cohort' }
-    - { name: Outcome, description: 'Measured outcome' }
+    - name: person
+      description: OMOP CDM v5.4 PERSON. Demographics standard table.
+      keys: [person_id]
+      attributes:
+        - { name: person_id, type: bigint, isPrimaryKey: true }
+        - { name: gender_concept_id, type: integer, description: "Standard concept (Male=8507, Female=8532)" }
+        - { name: year_of_birth, type: smallint }
+        - { name: month_of_birth, type: smallint }
+        - { name: day_of_birth, type: smallint }
+        - { name: birth_datetime, type: timestamp }
+        - { name: race_concept_id, type: integer }
+        - { name: ethnicity_concept_id, type: integer }
+        - { name: location_id, type: bigint, isForeignKey: true, references: location.location_id }
+        - { name: provider_id, type: bigint, isForeignKey: true, references: provider.provider_id }
+        - { name: care_site_id, type: bigint, isForeignKey: true, references: care_site.care_site_id }
+        - { name: person_source_value, type: varchar(50) }
+        - { name: gender_source_value, type: varchar(50) }
+        - { name: gender_source_concept_id, type: integer }
+        - { name: race_source_value, type: varchar(50) }
+        - { name: race_source_concept_id, type: integer }
+        - { name: ethnicity_source_value, type: varchar(50) }
+        - { name: ethnicity_source_concept_id, type: integer }
+
+    - name: observation_period
+      description: OMOP OBSERVATION_PERIOD — windows during which a Person is observable.
+      keys: [observation_period_id]
+      attributes:
+        - { name: observation_period_id, type: bigint, isPrimaryKey: true }
+        - { name: person_id, type: bigint, isForeignKey: true, references: person.person_id }
+        - { name: observation_period_start_date, type: date }
+        - { name: observation_period_end_date, type: date }
+        - { name: period_type_concept_id, type: integer }
+
+    - name: visit_occurrence
+      description: OMOP VISIT_OCCURRENCE — encounters at a care site.
+      keys: [visit_occurrence_id]
+      attributes:
+        - { name: visit_occurrence_id, type: bigint, isPrimaryKey: true }
+        - { name: person_id, type: bigint, isForeignKey: true, references: person.person_id }
+        - { name: visit_concept_id, type: integer, description: "Visit type standard concept (IP, OP, ED)" }
+        - { name: visit_start_date, type: date }
+        - { name: visit_start_datetime, type: timestamp }
+        - { name: visit_end_date, type: date }
+        - { name: visit_end_datetime, type: timestamp }
+        - { name: visit_type_concept_id, type: integer }
+        - { name: provider_id, type: bigint, isForeignKey: true, references: provider.provider_id }
+        - { name: care_site_id, type: bigint, isForeignKey: true, references: care_site.care_site_id }
+        - { name: visit_source_value, type: varchar(50) }
+        - { name: visit_source_concept_id, type: integer }
+        - { name: admitted_from_concept_id, type: integer }
+        - { name: admitted_from_source_value, type: varchar(50) }
+        - { name: discharged_to_concept_id, type: integer }
+        - { name: discharged_to_source_value, type: varchar(50) }
+        - { name: preceding_visit_occurrence_id, type: bigint }
+
+    - name: condition_occurrence
+      description: OMOP CONDITION_OCCURRENCE — diagnoses (ICD-10-CM, SNOMED).
+      keys: [condition_occurrence_id]
+      attributes:
+        - { name: condition_occurrence_id, type: bigint, isPrimaryKey: true }
+        - { name: person_id, type: bigint, isForeignKey: true, references: person.person_id }
+        - { name: condition_concept_id, type: integer, description: "Standard SNOMED concept" }
+        - { name: condition_start_date, type: date }
+        - { name: condition_start_datetime, type: timestamp }
+        - { name: condition_end_date, type: date }
+        - { name: condition_end_datetime, type: timestamp }
+        - { name: condition_type_concept_id, type: integer }
+        - { name: condition_status_concept_id, type: integer }
+        - { name: stop_reason, type: varchar(20) }
+        - { name: provider_id, type: bigint, isForeignKey: true, references: provider.provider_id }
+        - { name: visit_occurrence_id, type: bigint, isForeignKey: true, references: visit_occurrence.visit_occurrence_id }
+        - { name: visit_detail_id, type: bigint }
+        - { name: condition_source_value, type: varchar(50), description: "Original ICD-10 code" }
+        - { name: condition_source_concept_id, type: integer }
+        - { name: condition_status_source_value, type: varchar(50) }
+
+    - name: drug_exposure
+      description: OMOP DRUG_EXPOSURE — orders, dispensings, administrations (RxNorm).
+      keys: [drug_exposure_id]
+      attributes:
+        - { name: drug_exposure_id, type: bigint, isPrimaryKey: true }
+        - { name: person_id, type: bigint, isForeignKey: true, references: person.person_id }
+        - { name: drug_concept_id, type: integer, description: "Standard RxNorm concept" }
+        - { name: drug_exposure_start_date, type: date }
+        - { name: drug_exposure_start_datetime, type: timestamp }
+        - { name: drug_exposure_end_date, type: date }
+        - { name: drug_exposure_end_datetime, type: timestamp }
+        - { name: verbatim_end_date, type: date }
+        - { name: drug_type_concept_id, type: integer }
+        - { name: stop_reason, type: varchar(20) }
+        - { name: refills, type: integer }
+        - { name: quantity, type: "decimal(18,6)" }
+        - { name: days_supply, type: integer }
+        - { name: sig, type: text }
+        - { name: route_concept_id, type: integer }
+        - { name: lot_number, type: varchar(50) }
+        - { name: provider_id, type: bigint, isForeignKey: true, references: provider.provider_id }
+        - { name: visit_occurrence_id, type: bigint, isForeignKey: true, references: visit_occurrence.visit_occurrence_id }
+        - { name: visit_detail_id, type: bigint }
+        - { name: drug_source_value, type: varchar(50) }
+        - { name: drug_source_concept_id, type: integer }
+        - { name: route_source_value, type: varchar(50) }
+        - { name: dose_unit_source_value, type: varchar(50) }
+
+    - name: procedure_occurrence
+      description: OMOP PROCEDURE_OCCURRENCE — CPT/HCPCS/SNOMED procedures.
+      keys: [procedure_occurrence_id]
+      attributes:
+        - { name: procedure_occurrence_id, type: bigint, isPrimaryKey: true }
+        - { name: person_id, type: bigint, isForeignKey: true, references: person.person_id }
+        - { name: procedure_concept_id, type: integer }
+        - { name: procedure_date, type: date }
+        - { name: procedure_datetime, type: timestamp }
+        - { name: procedure_end_date, type: date }
+        - { name: procedure_end_datetime, type: timestamp }
+        - { name: procedure_type_concept_id, type: integer }
+        - { name: modifier_concept_id, type: integer }
+        - { name: quantity, type: integer }
+        - { name: provider_id, type: bigint, isForeignKey: true, references: provider.provider_id }
+        - { name: visit_occurrence_id, type: bigint, isForeignKey: true, references: visit_occurrence.visit_occurrence_id }
+        - { name: visit_detail_id, type: bigint }
+        - { name: procedure_source_value, type: varchar(50) }
+        - { name: procedure_source_concept_id, type: integer }
+        - { name: modifier_source_value, type: varchar(50) }
+
+    - name: measurement
+      description: OMOP MEASUREMENT — lab and clinical measurements (LOINC).
+      keys: [measurement_id]
+      attributes:
+        - { name: measurement_id, type: bigint, isPrimaryKey: true }
+        - { name: person_id, type: bigint, isForeignKey: true, references: person.person_id }
+        - { name: measurement_concept_id, type: integer }
+        - { name: measurement_date, type: date }
+        - { name: measurement_datetime, type: timestamp }
+        - { name: measurement_time, type: varchar(10) }
+        - { name: measurement_type_concept_id, type: integer }
+        - { name: operator_concept_id, type: integer }
+        - { name: value_as_number, type: "decimal(18,6)" }
+        - { name: value_as_concept_id, type: integer }
+        - { name: unit_concept_id, type: integer }
+        - { name: range_low, type: "decimal(18,6)" }
+        - { name: range_high, type: "decimal(18,6)" }
+        - { name: provider_id, type: bigint, isForeignKey: true, references: provider.provider_id }
+        - { name: visit_occurrence_id, type: bigint, isForeignKey: true, references: visit_occurrence.visit_occurrence_id }
+        - { name: visit_detail_id, type: bigint }
+        - { name: measurement_source_value, type: varchar(50) }
+        - { name: measurement_source_concept_id, type: integer }
+        - { name: unit_source_value, type: varchar(50) }
+        - { name: unit_source_concept_id, type: integer }
+        - { name: value_source_value, type: varchar(50) }
+
+    - name: observation
+      description: OMOP OBSERVATION — clinical facts not fitting other domains.
+      keys: [observation_id]
+      attributes:
+        - { name: observation_id, type: bigint, isPrimaryKey: true }
+        - { name: person_id, type: bigint, isForeignKey: true, references: person.person_id }
+        - { name: observation_concept_id, type: integer }
+        - { name: observation_date, type: date }
+        - { name: observation_datetime, type: timestamp }
+        - { name: observation_type_concept_id, type: integer }
+        - { name: value_as_number, type: "decimal(18,6)" }
+        - { name: value_as_string, type: varchar(60) }
+        - { name: value_as_concept_id, type: integer }
+        - { name: qualifier_concept_id, type: integer }
+        - { name: unit_concept_id, type: integer }
+        - { name: provider_id, type: bigint, isForeignKey: true, references: provider.provider_id }
+        - { name: visit_occurrence_id, type: bigint, isForeignKey: true, references: visit_occurrence.visit_occurrence_id }
+        - { name: visit_detail_id, type: bigint }
+        - { name: observation_source_value, type: varchar(50) }
+        - { name: observation_source_concept_id, type: integer }
+        - { name: unit_source_value, type: varchar(50) }
+        - { name: qualifier_source_value, type: varchar(50) }
+        - { name: value_source_value, type: varchar(50) }
+        - { name: observation_event_id, type: bigint }
+        - { name: obs_event_field_concept_id, type: integer }
+
+    - name: death
+      description: OMOP DEATH.
+      keys: [person_id]
+      attributes:
+        - { name: person_id, type: bigint, isPrimaryKey: true, isForeignKey: true, references: person.person_id }
+        - { name: death_date, type: date }
+        - { name: death_datetime, type: timestamp }
+        - { name: death_type_concept_id, type: integer }
+        - { name: cause_concept_id, type: integer }
+        - { name: cause_source_value, type: varchar(50) }
+        - { name: cause_source_concept_id, type: integer }
+
+    - name: provider
+      description: OMOP PROVIDER — clinicians.
+      keys: [provider_id]
+      attributes:
+        - { name: provider_id, type: bigint, isPrimaryKey: true }
+        - { name: provider_name, type: varchar(255) }
+        - { name: npi, type: varchar(20) }
+        - { name: dea, type: varchar(20) }
+        - { name: specialty_concept_id, type: integer }
+        - { name: care_site_id, type: bigint, isForeignKey: true, references: care_site.care_site_id }
+        - { name: year_of_birth, type: smallint }
+        - { name: gender_concept_id, type: integer }
+        - { name: provider_source_value, type: varchar(50) }
+        - { name: specialty_source_value, type: varchar(50) }
+        - { name: specialty_source_concept_id, type: integer }
+        - { name: gender_source_value, type: varchar(50) }
+        - { name: gender_source_concept_id, type: integer }
+
+    - name: care_site
+      description: OMOP CARE_SITE — clinical facility.
+      keys: [care_site_id]
+      attributes:
+        - { name: care_site_id, type: bigint, isPrimaryKey: true }
+        - { name: care_site_name, type: varchar(255) }
+        - { name: place_of_service_concept_id, type: integer }
+        - { name: location_id, type: bigint, isForeignKey: true, references: location.location_id }
+        - { name: care_site_source_value, type: varchar(50) }
+        - { name: place_of_service_source_value, type: varchar(50) }
+
+    - name: location
+      description: OMOP LOCATION — geographic information.
+      keys: [location_id]
+      attributes:
+        - { name: location_id, type: bigint, isPrimaryKey: true }
+        - { name: address_1, type: varchar(50) }
+        - { name: address_2, type: varchar(50) }
+        - { name: city, type: varchar(50) }
+        - { name: state, type: varchar(2) }
+        - { name: zip, type: varchar(9) }
+        - { name: county, type: varchar(20) }
+        - { name: country_concept_id, type: integer }
+        - { name: country_source_value, type: varchar(80) }
+        - { name: location_source_value, type: varchar(50) }
+        - { name: latitude, type: "decimal(8,6)" }
+        - { name: longitude, type: "decimal(9,6)" }
+
+    - name: payer_plan_period
+      description: OMOP PAYER_PLAN_PERIOD — periods of insurance enrolment.
+      keys: [payer_plan_period_id]
+      attributes:
+        - { name: payer_plan_period_id, type: bigint, isPrimaryKey: true }
+        - { name: person_id, type: bigint, isForeignKey: true, references: person.person_id }
+        - { name: payer_plan_period_start_date, type: date }
+        - { name: payer_plan_period_end_date, type: date }
+        - { name: payer_concept_id, type: integer }
+        - { name: payer_source_value, type: varchar(50) }
+        - { name: plan_concept_id, type: integer }
+        - { name: plan_source_value, type: varchar(50) }
+        - { name: sponsor_concept_id, type: integer }
+        - { name: sponsor_source_value, type: varchar(50) }
+        - { name: family_source_value, type: varchar(50) }
+        - { name: stop_reason_concept_id, type: integer }
+        - { name: stop_reason_source_value, type: varchar(50) }
+
+    - name: cost
+      description: OMOP COST — economic information about events.
+      keys: [cost_id]
+      attributes:
+        - { name: cost_id, type: bigint, isPrimaryKey: true }
+        - { name: cost_event_id, type: bigint }
+        - { name: cost_domain_id, type: varchar(20) }
+        - { name: cost_type_concept_id, type: integer }
+        - { name: currency_concept_id, type: integer }
+        - { name: total_charge, type: "decimal(20,4)" }
+        - { name: total_cost, type: "decimal(20,4)" }
+        - { name: total_paid, type: "decimal(20,4)" }
+        - { name: paid_by_payer, type: "decimal(20,4)" }
+        - { name: paid_by_patient, type: "decimal(20,4)" }
+        - { name: paid_patient_copay, type: "decimal(20,4)" }
+        - { name: paid_patient_coinsurance, type: "decimal(20,4)" }
+        - { name: paid_patient_deductible, type: "decimal(20,4)" }
+        - { name: paid_by_primary, type: "decimal(20,4)" }
+        - { name: paid_ingredient_cost, type: "decimal(20,4)" }
+        - { name: paid_dispensing_fee, type: "decimal(20,4)" }
+        - { name: payer_plan_period_id, type: bigint, isForeignKey: true, references: payer_plan_period.payer_plan_period_id }
+        - { name: amount_allowed, type: "decimal(20,4)" }
+        - { name: revenue_code_concept_id, type: integer }
+        - { name: revenue_code_source_value, type: varchar(50) }
+        - { name: drg_concept_id, type: integer }
+        - { name: drg_source_value, type: varchar(3) }
+
+    - name: concept
+      description: OMOP CONCEPT — vocabulary entry (Athena).
+      keys: [concept_id]
+      attributes:
+        - { name: concept_id, type: integer, isPrimaryKey: true }
+        - { name: concept_name, type: varchar(255) }
+        - { name: domain_id, type: varchar(20) }
+        - { name: vocabulary_id, type: varchar(20) }
+        - { name: concept_class_id, type: varchar(20) }
+        - { name: standard_concept, type: varchar(1), description: "S=Standard, C=Classification, NULL=Non-standard" }
+        - { name: concept_code, type: varchar(50) }
+        - { name: valid_start_date, type: date }
+        - { name: valid_end_date, type: date }
+        - { name: invalid_reason, type: varchar(1) }
+
+    - name: concept_relationship
+      description: OMOP CONCEPT_RELATIONSHIP — Maps-to / Subsumes / etc.
+      keys: [concept_id_1, concept_id_2, relationship_id]
+      attributes:
+        - { name: concept_id_1, type: integer, isPrimaryKey: true, isForeignKey: true, references: concept.concept_id }
+        - { name: concept_id_2, type: integer, isPrimaryKey: true, isForeignKey: true, references: concept.concept_id }
+        - { name: relationship_id, type: varchar(20), isPrimaryKey: true }
+        - { name: valid_start_date, type: date }
+        - { name: valid_end_date, type: date }
+        - { name: invalid_reason, type: varchar(1) }
+
+    - name: cohort_definition
+      description: OHDSI ATLAS CohortDefinition — JSON describing inclusion logic.
+      keys: [cohort_definition_id]
+      attributes:
+        - { name: cohort_definition_id, type: integer, isPrimaryKey: true }
+        - { name: cohort_definition_name, type: varchar(255) }
+        - { name: cohort_definition_description, type: text }
+        - { name: definition_type_concept_id, type: integer }
+        - { name: cohort_definition_syntax, type: text }
+        - { name: subject_concept_id, type: integer }
+        - { name: cohort_initiation_date, type: date }
+
+    - name: cohort
+      description: OMOP CDM RESULTS schema COHORT — generated cohort membership.
+      keys: [cohort_definition_id, subject_id, cohort_start_date]
+      attributes:
+        - { name: cohort_definition_id, type: integer, isPrimaryKey: true, isForeignKey: true, references: cohort_definition.cohort_definition_id }
+        - { name: subject_id, type: bigint, isPrimaryKey: true }
+        - { name: cohort_start_date, type: date, isPrimaryKey: true }
+        - { name: cohort_end_date, type: date }
+
+  relationships:
+    - { from: person, to: observation_period, kind: one_to_many }
+    - { from: person, to: visit_occurrence, kind: one_to_many }
+    - { from: person, to: condition_occurrence, kind: one_to_many }
+    - { from: person, to: drug_exposure, kind: one_to_many }
+    - { from: person, to: procedure_occurrence, kind: one_to_many }
+    - { from: person, to: measurement, kind: one_to_many }
+    - { from: person, to: observation, kind: one_to_many }
+    - { from: person, to: death, kind: one_to_one }
+    - { from: visit_occurrence, to: condition_occurrence, kind: one_to_many }
+    - { from: visit_occurrence, to: drug_exposure, kind: one_to_many }
+    - { from: visit_occurrence, to: procedure_occurrence, kind: one_to_many }
+    - { from: care_site, to: provider, kind: one_to_many }
+    - { from: cohort_definition, to: cohort, kind: one_to_many }
+    - { from: payer_plan_period, to: cost, kind: one_to_many }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/real_world_evidence_3nf.sql
+  vault: modeling/ddl/real_world_evidence_vault.sql
+  dimensional: modeling/ddl/real_world_evidence_dim.sql
 
 sourceSystems:
-  - { vendor: IQVIA, product: PharMetrics Plus, category: RWD }
-  - { vendor: Optum, product: Clinformatics, category: RWD }
-  - { vendor: Flatiron Health, product: OncoEMR, category: Oncology RWD }
-  - { vendor: Komodo, product: Healthcare Map, category: RWD Platform }
-  - { vendor: TriNetX, product: Live Platform, category: RWD Network }
+  - { vendor: IQVIA, product: PharMetrics Plus, category: RWD (claims) }
+  - { vendor: Optum, product: Clinformatics Data Mart, category: RWD (claims+EHR) }
+  - { vendor: Flatiron Health, product: OncoEMR / EDM, category: Oncology RWD }
+  - { vendor: Komodo Health, product: Healthcare Map, category: RWD Platform }
+  - { vendor: TriNetX, product: Live Platform, category: RWD Network (OMOP) }
+  - { vendor: OHDSI, product: ATLAS / WebAPI, category: Cohort Tooling }
+  - { vendor: Truveta, product: Truveta Platform, category: RWD Network }
 
 connectors:
-  - { type: SFTP, protocol: SFTP, auth: SSH key }
-  - { type: REST, protocol: HTTPS, auth: OAuth2 }
-  - { type: OMOP CDM export, protocol: file, auth: SFTP }
+  - { type: OMOP CDM v5.4 export, protocol: SFTP / Parquet, auth: SSH key }
+  - { type: REST (TriNetX/ATLAS), protocol: HTTPS, auth: OAuth2 }
+  - { type: HL7 FHIR R4 (Bulk), protocol: HTTPS, auth: SMART backend services }
+  - { type: SFTP file feed, protocol: SFTP, auth: SSH key }
+  - { type: dbt models / Achilles, protocol: SQL warehouse, auth: warehouse role }
+  - { type: Athena vocabulary, protocol: HTTPS download, auth: licence key }
+
+ingestionChallenges:
+  - Source-to-OMOP ETL is per-source (claims vs EHR vs registry vs eCRF) and must be re-validated per Athena release.
+  - Concept ID drift across vocabulary versions; deprecated concepts require Maps-to reroute.
+  - Date precision varies (year-only, month-only, full datetime) requiring partial-date handling.
+  - Person record linkage across multi-source feeds drives duplicate detection.
+  - Person-month volumes can exceed 100B rows in national networks.
+  - Achilles DQ checks must be re-run per refresh and pinned to the CDM release.
+
+integrationChallenges:
+  - HIPAA Safe Harbor / Expert Determination de-identification before publication or external sharing.
+  - Statistical disclosure control on small cell counts.
+  - DUA-driven data retention policies vary by source.
+  - Cross-network federated queries (FDA Sentinel, OHDSI network studies) require harmonised cohort definitions.
+  - Linkage to non-OMOP datasets (oncology genomics, mortality registries) needs bespoke crosswalks.
+  - GDPR / China PIPL / state laws (TX HB 4 etc.) layered on top of HIPAA.
