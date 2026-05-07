@@ -55,17 +55,79 @@ kpis:
 
 dataModel:
   entities:
-    - name: Transaction
+    - name: merchant
+      description: Authoritative party accepting payments; one row per onboarded merchant.
+      keys: [merchant_id]
+      attributes:
+        - { name: merchant_id, type: varchar, isPrimaryKey: true }
+        - { name: legal_name, type: varchar }
+        - { name: mcc, type: varchar(4) }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: onboarded_at, type: timestamp }
+        - { name: is_active, type: boolean }
+      relationships:
+        - { to: transaction, kind: one_to_many, via: merchant_id }
+    - name: card_token
+      description: Tokenised representation of a payment instrument (PAN never stored).
+      keys: [token_id]
+      attributes:
+        - { name: token_id, type: varchar, isPrimaryKey: true }
+        - { name: masked_pan, type: varchar(19) }
+        - { name: bin, type: varchar(8) }
+        - { name: last4, type: varchar(4) }
+        - { name: network, type: varchar(16) }
+        - { name: issuer_country, type: varchar(2) }
+      relationships:
+        - { to: transaction, kind: one_to_many, via: token_id }
+    - name: transaction
+      description: A single payment attempt (auth + capture + settle lifecycle).
       keys: [transaction_id]
-      description: Authoritative payment event across rails.
-    - name: Authorization
+      attributes:
+        - { name: transaction_id, type: varchar, isPrimaryKey: true }
+        - { name: merchant_id, type: varchar, isForeignKey: true, references: merchant.merchant_id }
+        - { name: token_id, type: varchar, isForeignKey: true, references: card_token.token_id }
+        - { name: rail, type: varchar(16) }
+        - { name: amount_minor, type: bigint }
+        - { name: currency, type: varchar(3) }
+        - { name: initiated_at, type: timestamp }
+        - { name: status, type: varchar(16) }
+      relationships:
+        - { to: authorization, kind: one_to_many, via: transaction_id }
+        - { to: settlement, kind: one_to_many, via: transaction_id }
+        - { to: dispute, kind: one_to_many, via: transaction_id }
+    - name: authorization
+      description: Auth response from the issuer for a transaction.
       keys: [auth_id]
-    - name: Settlement
+      attributes:
+        - { name: auth_id, type: varchar, isPrimaryKey: true }
+        - { name: transaction_id, type: varchar, isForeignKey: true, references: transaction.transaction_id }
+        - { name: response_code, type: varchar(8) }
+        - { name: approved, type: boolean }
+        - { name: auth_ts, type: timestamp }
+    - name: settlement
+      description: Net settlement record posted by the acquirer/network.
       keys: [settlement_id]
-    - name: Dispute
+      attributes:
+        - { name: settlement_id, type: varchar, isPrimaryKey: true }
+        - { name: transaction_id, type: varchar, isForeignKey: true, references: transaction.transaction_id }
+        - { name: settled_amount_minor, type: bigint }
+        - { name: settled_at, type: timestamp }
+        - { name: interchange_minor, type: bigint }
+    - name: dispute
+      description: Cardholder-initiated chargeback or representment.
       keys: [dispute_id]
-    - name: Counterparty
-      keys: [counterparty_id]
+      attributes:
+        - { name: dispute_id, type: varchar, isPrimaryKey: true }
+        - { name: transaction_id, type: varchar, isForeignKey: true, references: transaction.transaction_id }
+        - { name: reason_code, type: varchar(16) }
+        - { name: opened_at, type: timestamp }
+        - { name: resolved_at, type: timestamp }
+        - { name: outcome, type: varchar(16) }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/payments_3nf.sql
+  vault: modeling/ddl/payments_vault.sql
+  dimensional: modeling/ddl/payments_dim.sql
 
 sourceSystems:
   - { vendor: Temenos, product: Transact, category: Core Banking }

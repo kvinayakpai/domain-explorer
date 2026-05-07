@@ -50,11 +50,200 @@ kpis:
 
 dataModel:
   entities:
-    - { name: WorkOrder, keys: [wo_id] }
-    - { name: Operation, keys: [op_id] }
-    - { name: SensorReading, keys: [tag, ts] }
-    - { name: QualityCheck, keys: [check_id] }
-    - { name: NonConformance, keys: [nc_id] }
+    - name: plant
+      keys: [plant_id]
+      attributes:
+        - { name: plant_id, type: varchar, isPrimaryKey: true }
+        - { name: plant_name, type: varchar }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: timezone, type: varchar(64) }
+      relationships:
+        - { to: area, kind: one_to_many, via: plant_id }
+        - { to: work_order, kind: one_to_many, via: plant_id }
+    - name: area
+      keys: [area_id]
+      attributes:
+        - { name: area_id, type: varchar, isPrimaryKey: true }
+        - { name: plant_id, type: varchar, isForeignKey: true, references: plant.plant_id }
+        - { name: area_name, type: varchar }
+      relationships:
+        - { to: line, kind: one_to_many, via: area_id }
+    - name: line
+      keys: [line_id]
+      attributes:
+        - { name: line_id, type: varchar, isPrimaryKey: true }
+        - { name: area_id, type: varchar, isForeignKey: true, references: area.area_id }
+        - { name: line_name, type: varchar }
+        - { name: nameplate_speed, type: "decimal(10,2)" }
+        - { name: uom, type: varchar(8) }
+      relationships:
+        - { to: work_cell, kind: one_to_many, via: line_id }
+    - name: work_cell
+      keys: [cell_id]
+      attributes:
+        - { name: cell_id, type: varchar, isPrimaryKey: true }
+        - { name: line_id, type: varchar, isForeignKey: true, references: line.line_id }
+        - { name: cell_name, type: varchar }
+      relationships:
+        - { to: equipment, kind: one_to_many, via: cell_id }
+    - name: equipment
+      keys: [equipment_id]
+      attributes:
+        - { name: equipment_id, type: varchar, isPrimaryKey: true }
+        - { name: cell_id, type: varchar, isForeignKey: true, references: work_cell.cell_id }
+        - { name: equipment_name, type: varchar }
+        - { name: serial_number, type: varchar(64) }
+        - { name: model, type: varchar(64) }
+        - { name: install_date, type: date }
+      relationships:
+        - { to: tag, kind: one_to_many, via: equipment_id }
+        - { to: maintenance_event, kind: one_to_many, via: equipment_id }
+    - name: product
+      keys: [product_id]
+      attributes:
+        - { name: product_id, type: varchar, isPrimaryKey: true }
+        - { name: product_name, type: varchar }
+        - { name: revision, type: varchar(16) }
+        - { name: bom_revision, type: varchar(16) }
+      relationships:
+        - { to: work_order, kind: one_to_many, via: product_id }
+    - name: bom_item
+      keys: [bom_revision, component_id]
+      attributes:
+        - { name: bom_revision, type: varchar(16), isPrimaryKey: true }
+        - { name: component_id, type: varchar, isPrimaryKey: true }
+        - { name: qty_per_assembly, type: "decimal(12,4)" }
+    - name: material_lot
+      keys: [lot_id]
+      attributes:
+        - { name: lot_id, type: varchar, isPrimaryKey: true }
+        - { name: material_id, type: varchar }
+        - { name: supplier_id, type: varchar }
+        - { name: received_at, type: timestamp }
+        - { name: expiry_date, type: date }
+        - { name: quantity, type: "decimal(14,4)" }
+        - { name: uom, type: varchar(8) }
+    - name: work_order
+      keys: [wo_id]
+      attributes:
+        - { name: wo_id, type: varchar, isPrimaryKey: true }
+        - { name: product_id, type: varchar, isForeignKey: true, references: product.product_id }
+        - { name: plant_id, type: varchar, isForeignKey: true, references: plant.plant_id }
+        - { name: line_id, type: varchar, isForeignKey: true, references: line.line_id }
+        - { name: planned_qty, type: integer }
+        - { name: actual_qty, type: integer }
+        - { name: planned_start, type: timestamp }
+        - { name: actual_start, type: timestamp }
+        - { name: actual_end, type: timestamp }
+        - { name: status, type: varchar(16) }
+      relationships:
+        - { to: operation, kind: one_to_many, via: wo_id }
+        - { to: non_conformance, kind: one_to_many, via: wo_id }
+    - name: operation
+      keys: [op_id]
+      attributes:
+        - { name: op_id, type: varchar, isPrimaryKey: true }
+        - { name: wo_id, type: varchar, isForeignKey: true, references: work_order.wo_id }
+        - { name: cell_id, type: varchar, isForeignKey: true, references: work_cell.cell_id }
+        - { name: op_seq, type: smallint }
+        - { name: op_name, type: varchar }
+        - { name: setup_time_secs, type: integer }
+        - { name: run_time_secs, type: integer }
+      relationships:
+        - { to: quality_check, kind: one_to_many, via: op_id }
+    - name: tag
+      keys: [tag]
+      attributes:
+        - { name: tag, type: varchar, isPrimaryKey: true }
+        - { name: equipment_id, type: varchar, isForeignKey: true, references: equipment.equipment_id }
+        - { name: description, type: varchar }
+        - { name: uom, type: varchar(16) }
+        - { name: expected_min, type: "decimal(14,4)" }
+        - { name: expected_max, type: "decimal(14,4)" }
+      relationships:
+        - { to: sensor_reading, kind: one_to_many, via: tag }
+    - name: sensor_reading
+      keys: [tag, ts]
+      attributes:
+        - { name: tag, type: varchar, isPrimaryKey: true, isForeignKey: true, references: tag.tag }
+        - { name: ts, type: timestamp, isPrimaryKey: true }
+        - { name: value, type: "decimal(14,4)" }
+        - { name: quality_code, type: smallint }
+    - name: downtime_event
+      keys: [event_id]
+      attributes:
+        - { name: event_id, type: varchar, isPrimaryKey: true }
+        - { name: line_id, type: varchar, isForeignKey: true, references: line.line_id }
+        - { name: equipment_id, type: varchar, isForeignKey: true, references: equipment.equipment_id }
+        - { name: started_at, type: timestamp }
+        - { name: ended_at, type: timestamp }
+        - { name: reason_code, type: varchar(16) }
+        - { name: is_planned, type: boolean }
+    - name: shift
+      keys: [shift_id]
+      attributes:
+        - { name: shift_id, type: varchar, isPrimaryKey: true }
+        - { name: plant_id, type: varchar, isForeignKey: true, references: plant.plant_id }
+        - { name: shift_name, type: varchar }
+        - { name: started_at, type: timestamp }
+        - { name: ended_at, type: timestamp }
+        - { name: crew_lead_id, type: varchar }
+    - name: quality_check
+      keys: [check_id]
+      attributes:
+        - { name: check_id, type: varchar, isPrimaryKey: true }
+        - { name: op_id, type: varchar, isForeignKey: true, references: operation.op_id }
+        - { name: check_type, type: varchar(16) }
+        - { name: measure_value, type: "decimal(14,4)" }
+        - { name: lower_spec, type: "decimal(14,4)" }
+        - { name: upper_spec, type: "decimal(14,4)" }
+        - { name: pass, type: boolean }
+        - { name: inspector_id, type: varchar }
+        - { name: checked_at, type: timestamp }
+    - name: non_conformance
+      keys: [nc_id]
+      attributes:
+        - { name: nc_id, type: varchar, isPrimaryKey: true }
+        - { name: wo_id, type: varchar, isForeignKey: true, references: work_order.wo_id }
+        - { name: op_id, type: varchar, isForeignKey: true, references: operation.op_id }
+        - { name: nc_code, type: varchar(16) }
+        - { name: description, type: varchar }
+        - { name: quantity_affected, type: integer }
+        - { name: detected_at, type: timestamp }
+        - { name: disposition, type: varchar(16) }
+        - { name: closed_at, type: timestamp }
+      relationships:
+        - { to: scrap, kind: one_to_many, via: nc_id }
+    - name: scrap
+      keys: [scrap_id]
+      attributes:
+        - { name: scrap_id, type: varchar, isPrimaryKey: true }
+        - { name: wo_id, type: varchar, isForeignKey: true, references: work_order.wo_id }
+        - { name: nc_id, type: varchar, isForeignKey: true, references: non_conformance.nc_id }
+        - { name: quantity, type: integer }
+        - { name: scrap_reason, type: varchar(16) }
+        - { name: scrapped_at, type: timestamp }
+    - name: genealogy
+      keys: [parent_serial, child_serial]
+      attributes:
+        - { name: parent_serial, type: varchar, isPrimaryKey: true }
+        - { name: child_serial, type: varchar, isPrimaryKey: true }
+        - { name: relationship_type, type: varchar(16) }
+        - { name: captured_at, type: timestamp }
+    - name: maintenance_event
+      keys: [me_id]
+      attributes:
+        - { name: me_id, type: varchar, isPrimaryKey: true }
+        - { name: equipment_id, type: varchar, isForeignKey: true, references: equipment.equipment_id }
+        - { name: event_type, type: varchar(16) }
+        - { name: started_at, type: timestamp }
+        - { name: completed_at, type: timestamp }
+        - { name: technician_id, type: varchar }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/mes_quality_3nf.sql
+  vault: modeling/ddl/mes_quality_vault.sql
+  dimensional: modeling/ddl/mes_quality_dim.sql
 
 sourceSystems:
   - { vendor: Siemens, product: Opcenter Execution, category: MES }

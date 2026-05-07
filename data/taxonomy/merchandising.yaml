@@ -50,11 +50,196 @@ kpis:
 
 dataModel:
   entities:
-    - { name: SKU, keys: [sku_id] }
-    - { name: Store, keys: [store_id] }
-    - { name: SalesTransaction, keys: [tx_id] }
-    - { name: InventoryPosition, keys: [sku_id, store_id, day] }
-    - { name: PromotionEvent, keys: [promo_id] }
+    - name: product_hierarchy
+      keys: [department_id]
+      attributes:
+        - { name: department_id, type: varchar, isPrimaryKey: true }
+        - { name: department_name, type: varchar }
+      relationships:
+        - { to: class, kind: one_to_many, via: department_id }
+    - name: class
+      keys: [class_id]
+      attributes:
+        - { name: class_id, type: varchar, isPrimaryKey: true }
+        - { name: department_id, type: varchar, isForeignKey: true, references: product_hierarchy.department_id }
+        - { name: class_name, type: varchar }
+      relationships:
+        - { to: subclass, kind: one_to_many, via: class_id }
+    - name: subclass
+      keys: [subclass_id]
+      attributes:
+        - { name: subclass_id, type: varchar, isPrimaryKey: true }
+        - { name: class_id, type: varchar, isForeignKey: true, references: class.class_id }
+        - { name: subclass_name, type: varchar }
+      relationships:
+        - { to: sku, kind: one_to_many, via: subclass_id }
+    - name: sku
+      keys: [sku_id]
+      attributes:
+        - { name: sku_id, type: varchar, isPrimaryKey: true }
+        - { name: style_id, type: varchar, isForeignKey: true, references: style.style_id }
+        - { name: subclass_id, type: varchar, isForeignKey: true, references: subclass.subclass_id }
+        - { name: color_code, type: varchar(16) }
+        - { name: size_code, type: varchar(16) }
+        - { name: upc, type: varchar(14) }
+        - { name: description, type: varchar }
+        - { name: is_active, type: boolean }
+      relationships:
+        - { to: sales_line, kind: one_to_many, via: sku_id }
+        - { to: inventory_position, kind: one_to_many, via: sku_id }
+        - { to: price, kind: one_to_many, via: sku_id }
+    - name: style
+      keys: [style_id]
+      attributes:
+        - { name: style_id, type: varchar, isPrimaryKey: true }
+        - { name: style_name, type: varchar }
+        - { name: brand_id, type: varchar, isForeignKey: true, references: brand.brand_id }
+        - { name: season_code, type: varchar(8) }
+    - name: brand
+      keys: [brand_id]
+      attributes:
+        - { name: brand_id, type: varchar, isPrimaryKey: true }
+        - { name: brand_name, type: varchar }
+        - { name: is_private_label, type: boolean }
+    - name: supplier
+      keys: [supplier_id]
+      attributes:
+        - { name: supplier_id, type: varchar, isPrimaryKey: true }
+        - { name: supplier_name, type: varchar }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: payment_terms, type: varchar(16) }
+      relationships:
+        - { to: purchase_order, kind: one_to_many, via: supplier_id }
+    - name: sku_supplier
+      keys: [sku_id, supplier_id]
+      attributes:
+        - { name: sku_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: sku.sku_id }
+        - { name: supplier_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: supplier.supplier_id }
+        - { name: cost_amount, type: "decimal(12,4)" }
+        - { name: moq, type: integer }
+        - { name: lead_time_days, type: smallint }
+    - name: store
+      keys: [store_id]
+      attributes:
+        - { name: store_id, type: varchar, isPrimaryKey: true }
+        - { name: store_name, type: varchar }
+        - { name: region_code, type: varchar(8) }
+        - { name: cluster_code, type: varchar(8) }
+        - { name: open_date, type: date }
+      relationships:
+        - { to: sales_transaction, kind: one_to_many, via: store_id }
+    - name: distribution_center
+      keys: [dc_id]
+      attributes:
+        - { name: dc_id, type: varchar, isPrimaryKey: true }
+        - { name: dc_name, type: varchar }
+        - { name: region_code, type: varchar(8) }
+    - name: price
+      keys: [price_id]
+      attributes:
+        - { name: price_id, type: varchar, isPrimaryKey: true }
+        - { name: sku_id, type: varchar, isForeignKey: true, references: sku.sku_id }
+        - { name: store_id, type: varchar, isForeignKey: true, references: store.store_id }
+        - { name: price_type, type: varchar(16) }
+        - { name: price_amount, type: "decimal(10,2)" }
+        - { name: valid_from, type: date }
+        - { name: valid_to, type: date }
+    - name: promotion
+      keys: [promo_id]
+      attributes:
+        - { name: promo_id, type: varchar, isPrimaryKey: true }
+        - { name: promo_name, type: varchar }
+        - { name: promo_type, type: varchar(16) }
+        - { name: valid_from, type: date }
+        - { name: valid_to, type: date }
+      relationships:
+        - { to: promotion_sku, kind: one_to_many, via: promo_id }
+    - name: promotion_sku
+      keys: [promo_id, sku_id]
+      attributes:
+        - { name: promo_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: promotion.promo_id }
+        - { name: sku_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: sku.sku_id }
+        - { name: discount_pct, type: "decimal(5,2)" }
+    - name: purchase_order
+      keys: [po_id]
+      attributes:
+        - { name: po_id, type: varchar, isPrimaryKey: true }
+        - { name: supplier_id, type: varchar, isForeignKey: true, references: supplier.supplier_id }
+        - { name: placed_at, type: timestamp }
+        - { name: expected_delivery, type: date }
+        - { name: status, type: varchar(16) }
+      relationships:
+        - { to: purchase_order_line, kind: one_to_many, via: po_id }
+    - name: purchase_order_line
+      keys: [po_line_id]
+      attributes:
+        - { name: po_line_id, type: varchar, isPrimaryKey: true }
+        - { name: po_id, type: varchar, isForeignKey: true, references: purchase_order.po_id }
+        - { name: sku_id, type: varchar, isForeignKey: true, references: sku.sku_id }
+        - { name: ordered_qty, type: integer }
+        - { name: unit_cost, type: "decimal(12,4)" }
+    - name: allocation
+      keys: [allocation_id]
+      attributes:
+        - { name: allocation_id, type: varchar, isPrimaryKey: true }
+        - { name: sku_id, type: varchar, isForeignKey: true, references: sku.sku_id }
+        - { name: store_id, type: varchar, isForeignKey: true, references: store.store_id }
+        - { name: dc_id, type: varchar, isForeignKey: true, references: distribution_center.dc_id }
+        - { name: allocated_qty, type: integer }
+        - { name: allocated_at, type: timestamp }
+    - name: inventory_position
+      keys: [sku_id, store_id, snapshot_date]
+      attributes:
+        - { name: sku_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: sku.sku_id }
+        - { name: store_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: store.store_id }
+        - { name: snapshot_date, type: date, isPrimaryKey: true }
+        - { name: on_hand_qty, type: integer }
+        - { name: on_order_qty, type: integer }
+        - { name: in_transit_qty, type: integer }
+    - name: sales_transaction
+      keys: [tx_id]
+      attributes:
+        - { name: tx_id, type: varchar, isPrimaryKey: true }
+        - { name: store_id, type: varchar, isForeignKey: true, references: store.store_id }
+        - { name: tx_ts, type: timestamp }
+        - { name: customer_id, type: varchar }
+        - { name: payment_method, type: varchar(16) }
+        - { name: total_amount, type: "decimal(12,2)" }
+      relationships:
+        - { to: sales_line, kind: one_to_many, via: tx_id }
+    - name: sales_line
+      keys: [tx_id, line_no]
+      attributes:
+        - { name: tx_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: sales_transaction.tx_id }
+        - { name: line_no, type: smallint, isPrimaryKey: true }
+        - { name: sku_id, type: varchar, isForeignKey: true, references: sku.sku_id }
+        - { name: quantity, type: integer }
+        - { name: unit_price, type: "decimal(10,2)" }
+        - { name: discount_amount, type: "decimal(10,2)" }
+    - name: markdown_event
+      keys: [markdown_id]
+      attributes:
+        - { name: markdown_id, type: varchar, isPrimaryKey: true }
+        - { name: sku_id, type: varchar, isForeignKey: true, references: sku.sku_id }
+        - { name: store_id, type: varchar, isForeignKey: true, references: store.store_id }
+        - { name: markdown_pct, type: "decimal(5,2)" }
+        - { name: effective_at, type: timestamp }
+    - name: return_transaction
+      keys: [return_id]
+      attributes:
+        - { name: return_id, type: varchar, isPrimaryKey: true }
+        - { name: original_tx_id, type: varchar, isForeignKey: true, references: sales_transaction.tx_id }
+        - { name: sku_id, type: varchar, isForeignKey: true, references: sku.sku_id }
+        - { name: store_id, type: varchar, isForeignKey: true, references: store.store_id }
+        - { name: return_ts, type: timestamp }
+        - { name: quantity, type: integer }
+        - { name: refund_amount, type: "decimal(10,2)" }
+        - { name: reason_code, type: varchar(16) }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/merchandising_3nf.sql
+  vault: modeling/ddl/merchandising_vault.sql
+  dimensional: modeling/ddl/merchandising_dim.sql
 
 sourceSystems:
   - { vendor: Oracle, product: Retail Merchandising System, category: MMS }

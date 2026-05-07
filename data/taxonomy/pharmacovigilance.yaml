@@ -44,10 +44,178 @@ kpis:
 
 dataModel:
   entities:
-    - { name: AdverseEvent, keys: [ae_id] }
-    - { name: ICSR, keys: [icsr_id] }
-    - { name: Product, keys: [product_id] }
-    - { name: Patient, keys: [patient_id] }
+    - name: product
+      keys: [product_id]
+      attributes:
+        - { name: product_id, type: varchar, isPrimaryKey: true }
+        - { name: brand_name, type: varchar }
+        - { name: inn, type: varchar }
+        - { name: atc_code, type: varchar(8) }
+        - { name: therapeutic_area, type: varchar(64) }
+        - { name: is_marketed, type: boolean }
+      relationships:
+        - { to: suspect_product, kind: one_to_many, via: product_id }
+        - { to: signal_record, kind: one_to_many, via: product_id }
+    - name: product_authorization
+      keys: [auth_id]
+      attributes:
+        - { name: auth_id, type: varchar, isPrimaryKey: true }
+        - { name: product_id, type: varchar, isForeignKey: true, references: product.product_id }
+        - { name: region_iso, type: varchar(8) }
+        - { name: authorization_holder, type: varchar }
+        - { name: auth_status, type: varchar(16) }
+        - { name: issued_date, type: date }
+    - name: patient
+      keys: [patient_id]
+      attributes:
+        - { name: patient_id, type: varchar, isPrimaryKey: true }
+        - { name: age, type: smallint }
+        - { name: sex, type: varchar(1) }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: weight_kg, type: "decimal(6,2)" }
+    - name: reporter
+      keys: [reporter_id]
+      attributes:
+        - { name: reporter_id, type: varchar, isPrimaryKey: true }
+        - { name: reporter_type, type: varchar(16) }
+        - { name: qualification, type: varchar(16) }
+        - { name: country_iso2, type: varchar(2) }
+    - name: case_intake
+      keys: [intake_id]
+      attributes:
+        - { name: intake_id, type: varchar, isPrimaryKey: true }
+        - { name: intake_channel, type: varchar(16) }
+        - { name: received_at, type: timestamp }
+        - { name: source_system, type: varchar(32) }
+        - { name: initial_artifact_uri, type: varchar }
+      relationships:
+        - { to: icsr, kind: one_to_one, via: intake_id }
+    - name: icsr
+      keys: [icsr_id]
+      attributes:
+        - { name: icsr_id, type: varchar, isPrimaryKey: true }
+        - { name: intake_id, type: varchar, isForeignKey: true, references: case_intake.intake_id }
+        - { name: patient_id, type: varchar, isForeignKey: true, references: patient.patient_id }
+        - { name: reporter_id, type: varchar, isForeignKey: true, references: reporter.reporter_id }
+        - { name: case_version, type: smallint }
+        - { name: case_state, type: varchar(16) }
+        - { name: seriousness, type: varchar(16) }
+        - { name: expectedness, type: varchar(16) }
+        - { name: causality, type: varchar(16) }
+        - { name: intake_country, type: varchar(2) }
+        - { name: closed_at, type: timestamp }
+      relationships:
+        - { to: adverse_event, kind: one_to_many, via: icsr_id }
+        - { to: regulatory_submission, kind: one_to_many, via: icsr_id }
+        - { to: medical_review, kind: one_to_many, via: icsr_id }
+    - name: adverse_event
+      keys: [ae_id]
+      attributes:
+        - { name: ae_id, type: varchar, isPrimaryKey: true }
+        - { name: icsr_id, type: varchar, isForeignKey: true, references: icsr.icsr_id }
+        - { name: onset_date, type: date }
+        - { name: end_date, type: date }
+        - { name: outcome, type: varchar(16) }
+        - { name: free_text, type: text }
+      relationships:
+        - { to: ae_meddra_coding, kind: one_to_many, via: ae_id }
+    - name: meddra_term
+      keys: [pt_code]
+      attributes:
+        - { name: pt_code, type: varchar(16), isPrimaryKey: true }
+        - { name: pt_name, type: varchar }
+        - { name: soc_code, type: varchar(16) }
+        - { name: soc_name, type: varchar }
+        - { name: hlt_code, type: varchar(16) }
+        - { name: hlgt_code, type: varchar(16) }
+    - name: ae_meddra_coding
+      keys: [ae_id, pt_code]
+      attributes:
+        - { name: ae_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: adverse_event.ae_id }
+        - { name: pt_code, type: varchar(16), isPrimaryKey: true, isForeignKey: true, references: meddra_term.pt_code }
+        - { name: coded_at, type: timestamp }
+        - { name: coder_id, type: varchar }
+    - name: suspect_product
+      keys: [icsr_id, product_id, role]
+      attributes:
+        - { name: icsr_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: icsr.icsr_id }
+        - { name: product_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: product.product_id }
+        - { name: role, type: varchar(16), isPrimaryKey: true }
+        - { name: dose_text, type: varchar }
+        - { name: indication, type: varchar }
+    - name: medical_review
+      keys: [review_id]
+      attributes:
+        - { name: review_id, type: varchar, isPrimaryKey: true }
+        - { name: icsr_id, type: varchar, isForeignKey: true, references: icsr.icsr_id }
+        - { name: reviewer_id, type: varchar }
+        - { name: reviewed_at, type: timestamp }
+        - { name: causality_assigned, type: varchar(16) }
+        - { name: review_notes, type: text }
+    - name: regulatory_submission
+      keys: [submission_id]
+      attributes:
+        - { name: submission_id, type: varchar, isPrimaryKey: true }
+        - { name: icsr_id, type: varchar, isForeignKey: true, references: icsr.icsr_id }
+        - { name: target_authority, type: varchar(16) }
+        - { name: submission_type, type: varchar(16) }
+        - { name: due_date, type: date }
+        - { name: submitted_at, type: timestamp }
+        - { name: transmission_status, type: varchar(16) }
+        - { name: ack_received_at, type: timestamp }
+    - name: signal_record
+      keys: [signal_id]
+      attributes:
+        - { name: signal_id, type: varchar, isPrimaryKey: true }
+        - { name: product_id, type: varchar, isForeignKey: true, references: product.product_id }
+        - { name: pt_code, type: varchar(16), isForeignKey: true, references: meddra_term.pt_code }
+        - { name: detected_at, type: timestamp }
+        - { name: detection_method, type: varchar(32) }
+        - { name: disproportionality, type: "decimal(8,4)" }
+        - { name: status, type: varchar(16) }
+      relationships:
+        - { to: signal_evaluation, kind: one_to_many, via: signal_id }
+    - name: signal_evaluation
+      keys: [evaluation_id]
+      attributes:
+        - { name: evaluation_id, type: varchar, isPrimaryKey: true }
+        - { name: signal_id, type: varchar, isForeignKey: true, references: signal_record.signal_id }
+        - { name: evaluated_at, type: timestamp }
+        - { name: outcome, type: varchar(16) }
+        - { name: label_change_recommended, type: boolean }
+    - name: literature_reference
+      keys: [reference_id]
+      attributes:
+        - { name: reference_id, type: varchar, isPrimaryKey: true }
+        - { name: icsr_id, type: varchar, isForeignKey: true, references: icsr.icsr_id }
+        - { name: citation, type: varchar }
+        - { name: pubmed_id, type: varchar(16) }
+        - { name: captured_at, type: timestamp }
+    - name: audit_log
+      keys: [audit_id]
+      attributes:
+        - { name: audit_id, type: varchar, isPrimaryKey: true }
+        - { name: entity_type, type: varchar(32) }
+        - { name: entity_id, type: varchar }
+        - { name: action, type: varchar(16) }
+        - { name: actor_id, type: varchar }
+        - { name: action_ts, type: timestamp }
+        - { name: before_value, type: text }
+        - { name: after_value, type: text }
+    - name: risk_minimization
+      keys: [rm_id]
+      attributes:
+        - { name: rm_id, type: varchar, isPrimaryKey: true }
+        - { name: product_id, type: varchar, isForeignKey: true, references: product.product_id }
+        - { name: measure_type, type: varchar(32) }
+        - { name: description, type: text }
+        - { name: effective_from, type: date }
+        - { name: effective_to, type: date }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/pharmacovigilance_3nf.sql
+  vault: modeling/ddl/pharmacovigilance_vault.sql
+  dimensional: modeling/ddl/pharmacovigilance_dim.sql
 
 sourceSystems:
   - { vendor: Oracle, product: Argus Safety, category: Safety Database }

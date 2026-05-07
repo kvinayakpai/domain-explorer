@@ -16,7 +16,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const verticals = VERTICALS.filter((v) => verticalsWithContent.has(v.slug as never)).map(
     (v) => ({ label: v.label, href: `/v/${v.slug}` }),
   );
+  // Master IDs come first; we then add subdomain KPI ids that aren't in master.
+  const masterIds = new Set(reg.kpiMaster.map((k) => k.id));
+  const kpiPaletteSeed: { id: string; name: string }[] = [
+    ...reg.kpiMaster.map((k) => ({ id: k.id, name: k.name })),
+  ];
+  for (const s of reg.subdomains) {
+    for (const k of s.kpis) {
+      if (!masterIds.has(k.id)) {
+        kpiPaletteSeed.push({ id: k.id, name: k.name });
+        masterIds.add(k.id);
+      }
+    }
+  }
   const paletteItems = [
+    { id: "nav-models", label: "Data models", href: "/models", group: "Models" },
+    { id: "nav-kpi-library", label: "KPI library", href: "/kpi-library", group: "KPIs" },
     { id: "nav-governance", label: "Governance", href: "/governance", group: "Governance" },
     { id: "nav-catalog", label: "Catalog", href: "/catalog", group: "Governance" },
     { id: "nav-glossary", label: "Glossary", href: "/glossary", group: "Governance" },
@@ -30,13 +45,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       href: `/lineage/${anchorSlugs[key]}`,
       group: "Lineage",
     })),
-    ...reg.subdomains.map((s) => ({
-      id: `sd-${s.id}`,
-      label: s.name,
-      href: `/d/${s.id}`,
-      group: "Subdomains",
-    })),
-    ...reg.kpis.map((k) => ({
+    ...reg.subdomains.flatMap((s) => [
+      {
+        id: `sd-${s.id}`,
+        label: s.name,
+        href: `/d/${s.id}`,
+        group: "Subdomains",
+      },
+      {
+        id: `model-${s.id}`,
+        label: `Model: ${s.name} (3NF)`,
+        href: `/models/${s.id}/3nf`,
+        group: "Models",
+      },
+    ]),
+    ...kpiPaletteSeed.map((k) => ({
       id: `k-${k.id}`,
       label: k.name,
       href: `/kpi/${k.id}`,
@@ -64,7 +87,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <footer className="container py-8 text-xs text-muted-foreground">
             <p>
               Domain Explorer · MIT · {VERTICALS.length} verticals · {reg.subdomains.length}{" "}
-              subdomains seeded · {reg.glossary.length} glossary terms
+              subdomains seeded · {reg.glossary.length} glossary terms · {reg.kpiMaster.length}{" "}
+              curated KPIs
             </p>
           </footer>
         </ThemeProvider>

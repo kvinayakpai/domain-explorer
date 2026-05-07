@@ -1,0 +1,370 @@
+# Per-style SQL implementations of master-library KPIs.
+#
+# For the 7 anchor subdomains, the queries reference actual schemas in
+# `domain-explorer.duckdb` (3NF schemas like payments_3nf, vault schemas like
+# payments_vault, dimensional marts like payments_dim) and are intended to
+# produce the same numeric result across all three styles when the warehouse
+# is consistent.
+#
+# For breadth-subdomain KPIs, the queries are TODO skeletons — drop-in
+# templates with the right shape that an implementer can tighten up against
+# their own warehouse.
+#
+# Param convention: queries that need a date filter accept a `:since`
+# parameter (ISO-8601 timestamp). Where omitted, the query is computed
+# over the full populated dataset.
+
+kpis:
+  # ============================================================
+  # Payments (BFSI) — real SQL against the 3 anchor schemas
+  # ============================================================
+  - kpi_id: pay.kpi.stp_rate
+    notes: Straight-through-processed = transactions whose status terminated as 'captured'/'settled' with no manual repair.
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE t.status IN ('captured','settled')) * 1.0
+             / NULLIF(COUNT(*), 0) AS stp_rate
+      FROM payments_3nf.transaction t
+      WHERE t.initiated_at >= COALESCE(CAST(:since AS TIMESTAMP), TIMESTAMP '1900-01-01');
+    vault: |
+      WITH latest AS (
+        SELECT s.transaction_hk,
+               s.status,
+               ROW_NUMBER() OVER (PARTITION BY s.transaction_hk ORDER BY s.load_dts DESC) AS rn
+        FROM payments_vault.sat_transaction_state s
+      )
+      SELECT COUNT(*) FILTER (WHERE status IN ('captured','settled')) * 1.0
+             / NULLIF(COUNT(*), 0) AS stp_rate
+      FROM latest WHERE rn = 1;
+    dimensional: |
+      SELECT SUM(approved_count) * 1.0 / NULLIF(SUM(auth_count), 0) AS stp_rate
+      FROM payments_dim.fact_payment_daily f
+      JOIN payments_dim.dim_date d ON d.date_key = f.date_key
+      WHERE d.date_actual >= COALESCE(CAST(:since AS DATE), DATE '1900-01-01');
+
+  - kpi_id: pay.kpi.settlement_latency
+    threeNF: |
+      SELECT AVG(EXTRACT(EPOCH FROM (s.settled_at - a.auth_ts)) / 3600.0) AS hours
+      FROM payments_3nf.settlement s
+      JOIN payments_3nf.authorization a USING (transaction_id)
+      WHERE a.approved = TRUE
+        AND a.auth_ts >= COALESCE(CAST(:since AS TIMESTAMP), TIMESTAMP '1900-01-01');
+    vault: |
+      -- Vault settlement satellite carries settled_dts; see sat_settlement (TODO if not built).
+      SELECT NULL::DOUBLE AS hours;
+    dimensional: |
+      -- Approximate average from daily aggregates (gross approximation).
+      SELECT NULL::DOUBLE AS hours;
+
+  - kpi_id: pay.kpi.chargeback_ratio
+    threeNF: |
+      SELECT COUNT(d.dispute_id) * 1.0 / NULLIF(COUNT(DISTINCT t.transaction_id), 0) AS chargeback_ratio
+      FROM payments_3nf.transaction t
+      LEFT JOIN payments_3nf.dispute d USING (transaction_id)
+      WHERE t.initiated_at >= COALESCE(CAST(:since AS TIMESTAMP), TIMESTAMP '1900-01-01');
+    vault: |
+      SELECT NULL::DOUBLE AS chargeback_ratio; -- TODO: link_txn_dispute when built
+    dimensional: |
+      SELECT NULL::DOUBLE AS chargeback_ratio; -- TODO: fact_dispute when built
+
+  - kpi_id: pay.kpi.afr
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE approved = FALSE) * 1.0 / NULLIF(COUNT(*), 0) AS afr
+      FROM payments_3nf.authorization
+      WHERE auth_ts >= COALESCE(CAST(:since AS TIMESTAMP), TIMESTAMP '1900-01-01');
+    vault: |
+      SELECT NULL::DOUBLE AS afr; -- TODO
+    dimensional: |
+      SELECT SUM(declined_count) * 1.0 / NULLIF(SUM(auth_count), 0) AS afr
+      FROM payments_dim.fact_payment_daily f
+      JOIN payments_dim.dim_date d ON d.date_key = f.date_key
+      WHERE d.date_actual >= COALESCE(CAST(:since AS DATE), DATE '1900-01-01');
+
+  - kpi_id: pay.kpi.interchange_revenue
+    threeNF: |
+      SELECT SUM(s.interchange_minor) / 100.0 AS interchange_usd
+      FROM payments_3nf.settlement s
+      WHERE s.settled_at >= COALESCE(CAST(:since AS TIMESTAMP), TIMESTAMP '1900-01-01');
+    vault: |
+      SELECT NULL::DOUBLE AS interchange_usd; -- TODO
+    dimensional: |
+      SELECT SUM(interchange_amt) AS interchange_usd
+      FROM payments_dim.fact_payment_daily f
+      JOIN payments_dim.dim_date d ON d.date_key = f.date_key
+      WHERE d.date_actual >= COALESCE(CAST(:since AS DATE), DATE '1900-01-01');
+
+  - kpi_id: pay.kpi.dispute_resolution_time
+    threeNF: |
+      SELECT AVG(EXTRACT(EPOCH FROM (resolved_at - opened_at)) / 86400.0) AS days
+      FROM payments_3nf.dispute
+      WHERE resolved_at IS NOT NULL
+        AND opened_at >= COALESCE(CAST(:since AS TIMESTAMP), TIMESTAMP '1900-01-01');
+    vault: |
+      SELECT NULL::DOUBLE AS days; -- TODO
+    dimensional: |
+      SELECT NULL::DOUBLE AS days; -- TODO: fact_dispute_resolution
+
+  # ============================================================
+  # P&C Claims — real SQL against the populated 3NF schema
+  # ============================================================
+  - kpi_id: pcc.kpi.cycle_time
+    threeNF: |
+      SELECT AVG(EXTRACT(EPOCH FROM (closed_ts - fnol_ts)) / 86400.0) AS cycle_days
+      FROM p_and_c_claims_3nf.claim
+      WHERE status = 'closed';
+    vault: |
+      SELECT NULL::DOUBLE AS cycle_days; -- TODO: sat_claim_state
+    dimensional: |
+      SELECT NULL::DOUBLE AS cycle_days; -- TODO: fact_claim_lifecycle
+
+  - kpi_id: pcc.kpi.severity
+    threeNF: |
+      SELECT SUM(p.amount) / NULLIF(COUNT(DISTINCT c.claim_id), 0) AS severity_usd
+      FROM p_and_c_claims_3nf.claim c
+      JOIN p_and_c_claims_3nf.payout p ON p.claim_id = c.claim_id;
+    vault: |
+      SELECT NULL::DOUBLE AS severity_usd; -- TODO
+    dimensional: |
+      SELECT NULL::DOUBLE AS severity_usd; -- TODO: fact_claim_paid
+
+  - kpi_id: pcc.kpi.lae_ratio
+    threeNF: |
+      SELECT NULL::DOUBLE AS lae_ratio; -- TODO: requires LAE expense table not in seed
+    vault: "SELECT NULL::DOUBLE AS lae_ratio;"
+    dimensional: "SELECT NULL::DOUBLE AS lae_ratio;"
+
+  # ============================================================
+  # Merchandising — real SQL
+  # ============================================================
+  - kpi_id: mer.kpi.sell_through
+    threeNF: |
+      WITH received AS (
+        SELECT pol.sku_id, SUM(pol.ordered_qty) AS units_received
+        FROM merchandising_3nf.purchase_order_line pol
+        JOIN merchandising_3nf.purchase_order po ON po.po_id = pol.po_id
+        WHERE po.status = 'received'
+        GROUP BY pol.sku_id
+      ),
+      sold AS (
+        SELECT sl.sku_id, SUM(sl.quantity) AS units_sold
+        FROM merchandising_3nf.sales_line sl
+        GROUP BY sl.sku_id
+      )
+      SELECT SUM(s.units_sold) * 1.0 / NULLIF(SUM(r.units_received), 0) AS sell_through
+      FROM received r LEFT JOIN sold s USING (sku_id);
+    vault: "SELECT NULL::DOUBLE AS sell_through; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS sell_through; -- TODO"
+
+  - kpi_id: mer.kpi.oos
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE on_hand_qty = 0) * 1.0 / NULLIF(COUNT(*), 0) AS oos_rate
+      FROM merchandising_3nf.inventory_position
+      WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM merchandising_3nf.inventory_position);
+    vault: "SELECT NULL::DOUBLE AS oos_rate; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS oos_rate; -- TODO"
+
+  - kpi_id: mer.kpi.markdown_pct
+    threeNF: |
+      SELECT SUM(m.markdown_pct * sl.unit_price * sl.quantity / 100.0) * 1.0
+             / NULLIF(SUM(sl.unit_price * sl.quantity), 0) AS markdown_pct
+      FROM merchandising_3nf.sales_line sl
+      LEFT JOIN merchandising_3nf.markdown_event m ON m.sku_id = sl.sku_id;
+    vault: "SELECT NULL::DOUBLE AS markdown_pct; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS markdown_pct; -- TODO"
+
+  # ============================================================
+  # Demand Planning
+  # ============================================================
+  - kpi_id: dem.kpi.mape
+    threeNF: |
+      WITH joined AS (
+        SELECT a.actual_qty, c.consensus_qty
+        FROM demand_planning_3nf.actual_demand a
+        JOIN demand_planning_3nf.consensus_forecast c
+          ON c.product_id = a.product_id
+         AND c.location_id = a.location_id
+         AND c.period_id = a.period_id
+      )
+      SELECT AVG(ABS(actual_qty - consensus_qty) / NULLIF(actual_qty, 0)) AS mape
+      FROM joined WHERE actual_qty > 0;
+    vault: "SELECT NULL::DOUBLE AS mape; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS mape; -- TODO"
+
+  - kpi_id: dem.kpi.bias
+    threeNF: |
+      WITH joined AS (
+        SELECT a.actual_qty, c.consensus_qty
+        FROM demand_planning_3nf.actual_demand a
+        JOIN demand_planning_3nf.consensus_forecast c
+          USING (product_id, location_id, period_id)
+      )
+      SELECT AVG(consensus_qty - actual_qty) AS bias_units FROM joined;
+    vault: "SELECT NULL::DOUBLE AS bias_units; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS bias_units; -- TODO"
+
+  - kpi_id: dem.kpi.fill_rate
+    threeNF: |
+      SELECT SUM(LEAST(s.shipped_qty, sol.requested_qty)) * 1.0
+             / NULLIF(SUM(sol.requested_qty), 0) AS fill_rate
+      FROM demand_planning_3nf.sales_order_line sol
+      LEFT JOIN demand_planning_3nf.shipment_line s
+        ON s.product_id = sol.product_id;
+    vault: "SELECT NULL::DOUBLE AS fill_rate; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS fill_rate; -- TODO"
+
+  # ============================================================
+  # Hotel Revenue Management
+  # ============================================================
+  - kpi_id: hrm.kpi.revpar
+    threeNF: |
+      SELECT SUM(rn.rate_amount) * 1.0
+             / NULLIF(SUM(p.total_rooms), 0) AS revpar
+      FROM hotel_revenue_management_3nf.room_night rn
+      JOIN hotel_revenue_management_3nf.property p USING (property_id)
+      WHERE rn.stay_date >= COALESCE(CAST(:since AS DATE), DATE '1900-01-01');
+    vault: "SELECT NULL::DOUBLE AS revpar; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS revpar; -- TODO"
+
+  - kpi_id: hrm.kpi.adr
+    threeNF: |
+      SELECT SUM(rn.rate_amount) * 1.0
+             / NULLIF(COUNT(*) FILTER (WHERE rn.reservation_id IS NOT NULL), 0) AS adr
+      FROM hotel_revenue_management_3nf.room_night rn
+      WHERE rn.stay_date >= COALESCE(CAST(:since AS DATE), DATE '1900-01-01');
+    vault: "SELECT NULL::DOUBLE AS adr; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS adr; -- TODO"
+
+  - kpi_id: hrm.kpi.occupancy
+    threeNF: |
+      SELECT SUM(rooms_sold) * 1.0
+             / NULLIF(SUM(rooms_available), 0) AS occupancy
+      FROM hotel_revenue_management_3nf.inventory_balance
+      WHERE stay_date >= COALESCE(CAST(:since AS DATE), DATE '1900-01-01');
+    vault: "SELECT NULL::DOUBLE AS occupancy; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS occupancy; -- TODO"
+
+  # ============================================================
+  # MES & Quality
+  # ============================================================
+  - kpi_id: mes.kpi.oee
+    threeNF: |
+      WITH avail AS (
+        SELECT line_id,
+               SUM(EXTRACT(EPOCH FROM (actual_end - actual_start))) AS run_seconds
+        FROM mes_quality_3nf.work_order
+        WHERE actual_end IS NOT NULL
+        GROUP BY line_id
+      ),
+      down AS (
+        SELECT line_id,
+               SUM(EXTRACT(EPOCH FROM (ended_at - started_at))) AS down_seconds
+        FROM mes_quality_3nf.downtime_event
+        WHERE ended_at IS NOT NULL
+        GROUP BY line_id
+      ),
+      qual AS (
+        SELECT wo_id, SUM(quantity) AS scrap_units FROM mes_quality_3nf.scrap GROUP BY wo_id
+      )
+      SELECT
+        AVG(a.run_seconds * 1.0 / NULLIF(a.run_seconds + COALESCE(d.down_seconds,0),0)) *
+        AVG(1.0) *
+        AVG(1 - COALESCE(q.scrap_units,0)*1.0 / NULLIF(wo.actual_qty,0)) AS oee
+      FROM avail a
+      LEFT JOIN down d ON d.line_id = a.line_id
+      LEFT JOIN mes_quality_3nf.work_order wo ON wo.line_id = a.line_id
+      LEFT JOIN qual q ON q.wo_id = wo.wo_id;
+    vault: "SELECT NULL::DOUBLE AS oee; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS oee; -- TODO"
+
+  - kpi_id: mes.kpi.fpy
+    threeNF: |
+      SELECT 1 - SUM(s.quantity) * 1.0 / NULLIF(SUM(wo.actual_qty), 0) AS fpy
+      FROM mes_quality_3nf.work_order wo
+      LEFT JOIN mes_quality_3nf.scrap s ON s.wo_id = wo.wo_id;
+    vault: "SELECT NULL::DOUBLE AS fpy; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS fpy; -- TODO"
+
+  - kpi_id: mes.kpi.scrap
+    threeNF: |
+      SELECT SUM(s.quantity) * 1.0 / NULLIF(SUM(wo.actual_qty), 0) AS scrap_rate
+      FROM mes_quality_3nf.work_order wo
+      LEFT JOIN mes_quality_3nf.scrap s ON s.wo_id = wo.wo_id;
+    vault: "SELECT NULL::DOUBLE AS scrap_rate; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS scrap_rate; -- TODO"
+
+  - kpi_id: mes.kpi.mtbf
+    threeNF: |
+      WITH ops AS (
+        SELECT equipment_id,
+               SUM(EXTRACT(EPOCH FROM (completed_at - started_at)) / 3600.0) AS op_hours
+        FROM mes_quality_3nf.maintenance_event
+        WHERE completed_at IS NOT NULL
+        GROUP BY equipment_id
+      ),
+      fails AS (
+        SELECT equipment_id, COUNT(*) AS failure_count
+        FROM mes_quality_3nf.downtime_event
+        WHERE is_planned = FALSE
+        GROUP BY equipment_id
+      )
+      SELECT AVG(o.op_hours / NULLIF(f.failure_count, 0)) AS mtbf_hours
+      FROM ops o LEFT JOIN fails f USING (equipment_id);
+    vault: "SELECT NULL::DOUBLE AS mtbf_hours; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS mtbf_hours; -- TODO"
+
+  # ============================================================
+  # Pharmacovigilance
+  # ============================================================
+  - kpi_id: pv.kpi.case_processing_time
+    threeNF: |
+      SELECT AVG(EXTRACT(EPOCH FROM (i.closed_at - ci.received_at)) / 86400.0) AS days
+      FROM pharmacovigilance_3nf.icsr i
+      JOIN pharmacovigilance_3nf.case_intake ci ON ci.intake_id = i.intake_id
+      WHERE i.closed_at IS NOT NULL;
+    vault: "SELECT NULL::DOUBLE AS days; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS days; -- TODO"
+
+  - kpi_id: pv.kpi.signal_latency
+    threeNF: |
+      WITH first_event AS (
+        SELECT s.signal_id, MIN(ae.onset_date) AS first_onset
+        FROM pharmacovigilance_3nf.signal_record s
+        JOIN pharmacovigilance_3nf.suspect_product sp ON sp.product_id = s.product_id
+        JOIN pharmacovigilance_3nf.adverse_event ae ON ae.icsr_id = sp.icsr_id
+        GROUP BY s.signal_id
+      )
+      SELECT AVG(EXTRACT(EPOCH FROM (s.detected_at - fe.first_onset::TIMESTAMP)) / 86400.0) AS days
+      FROM pharmacovigilance_3nf.signal_record s
+      JOIN first_event fe USING (signal_id)
+      WHERE fe.first_onset IS NOT NULL;
+    vault: "SELECT NULL::DOUBLE AS days; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS days; -- TODO"
+
+  - kpi_id: pv.kpi.submission_timeliness
+    threeNF: |
+      SELECT COUNT(*) FILTER (WHERE submitted_at IS NOT NULL AND submitted_at::DATE <= due_date)
+             * 1.0 / NULLIF(COUNT(*), 0) AS on_time_pct
+      FROM pharmacovigilance_3nf.regulatory_submission;
+    vault: "SELECT NULL::DOUBLE AS on_time_pct; -- TODO"
+    dimensional: "SELECT NULL::DOUBLE AS on_time_pct; -- TODO"
+
+  - kpi_id: pv.kpi.icsr_volume
+    threeNF: |
+      SELECT COUNT(*) AS icsr_count FROM pharmacovigilance_3nf.icsr;
+    vault: "SELECT NULL::INTEGER AS icsr_count; -- TODO"
+    dimensional: "SELECT NULL::INTEGER AS icsr_count; -- TODO"
+
+  # ============================================================
+  # Breadth — auto-generated stub templates
+  # (One example per breadth subdomain; the rest fall through to the
+  # "no SQL implementation" message in the UI. Run
+  # `python tools/build_kpi_master.py --force-overwrite-sql` to refresh
+  # full stubs across all KPIs.)
+  # ============================================================
+  - kpi_id: ecom.kpi.conversion_rate
+    threeNF: "-- TODO: SELECT COUNT(orders) * 1.0 / NULLIF(COUNT(sessions), 0) FROM ecommerce_3nf.session ..."
+    vault: "-- TODO"
+    dimensional: "-- TODO"
+  - kpi_id: saas.kpi.arr
+    threeNF: "-- TODO: SELECT SUM(annual_recurring_revenue) FROM saas_3nf.subscription WHERE status='active';"
+    vault: "-- TODO"
+    dimensional: "-- TODO"

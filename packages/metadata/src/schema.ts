@@ -47,12 +47,44 @@ export const Kpi = z.object({
 });
 export type Kpi = z.infer<typeof Kpi>;
 
+/** Single column on an entity, used by the ERD viewer. */
+export const EntityAttribute = z.object({
+  name: z.string().min(1),
+  type: z.string().min(1),
+  description: z.string().optional(),
+  isPrimaryKey: z.boolean().optional(),
+  isForeignKey: z.boolean().optional(),
+  references: z.string().optional(),
+});
+export type EntityAttribute = z.infer<typeof EntityAttribute>;
+
+/** Cardinality between two entities. */
+export const RelationshipKind = z.enum(["one_to_one", "one_to_many", "many_to_many"]);
+export type RelationshipKind = z.infer<typeof RelationshipKind>;
+
+export const EntityRelationship = z.object({
+  to: z.string().min(1),
+  kind: RelationshipKind,
+  via: z.string().optional(),
+});
+export type EntityRelationship = z.infer<typeof EntityRelationship>;
+
 export const Entity = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   keys: z.array(z.string()).default([]),
+  attributes: z.array(EntityAttribute).default([]),
+  relationships: z.array(EntityRelationship).default([]),
 });
 export type Entity = z.infer<typeof Entity>;
+
+/** Pointers to per-style DDL files (relative paths) for a subdomain. */
+export const DataModelArtifacts = z.object({
+  threeNF: z.string().optional(),
+  vault: z.string().optional(),
+  dimensional: z.string().optional(),
+});
+export type DataModelArtifacts = z.infer<typeof DataModelArtifacts>;
 
 export const DataModel = z.object({
   entities: z.array(Entity).default([]),
@@ -82,6 +114,7 @@ export const Subdomain = z.object({
   decisions: z.array(Decision).default([]),
   kpis: z.array(Kpi).default([]),
   dataModel: DataModel.default({ entities: [] }),
+  dataModelArtifacts: DataModelArtifacts.optional(),
   sourceSystems: z.array(SourceSystem).default([]),
   connectors: z.array(Connector).default([]),
   ingestionChallenges: z.array(z.string()).default([]),
@@ -94,6 +127,31 @@ export const KpiRegistryEntry = Kpi.extend({
   vertical: Vertical,
 });
 export type KpiRegistryEntry = z.infer<typeof KpiRegistryEntry>;
+
+/** Master KPI library entry — superset of registry with extra metadata. */
+export const KpiMasterEntry = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  formula: z.string().min(1),
+  unit: z.string().min(1),
+  direction: KpiDirection,
+  definition: z.string().optional(),
+  vertical: Vertical.optional(),
+  subdomains: z.array(z.string()).default([]),
+  related_personas: z.array(z.string()).default([]),
+  decisionsSupported: z.array(z.string()).default([]),
+});
+export type KpiMasterEntry = z.infer<typeof KpiMasterEntry>;
+
+/** Per-style SQL implementations of a single KPI. */
+export const KpiSqlSpec = z.object({
+  kpi_id: z.string().min(1),
+  threeNF: z.string().optional(),
+  vault: z.string().optional(),
+  dimensional: z.string().optional(),
+  notes: z.string().optional(),
+});
+export type KpiSqlSpec = z.infer<typeof KpiSqlSpec>;
 
 /** Source system registry entry. */
 export const SourceSystemEntry = z.object({

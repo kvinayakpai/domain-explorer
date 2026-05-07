@@ -52,6 +52,17 @@ export function NavBar({
                 ))}
               </nav>
               <h2 className="mb-2 mt-6 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Models &amp; KPIs
+              </h2>
+              <nav className="flex flex-col gap-1">
+                <Link href="/models" className="rounded-md px-2 py-1.5 text-sm hover:bg-accent">
+                  Data models
+                </Link>
+                <Link href="/kpi-library" className="rounded-md px-2 py-1.5 text-sm hover:bg-accent">
+                  KPI library
+                </Link>
+              </nav>
+              <h2 className="mb-2 mt-6 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 Governance
               </h2>
               <nav className="flex flex-col gap-1">
@@ -88,6 +99,8 @@ export function NavBar({
         </div>
         <nav className="hidden md:flex items-center gap-1 text-sm">
           <Link href="/" className="rounded-md px-3 py-1.5 hover:bg-accent">Verticals</Link>
+          <Link href="/models" className="rounded-md px-3 py-1.5 hover:bg-accent">Models</Link>
+          <Link href="/kpi-library" className="rounded-md px-3 py-1.5 hover:bg-accent">KPIs</Link>
           <Link href="/governance" className="rounded-md px-3 py-1.5 hover:bg-accent">Governance</Link>
           <Link href="/catalog" className="rounded-md px-3 py-1.5 hover:bg-accent">Catalog</Link>
           <Link href="/glossary" className="rounded-md px-3 py-1.5 hover:bg-accent">Glossary</Link>
@@ -95,7 +108,6 @@ export function NavBar({
           <Link href="/dq" className="rounded-md px-3 py-1.5 hover:bg-accent">DQ</Link>
           <Link href="/kg" className="rounded-md px-3 py-1.5 hover:bg-accent">KG</Link>
           <Link href="/demo" className="rounded-md px-3 py-1.5 hover:bg-accent">Demo</Link>
-          <Link href="/assistant" className="rounded-md px-3 py-1.5 hover:bg-accent">Assistant</Link>
         </nav>
         <div className="flex items-center gap-2">
           <CommandPalette items={paletteItems} />

@@ -49,10 +49,173 @@ kpis:
 
 dataModel:
   entities:
-    - { name: Forecast, keys: [sku_id, location_id, period] }
-    - { name: Shipment, keys: [shipment_id] }
-    - { name: SalesOrder, keys: [order_id] }
-    - { name: PromotionEvent, keys: [promo_id] }
+    - name: product
+      keys: [product_id]
+      attributes:
+        - { name: product_id, type: varchar, isPrimaryKey: true }
+        - { name: product_name, type: varchar }
+        - { name: category_id, type: varchar, isForeignKey: true, references: product_category.category_id }
+        - { name: uom, type: varchar(8) }
+        - { name: is_active, type: boolean }
+      relationships:
+        - { to: actual_demand, kind: one_to_many, via: product_id }
+        - { to: statistical_forecast, kind: one_to_many, via: product_id }
+    - name: product_category
+      keys: [category_id]
+      attributes:
+        - { name: category_id, type: varchar, isPrimaryKey: true }
+        - { name: category_name, type: varchar }
+        - { name: parent_category_id, type: varchar, isForeignKey: true, references: product_category.category_id }
+    - name: location
+      keys: [location_id]
+      attributes:
+        - { name: location_id, type: varchar, isPrimaryKey: true }
+        - { name: location_name, type: varchar }
+        - { name: location_type, type: varchar(16) }
+        - { name: region_code, type: varchar(8) }
+        - { name: parent_location_id, type: varchar, isForeignKey: true, references: location.location_id }
+    - name: customer
+      keys: [customer_id]
+      attributes:
+        - { name: customer_id, type: varchar, isPrimaryKey: true }
+        - { name: customer_name, type: varchar }
+        - { name: channel, type: varchar(16) }
+        - { name: region_code, type: varchar(8) }
+      relationships:
+        - { to: sales_order, kind: one_to_many, via: customer_id }
+    - name: product_customer_xref
+      keys: [product_id, customer_id]
+      attributes:
+        - { name: product_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: product.product_id }
+        - { name: customer_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: customer.customer_id }
+        - { name: customer_sku, type: varchar }
+    - name: calendar_period
+      keys: [period_id]
+      attributes:
+        - { name: period_id, type: varchar, isPrimaryKey: true }
+        - { name: period_start, type: date }
+        - { name: period_end, type: date }
+        - { name: period_type, type: varchar(8) }
+    - name: statistical_forecast
+      keys: [forecast_run_id, product_id, location_id, period_id]
+      attributes:
+        - { name: forecast_run_id, type: varchar, isPrimaryKey: true }
+        - { name: product_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: product.product_id }
+        - { name: location_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: location.location_id }
+        - { name: period_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: calendar_period.period_id }
+        - { name: forecast_qty, type: "decimal(14,2)" }
+        - { name: model_code, type: varchar(16) }
+        - { name: generated_at, type: timestamp }
+    - name: consensus_forecast
+      keys: [cycle_id, product_id, location_id, period_id]
+      attributes:
+        - { name: cycle_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: forecast_cycle.cycle_id }
+        - { name: product_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: product.product_id }
+        - { name: location_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: location.location_id }
+        - { name: period_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: calendar_period.period_id }
+        - { name: consensus_qty, type: "decimal(14,2)" }
+        - { name: locked_at, type: timestamp }
+        - { name: locked_by, type: varchar }
+    - name: forecast_override
+      keys: [override_id]
+      attributes:
+        - { name: override_id, type: varchar, isPrimaryKey: true }
+        - { name: cycle_id, type: varchar, isForeignKey: true, references: forecast_cycle.cycle_id }
+        - { name: product_id, type: varchar, isForeignKey: true, references: product.product_id }
+        - { name: location_id, type: varchar, isForeignKey: true, references: location.location_id }
+        - { name: period_id, type: varchar, isForeignKey: true, references: calendar_period.period_id }
+        - { name: override_qty, type: "decimal(14,2)" }
+        - { name: reason_code, type: varchar(16) }
+        - { name: submitted_by, type: varchar }
+        - { name: submitted_at, type: timestamp }
+    - name: actual_demand
+      keys: [product_id, location_id, period_id]
+      attributes:
+        - { name: product_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: product.product_id }
+        - { name: location_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: location.location_id }
+        - { name: period_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: calendar_period.period_id }
+        - { name: actual_qty, type: "decimal(14,2)" }
+    - name: sales_order
+      keys: [order_id]
+      attributes:
+        - { name: order_id, type: varchar, isPrimaryKey: true }
+        - { name: customer_id, type: varchar, isForeignKey: true, references: customer.customer_id }
+        - { name: placed_at, type: timestamp }
+        - { name: requested_delivery, type: date }
+        - { name: status, type: varchar(16) }
+      relationships:
+        - { to: sales_order_line, kind: one_to_many, via: order_id }
+        - { to: shipment, kind: one_to_many, via: order_id }
+    - name: sales_order_line
+      keys: [order_id, line_no]
+      attributes:
+        - { name: order_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: sales_order.order_id }
+        - { name: line_no, type: smallint, isPrimaryKey: true }
+        - { name: product_id, type: varchar, isForeignKey: true, references: product.product_id }
+        - { name: location_id, type: varchar, isForeignKey: true, references: location.location_id }
+        - { name: requested_qty, type: "decimal(14,2)" }
+        - { name: promised_qty, type: "decimal(14,2)" }
+        - { name: unit_price, type: "decimal(12,4)" }
+    - name: shipment
+      keys: [shipment_id]
+      attributes:
+        - { name: shipment_id, type: varchar, isPrimaryKey: true }
+        - { name: order_id, type: varchar, isForeignKey: true, references: sales_order.order_id }
+        - { name: shipped_at, type: timestamp }
+        - { name: delivered_at, type: timestamp }
+        - { name: carrier, type: varchar(32) }
+      relationships:
+        - { to: shipment_line, kind: one_to_many, via: shipment_id }
+    - name: shipment_line
+      keys: [shipment_id, line_no]
+      attributes:
+        - { name: shipment_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: shipment.shipment_id }
+        - { name: line_no, type: smallint, isPrimaryKey: true }
+        - { name: product_id, type: varchar, isForeignKey: true, references: product.product_id }
+        - { name: shipped_qty, type: "decimal(14,2)" }
+    - name: promotion_event
+      keys: [promo_id]
+      attributes:
+        - { name: promo_id, type: varchar, isPrimaryKey: true }
+        - { name: promo_name, type: varchar }
+        - { name: customer_id, type: varchar, isForeignKey: true, references: customer.customer_id }
+        - { name: valid_from, type: date }
+        - { name: valid_to, type: date }
+        - { name: expected_lift_pct, type: "decimal(6,2)" }
+    - name: promotion_product
+      keys: [promo_id, product_id]
+      attributes:
+        - { name: promo_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: promotion_event.promo_id }
+        - { name: product_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: product.product_id }
+    - name: safety_stock
+      keys: [product_id, location_id, effective_from]
+      attributes:
+        - { name: product_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: product.product_id }
+        - { name: location_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: location.location_id }
+        - { name: effective_from, type: date, isPrimaryKey: true }
+        - { name: safety_stock_units, type: "decimal(14,2)" }
+        - { name: service_target_pct, type: "decimal(5,2)" }
+    - name: npi_event
+      keys: [npi_id]
+      attributes:
+        - { name: npi_id, type: varchar, isPrimaryKey: true }
+        - { name: product_id, type: varchar, isForeignKey: true, references: product.product_id }
+        - { name: launch_date, type: date }
+        - { name: cannibalised_product_id, type: varchar, isForeignKey: true, references: product.product_id }
+        - { name: cannibalisation_pct, type: "decimal(5,2)" }
+    - name: forecast_cycle
+      keys: [cycle_id]
+      attributes:
+        - { name: cycle_id, type: varchar, isPrimaryKey: true }
+        - { name: cycle_name, type: varchar }
+        - { name: cycle_start, type: date }
+        - { name: cycle_close, type: date }
+        - { name: status, type: varchar(16) }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/demand_planning_3nf.sql
+  vault: modeling/ddl/demand_planning_vault.sql
+  dimensional: modeling/ddl/demand_planning_dim.sql
 
 sourceSystems:
   - { vendor: SAP, product: Integrated Business Planning, category: Demand Planning }

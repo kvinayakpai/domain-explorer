@@ -1,0 +1,772 @@
+# Master KPI library — canonical, deduplicated catalog aggregated across the
+# 116-subdomain taxonomy. Each entry includes:
+#   formula      — math used to compute the metric
+#   unit         — reporting unit (%, USD, hours, count, etc.)
+#   direction    — higher_is_better | lower_is_better | target_band
+#   definition   — 1–2 sentences explaining the metric
+#   vertical     — primary vertical (one of the 16 verticals)
+#   subdomains[] — subdomain ids that use this KPI (auto-augmented at load)
+#   related_personas[] — typical owners / consumers
+#
+# Generated/refreshed by tools/build_kpi_master.py from data/taxonomy/*.yaml.
+# Hand-curated definitions for the 7 anchor subdomains; the breadth library
+# carries auto-generated metadata that can be hand-tuned over time.
+
+kpis:
+  # ============================================================
+  # Anchor: Payments (BFSI)
+  # ============================================================
+  - id: pay.kpi.stp_rate
+    name: STP Rate
+    formula: straight_through_count / total_count
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of payment transactions that complete end-to-end without manual repair or human intervention. Higher rates correlate with lower per-transaction operational cost.
+    vertical: BFSI
+    subdomains: [payments]
+    related_personas: [Head of Payments, Payments Operations Lead]
+    decisionsSupported: [pay.d.partner_mix]
+  - id: pay.kpi.settlement_latency
+    name: Settlement Latency
+    formula: avg(settlement_ts - auth_ts)
+    unit: hours
+    direction: lower_is_better
+    definition: Average elapsed time between authorisation and the merchant's funds being settled. Shorter latency means better merchant cash flow and pricing power.
+    vertical: BFSI
+    subdomains: [payments]
+    related_personas: [Head of Payments, CFO]
+    decisionsSupported: [pay.d.rail]
+  - id: pay.kpi.chargeback_ratio
+    name: Chargeback Ratio
+    formula: chargebacks / sales_count
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of sales transactions that result in a cardholder dispute. Above network thresholds (~1%) it triggers monitoring programs and fines.
+    vertical: BFSI
+    subdomains: [payments]
+    related_personas: [Fraud/Risk Lead, Payments Operations Lead]
+    decisionsSupported: [pay.d.dispute_invest, pay.d.fraud_threshold]
+  - id: pay.kpi.afr
+    name: Auth Failure Rate (AFR)
+    formula: failed_auths / total_auths
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of authorisation requests that the issuer declines. Tracked by issuer, BIN, and rail to localise root causes.
+    vertical: BFSI
+    subdomains: [payments]
+    related_personas: [Fraud/Risk Lead, Head of Payments]
+    decisionsSupported: [pay.d.fraud_threshold]
+  - id: pay.kpi.interchange_revenue
+    name: Interchange Revenue
+    formula: sum(interchange_amount)
+    unit: USD
+    direction: higher_is_better
+    definition: Gross interchange-fee income earned across acquirers, card networks, and rails over a period.
+    vertical: BFSI
+    subdomains: [payments]
+    related_personas: [CFO, Head of Payments]
+    decisionsSupported: [pay.d.partner_mix]
+  - id: pay.kpi.dispute_resolution_time
+    name: Dispute Resolution Time
+    formula: avg(resolved_ts - opened_ts)
+    unit: days
+    direction: lower_is_better
+    definition: Average elapsed days from chargeback opened to a final resolution (won/lost/refunded).
+    vertical: BFSI
+    subdomains: [payments]
+    related_personas: [Payments Operations Lead]
+    decisionsSupported: [pay.d.dispute_invest]
+
+  # ============================================================
+  # Anchor: P&C Claims (Insurance)
+  # ============================================================
+  - id: pcc.kpi.cycle_time
+    name: Claim Cycle Time
+    formula: avg(closed_ts - fnol_ts)
+    unit: days
+    direction: lower_is_better
+    definition: Average elapsed days from first notice of loss (FNOL) to claim closure. Shorter cycles improve NPS and reduce loss adjustment expense.
+    vertical: Insurance
+    subdomains: [p_and_c_claims]
+    related_personas: [Chief Claims Officer, FNOL Operations Manager]
+    decisionsSupported: [pcc.d.fast_track]
+  - id: pcc.kpi.leakage
+    name: Claims Leakage
+    formula: sum(avoidable_paid) / sum(paid)
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of paid losses that should have been avoided through correct coverage interpretation, fraud detection, or subrogation.
+    vertical: Insurance
+    subdomains: [p_and_c_claims]
+    related_personas: [SIU Lead, Senior Claims Adjuster]
+    decisionsSupported: [pcc.d.assign]
+  - id: pcc.kpi.severity
+    name: Severity
+    formula: sum(paid) / count(claims)
+    unit: USD
+    direction: lower_is_better
+    definition: Average paid amount per closed claim.
+    vertical: Insurance
+    subdomains: [p_and_c_claims]
+    related_personas: [Chief Claims Officer]
+  - id: pcc.kpi.frequency
+    name: Frequency
+    formula: count(claims) / earned_exposure
+    unit: per 100 policies
+    direction: lower_is_better
+    definition: Number of claims reported per unit of earned exposure (e.g. per 100 policy-years).
+    vertical: Insurance
+    subdomains: [p_and_c_claims]
+    related_personas: [Chief Claims Officer]
+  - id: pcc.kpi.lae_ratio
+    name: LAE Ratio
+    formula: loss_adjustment_expense / paid_losses
+    unit: "%"
+    direction: lower_is_better
+    definition: Loss-adjustment expense as a share of paid losses; measures handling cost efficiency.
+    vertical: Insurance
+    subdomains: [p_and_c_claims]
+  - id: pcc.kpi.nps
+    name: Claims NPS
+    formula: promoters_pct - detractors_pct
+    unit: NPS
+    direction: higher_is_better
+    definition: Net Promoter Score collected from closed-claim customer surveys.
+    vertical: Insurance
+    subdomains: [p_and_c_claims]
+
+  # ============================================================
+  # Anchor: Merchandising (Retail)
+  # ============================================================
+  - id: mer.kpi.sell_through
+    name: Sell-through %
+    formula: units_sold / units_received
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of units received from a vendor that have been sold within a window. Used to inform reorders and markdowns.
+    vertical: Retail
+    subdomains: [merchandising]
+    related_personas: [Buyer, Merchandise Planner]
+    decisionsSupported: [mer.d.markdown, mer.d.assortment]
+  - id: mer.kpi.gmroi
+    name: GMROI
+    formula: gross_margin / avg_inventory_cost
+    unit: ratio
+    direction: higher_is_better
+    definition: Gross Margin Return on Inventory Investment — gross profit per dollar invested in average inventory.
+    vertical: Retail
+    subdomains: [merchandising]
+  - id: mer.kpi.markdown_pct
+    name: Markdown %
+    formula: markdown_dollars / sales_dollars
+    unit: "%"
+    direction: lower_is_better
+    definition: Markdown dollars as a percentage of gross sales dollars.
+    vertical: Retail
+    subdomains: [merchandising]
+  - id: mer.kpi.inventory_turn
+    name: Inventory Turn
+    formula: cogs / avg_inventory
+    unit: turns/yr
+    direction: higher_is_better
+    definition: Number of times inventory is sold and replaced over a year.
+    vertical: Retail
+    subdomains: [merchandising]
+  - id: mer.kpi.oos
+    name: Out-of-Stock Rate
+    formula: oos_skus / total_skus
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of SKUs that are out of stock at the end of a measurement window.
+    vertical: Retail
+    subdomains: [merchandising]
+    decisionsSupported: [mer.d.allocation]
+  - id: mer.kpi.share_of_shelf
+    name: Share of Shelf
+    formula: facings_brand / total_facings
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of shelf facings dedicated to a brand within a category.
+    vertical: Retail
+    subdomains: [merchandising, retail_execution]
+
+  # ============================================================
+  # Anchor: Demand Planning (CPG)
+  # ============================================================
+  - id: dem.kpi.mape
+    name: Forecast Accuracy (MAPE)
+    formula: mean(abs(actual - forecast)/actual)
+    unit: "%"
+    direction: lower_is_better
+    definition: Mean Absolute Percentage Error of the forecast versus actual demand.
+    vertical: CPG
+    subdomains: [demand_planning]
+    related_personas: [Demand Planner, S&OP Lead]
+    decisionsSupported: [dem.d.consensus]
+  - id: dem.kpi.bias
+    name: Forecast Bias
+    formula: mean(forecast - actual)
+    unit: units
+    direction: target_band
+    definition: Average signed difference between forecast and actual; positive = over-forecasting, negative = under-forecasting.
+    vertical: CPG
+    subdomains: [demand_planning]
+  - id: dem.kpi.fill_rate
+    name: Fill Rate
+    formula: lines_filled / lines_ordered
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of order lines fully delivered as ordered (case fill rate).
+    vertical: CPG
+    subdomains: [demand_planning]
+  - id: dem.kpi.otif
+    name: OTIF
+    formula: orders_on_time_in_full / orders
+    unit: "%"
+    direction: higher_is_better
+    definition: Orders delivered on time, in full, as a share of all orders.
+    vertical: CPG
+    subdomains: [demand_planning]
+  - id: dem.kpi.inventory_days
+    name: Inventory Days
+    formula: avg_inventory / daily_cogs
+    unit: days
+    direction: lower_is_better
+    definition: Days of inventory held at average daily COGS.
+    vertical: CPG
+    subdomains: [demand_planning]
+  - id: dem.kpi.safety_stock_days
+    name: Safety Stock Days
+    formula: safety_stock_units / daily_demand
+    unit: days
+    direction: target_band
+    definition: Days of demand covered by safety stock at current daily run rate.
+    vertical: CPG
+    subdomains: [demand_planning]
+    decisionsSupported: [dem.d.safety_stock]
+
+  # ============================================================
+  # Anchor: Hotel Revenue Management (TTH)
+  # ============================================================
+  - id: hrm.kpi.revpar
+    name: RevPAR
+    formula: total_room_revenue / available_room_nights
+    unit: USD
+    direction: higher_is_better
+    definition: Revenue Per Available Room — composite of ADR × occupancy. The principal hotel performance metric.
+    vertical: TTH
+    subdomains: [hotel_revenue_management, vacation_rentals]
+    related_personas: [Director of Revenue Management, General Manager]
+    decisionsSupported: [hrm.d.bar]
+  - id: hrm.kpi.adr
+    name: ADR
+    formula: total_room_revenue / occupied_rooms
+    unit: USD
+    direction: higher_is_better
+    definition: Average Daily Rate — average price per occupied room.
+    vertical: TTH
+    subdomains: [hotel_revenue_management, vacation_rentals]
+  - id: hrm.kpi.occupancy
+    name: Occupancy
+    formula: occupied_rooms / available_rooms
+    unit: "%"
+    direction: target_band
+    definition: Share of available rooms sold. Targeted around a property's optimal yield curve, not maximised.
+    vertical: TTH
+    subdomains: [hotel_revenue_management, vacation_rentals]
+    decisionsSupported: [hrm.d.overbooking]
+  - id: hrm.kpi.mpi
+    name: Market Penetration Index (MPI)
+    formula: occupancy_property / occupancy_compset
+    unit: index
+    direction: higher_is_better
+    definition: Property's occupancy relative to its competitive set. >1 means winning share.
+    vertical: TTH
+    subdomains: [hotel_revenue_management]
+  - id: hrm.kpi.ari
+    name: Average Rate Index (ARI)
+    formula: adr_property / adr_compset
+    unit: index
+    direction: higher_is_better
+    definition: Property's ADR relative to its competitive set.
+    vertical: TTH
+    subdomains: [hotel_revenue_management]
+  - id: hrm.kpi.rgi
+    name: Revenue Generation Index (RGI)
+    formula: revpar_property / revpar_compset
+    unit: index
+    direction: higher_is_better
+    definition: Property's RevPAR relative to its competitive set; the composite of MPI × ARI.
+    vertical: TTH
+    subdomains: [hotel_revenue_management]
+  - id: hrm.kpi.bar_variance
+    name: BAR Variance
+    formula: avg(actual_bar - planned_bar)
+    unit: USD
+    direction: target_band
+    definition: Average difference between actual Best-Available Rate and the rate planned by the RMS.
+    vertical: TTH
+    subdomains: [hotel_revenue_management]
+
+  # ============================================================
+  # Anchor: MES & Quality (Manufacturing)
+  # ============================================================
+  - id: mes.kpi.oee
+    name: OEE
+    formula: availability * performance * quality
+    unit: "%"
+    direction: higher_is_better
+    definition: Overall Equipment Effectiveness — composite of equipment availability, throughput performance, and first-pass quality.
+    vertical: Manufacturing
+    subdomains: [mes_quality, shop_floor_iot]
+    related_personas: [Plant Manager, OT Engineer]
+    decisionsSupported: [mes.d.line_balance]
+  - id: mes.kpi.fpy
+    name: First Pass Yield
+    formula: good_units_first_try / total_started
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of units that pass quality on the first attempt without rework or scrap.
+    vertical: Manufacturing
+    subdomains: [mes_quality]
+  - id: mes.kpi.scrap
+    name: Scrap Rate
+    formula: scrap_units / total_units
+    unit: "%"
+    direction: lower_is_better
+    definition: Units scrapped as a share of total units started.
+    vertical: Manufacturing
+    subdomains: [mes_quality]
+    decisionsSupported: [mes.d.scrap_root_cause]
+  - id: mes.kpi.mtbf
+    name: MTBF
+    formula: total_operational_time / failure_count
+    unit: hours
+    direction: higher_is_better
+    definition: Mean Time Between Failures — average operational time between equipment failures.
+    vertical: Manufacturing
+    subdomains: [mes_quality, predictive_maintenance, shop_floor_iot]
+    decisionsSupported: [mes.d.maintenance]
+  - id: mes.kpi.mttr
+    name: MTTR
+    formula: total_repair_time / failure_count
+    unit: hours
+    direction: lower_is_better
+    definition: Mean Time To Repair — average elapsed time to restore a failed asset to service.
+    vertical: Manufacturing
+    subdomains: [mes_quality, network_operations, shop_floor_iot]
+  - id: mes.kpi.cpk
+    name: CpK
+    formula: min((USL-mu)/(3*sigma), (mu-LSL)/(3*sigma))
+    unit: index
+    direction: higher_is_better
+    definition: Process capability index. Measures how well a process fits inside its spec limits, accounting for centring.
+    vertical: Manufacturing
+    subdomains: [mes_quality]
+
+  # ============================================================
+  # Anchor: Pharmacovigilance (LifeSciences)
+  # ============================================================
+  - id: pv.kpi.case_processing_time
+    name: Case Processing Time
+    formula: avg(closed_ts - intake_ts)
+    unit: days
+    direction: lower_is_better
+    definition: Average days from ICSR intake to case closure (locked in the safety database).
+    vertical: LifeSciences
+    subdomains: [pharmacovigilance]
+    related_personas: [PV Scientist, Medical Reviewer]
+    decisionsSupported: [pv.d.expedited]
+  - id: pv.kpi.signal_latency
+    name: Signal Detection Latency
+    formula: avg(signal_flagged_ts - first_event_ts)
+    unit: days
+    direction: lower_is_better
+    definition: Average days from the first AE that contributed to a signal to the moment it was flagged for review.
+    vertical: LifeSciences
+    subdomains: [pharmacovigilance]
+    decisionsSupported: [pv.d.signal]
+  - id: pv.kpi.submission_timeliness
+    name: Regulatory Submission Timeliness
+    formula: on_time_submissions / total_submissions
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of regulatory submissions filed by their statutory due date.
+    vertical: LifeSciences
+    subdomains: [pharmacovigilance]
+  - id: pv.kpi.icsr_volume
+    name: ICSR Volume
+    formula: count(ICSRs)
+    unit: cases
+    direction: target_band
+    definition: Number of Individual Case Safety Reports received per period. Sudden surges may indicate signal or data-quality issues.
+    vertical: LifeSciences
+    subdomains: [pharmacovigilance]
+  - id: pv.kpi.ae_pt_accuracy
+    name: AE-to-PT Mapping Accuracy
+    formula: correct_PT_codings / sampled_codings
+    unit: "%"
+    direction: higher_is_better
+    definition: Sampled accuracy of MedDRA preferred-term coding for adverse events.
+    vertical: LifeSciences
+    subdomains: [pharmacovigilance]
+
+  # ============================================================
+  # Breadth — Insurance
+  # ============================================================
+  - { id: act.kpi.combined_ratio, name: Combined Ratio, formula: (losses + expenses)/earned_premium, unit: "%", direction: lower_is_better, vertical: Insurance, subdomains: [actuarial_pricing], definition: "Sum of loss ratio and expense ratio. Below 100% indicates underwriting profit." }
+  - { id: act.kpi.scr_ratio, name: Solvency Capital Ratio, formula: own_funds / scr, unit: "%", direction: higher_is_better, vertical: Insurance, subdomains: [actuarial_pricing], definition: "Own funds expressed as a percentage of Solvency Capital Requirement." }
+  - { id: act.kpi.reserve_strengthening, name: Reserve Strengthening, formula: prior_year_dev / reserves, unit: "%", direction: lower_is_better, vertical: Insurance, subdomains: [actuarial_pricing], definition: "Adverse development on prior accident years as a share of held reserves." }
+  - { id: act.kpi.rate_change, name: Rate Change, formula: new_rate / old_rate - 1, unit: "%", direction: target_band, vertical: Insurance, subdomains: [actuarial_pricing], definition: "Period-over-period change in filed rates." }
+  - { id: act.kpi.pricing_lift, name: Model Pricing Lift, formula: gini_coefficient, unit: ratio, direction: higher_is_better, vertical: Insurance, subdomains: [actuarial_pricing], definition: "Gini-style discriminatory power of the pricing model on the validation set." }
+  - { id: clm.kpi.subrogation_recovery, name: Subrogation Recovery Rate, formula: recovered / recoverable, unit: "%", direction: higher_is_better, vertical: Insurance, subdomains: [claims_subrogation], definition: "Share of identified-recoverable losses actually recovered from third parties." }
+  - { id: clm.kpi.reopen_rate, name: Reopen Rate, formula: reopened / closed, unit: "%", direction: lower_is_better, vertical: Insurance, subdomains: [claims_subrogation], definition: "Share of closed claims that get reopened — an indicator of premature closure." }
+  - { id: la.kpi.persistency, name: 13-month Persistency, formula: active_at_13m / issued, unit: "%", direction: higher_is_better, vertical: Insurance, subdomains: [life_annuity], definition: "Share of policies still in force 13 months after issuance." }
+  - { id: la.kpi.surrender_rate, name: Surrender Rate, formula: surrenders / in_force, unit: "%", direction: lower_is_better, vertical: Insurance, subdomains: [life_annuity], definition: "Share of in-force policies surrendered during the period." }
+  - { id: la.kpi.new_business_apv, name: New Business APV, formula: sum(annual_premium_value), unit: USD, direction: higher_is_better, vertical: Insurance, subdomains: [life_annuity] }
+  - { id: la.kpi.claim_ratio, name: Mortality / Claim Ratio, formula: claims_paid / earned_premium, unit: "%", direction: lower_is_better, vertical: Insurance, subdomains: [life_annuity] }
+  - { id: la.kpi.unitlinked_aum, name: Unit-Linked AUM, formula: sum(fund_value), unit: USD, direction: higher_is_better, vertical: Insurance, subdomains: [life_annuity] }
+  - { id: re.kpi.ceded_ratio, name: Ceded Premium Ratio, formula: ceded / gross_premium, unit: "%", direction: target_band, vertical: Insurance, subdomains: [reinsurance] }
+  - { id: re.kpi.recoverables, name: Reinsurance Recoverables, formula: sum(recoverable), unit: USD, direction: higher_is_better, vertical: Insurance, subdomains: [reinsurance] }
+  - { id: re.kpi.commission_ratio, name: Ceding Commission Ratio, formula: commission / ceded_premium, unit: "%", direction: target_band, vertical: Insurance, subdomains: [reinsurance] }
+  - { id: re.kpi.dso, name: Reinsurer DSO, formula: avg(days_outstanding), unit: days, direction: lower_is_better, vertical: Insurance, subdomains: [reinsurance] }
+  - { id: re.kpi.cat_concentration, name: CAT Concentration, formula: largest_treaty / total, unit: "%", direction: lower_is_better, vertical: Insurance, subdomains: [reinsurance] }
+  - { id: uw.kpi.hit_ratio, name: Quote-to-Bind Hit Ratio, formula: bound / quoted, unit: "%", direction: higher_is_better, vertical: Insurance, subdomains: [underwriting] }
+  - { id: uw.kpi.loss_ratio, name: Loss Ratio, formula: losses / earned_premium, unit: "%", direction: lower_is_better, vertical: Insurance, subdomains: [underwriting] }
+  - { id: uw.kpi.cycle_time, name: UW Cycle Time, formula: avg(decision_ts - submitted_ts), unit: hours, direction: lower_is_better, vertical: Insurance, subdomains: [underwriting] }
+  - { id: uw.kpi.declination_rate, name: Declination Rate, formula: declined / submissions, unit: "%", direction: target_band, vertical: Insurance, subdomains: [underwriting] }
+  - { id: uw.kpi.referral_rate, name: Referral Rate, formula: referred / submissions, unit: "%", direction: lower_is_better, vertical: Insurance, subdomains: [underwriting] }
+  - { id: pa.kpi.renewal_retention, name: Renewal Retention, formula: renewed / eligible, unit: "%", direction: higher_is_better, vertical: Insurance, subdomains: [policy_admin] }
+  - { id: pa.kpi.billing_dso, name: Billing DSO, formula: avg(days_outstanding), unit: days, direction: lower_is_better, vertical: Insurance, subdomains: [policy_admin] }
+  - { id: pa.kpi.policy_count, name: Policies-in-Force, formula: count(active_policies), unit: policies, direction: higher_is_better, vertical: Insurance, subdomains: [policy_admin] }
+
+  # ============================================================
+  # Breadth — BFSI
+  # ============================================================
+  - { id: cm.kpi.trade_break_rate, name: Trade Break Rate, formula: breaks / total_trades, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [capital_markets] }
+  - { id: cm.kpi.t_plus_1_settlement, name: T+1 Settlement Rate, formula: settled_t1 / eligible_trades, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [capital_markets] }
+  - { id: cm.kpi.var, name: Value at Risk (1d 99%), formula: var_1d_99, unit: USD, direction: target_band, vertical: BFSI, subdomains: [capital_markets] }
+  - { id: cm.kpi.execution_slippage, name: Execution Slippage vs Arrival, formula: avg(arrival_px - exec_px) / arrival_px, unit: bps, direction: lower_is_better, vertical: BFSI, subdomains: [capital_markets] }
+  - { id: cm.kpi.regulatory_breaches, name: Regulatory Breaches, formula: count(breach_events), unit: events, direction: lower_is_better, vertical: BFSI, subdomains: [capital_markets] }
+  - { id: card.kpi.activation_rate, name: Activation Rate, formula: activated / issued, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [cards] }
+  - { id: card.kpi.spend_per_active, name: Spend per Active Card, formula: total_spend / active_cards, unit: USD, direction: higher_is_better, vertical: BFSI, subdomains: [cards] }
+  - { id: card.kpi.delinquency_30, name: 30+ DPD Delinquency, formula: balance_30dpd / total_balance, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [cards] }
+  - { id: card.kpi.cost_of_rewards, name: Cost of Rewards, formula: rewards_paid / spend, unit: "%", direction: target_band, vertical: BFSI, subdomains: [cards] }
+  - { id: card.kpi.attrition, name: Card Attrition, formula: closed_cards / open_cards, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [cards] }
+  - { id: xb.kpi.straight_through, name: Cross-Border STP, formula: stp_count / total, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [cross_border_payments] }
+  - { id: xb.kpi.fx_spread, name: FX Spread Captured, formula: spread_bps, unit: bps, direction: higher_is_better, vertical: BFSI, subdomains: [cross_border_payments] }
+  - { id: xb.kpi.settlement_time, name: Cross-Border Settlement Time, formula: avg(settled - sent), unit: hours, direction: lower_is_better, vertical: BFSI, subdomains: [cross_border_payments] }
+  - { id: xb.kpi.repair_rate, name: Repair Rate, formula: repaired / total, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [cross_border_payments] }
+  - { id: xb.kpi.compliance_holds, name: Compliance Holds, formula: held / sent, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [cross_border_payments] }
+  - { id: fraud.kpi.fraud_loss_bps, name: Fraud Loss (bps of volume), formula: net_fraud_loss / volume * 10000, unit: bps, direction: lower_is_better, vertical: BFSI, subdomains: [fraud, prepaid_cards] }
+  - { id: fraud.kpi.false_positive_rate, name: False Positive Rate, formula: legit_blocked / total_blocked, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [fraud] }
+  - { id: fraud.kpi.detection_rate, name: Detection Rate, formula: caught_fraud / total_fraud, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [fraud] }
+  - { id: fraud.kpi.time_to_disposition, name: Time to Disposition, formula: avg(disposition_ts - alert_ts), unit: minutes, direction: lower_is_better, vertical: BFSI, subdomains: [fraud] }
+  - { id: fraud.kpi.recovery_rate, name: Loss Recovery Rate, formula: recovered / gross_loss, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [fraud] }
+  - { id: aml.kpi.case_backlog, name: Case Investigation Backlog, formula: open_cases_over_sla, unit: cases, direction: lower_is_better, vertical: BFSI, subdomains: [kyc_aml] }
+  - { id: aml.kpi.sar_filing_timeliness, name: SAR Filing Timeliness, formula: on_time_sars / total_sars, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [kyc_aml] }
+  - { id: aml.kpi.alert_to_case_rate, name: Alert to Case Conversion, formula: cases_opened / alerts_generated, unit: "%", direction: target_band, vertical: BFSI, subdomains: [kyc_aml] }
+  - { id: aml.kpi.kyc_refresh_overdue, name: KYC Refresh Overdue, formula: overdue / total_customers, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [kyc_aml] }
+  - { id: aml.kpi.true_positive_rate, name: Sanctions True Positive Rate, formula: true_hits / total_hits, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [kyc_aml] }
+  - { id: lend.kpi.approval_rate, name: Approval Rate, formula: approved_apps / submitted_apps, unit: "%", direction: target_band, vertical: BFSI, subdomains: [lending] }
+  - { id: lend.kpi.time_to_decision, name: Time to Decision, formula: avg(decision_ts - submit_ts), unit: hours, direction: lower_is_better, vertical: BFSI, subdomains: [lending] }
+  - { id: lend.kpi.npl_ratio, name: Non-Performing Loan Ratio, formula: npl_balance / gross_loans, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [lending] }
+  - { id: lend.kpi.charge_off_rate, name: Charge-off Rate, formula: charge_offs / avg_loans, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [lending] }
+  - { id: lend.kpi.cost_per_loan, name: Cost per Loan Originated, formula: origination_cost / loans_originated, unit: USD, direction: lower_is_better, vertical: BFSI, subdomains: [lending] }
+  - { id: ma.kpi.processed_volume, name: Processed Volume, formula: sum(amount), unit: USD, direction: higher_is_better, vertical: BFSI, subdomains: [merchant_acquiring] }
+  - { id: ma.kpi.attrition, name: Merchant Attrition, formula: churned / active, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [merchant_acquiring] }
+  - { id: ma.kpi.chargeback_ratio, name: Acquirer Chargeback Ratio, formula: chargebacks / sales, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [merchant_acquiring] }
+  - { id: ma.kpi.merchant_mdr, name: Merchant Discount Rate, formula: fees / volume, unit: bps, direction: target_band, vertical: BFSI, subdomains: [merchant_acquiring] }
+  - { id: ma.kpi.boarding_tat, name: Merchant Boarding TAT, formula: avg(approved - applied), unit: hours, direction: lower_is_better, vertical: BFSI, subdomains: [merchant_acquiring] }
+  - { id: msrv.kpi.delinquency_60, name: 60+ DPD Delinquency, formula: balance_60dpd / total_unpaid_principal, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [mortgage_servicing] }
+  - { id: msrv.kpi.cure_rate, name: Cure Rate, formula: cured_loans / delinquent_loans, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [mortgage_servicing] }
+  - { id: msrv.kpi.escrow_shortage, name: Escrow Shortage Rate, formula: shortage_loans / total_loans, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [mortgage_servicing] }
+  - { id: msrv.kpi.cost_to_service, name: Cost to Service per Loan, formula: opex / loans_serviced, unit: USD, direction: lower_is_better, vertical: BFSI, subdomains: [mortgage_servicing] }
+  - { id: msrv.kpi.investor_remit_accuracy, name: Investor Remit Accuracy, formula: clean_remits / total_remits, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [mortgage_servicing] }
+  - { id: pp.kpi.load_volume, name: Prepaid Load Volume, formula: sum(loads), unit: USD, direction: higher_is_better, vertical: BFSI, subdomains: [prepaid_cards] }
+  - { id: pp.kpi.breakage, name: Prepaid Breakage Rate, formula: unspent / loaded, unit: "%", direction: target_band, vertical: BFSI, subdomains: [prepaid_cards] }
+  - { id: pp.kpi.activation_rate, name: Prepaid Activation Rate, formula: activated / issued, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [prepaid_cards] }
+  - { id: pp.kpi.fraud_loss_bps, name: Prepaid Fraud Loss BPS, formula: fraud_loss / spend, unit: bps, direction: lower_is_better, vertical: BFSI, subdomains: [prepaid_cards] }
+  - { id: pp.kpi.cards_in_force, name: Cards In Force, formula: count(active_cards), unit: cards, direction: higher_is_better, vertical: BFSI, subdomains: [prepaid_cards] }
+  - { id: stl.kpi.same_day_settle, name: Same-Day Settlement Rate, formula: same_day_settled / total_trades, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [settlement_clearing] }
+  - { id: stl.kpi.fail_rate, name: Settlement Fail Rate, formula: failed / total_settlements, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [settlement_clearing] }
+  - { id: stl.kpi.recon_break_count, name: Recon Break Count, formula: open_breaks_eod, unit: count, direction: lower_is_better, vertical: BFSI, subdomains: [settlement_clearing] }
+  - { id: stl.kpi.aging_breaks, name: Aging Breaks > 5d, formula: breaks_over_5d / total_breaks, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [settlement_clearing] }
+  - { id: stl.kpi.intraday_liquidity_use, name: Intraday Liquidity Usage, formula: peak_intraday / committed_facility, unit: "%", direction: target_band, vertical: BFSI, subdomains: [settlement_clearing] }
+  - { id: sl.kpi.utilization, name: Securities Lending Utilization, formula: on_loan_value / lendable_value, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [securities_lending] }
+  - { id: sl.kpi.avg_fee, name: Average Lending Fee, formula: weighted_avg_fee_bps, unit: bps, direction: higher_is_better, vertical: BFSI, subdomains: [securities_lending] }
+  - { id: tre.kpi.lcr, name: Liquidity Coverage Ratio, formula: hqla / net_outflows_30d, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [treasury] }
+  - { id: tre.kpi.nsfr, name: Net Stable Funding Ratio, formula: asf / rsf, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [treasury] }
+  - { id: tre.kpi.cash_forecast_accuracy, name: Cash Forecast Accuracy, formula: 1 - mape, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [treasury] }
+  - { id: tre.kpi.idle_cash, name: Idle Cash Balance, formula: avg(uninvested_cash), unit: USD, direction: lower_is_better, vertical: BFSI, subdomains: [treasury] }
+  - { id: tre.kpi.funding_cost, name: Average Funding Cost, formula: interest_expense / liabilities, unit: bps, direction: lower_is_better, vertical: BFSI, subdomains: [treasury] }
+  - { id: wm.kpi.aum, name: Wealth AUM, formula: sum(account_market_value), unit: USD, direction: higher_is_better, vertical: BFSI, subdomains: [wealth_management] }
+  - { id: wm.kpi.net_new_assets, name: Net New Assets, formula: inflows - outflows, unit: USD, direction: higher_is_better, vertical: BFSI, subdomains: [wealth_management] }
+
+  # ============================================================
+  # Breadth — Retail / RCG / CPG
+  # ============================================================
+  - { id: ecom.kpi.conversion_rate, name: Ecommerce Conversion Rate, formula: orders / sessions, unit: "%", direction: higher_is_better, vertical: Retail, subdomains: [ecommerce] }
+  - { id: ecom.kpi.aov, name: Average Order Value, formula: revenue / orders, unit: USD, direction: higher_is_better, vertical: Retail, subdomains: [ecommerce] }
+  - { id: ecom.kpi.cart_abandonment, name: Cart Abandonment Rate, formula: abandoned_carts / created_carts, unit: "%", direction: lower_is_better, vertical: Retail, subdomains: [ecommerce] }
+  - { id: ecom.kpi.cac, name: Customer Acquisition Cost, formula: marketing_spend / new_customers, unit: USD, direction: lower_is_better, vertical: Retail, subdomains: [ecommerce] }
+  - { id: ecom.kpi.return_rate, name: Online Return Rate, formula: returned_units / shipped_units, unit: "%", direction: lower_is_better, vertical: Retail, subdomains: [ecommerce, returns_management] }
+  - { id: loy.kpi.active_member_pct, name: Active Loyalty Member %, formula: active_members / enrolled, unit: "%", direction: higher_is_better, vertical: Retail, subdomains: [loyalty] }
+  - { id: loy.kpi.member_share_of_sales, name: Member Share of Sales, formula: member_sales / total_sales, unit: "%", direction: higher_is_better, vertical: Retail, subdomains: [loyalty] }
+  - { id: loy.kpi.redemption_rate, name: Redemption Rate, formula: points_redeemed / points_issued, unit: "%", direction: target_band, vertical: Retail, subdomains: [loyalty] }
+  - { id: loy.kpi.liability_per_member, name: Points Liability per Member, formula: outstanding_points_value / members, unit: USD, direction: lower_is_better, vertical: Retail, subdomains: [loyalty] }
+  - { id: ops.kpi.sales_per_labor_hour, name: Sales per Labor Hour, formula: net_sales / labor_hours, unit: USD, direction: higher_is_better, vertical: Retail, subdomains: [store_ops] }
+  - { id: ops.kpi.shrink, name: Shrink, formula: shrink_dollars / net_sales, unit: "%", direction: lower_is_better, vertical: Retail, subdomains: [store_ops] }
+  - { id: ops.kpi.store_compliance, name: Store Compliance Score, formula: passed_audits / total_audits, unit: "%", direction: higher_is_better, vertical: Retail, subdomains: [store_ops] }
+  - { id: ops.kpi.checkout_wait, name: Avg Checkout Wait, formula: avg(wait_time), unit: seconds, direction: lower_is_better, vertical: Retail, subdomains: [store_ops] }
+  - { id: pric.kpi.price_realization, name: Price Realization, formula: net_price / list_price, unit: "%", direction: higher_is_better, vertical: Retail, subdomains: [pricing] }
+  - { id: pric.kpi.price_elasticity, name: Price Elasticity, formula: pct_volume_change / pct_price_change, unit: ratio, direction: target_band, vertical: Retail, subdomains: [pricing] }
+  - { id: pric.kpi.competitive_index, name: Competitive Price Index, formula: own_price / compset_avg_price, unit: index, direction: target_band, vertical: Retail, subdomains: [pricing] }
+  - { id: pric.kpi.margin_pct, name: Margin %, formula: gross_margin / net_sales, unit: "%", direction: higher_is_better, vertical: Retail, subdomains: [pricing] }
+  - { id: pric.kpi.promo_lift, name: Promo Lift, formula: (promo_units - baseline_units) / baseline_units, unit: "%", direction: higher_is_better, vertical: Retail, subdomains: [pricing] }
+  - { id: ret.kpi.return_rate, name: Return Rate, formula: returns / sales, unit: "%", direction: lower_is_better, vertical: Retail, subdomains: [returns_management] }
+  - { id: ret.kpi.restock_pct, name: Restock-to-Sellable %, formula: resellable / received, unit: "%", direction: higher_is_better, vertical: Retail, subdomains: [returns_management] }
+  - { id: ret.kpi.refund_cycle_time, name: Refund Cycle Time, formula: avg(refund_ts - return_ts), unit: hours, direction: lower_is_better, vertical: Retail, subdomains: [returns_management] }
+  - { id: ret.kpi.return_fraud_rate, name: Return Fraud Rate, formula: flagged / total_returns, unit: "%", direction: lower_is_better, vertical: Retail, subdomains: [returns_management] }
+  - { id: rex.kpi.osa, name: On-Shelf Availability, formula: instock / audited, unit: "%", direction: higher_is_better, vertical: CPG, subdomains: [retail_execution] }
+  - { id: rex.kpi.planogram_compliance, name: Planogram Compliance, formula: compliant / audited, unit: "%", direction: higher_is_better, vertical: CPG, subdomains: [retail_execution] }
+  - { id: rex.kpi.perfect_store, name: Perfect Store Score, formula: weighted_compliance, unit: "%", direction: higher_is_better, vertical: CPG, subdomains: [retail_execution] }
+  - { id: bm.kpi.brand_awareness, name: Aided Brand Awareness, formula: aided / surveyed, unit: "%", direction: higher_is_better, vertical: CPG, subdomains: [brand_marketing] }
+  - { id: bm.kpi.share_of_voice, name: Share of Voice, formula: brand_impressions / category, unit: "%", direction: higher_is_better, vertical: CPG, subdomains: [brand_marketing] }
+  - { id: bm.kpi.media_roi, name: Media ROI, formula: incremental_sales / spend, unit: ratio, direction: higher_is_better, vertical: CPG, subdomains: [brand_marketing] }
+  - { id: tpm.kpi.promo_roi, name: Trade Promo ROI, formula: incremental_profit / promo_spend, unit: ratio, direction: higher_is_better, vertical: CPG, subdomains: [trade_promotion] }
+  - { id: tpm.kpi.lift_pct, name: Trade Promo Lift, formula: (promo_volume - baseline_volume) / baseline_volume, unit: "%", direction: higher_is_better, vertical: CPG, subdomains: [trade_promotion] }
+  - { id: tpm.kpi.deduction_aging, name: Deduction Aging > 60 days, formula: open_60d_deductions / total_deductions, unit: "%", direction: lower_is_better, vertical: CPG, subdomains: [trade_promotion] }
+  - { id: ds.kpi.pick_rate, name: Picks per Hour, formula: picks / labor_hour, unit: picks/h, direction: higher_is_better, vertical: Retail, subdomains: [dark_stores] }
+  - { id: ds.kpi.order_cycle, name: Dark Store Order Cycle, formula: avg(handed_off - placed), unit: minutes, direction: lower_is_better, vertical: Retail, subdomains: [dark_stores] }
+  - { id: cust.kpi.clv, name: Customer Lifetime Value, formula: discounted_future_revenue_per_customer, unit: USD, direction: higher_is_better, vertical: Retail, subdomains: [customer_analytics] }
+  - { id: cust.kpi.repeat_rate, name: Repeat Purchase Rate, formula: repeat_buyers / total_buyers, unit: "%", direction: higher_is_better, vertical: Retail, subdomains: [customer_analytics] }
+  - { id: cust.kpi.identity_match_rate, name: Identity Match Rate, formula: matched_records / total_records, unit: "%", direction: higher_is_better, vertical: Retail, subdomains: [customer_analytics] }
+  - { id: cust.kpi.churn_30d, name: 30-Day Churn, formula: churned / active_30d_ago, unit: "%", direction: lower_is_better, vertical: Retail, subdomains: [customer_analytics] }
+  - { id: cust.kpi.nps, name: Net Promoter Score, formula: promoters - detractors, unit: score, direction: higher_is_better, vertical: Retail, subdomains: [customer_analytics] }
+
+  # ============================================================
+  # Breadth — TTH
+  # ============================================================
+  - { id: arm.kpi.rask, name: RASK, formula: revenue / available_seat_kilometres, unit: cents/ASK, direction: higher_is_better, vertical: TTH, subdomains: [airline_revenue_management] }
+  - { id: arm.kpi.yield, name: Yield, formula: passenger_revenue / revenue_passenger_kilometres, unit: cents/RPK, direction: higher_is_better, vertical: TTH, subdomains: [airline_revenue_management] }
+  - { id: arm.kpi.load_factor, name: Load Factor, formula: rpk / ask, unit: "%", direction: higher_is_better, vertical: TTH, subdomains: [airline_revenue_management] }
+  - { id: arm.kpi.spill_rate, name: Spill Rate, formula: refused_pax / requested_pax, unit: "%", direction: lower_is_better, vertical: TTH, subdomains: [airline_revenue_management] }
+  - { id: arm.kpi.no_show_rate, name: Airline No-Show Rate, formula: no_shows / booked_pax, unit: "%", direction: lower_is_better, vertical: TTH, subdomains: [airline_revenue_management] }
+  - { id: aloy.kpi.miles_liability, name: Miles Liability, formula: outstanding_miles * value_per_mile, unit: USD, direction: target_band, vertical: TTH, subdomains: [airline_loyalty] }
+  - { id: aloy.kpi.breakage_rate, name: Loyalty Breakage Rate, formula: expired_miles / earned_miles, unit: "%", direction: target_band, vertical: TTH, subdomains: [airline_loyalty] }
+  - { id: dsr.kpi.d0_completion, name: D-0 Completion Factor, formula: flights_operated / scheduled, unit: "%", direction: higher_is_better, vertical: TTH, subdomains: [airline_disruption] }
+  - { id: dsr.kpi.misconnect_rate, name: Misconnect Rate, formula: misconnects / connecting_passengers, unit: "%", direction: lower_is_better, vertical: TTH, subdomains: [airline_disruption] }
+  - { id: bg.kpi.mishandled_rate, name: Mishandled Baggage Rate, formula: mishandled / 1000_pax, unit: per_mille, direction: lower_is_better, vertical: TTH, subdomains: [baggage_tracking] }
+  - { id: hdist.kpi.direct_share, name: Direct Booking Share, formula: direct_bookings / total_bookings, unit: "%", direction: higher_is_better, vertical: TTH, subdomains: [hotel_distribution] }
+  - { id: hdist.kpi.commission_cost, name: Channel Commission %, formula: commissions / room_revenue, unit: "%", direction: lower_is_better, vertical: TTH, subdomains: [hotel_distribution] }
+  - { id: vr.kpi.adr, name: Vacation Rental ADR, formula: revenue / nights_sold, unit: USD, direction: higher_is_better, vertical: TTH, subdomains: [vacation_rentals] }
+  - { id: vr.kpi.host_rating, name: Host Rating, formula: avg(rating), unit: stars, direction: higher_is_better, vertical: TTH, subdomains: [vacation_rentals] }
+
+  # ============================================================
+  # Breadth — Manufacturing / Energy / Utilities
+  # ============================================================
+  - { id: ahm.kpi.health_index, name: Asset Health Index Avg, formula: weighted_avg(asset_health), unit: index, direction: higher_is_better, vertical: Energy, subdomains: [asset_health_monitoring] }
+  - { id: ahm.kpi.uptime, name: Critical Asset Uptime, formula: uptime_minutes / total_minutes, unit: "%", direction: higher_is_better, vertical: Energy, subdomains: [asset_health_monitoring] }
+  - { id: bom.kpi.bom_accuracy, name: BOM Accuracy, formula: matched / sampled, unit: "%", direction: higher_is_better, vertical: Manufacturing, subdomains: [bill_of_materials] }
+  - { id: bom.kpi.ecn_lead_time, name: ECN Lead Time, formula: avg(close_dt - open_dt), unit: days, direction: lower_is_better, vertical: Manufacturing, subdomains: [bill_of_materials] }
+  - { id: maint.kpi.pm_compliance, name: PM Compliance, formula: pm_completed_on_time / pm_scheduled, unit: "%", direction: higher_is_better, vertical: Manufacturing, subdomains: [maintenance] }
+  - { id: maint.kpi.unplanned_downtime, name: Unplanned Downtime, formula: hours_unplanned_down / total_hours, unit: "%", direction: lower_is_better, vertical: Manufacturing, subdomains: [maintenance] }
+  - { id: maint.kpi.wrench_time, name: Wrench Time, formula: wrench_hours / labor_hours, unit: "%", direction: higher_is_better, vertical: Manufacturing, subdomains: [maintenance] }
+  - { id: pdm.kpi.precision, name: PdM Model Precision, formula: tp / (tp+fp), unit: "%", direction: higher_is_better, vertical: Manufacturing, subdomains: [predictive_maintenance] }
+  - { id: pdm.kpi.recall, name: PdM Model Recall, formula: tp / (tp+fn), unit: "%", direction: higher_is_better, vertical: Manufacturing, subdomains: [predictive_maintenance] }
+  - { id: psch.kpi.otd, name: On-Time Delivery, formula: on_time_orders / total_orders, unit: "%", direction: higher_is_better, vertical: Manufacturing, subdomains: [production_scheduling] }
+  - { id: psch.kpi.schedule_adherence, name: Schedule Adherence, formula: produced_on_plan / planned, unit: "%", direction: higher_is_better, vertical: Manufacturing, subdomains: [production_scheduling] }
+  - { id: psch.kpi.expedites, name: Expedite Order Rate, formula: expedited_orders / total_orders, unit: "%", direction: lower_is_better, vertical: Manufacturing, subdomains: [production_scheduling] }
+  - { id: yld.kpi.die_yield, name: Die Yield, formula: good_die / gross_die, unit: "%", direction: higher_is_better, vertical: HiTech, subdomains: [semiconductor_yield] }
+  - { id: yld.kpi.defect_density, name: Defect Density, formula: defects_per_cm2, unit: "1/cm^2", direction: lower_is_better, vertical: HiTech, subdomains: [semiconductor_yield] }
+  - { id: sq.kpi.first_pass_yield, name: Incoming First-Pass Yield, formula: passed / inspected, unit: "%", direction: higher_is_better, vertical: Manufacturing, subdomains: [supplier_quality] }
+  - { id: sq.kpi.ppm, name: Defect PPM, formula: defects * 1e6 / received_qty, unit: ppm, direction: lower_is_better, vertical: Manufacturing, subdomains: [supplier_quality] }
+  - { id: war.kpi.claim_rate, name: Warranty Claim Rate per 1k, formula: claims / shipped_units * 1000, unit: per 1k, direction: lower_is_better, vertical: Manufacturing, subdomains: [warranty] }
+  - { id: war.kpi.cost_per_unit_sold, name: Warranty Cost per Unit, formula: warranty_cost / units_sold, unit: USD, direction: lower_is_better, vertical: Manufacturing, subdomains: [warranty] }
+  - { id: ehs.kpi.trir, name: Total Recordable Incident Rate, formula: 200000 * recordables / hours_worked, unit: per 100 FTEs, direction: lower_is_better, vertical: Manufacturing, subdomains: [ehs] }
+  - { id: ehs.kpi.ltir, name: Lost-Time Incident Rate, formula: 200000 * lti / hours_worked, unit: per 100 FTEs, direction: lower_is_better, vertical: Manufacturing, subdomains: [ehs] }
+  - { id: ehs.kpi.scope1_2_emissions, name: Scope 1+2 Emissions, formula: tCO2e_scope1_plus_2, unit: tCO2e, direction: lower_is_better, vertical: Manufacturing, subdomains: [ehs] }
+  - { id: ami.kpi.read_success, name: Meter Read Success, formula: successful_reads / scheduled_reads, unit: "%", direction: higher_is_better, vertical: Energy, subdomains: [smart_metering] }
+  - { id: ami.kpi.billing_accuracy, name: Billing Accuracy, formula: bills_no_adjust / total_bills, unit: "%", direction: higher_is_better, vertical: Energy, subdomains: [smart_metering] }
+  - { id: ami.kpi.ntl, name: Non-Technical Loss, formula: (billed - delivered) / delivered, unit: "%", direction: lower_is_better, vertical: Energy, subdomains: [smart_metering] }
+  - { id: grid.kpi.saidi, name: SAIDI, formula: total_outage_minutes / customers, unit: minutes, direction: lower_is_better, vertical: Utilities, subdomains: [grid_ops, outage_management] }
+  - { id: grid.kpi.saifi, name: SAIFI, formula: outage_events_total / customers, unit: events, direction: lower_is_better, vertical: Utilities, subdomains: [grid_ops, outage_management] }
+  - { id: grid.kpi.caidi, name: CAIDI, formula: saidi / saifi, unit: minutes, direction: lower_is_better, vertical: Utilities, subdomains: [grid_ops, outage_management] }
+  - { id: gd.kpi.leak_response_time, name: Gas Leak Response Time, formula: avg(arrival - reported), unit: minutes, direction: lower_is_better, vertical: Utilities, subdomains: [gas_distribution] }
+  - { id: gd.kpi.lost_unaccounted, name: Lost & Unaccounted Gas, formula: unaccounted / sent_out, unit: "%", direction: lower_is_better, vertical: Utilities, subdomains: [gas_distribution] }
+  - { id: ev.kpi.uptime, name: Charger Uptime, formula: in_service_hours / total_hours, unit: "%", direction: higher_is_better, vertical: Energy, subdomains: [ev_charging] }
+  - { id: ev.kpi.utilization, name: Connector Utilization, formula: charging_minutes / available_minutes, unit: "%", direction: higher_is_better, vertical: Energy, subdomains: [ev_charging] }
+  - { id: et.kpi.pnl, name: Daily P&L, formula: mark_to_market_pnl, unit: USD, direction: higher_is_better, vertical: Energy, subdomains: [energy_trading] }
+  - { id: et.kpi.var, name: Energy VaR (1d 95%), formula: var_1d_95, unit: USD, direction: target_band, vertical: Energy, subdomains: [energy_trading] }
+  - { id: rg.kpi.capacity_factor, name: Renewables Capacity Factor, formula: actual_mwh / nameplate_max, unit: "%", direction: higher_is_better, vertical: Energy, subdomains: [renewable_generation] }
+  - { id: rg.kpi.forecast_mape, name: Renewables Forecast MAPE, formula: avg(|actual-forecast|/actual), unit: "%", direction: lower_is_better, vertical: Energy, subdomains: [renewable_generation] }
+  - { id: rg.kpi.lcoe, name: Levelised Cost of Energy, formula: cost / mwh, unit: USD/MWh, direction: lower_is_better, vertical: Energy, subdomains: [renewable_generation] }
+  - { id: ref.kpi.utilization, name: Refinery Utilization, formula: throughput / nameplate, unit: "%", direction: higher_is_better, vertical: Energy, subdomains: [refinery_operations] }
+  - { id: ref.kpi.distillate_yield, name: Distillate Yield, formula: distillate_bbl / crude_bbl, unit: "%", direction: higher_is_better, vertical: Energy, subdomains: [refinery_operations] }
+  - { id: wu.kpi.nrw, name: Non-Revenue Water, formula: (produced - billed)/produced, unit: "%", direction: lower_is_better, vertical: Utilities, subdomains: [water_utilities] }
+  - { id: wu.kpi.compliance, name: Water Quality Compliance, formula: compliant_samples / total, unit: "%", direction: higher_is_better, vertical: Utilities, subdomains: [water_utilities] }
+  - { id: ca.kpi.scope1, name: Scope 1 Emissions, formula: sum(direct_co2e), unit: tCO2e, direction: lower_is_better, vertical: Energy, subdomains: [carbon_accounting] }
+  - { id: ca.kpi.scope2, name: Scope 2 Emissions, formula: sum(indirect_energy_co2e), unit: tCO2e, direction: lower_is_better, vertical: Energy, subdomains: [carbon_accounting] }
+  - { id: ca.kpi.scope3, name: Scope 3 Emissions, formula: sum(value_chain_co2e), unit: tCO2e, direction: lower_is_better, vertical: Energy, subdomains: [carbon_accounting] }
+  - { id: ca.kpi.intensity, name: Emissions Intensity, formula: co2e / revenue, unit: kg/USD, direction: lower_is_better, vertical: Energy, subdomains: [carbon_accounting] }
+
+  # ============================================================
+  # Breadth — Healthcare / Life Sciences
+  # ============================================================
+  - { id: cds.kpi.alert_action_rate, name: Alert Action Rate, formula: acted / fired, unit: "%", direction: higher_is_better, vertical: Healthcare, subdomains: [clinical_decision_support] }
+  - { id: cds.kpi.alert_override, name: Alert Override Rate, formula: overridden / fired, unit: "%", direction: target_band, vertical: Healthcare, subdomains: [clinical_decision_support] }
+  - { id: ehr.kpi.message_success, name: HL7 Message Success, formula: acked / sent, unit: "%", direction: higher_is_better, vertical: Healthcare, subdomains: [ehr_integrations] }
+  - { id: ehr.kpi.fhir_latency, name: FHIR API Latency P95, formula: p95(fhir_response_ms), unit: ms, direction: lower_is_better, vertical: Healthcare, subdomains: [ehr_integrations] }
+  - { id: ehr.kpi.dq_match_rate, name: Patient Match Rate, formula: matched / total, unit: "%", direction: higher_is_better, vertical: Healthcare, subdomains: [ehr_integrations] }
+  - { id: med.kpi.complaint_cycle, name: Device Complaint Cycle Time, formula: avg(close_dt - open_dt), unit: days, direction: lower_is_better, vertical: LifeSciences, subdomains: [medical_devices] }
+  - { id: med.kpi.mdr_on_time, name: MDR/IMDRF On-Time Filing, formula: on_time_filings / required, unit: "%", direction: higher_is_better, vertical: LifeSciences, subdomains: [medical_devices] }
+  - { id: med.kpi.capa_aging, name: CAPA Aging > 90d, formula: capa_over_90d / open_capa, unit: "%", direction: lower_is_better, vertical: LifeSciences, subdomains: [medical_devices] }
+  - { id: mi.kpi.report_tat, name: Imaging Report Turnaround, formula: avg(read - acquired), unit: minutes, direction: lower_is_better, vertical: Healthcare, subdomains: [medical_imaging] }
+  - { id: mi.kpi.modality_utilisation, name: Modality Utilisation, formula: scan_minutes / available, unit: "%", direction: higher_is_better, vertical: Healthcare, subdomains: [medical_imaging] }
+  - { id: pe.kpi.portal_adoption, name: Portal Adoption, formula: activated / eligible, unit: "%", direction: higher_is_better, vertical: Healthcare, subdomains: [patient_engagement] }
+  - { id: pe.kpi.online_scheduling, name: Online Scheduling Share, formula: online / total, unit: "%", direction: higher_is_better, vertical: Healthcare, subdomains: [patient_engagement] }
+  - { id: pp.kpi.first_pass_pay_rate, name: Payer First Pass Pay Rate, formula: claims_paid_first_pass / total_claims, unit: "%", direction: higher_is_better, vertical: Healthcare, subdomains: [payer_provider] }
+  - { id: pp.kpi.medical_loss_ratio, name: Medical Loss Ratio, formula: medical_costs / premiums, unit: "%", direction: target_band, vertical: Healthcare, subdomains: [payer_provider] }
+  - { id: pp.kpi.prior_auth_turnaround, name: Prior Auth Turnaround, formula: avg(decision_ts - request_ts), unit: hours, direction: lower_is_better, vertical: Healthcare, subdomains: [payer_provider] }
+  - { id: rcm.kpi.dnfb, name: Discharged Not Final Billed, formula: dnfb_dollars / daily_billing, unit: days, direction: lower_is_better, vertical: Healthcare, subdomains: [revenue_cycle] }
+  - { id: rcm.kpi.first_pass_paid, name: First-Pass Paid %, formula: paid_no_resub / claims, unit: "%", direction: higher_is_better, vertical: Healthcare, subdomains: [revenue_cycle] }
+  - { id: rcm.kpi.denial_rate, name: Denial Rate, formula: denied_claims / submitted, unit: "%", direction: lower_is_better, vertical: Healthcare, subdomains: [revenue_cycle] }
+  - { id: rcm.kpi.dso_ar, name: Days in AR, formula: ar / daily_revenue, unit: days, direction: lower_is_better, vertical: Healthcare, subdomains: [revenue_cycle] }
+  - { id: th.kpi.visit_volume, name: Virtual Visit Volume, formula: count(visits), unit: visits, direction: higher_is_better, vertical: Healthcare, subdomains: [telehealth] }
+  - { id: th.kpi.no_show, name: Telehealth No-Show Rate, formula: no_show / scheduled, unit: "%", direction: lower_is_better, vertical: Healthcare, subdomains: [telehealth] }
+  - { id: vbc.kpi.raf_capture, name: RAF Score Capture, formula: captured_raf / expected_raf, unit: "%", direction: higher_is_better, vertical: Healthcare, subdomains: [value_based_care] }
+  - { id: vbc.kpi.hedis_stars, name: HEDIS/Stars Composite, formula: weighted_avg(measure_pct), unit: stars, direction: higher_is_better, vertical: Healthcare, subdomains: [value_based_care] }
+  - { id: vbc.kpi.readmit_30, name: 30-Day Readmit Rate, formula: readmits / discharges, unit: "%", direction: lower_is_better, vertical: Healthcare, subdomains: [value_based_care] }
+  - { id: ct.kpi.enrollment_rate, name: Trial Enrollment Rate, formula: enrolled / target_enrolment, unit: "%", direction: higher_is_better, vertical: LifeSciences, subdomains: [clinical_trials] }
+  - { id: ct.kpi.site_activation_time, name: Site Activation Cycle Time, formula: avg(active_ts - selected_ts), unit: days, direction: lower_is_better, vertical: LifeSciences, subdomains: [clinical_trials] }
+  - { id: ct.kpi.dropout_rate, name: Patient Dropout Rate, formula: dropouts / enrolled, unit: "%", direction: lower_is_better, vertical: LifeSciences, subdomains: [clinical_trials] }
+  - { id: rwe.kpi.cohort_match, name: Cohort Match Rate, formula: matched_patients / target, unit: "%", direction: higher_is_better, vertical: LifeSciences, subdomains: [real_world_evidence] }
+  - { id: rwe.kpi.data_freshness, name: RWE Data Freshness, formula: avg(today - latest_record_dt), unit: days, direction: lower_is_better, vertical: LifeSciences, subdomains: [real_world_evidence] }
+  - { id: psc.kpi.cold_chain_excursions, name: Cold Chain Excursions, formula: excursions / shipments, unit: "%", direction: lower_is_better, vertical: LifeSciences, subdomains: [pharma_supply_chain] }
+  - { id: psc.kpi.dscsa_coverage, name: DSCSA Coverage, formula: compliant / total_units, unit: "%", direction: higher_is_better, vertical: LifeSciences, subdomains: [pharma_supply_chain] }
+
+  # ============================================================
+  # Breadth — Telecom / Media / HiTech
+  # ============================================================
+  - { id: net.kpi.availability, name: Network Availability, formula: uptime / total_time, unit: "%", direction: higher_is_better, vertical: Telecom, subdomains: [network_operations] }
+  - { id: net.kpi.mttr, name: Network MTTR, formula: avg(restore_ts - detect_ts), unit: minutes, direction: lower_is_better, vertical: Telecom, subdomains: [network_operations] }
+  - { id: net.kpi.packet_loss, name: Packet Loss, formula: lost / sent, unit: "%", direction: lower_is_better, vertical: Telecom, subdomains: [network_operations] }
+  - { id: net.kpi.jitter, name: Jitter, formula: avg(packet_jitter_ms), unit: ms, direction: lower_is_better, vertical: Telecom, subdomains: [network_operations] }
+  - { id: bss.kpi.order_fallout, name: Order Fallout Rate, formula: failed_orders / total_orders, unit: "%", direction: lower_is_better, vertical: Telecom, subdomains: [bss_oss] }
+  - { id: bss.kpi.bill_dispute_rate, name: Bill Dispute Rate, formula: disputed_bills / total_bills, unit: "%", direction: lower_is_better, vertical: Telecom, subdomains: [bss_oss] }
+  - { id: bss.kpi.activation_time, name: Service Activation Time, formula: avg(active_ts - order_ts), unit: hours, direction: lower_is_better, vertical: Telecom, subdomains: [bss_oss] }
+  - { id: bss.kpi.revenue_leakage, name: Telecom Revenue Leakage, formula: leakage_amount / billed_amount, unit: "%", direction: lower_is_better, vertical: Telecom, subdomains: [bss_oss] }
+  - { id: chrn.kpi.monthly_churn, name: Monthly Churn Rate, formula: churners / starting_subs, unit: "%", direction: lower_is_better, vertical: Telecom, subdomains: [churn_management] }
+  - { id: chrn.kpi.win_back, name: Win-back Rate, formula: regained / churned, unit: "%", direction: higher_is_better, vertical: Telecom, subdomains: [churn_management] }
+  - { id: chrn.kpi.lifetime_months, name: Avg Subscriber Lifetime, formula: 1 / monthly_churn_rate, unit: months, direction: higher_is_better, vertical: Telecom, subdomains: [churn_management] }
+  - { id: care.kpi.csat, name: Care CSAT, formula: avg(post_call_csat), unit: index, direction: higher_is_better, vertical: Telecom, subdomains: [customer_care] }
+  - { id: care.kpi.fcr, name: First Contact Resolution, formula: resolved_first_contact / total_contacts, unit: "%", direction: higher_is_better, vertical: Telecom, subdomains: [customer_care] }
+  - { id: care.kpi.aht, name: Average Handle Time, formula: total_handle_time / contacts, unit: seconds, direction: lower_is_better, vertical: Telecom, subdomains: [customer_care] }
+  - { id: care.kpi.containment_rate, name: Self-Service Containment, formula: contained_self_serve / attempted_self_serve, unit: "%", direction: higher_is_better, vertical: Telecom, subdomains: [customer_care] }
+  - { id: bill.kpi.bill_accuracy, name: Bill Accuracy, formula: clean_bills / total_bills, unit: "%", direction: higher_is_better, vertical: Telecom, subdomains: [subscriber_billing] }
+  - { id: bill.kpi.dso, name: Subscriber DSO, formula: ar / daily_revenue, unit: days, direction: lower_is_better, vertical: Telecom, subdomains: [subscriber_billing] }
+  - { id: ns.kpi.active_slices, name: Active Slices, formula: count(active_slices), unit: slices, direction: higher_is_better, vertical: Telecom, subdomains: [network_slicing_5g] }
+  - { id: ns.kpi.slice_sla_met, name: Slice SLA Compliance, formula: compliant / total, unit: "%", direction: higher_is_better, vertical: Telecom, subdomains: [network_slicing_5g] }
+  - { id: ad.kpi.fill_rate, name: Ad Fill Rate, formula: filled_impressions / total_requests, unit: "%", direction: higher_is_better, vertical: Media, subdomains: [ad_tech, programmatic_advertising] }
+  - { id: ad.kpi.ecpm, name: eCPM, formula: revenue / impressions * 1000, unit: USD, direction: higher_is_better, vertical: Media, subdomains: [ad_tech] }
+  - { id: ad.kpi.viewability, name: Viewability, formula: viewable_imps / measured_imps, unit: "%", direction: higher_is_better, vertical: Media, subdomains: [ad_tech, programmatic_advertising] }
+  - { id: ad.kpi.iva_rate, name: Invalid Traffic Rate, formula: ivt_impressions / total_impressions, unit: "%", direction: lower_is_better, vertical: Media, subdomains: [ad_tech, programmatic_advertising] }
+  - { id: adi.kpi.sell_through, name: Inventory Sell-Through Rate, formula: sold_impressions / forecast_impressions, unit: "%", direction: higher_is_better, vertical: Media, subdomains: [ad_inventory] }
+  - { id: adi.kpi.makegood_rate, name: Makegood Rate, formula: makegood_imps / delivered_imps, unit: "%", direction: lower_is_better, vertical: Media, subdomains: [ad_inventory] }
+  - { id: cmeta.kpi.completeness, name: Metadata Completeness, formula: filled_fields / required_fields, unit: "%", direction: higher_is_better, vertical: Media, subdomains: [content_metadata] }
+  - { id: cmeta.kpi.rights_breaches, name: Rights Window Breaches, formula: breaches_per_month, unit: count, direction: lower_is_better, vertical: Media, subdomains: [content_metadata] }
+  - { id: qoe.kpi.rebuffer_ratio, name: Video Rebuffer Ratio, formula: rebuffer_time / play_time, unit: "%", direction: lower_is_better, vertical: Media, subdomains: [video_streaming_qoe] }
+  - { id: qoe.kpi.startup_time, name: Video Startup Time, formula: avg(first_frame - request), unit: ms, direction: lower_is_better, vertical: Media, subdomains: [video_streaming_qoe] }
+  - { id: qoe.kpi.failure_rate, name: Playback Failure Rate, formula: failed / attempted, unit: "%", direction: lower_is_better, vertical: Media, subdomains: [video_streaming_qoe] }
+  - { id: dt.kpi.event_lag, name: Event Pipeline Lag P95, formula: p95(received_ts - event_ts), unit: seconds, direction: lower_is_better, vertical: HiTech, subdomains: [device_telemetry] }
+  - { id: dt.kpi.crash_free_session, name: Crash-Free Session Rate, formula: clean_sessions / total_sessions, unit: "%", direction: higher_is_better, vertical: HiTech, subdomains: [device_telemetry] }
+  - { id: fo.kpi.unit_cost, name: Cost per Active User, formula: cloud_spend / mau, unit: USD, direction: lower_is_better, vertical: HiTech, subdomains: [cloud_finops] }
+  - { id: fo.kpi.tag_coverage, name: Resource Tag Coverage, formula: tagged / total_resources, unit: "%", direction: higher_is_better, vertical: HiTech, subdomains: [cloud_finops] }
+  - { id: fo.kpi.savings_plan_coverage, name: Reserved/Savings Coverage, formula: covered_hours / on_demand_hours, unit: "%", direction: higher_is_better, vertical: HiTech, subdomains: [cloud_finops] }
+  - { id: fo.kpi.idle_spend, name: Idle Resource Spend, formula: idle_cost / total_cost, unit: "%", direction: lower_is_better, vertical: HiTech, subdomains: [cloud_finops] }
+  - { id: fo.kpi.budget_variance, name: Cloud Budget Variance, formula: actual / forecast - 1, unit: "%", direction: target_band, vertical: HiTech, subdomains: [cloud_finops] }
+  - { id: dr.kpi.active_devs, name: Monthly Active Developers, formula: unique_active_devs, unit: devs, direction: higher_is_better, vertical: HiTech, subdomains: [developer_relations] }
+  - { id: dr.kpi.api_call_growth, name: API Call Growth (MoM), formula: this_month / last_month - 1, unit: "%", direction: higher_is_better, vertical: HiTech, subdomains: [developer_relations] }
+  - { id: dr.kpi.time_to_first_call, name: Time to First API Call, formula: avg(first_call - signup), unit: minutes, direction: lower_is_better, vertical: HiTech, subdomains: [developer_relations] }
+  - { id: eda.kpi.coverage, name: Functional Coverage, formula: covered_bins / total, unit: "%", direction: higher_is_better, vertical: HiTech, subdomains: [chip_design_eda] }
+  - { id: eda.kpi.regression_pass, name: Regression Pass Rate, formula: pass / runs, unit: "%", direction: higher_is_better, vertical: HiTech, subdomains: [chip_design_eda] }
+  - { id: eda.kpi.tapeout_slippage, name: Tapeout Slippage, formula: actual - planned, unit: days, direction: lower_is_better, vertical: HiTech, subdomains: [chip_design_eda] }
+  - { id: lic.kpi.activation_rate, name: License Activation Rate, formula: activated / shipped, unit: "%", direction: higher_is_better, vertical: HiTech, subdomains: [license_management] }
+  - { id: lic.kpi.utilization, name: License Seat Utilization, formula: active_seats / purchased_seats, unit: "%", direction: target_band, vertical: HiTech, subdomains: [license_management] }
+  - { id: saas.kpi.arr, name: ARR, formula: sum(annualised_recurring_revenue), unit: USD, direction: higher_is_better, vertical: HiTech, subdomains: [saas_metrics] }
+  - { id: saas.kpi.nrr, name: Net Revenue Retention, formula: ending_arr / starting_arr_excl_new, unit: "%", direction: higher_is_better, vertical: HiTech, subdomains: [saas_metrics] }
+  - { id: saas.kpi.gross_churn, name: Gross Logo Churn, formula: churned_logos / starting_logos, unit: "%", direction: lower_is_better, vertical: HiTech, subdomains: [saas_metrics] }
+  - { id: saas.kpi.cac_payback, name: CAC Payback, formula: cac / monthly_gross_margin, unit: months, direction: lower_is_better, vertical: HiTech, subdomains: [saas_metrics] }
+  - { id: saas.kpi.ltv_cac, name: LTV / CAC, formula: ltv / cac, unit: ratio, direction: higher_is_better, vertical: HiTech, subdomains: [saas_metrics] }
+
+  # ============================================================
+  # Breadth — Public Sector / Professional Services / Logistics
+  # ============================================================
+  - { id: tax.kpi.voluntary_compliance, name: Voluntary Compliance Rate, formula: voluntary_paid / total_owed, unit: "%", direction: higher_is_better, vertical: PublicSector, subdomains: [tax_administration] }
+  - { id: tax.kpi.collection_efficiency, name: Tax Collection Efficiency, formula: collected / assessed, unit: "%", direction: higher_is_better, vertical: PublicSector, subdomains: [tax_administration] }
+  - { id: tax.kpi.refund_cycle_time, name: Refund Cycle Time, formula: avg(refund_ts - filed_ts), unit: days, direction: lower_is_better, vertical: PublicSector, subdomains: [tax_administration] }
+  - { id: tax.kpi.fraud_detection, name: Tax Fraud Detection Rate, formula: fraud_caught / fraud_attempted, unit: "%", direction: higher_is_better, vertical: PublicSector, subdomains: [tax_administration] }
+  - { id: ba.kpi.eligibility_accuracy, name: Eligibility Accuracy, formula: correct_decisions / sampled_decisions, unit: "%", direction: higher_is_better, vertical: PublicSector, subdomains: [benefits_administration] }
+  - { id: ba.kpi.payment_error_rate, name: Improper Payment Rate, formula: improper_payments / total_payments, unit: "%", direction: lower_is_better, vertical: PublicSector, subdomains: [benefits_administration, social_services_case_management] }
+  - { id: ba.kpi.application_backlog, name: Application Backlog, formula: pending_apps_over_sla, unit: applications, direction: lower_is_better, vertical: PublicSector, subdomains: [benefits_administration] }
+  - { id: ct.kpi.case_clear_rate, name: Court Case Clearance Rate, formula: dispositions / filings, unit: "%", direction: higher_is_better, vertical: PublicSector, subdomains: [court_records] }
+  - { id: ct.kpi.time_to_disposition, name: Court Time-to-Disposition, formula: avg(disposed_dt - filed_dt), unit: days, direction: lower_is_better, vertical: PublicSector, subdomains: [court_records] }
+  - { id: ct.kpi.efile_share, name: E-File Share, formula: efiled / total_filings, unit: "%", direction: higher_is_better, vertical: PublicSector, subdomains: [court_records] }
+  - { id: lic.kpi.cycle_time, name: Permit Cycle Time, formula: avg(issued_dt - submitted_dt), unit: days, direction: lower_is_better, vertical: PublicSector, subdomains: [licensing_permits] }
+  - { id: lic.kpi.online_share, name: Online Submission Share, formula: online_apps / total_apps, unit: "%", direction: higher_is_better, vertical: PublicSector, subdomains: [licensing_permits] }
+  - { id: er.kpi.response_time, name: Emergency Response Time, formula: avg(arrived - dispatched), unit: minutes, direction: lower_is_better, vertical: PublicSector, subdomains: [emergency_response] }
+  - { id: er.kpi.priority1_compliance, name: Priority-1 SLA Compliance, formula: met / total, unit: "%", direction: higher_is_better, vertical: PublicSector, subdomains: [emergency_response] }
+  - { id: int.kpi.report_cycle, name: Intel Report Production Cycle, formula: avg(publish_dt - tasking_dt), unit: hours, direction: lower_is_better, vertical: PublicSector, subdomains: [intelligence_analytics] }
+  - { id: dl.kpi.mission_capable, name: Mission Capable Rate, formula: mc_hours / possessed_hours, unit: "%", direction: higher_is_better, vertical: PublicSector, subdomains: [defense_logistics] }
+  - { id: dl.kpi.fill_rate, name: Requisition Fill Rate, formula: filled / requisitions, unit: "%", direction: higher_is_better, vertical: PublicSector, subdomains: [defense_logistics] }
+  - { id: ssc.kpi.case_load, name: Caseworker Load, formula: open_cases / caseworker_fte, unit: cases/fte, direction: lower_is_better, vertical: PublicSector, subdomains: [social_services_case_management] }
+  - { id: ssc.kpi.outcome_attainment, name: Service Outcome Attainment, formula: attained / planned, unit: "%", direction: higher_is_better, vertical: PublicSector, subdomains: [social_services_case_management] }
+  - { id: bench.kpi.utilization, name: Billable Utilization, formula: billable_hours / available_hours, unit: "%", direction: higher_is_better, vertical: ProfessionalServices, subdomains: [bench_management] }
+  - { id: bench.kpi.bench_pct, name: Bench %, formula: bench_fte / total_fte, unit: "%", direction: lower_is_better, vertical: ProfessionalServices, subdomains: [bench_management] }
+  - { id: bench.kpi.staffing_lag, name: Time-to-Staff, formula: avg(staffed_dt - request_dt), unit: days, direction: lower_is_better, vertical: ProfessionalServices, subdomains: [bench_management] }
+  - { id: bench.kpi.realization, name: Rate Realization, formula: realized_rate / list_rate, unit: "%", direction: higher_is_better, vertical: ProfessionalServices, subdomains: [bench_management] }
+  - { id: aw.kpi.engagement_realisation, name: Engagement Realisation, formula: collected / budget, unit: "%", direction: higher_is_better, vertical: ProfessionalServices, subdomains: [audit_workflow] }
+  - { id: aw.kpi.timeliness, name: Audit Timeliness, formula: on_time / total, unit: "%", direction: higher_is_better, vertical: ProfessionalServices, subdomains: [audit_workflow] }
+  - { id: lcm.kpi.realisation, name: Legal Realisation Rate, formula: collected / standard_billable, unit: "%", direction: higher_is_better, vertical: ProfessionalServices, subdomains: [legal_case_management] }
+  - { id: lcm.kpi.cycle_time, name: Matter Cycle Time, formula: avg(closed - opened), unit: days, direction: lower_is_better, vertical: ProfessionalServices, subdomains: [legal_case_management] }
+  - { id: tb.kpi.lockup, name: Lockup Days, formula: wip_days + ar_days, unit: days, direction: lower_is_better, vertical: ProfessionalServices, subdomains: [time_and_billing] }
+  - { id: tb.kpi.realization_rate, name: Time & Billing Realization, formula: collected / standard, unit: "%", direction: higher_is_better, vertical: ProfessionalServices, subdomains: [time_and_billing] }
+  - { id: km.kpi.contribution_rate, name: KM Contribution Rate, formula: contributors / billable_fte, unit: "%", direction: higher_is_better, vertical: ProfessionalServices, subdomains: [knowledge_management] }
+  - { id: km.kpi.reuse_rate, name: Asset Reuse Rate, formula: reused_assets / new_engagements, unit: ratio, direction: higher_is_better, vertical: ProfessionalServices, subdomains: [knowledge_management] }
+  - { id: ex.kpi.policy_compliance, name: Expense Policy Compliance, formula: compliant / submitted, unit: "%", direction: higher_is_better, vertical: ProfessionalServices, subdomains: [expense_management] }
+  - { id: ex.kpi.reimburse_cycle, name: Reimbursement Cycle, formula: avg(reimbursed_dt - submitted_dt), unit: days, direction: lower_is_better, vertical: ProfessionalServices, subdomains: [expense_management] }
+  - { id: clm.kpi.cycle_time_contract, name: Contract Cycle Time, formula: avg(signed_dt - draft_dt), unit: days, direction: lower_is_better, vertical: ProfessionalServices, subdomains: [contract_management] }
+  - { id: clm.kpi.obligation_compliance, name: Obligation On-Time Rate, formula: completed_on_time / due_obligations, unit: "%", direction: higher_is_better, vertical: ProfessionalServices, subdomains: [contract_management] }
+  - { id: ftel.kpi.fuel_efficiency, name: Fleet Fuel Efficiency, formula: miles / gallons, unit: mpg, direction: higher_is_better, vertical: TTH, subdomains: [fleet_telematics] }
+  - { id: ftel.kpi.harsh_events, name: Harsh Events per 100mi, formula: harsh_events / miles_100, unit: count, direction: lower_is_better, vertical: TTH, subdomains: [fleet_telematics] }
+  - { id: ftel.kpi.idle_time_pct, name: Vehicle Idle Time %, formula: idle_minutes / engine_on_minutes, unit: "%", direction: lower_is_better, vertical: TTH, subdomains: [fleet_telematics] }
+  - { id: lm.kpi.first_attempt_success, name: First-Attempt Delivery Success, formula: first_attempt_delivered / total_attempts, unit: "%", direction: higher_is_better, vertical: TTH, subdomains: [last_mile_logistics, last_mile_delivery] }
+  - { id: lm.kpi.cost_per_stop, name: Cost per Stop, formula: total_route_cost / stops, unit: USD, direction: lower_is_better, vertical: TTH, subdomains: [last_mile_logistics, last_mile_delivery] }
+  - { id: lm.kpi.on_time_window, name: On-Time Window Rate, formula: deliveries_in_window / total_deliveries, unit: "%", direction: higher_is_better, vertical: TTH, subdomains: [last_mile_logistics] }
+  - { id: rs.kpi.eta_p90, name: Ride ETA P90 Accuracy, formula: pct_within_2min, unit: "%", direction: higher_is_better, vertical: TTH, subdomains: [ride_share_dispatch] }
+  - { id: rs.kpi.match_rate, name: Ride Match Rate, formula: matched_requests / total_requests, unit: "%", direction: higher_is_better, vertical: TTH, subdomains: [ride_share_dispatch] }
+  - { id: rs.kpi.driver_utilization, name: Driver Utilization, formula: paid_minutes / online_minutes, unit: "%", direction: higher_is_better, vertical: TTH, subdomains: [ride_share_dispatch] }
+  - { id: to.kpi.on_time, name: Transit On-Time Performance, formula: on_time / arrivals, unit: "%", direction: higher_is_better, vertical: PublicSector, subdomains: [transit_operations] }
+  - { id: to.kpi.headway_adherence, name: Headway Adherence, formula: within_band / observations, unit: "%", direction: higher_is_better, vertical: PublicSector, subdomains: [transit_operations] }
+  - { id: to.kpi.ridership, name: Daily Ridership, formula: sum(boardings), unit: passengers, direction: higher_is_better, vertical: PublicSector, subdomains: [transit_operations] }
+  - { id: sc.kpi.perfect_order_rate, name: Perfect Order Rate, formula: perfect_orders / total_orders, unit: "%", direction: higher_is_better, vertical: TTH, subdomains: [supply_chain] }
+  - { id: sc.kpi.dc_throughput, name: DC Throughput, formula: lines_shipped / labor_hours, unit: lines/hr, direction: higher_is_better, vertical: TTH, subdomains: [supply_chain] }
+  - { id: sc.kpi.cost_per_unit_shipped, name: Cost per Unit Shipped, formula: total_logistics_cost / units_shipped, unit: USD, direction: lower_is_better, vertical: TTH, subdomains: [supply_chain] }
+  - { id: sc.kpi.on_time_delivery, name: Supply Chain On-Time Delivery, formula: on_time_deliveries / total_deliveries, unit: "%", direction: higher_is_better, vertical: TTH, subdomains: [supply_chain] }
+  - { id: sc.kpi.inventory_accuracy, name: Inventory Accuracy, formula: counted_matches / counted_total, unit: "%", direction: higher_is_better, vertical: TTH, subdomains: [supply_chain] }
+  - { id: scv.kpi.eta_accuracy, name: Shipment ETA Accuracy, formula: abs(actual - eta) <= 1d, unit: "%", direction: higher_is_better, vertical: TTH, subdomains: [supply_chain_visibility] }
+  - { id: scv.kpi.exception_rate, name: Shipment Exception Rate, formula: exceptions / shipments, unit: "%", direction: lower_is_better, vertical: TTH, subdomains: [supply_chain_visibility] }
+  - { id: scv.kpi.dwell_time, name: Shipment Dwell Time, formula: avg(dwell), unit: hours, direction: lower_is_better, vertical: TTH, subdomains: [supply_chain_visibility] }
+  - { id: mp.kpi.gmv, name: Marketplace GMV, formula: sum(order_value), unit: USD, direction: higher_is_better, vertical: Retail, subdomains: [marketplace_operations] }
+  - { id: mp.kpi.take_rate, name: Marketplace Take Rate, formula: revenue / gmv, unit: "%", direction: target_band, vertical: Retail, subdomains: [marketplace_operations] }
+  - { id: mp.kpi.bad_actor_rate, name: Bad Actor Rate, formula: removed_actors / total_actors, unit: "%", direction: lower_is_better, vertical: Retail, subdomains: [marketplace_operations] }
+  - { id: mp.kpi.payout_latency, name: Seller Payout Latency, formula: avg(payout_ts - order_complete_ts), unit: hours, direction: lower_is_better, vertical: Retail, subdomains: [marketplace_operations] }
+  - { id: reg.kpi.on_time_filings, name: On-Time Regulatory Filings, formula: filings_on_time / total_filings, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [regulatory_reporting] }
+  - { id: reg.kpi.restatements, name: Regulatory Restatements, formula: restated_reports / submitted_reports, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [regulatory_reporting] }
+  - { id: reg.kpi.lineage_coverage, name: Data Lineage Coverage, formula: data_elements_with_lineage / total, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [regulatory_reporting] }
+  - { id: am.kpi.aum, name: Assets Under Management, formula: sum(market_value), unit: USD, direction: higher_is_better, vertical: BFSI, subdomains: [asset_management] }
+  - { id: am.kpi.alpha, name: Alpha vs Benchmark, formula: return - benchmark, unit: bps, direction: higher_is_better, vertical: BFSI, subdomains: [asset_management] }
+  - { id: am.kpi.sharpe, name: Sharpe Ratio, formula: (return-rf)/stddev, unit: ratio, direction: higher_is_better, vertical: BFSI, subdomains: [asset_management] }
+  - { id: iiot.kpi.energy_per_unit, name: Energy per Unit Produced, formula: kwh / units_produced, unit: kWh/unit, direction: lower_is_better, vertical: Manufacturing, subdomains: [shop_floor_iot] }
+  - { id: iiot.kpi.tag_uptime, name: IoT Tag Stream Uptime, formula: minutes_streaming / total_minutes, unit: "%", direction: higher_is_better, vertical: Manufacturing, subdomains: [shop_floor_iot] }

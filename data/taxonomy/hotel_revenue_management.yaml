@@ -54,10 +54,174 @@ kpis:
 
 dataModel:
   entities:
-    - { name: Reservation, keys: [reservation_id] }
-    - { name: RatePlan, keys: [rate_plan_id] }
-    - { name: RoomNight, keys: [property_id, room_id, night] }
-    - { name: ChannelBooking, keys: [booking_id] }
+    - name: brand
+      keys: [brand_id]
+      attributes:
+        - { name: brand_id, type: varchar, isPrimaryKey: true }
+        - { name: brand_name, type: varchar }
+        - { name: parent_company, type: varchar }
+      relationships:
+        - { to: property, kind: one_to_many, via: brand_id }
+    - name: property
+      keys: [property_id]
+      attributes:
+        - { name: property_id, type: varchar, isPrimaryKey: true }
+        - { name: property_name, type: varchar }
+        - { name: brand_id, type: varchar, isForeignKey: true, references: brand.brand_id }
+        - { name: chain_code, type: varchar(8) }
+        - { name: city, type: varchar }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: timezone, type: varchar(64) }
+        - { name: total_rooms, type: integer }
+      relationships:
+        - { to: room, kind: one_to_many, via: property_id }
+        - { to: rate_plan, kind: one_to_many, via: property_id }
+        - { to: reservation, kind: one_to_many, via: property_id }
+    - name: room
+      keys: [room_id]
+      attributes:
+        - { name: room_id, type: varchar, isPrimaryKey: true }
+        - { name: property_id, type: varchar, isForeignKey: true, references: property.property_id }
+        - { name: room_number, type: varchar(16) }
+        - { name: room_type_code, type: varchar(16), isForeignKey: true, references: room_type.room_type_code }
+        - { name: floor, type: smallint }
+    - name: room_type
+      keys: [room_type_code]
+      attributes:
+        - { name: room_type_code, type: varchar(16), isPrimaryKey: true }
+        - { name: description, type: varchar }
+        - { name: max_occupancy, type: smallint }
+    - name: rate_plan
+      keys: [rate_plan_id]
+      attributes:
+        - { name: rate_plan_id, type: varchar, isPrimaryKey: true }
+        - { name: property_id, type: varchar, isForeignKey: true, references: property.property_id }
+        - { name: rate_plan_code, type: varchar(16) }
+        - { name: rate_plan_name, type: varchar }
+        - { name: market_segment, type: varchar(32) }
+        - { name: is_packageable, type: boolean }
+      relationships:
+        - { to: reservation, kind: one_to_many, via: rate_plan_id }
+    - name: bar_rate
+      keys: [property_id, room_type_code, stay_date]
+      attributes:
+        - { name: property_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: property.property_id }
+        - { name: room_type_code, type: varchar(16), isPrimaryKey: true, isForeignKey: true, references: room_type.room_type_code }
+        - { name: stay_date, type: date, isPrimaryKey: true }
+        - { name: bar_amount, type: "decimal(10,2)" }
+        - { name: currency, type: varchar(3) }
+        - { name: set_at, type: timestamp }
+        - { name: set_by, type: varchar }
+    - name: rate_restriction
+      keys: [property_id, rate_plan_id, room_type_code, stay_date]
+      attributes:
+        - { name: property_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: property.property_id }
+        - { name: rate_plan_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: rate_plan.rate_plan_id }
+        - { name: room_type_code, type: varchar(16), isPrimaryKey: true, isForeignKey: true, references: room_type.room_type_code }
+        - { name: stay_date, type: date, isPrimaryKey: true }
+        - { name: min_los, type: smallint }
+        - { name: max_los, type: smallint }
+        - { name: closed_to_arrival, type: boolean }
+        - { name: closed_to_departure, type: boolean }
+    - name: channel
+      keys: [channel_id]
+      attributes:
+        - { name: channel_id, type: varchar, isPrimaryKey: true }
+        - { name: channel_name, type: varchar }
+        - { name: channel_type, type: varchar(16) }
+      relationships:
+        - { to: reservation, kind: one_to_many, via: channel_id }
+    - name: guest
+      keys: [guest_id]
+      attributes:
+        - { name: guest_id, type: varchar, isPrimaryKey: true }
+        - { name: given_name, type: varchar }
+        - { name: family_name, type: varchar }
+        - { name: loyalty_id, type: varchar }
+        - { name: country_iso2, type: varchar(2) }
+    - name: reservation
+      keys: [reservation_id]
+      attributes:
+        - { name: reservation_id, type: varchar, isPrimaryKey: true }
+        - { name: property_id, type: varchar, isForeignKey: true, references: property.property_id }
+        - { name: rate_plan_id, type: varchar, isForeignKey: true, references: rate_plan.rate_plan_id }
+        - { name: room_type_code, type: varchar(16), isForeignKey: true, references: room_type.room_type_code }
+        - { name: guest_id, type: varchar, isForeignKey: true, references: guest.guest_id }
+        - { name: channel_id, type: varchar, isForeignKey: true, references: channel.channel_id }
+        - { name: arrival_date, type: date }
+        - { name: departure_date, type: date }
+        - { name: booking_ts, type: timestamp }
+        - { name: cancelled_ts, type: timestamp }
+        - { name: booking_status, type: varchar(16) }
+        - { name: total_amount, type: "decimal(12,2)" }
+        - { name: currency, type: varchar(3) }
+      relationships:
+        - { to: room_night, kind: one_to_many, via: reservation_id }
+        - { to: cancellation, kind: one_to_one, via: reservation_id }
+    - name: room_night
+      keys: [property_id, room_id, stay_date]
+      attributes:
+        - { name: property_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: property.property_id }
+        - { name: room_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: room.room_id }
+        - { name: stay_date, type: date, isPrimaryKey: true }
+        - { name: reservation_id, type: varchar, isForeignKey: true, references: reservation.reservation_id }
+        - { name: rate_amount, type: "decimal(10,2)" }
+    - name: inventory_balance
+      keys: [property_id, room_type_code, stay_date]
+      attributes:
+        - { name: property_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: property.property_id }
+        - { name: room_type_code, type: varchar(16), isPrimaryKey: true, isForeignKey: true, references: room_type.room_type_code }
+        - { name: stay_date, type: date, isPrimaryKey: true }
+        - { name: rooms_available, type: integer }
+        - { name: rooms_held, type: integer }
+        - { name: rooms_sold, type: integer }
+        - { name: overbooking_limit, type: smallint }
+    - name: cancellation
+      keys: [cancellation_id]
+      attributes:
+        - { name: cancellation_id, type: varchar, isPrimaryKey: true }
+        - { name: reservation_id, type: varchar, isForeignKey: true, references: reservation.reservation_id }
+        - { name: cancelled_ts, type: timestamp }
+        - { name: cancellation_fee, type: "decimal(12,2)" }
+        - { name: reason_code, type: varchar(16) }
+    - name: no_show
+      keys: [no_show_id]
+      attributes:
+        - { name: no_show_id, type: varchar, isPrimaryKey: true }
+        - { name: reservation_id, type: varchar, isForeignKey: true, references: reservation.reservation_id }
+        - { name: arrival_date, type: date }
+        - { name: fee_charged, type: "decimal(12,2)" }
+    - name: compset_benchmark
+      keys: [property_id, benchmark_week_start]
+      attributes:
+        - { name: property_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: property.property_id }
+        - { name: benchmark_week_start, type: date, isPrimaryKey: true }
+        - { name: compset_revpar, type: "decimal(10,2)" }
+        - { name: compset_adr, type: "decimal(10,2)" }
+        - { name: compset_occupancy, type: "decimal(5,4)" }
+    - name: demand_forecast
+      keys: [property_id, room_type_code, stay_date, forecast_run_ts]
+      attributes:
+        - { name: property_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: property.property_id }
+        - { name: room_type_code, type: varchar(16), isPrimaryKey: true, isForeignKey: true, references: room_type.room_type_code }
+        - { name: stay_date, type: date, isPrimaryKey: true }
+        - { name: forecast_run_ts, type: timestamp, isPrimaryKey: true }
+        - { name: forecasted_rooms, type: integer }
+        - { name: forecasted_revenue, type: "decimal(12,2)" }
+    - name: event_calendar
+      keys: [event_id]
+      attributes:
+        - { name: event_id, type: varchar, isPrimaryKey: true }
+        - { name: property_id, type: varchar, isForeignKey: true, references: property.property_id }
+        - { name: event_name, type: varchar }
+        - { name: event_start, type: date }
+        - { name: event_end, type: date }
+        - { name: impact_score, type: smallint }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/hotel_revenue_management_3nf.sql
+  vault: modeling/ddl/hotel_revenue_management_vault.sql
+  dimensional: modeling/ddl/hotel_revenue_management_dim.sql
 
 sourceSystems:
   - { vendor: Oracle, product: Opera PMS, category: PMS }

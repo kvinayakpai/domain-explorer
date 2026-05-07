@@ -32,6 +32,7 @@ KpiDirection = Literal["higher_is_better", "lower_is_better", "target_band"]
 PersonaLevel = Literal["C-suite", "VP", "Director", "Manager", "IC"]
 ConnectorLatency = Literal["realtime", "near-realtime", "batch"]
 ConnectorMode = Literal["push", "pull", "stream", "file"]
+RelationshipKind = Literal["one_to_one", "one_to_many", "many_to_many"]
 
 
 class _Strict(BaseModel):
@@ -58,10 +59,33 @@ class Kpi(_Strict):
     decisionsSupported: list[str] = Field(default_factory=list)
 
 
+class EntityAttribute(_Strict):
+    name: str = Field(..., min_length=1)
+    type: str = Field(..., min_length=1)
+    description: str | None = None
+    isPrimaryKey: bool | None = None
+    isForeignKey: bool | None = None
+    references: str | None = None
+
+
+class EntityRelationship(_Strict):
+    to: str = Field(..., min_length=1)
+    kind: RelationshipKind
+    via: str | None = None
+
+
 class Entity(_Strict):
     name: str = Field(..., min_length=1)
     description: str | None = None
     keys: list[str] = Field(default_factory=list)
+    attributes: list[EntityAttribute] = Field(default_factory=list)
+    relationships: list[EntityRelationship] = Field(default_factory=list)
+
+
+class DataModelArtifacts(_Strict):
+    threeNF: str | None = None
+    vault: str | None = None
+    dimensional: str | None = None
 
 
 class DataModel(_Strict):
@@ -89,6 +113,7 @@ class Subdomain(_Strict):
     decisions: list[Decision] = Field(default_factory=list)
     kpis: list[Kpi] = Field(default_factory=list)
     dataModel: DataModel = Field(default_factory=DataModel)
+    dataModelArtifacts: DataModelArtifacts | None = None
     sourceSystems: list[SourceSystem] = Field(default_factory=list)
     connectors: list[Connector] = Field(default_factory=list)
     ingestionChallenges: list[str] = Field(default_factory=list)
@@ -97,6 +122,27 @@ class Subdomain(_Strict):
 
 class KpiRegistryEntry(Kpi):
     vertical: Vertical
+
+
+class KpiMasterEntry(_Strict):
+    id: str = Field(..., min_length=1)
+    name: str = Field(..., min_length=1)
+    formula: str = Field(..., min_length=1)
+    unit: str = Field(..., min_length=1)
+    direction: KpiDirection
+    definition: str | None = None
+    vertical: Vertical | None = None
+    subdomains: list[str] = Field(default_factory=list)
+    related_personas: list[str] = Field(default_factory=list)
+    decisionsSupported: list[str] = Field(default_factory=list)
+
+
+class KpiSqlSpec(_Strict):
+    kpi_id: str = Field(..., min_length=1)
+    threeNF: str | None = None
+    vault: str | None = None
+    dimensional: str | None = None
+    notes: str | None = None
 
 
 class SourceSystemEntry(_Strict):

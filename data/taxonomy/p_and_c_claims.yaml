@@ -50,16 +50,179 @@ kpis:
 
 dataModel:
   entities:
-    - name: Policy
+    - name: policy
       keys: [policy_id]
-    - name: Claim
+      attributes:
+        - { name: policy_id, type: varchar, isPrimaryKey: true }
+        - { name: policyholder_id, type: varchar, isForeignKey: true, references: policyholder.policyholder_id }
+        - { name: product_code, type: varchar(16) }
+        - { name: effective_date, type: date }
+        - { name: expiration_date, type: date }
+        - { name: premium_amount, type: "decimal(14,2)" }
+        - { name: state_iso, type: varchar(2) }
+        - { name: is_active, type: boolean }
+      relationships:
+        - { to: claim, kind: one_to_many, via: policy_id }
+        - { to: coverage, kind: one_to_many, via: policy_id }
+    - name: policyholder
+      keys: [policyholder_id]
+      attributes:
+        - { name: policyholder_id, type: varchar, isPrimaryKey: true }
+        - { name: legal_name, type: varchar }
+        - { name: party_type, type: varchar(16) }
+        - { name: address_line1, type: varchar }
+        - { name: city, type: varchar }
+        - { name: state_iso, type: varchar(2) }
+        - { name: postal_code, type: varchar(16) }
+        - { name: country_iso2, type: varchar(2) }
+      relationships:
+        - { to: policy, kind: one_to_many, via: policyholder_id }
+    - name: coverage
+      keys: [coverage_id]
+      attributes:
+        - { name: coverage_id, type: varchar, isPrimaryKey: true }
+        - { name: policy_id, type: varchar, isForeignKey: true, references: policy.policy_id }
+        - { name: coverage_code, type: varchar(32) }
+        - { name: limit_amount, type: "decimal(14,2)" }
+        - { name: deductible, type: "decimal(14,2)" }
+    - name: claim
       keys: [claim_id]
-    - name: ClaimNote
+      attributes:
+        - { name: claim_id, type: varchar, isPrimaryKey: true }
+        - { name: policy_id, type: varchar, isForeignKey: true, references: policy.policy_id }
+        - { name: fnol_ts, type: timestamp }
+        - { name: loss_date, type: date }
+        - { name: loss_type, type: varchar(32) }
+        - { name: loss_state_iso, type: varchar(2) }
+        - { name: severity, type: varchar(16) }
+        - { name: status, type: varchar(16) }
+        - { name: closed_ts, type: timestamp }
+      relationships:
+        - { to: claim_assignment, kind: one_to_many, via: claim_id }
+        - { to: payout, kind: one_to_many, via: claim_id }
+        - { to: reserve, kind: one_to_many, via: claim_id }
+        - { to: claim_note, kind: one_to_many, via: claim_id }
+    - name: claimant
+      keys: [claimant_id]
+      attributes:
+        - { name: claimant_id, type: varchar, isPrimaryKey: true }
+        - { name: claim_id, type: varchar, isForeignKey: true, references: claim.claim_id }
+        - { name: legal_name, type: varchar }
+        - { name: relationship, type: varchar(32) }
+    - name: adjuster
+      keys: [adjuster_id]
+      attributes:
+        - { name: adjuster_id, type: varchar, isPrimaryKey: true }
+        - { name: full_name, type: varchar }
+        - { name: license_state_iso, type: varchar(2) }
+        - { name: team, type: varchar(32) }
+        - { name: is_siu, type: boolean }
+      relationships:
+        - { to: claim_assignment, kind: one_to_many, via: adjuster_id }
+    - name: claim_assignment
+      keys: [claim_id, adjuster_id, assigned_ts]
+      attributes:
+        - { name: claim_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: claim.claim_id }
+        - { name: adjuster_id, type: varchar, isPrimaryKey: true, isForeignKey: true, references: adjuster.adjuster_id }
+        - { name: assigned_ts, type: timestamp, isPrimaryKey: true }
+    - name: claim_note
       keys: [note_id]
-    - name: Payout
-      keys: [payout_id]
-    - name: Reserve
+      attributes:
+        - { name: note_id, type: varchar, isPrimaryKey: true }
+        - { name: claim_id, type: varchar, isForeignKey: true, references: claim.claim_id }
+        - { name: author_id, type: varchar }
+        - { name: note_ts, type: timestamp }
+        - { name: note_text, type: text }
+        - { name: note_type, type: varchar(16) }
+    - name: reserve
       keys: [reserve_id]
+      attributes:
+        - { name: reserve_id, type: varchar, isPrimaryKey: true }
+        - { name: claim_id, type: varchar, isForeignKey: true, references: claim.claim_id }
+        - { name: reserve_type, type: varchar(16) }
+        - { name: amount, type: "decimal(14,2)" }
+        - { name: set_ts, type: timestamp }
+        - { name: set_by, type: varchar }
+        - { name: is_current, type: boolean }
+    - name: payout
+      keys: [payout_id]
+      attributes:
+        - { name: payout_id, type: varchar, isPrimaryKey: true }
+        - { name: claim_id, type: varchar, isForeignKey: true, references: claim.claim_id }
+        - { name: payee_party_id, type: varchar }
+        - { name: payment_method, type: varchar(16) }
+        - { name: amount, type: "decimal(14,2)" }
+        - { name: issued_ts, type: timestamp }
+        - { name: cleared_ts, type: timestamp }
+    - name: recovery
+      keys: [recovery_id]
+      attributes:
+        - { name: recovery_id, type: varchar, isPrimaryKey: true }
+        - { name: claim_id, type: varchar, isForeignKey: true, references: claim.claim_id }
+        - { name: recovery_type, type: varchar(16) }
+        - { name: amount, type: "decimal(14,2)" }
+        - { name: received_ts, type: timestamp }
+    - name: subrogation
+      keys: [subro_id]
+      attributes:
+        - { name: subro_id, type: varchar, isPrimaryKey: true }
+        - { name: claim_id, type: varchar, isForeignKey: true, references: claim.claim_id }
+        - { name: third_party, type: varchar }
+        - { name: pursued_ts, type: timestamp }
+        - { name: recovered_amount, type: "decimal(14,2)" }
+        - { name: status, type: varchar(16) }
+    - name: fraud_referral
+      keys: [referral_id]
+      attributes:
+        - { name: referral_id, type: varchar, isPrimaryKey: true }
+        - { name: claim_id, type: varchar, isForeignKey: true, references: claim.claim_id }
+        - { name: referred_ts, type: timestamp }
+        - { name: risk_score, type: "decimal(5,2)" }
+        - { name: disposition, type: varchar(16) }
+    - name: litigation
+      keys: [litigation_id]
+      attributes:
+        - { name: litigation_id, type: varchar, isPrimaryKey: true }
+        - { name: claim_id, type: varchar, isForeignKey: true, references: claim.claim_id }
+        - { name: venue, type: varchar }
+        - { name: filed_ts, type: timestamp }
+        - { name: closed_ts, type: timestamp }
+        - { name: outcome, type: varchar(32) }
+    - name: fnol_intake
+      keys: [intake_id]
+      attributes:
+        - { name: intake_id, type: varchar, isPrimaryKey: true }
+        - { name: claim_id, type: varchar, isForeignKey: true, references: claim.claim_id }
+        - { name: channel, type: varchar(16) }
+        - { name: received_ts, type: timestamp }
+        - { name: artifact_count, type: integer }
+    - name: claim_artifact
+      keys: [artifact_id]
+      attributes:
+        - { name: artifact_id, type: varchar, isPrimaryKey: true }
+        - { name: claim_id, type: varchar, isForeignKey: true, references: claim.claim_id }
+        - { name: artifact_type, type: varchar(16) }
+        - { name: storage_uri, type: varchar }
+        - { name: captured_ts, type: timestamp }
+    - name: vendor
+      keys: [vendor_id]
+      attributes:
+        - { name: vendor_id, type: varchar, isPrimaryKey: true }
+        - { name: vendor_name, type: varchar }
+        - { name: vendor_type, type: varchar(32) }
+    - name: vendor_assignment
+      keys: [vendor_assignment_id]
+      attributes:
+        - { name: vendor_assignment_id, type: varchar, isPrimaryKey: true }
+        - { name: claim_id, type: varchar, isForeignKey: true, references: claim.claim_id }
+        - { name: vendor_id, type: varchar, isForeignKey: true, references: vendor.vendor_id }
+        - { name: assigned_ts, type: timestamp }
+        - { name: fee_amount, type: "decimal(14,2)" }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/p_and_c_claims_3nf.sql
+  vault: modeling/ddl/p_and_c_claims_vault.sql
+  dimensional: modeling/ddl/p_and_c_claims_dim.sql
 
 sourceSystems:
   - { vendor: Guidewire, product: ClaimCenter, category: Claims Platform }
