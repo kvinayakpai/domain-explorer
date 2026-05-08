@@ -35,7 +35,7 @@ def _parties(ctx, n=2_000):
     f = ctx.faker
     return pd.DataFrame({
         "party_id": [f"PTY{i:06d}" for i in range(1, n + 1)],
-        "lei": [f"{rng.integers(10**18, 10**19):020d}"[:20] for _ in range(n)],
+        "lei": [f"{rng.integers(0, 10**18):018d}{rng.integers(0, 100):02d}" for _ in range(n)],
         "bic": [f"{rng.choice(['BANK', 'CITI', 'JPMC', 'GSCO', 'MSCO', 'BNPP', 'DEUT', 'BARC', 'HSBC'])}{rng.choice(['US', 'GB', 'DE', 'JP', 'FR'])}{rng.integers(10, 99)}" for _ in range(n)],
         "legal_name": [f.company() for _ in range(n)],
         "party_role": weighted_choice(rng, ["AccountOwner", "AccountServicer", "CSD", "CCP", "CashAgent", "SettlementAgent"], [0.40, 0.25, 0.10, 0.05, 0.10, 0.10], n),
