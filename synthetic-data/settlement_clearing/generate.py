@@ -148,7 +148,7 @@ def _failed_settlement(ctx, ssi, n_target=2_000):
         "ssi_id": src["ssi_id"].to_numpy(),
         "fail_reason": weighted_choice(rng, ["LackOfSecurities", "LackOfCash", "MismatchedInstruction", "CSDOperationalIssue", "OnHold", "PartialSettlement"], [0.45, 0.25, 0.15, 0.05, 0.05, 0.05], n),
         "failed_at": pd.to_datetime(src["created_at"].to_numpy()) + pd.to_timedelta(rng.integers(1, 1440 * 2, size=n), unit="m"),
-        "estimated_resolution_date": (pd.to_datetime(src["settlement_date"]) + pd.to_timedelta(rng.integers(1, 10, size=n), unit="D")).date,
+        "estimated_resolution_date": (pd.to_datetime(src["settlement_date"]) + pd.to_timedelta(rng.integers(1, 10, size=n), unit="D")).dt.date,
         "csdr_penalty_amount": np.round(src["settlement_amount"].to_numpy() * rng.uniform(0.0001, 0.0005, size=n), 2),
         "status": weighted_choice(rng, ["UnderInvestigation", "Resolved", "BuyinTriggered"], [0.40, 0.55, 0.05], n),
     })
