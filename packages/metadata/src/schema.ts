@@ -117,8 +117,18 @@ export const Subdomain = z.object({
   dataModelArtifacts: DataModelArtifacts.optional(),
   sourceSystems: z.array(SourceSystem).default([]),
   connectors: z.array(Connector).default([]),
-  ingestionChallenges: z.array(z.string()).default([]),
-  integrationChallenges: z.array(z.string()).default([]),
+  ingestionChallenges: z.array(
+    z.union([
+      z.string(),
+      z.object({}).passthrough()
+    ])
+  ).default([]),
+  integrationChallenges: z.array(
+    z.union([
+      z.string(),
+      z.object({}).passthrough()
+    ])
+  ).default([]),
 });
 export type Subdomain = z.infer<typeof Subdomain>;
 

@@ -4,7 +4,7 @@ The shapes mirror packages/metadata/src/schema.ts (Zod) so the same YAML
 files validate identically in both ecosystems.
 """
 from enum import Enum
-from typing import Literal
+from typing import Any, Dict, Literal, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -116,8 +116,8 @@ class Subdomain(_Strict):
     dataModelArtifacts: DataModelArtifacts | None = None
     sourceSystems: list[SourceSystem] = Field(default_factory=list)
     connectors: list[Connector] = Field(default_factory=list)
-    ingestionChallenges: list[str] = Field(default_factory=list)
-    integrationChallenges: list[str] = Field(default_factory=list)
+    ingestionChallenges: list[Union[str, Dict[str, Any]]] = Field(default_factory=list)
+    integrationChallenges: list[Union[str, Dict[str, Any]]] = Field(default_factory=list)
 
 
 class KpiRegistryEntry(Kpi):

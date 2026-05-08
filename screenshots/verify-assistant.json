@@ -1,57 +1,57 @@
 {
-  "when": "2026-05-08T13:10:04.354Z",
+  "when": "2026-05-08T13:34:56.834Z",
   "base": "http://127.0.0.1:3030",
   "count": 8,
   "failures": 8,
-  "avgMs": 18399,
+  "avgMs": 32257,
   "results": [
     {
       "vertical": "BFSI",
       "question": "What KPIs does the Head of Payments care about?",
-      "ms": 18603,
-      "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('textarea').first() to be visible\u001b[22m\n"
+      "ms": 33356,
+      "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('input[aria-label=\"Message\"]').first() to be visible\u001b[22m\n"
     },
     {
       "vertical": "BFSI",
       "question": "Walk me from STP rate down to the source-system field.",
-      "ms": 21483,
-      "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('textarea').first() to be visible\u001b[22m\n"
+      "ms": 31990,
+      "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('input[aria-label=\"Message\"]').first() to be visible\u001b[22m\n"
     },
     {
       "vertical": "Insurance",
       "question": "How would I detect claim leakage in our data?",
-      "ms": 18147,
-      "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('textarea').first() to be visible\u001b[22m\n"
+      "ms": 31998,
+      "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('input[aria-label=\"Message\"]').first() to be visible\u001b[22m\n"
     },
     {
       "vertical": "Healthcare",
       "question": "Which FHIR resources feed our care quality KPIs?",
-      "ms": 18065,
-      "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('textarea').first() to be visible\u001b[22m\n"
+      "ms": 32062,
+      "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('input[aria-label=\"Message\"]').first() to be visible\u001b[22m\n"
     },
     {
       "vertical": "LifeSciences",
       "question": "What's the data path from an adverse event to the regulatory submission?",
-      "ms": 17613,
-      "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('textarea').first() to be visible\u001b[22m\n"
+      "ms": 32110,
+      "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('input[aria-label=\"Message\"]').first() to be visible\u001b[22m\n"
     },
     {
       "vertical": "Retail",
       "question": "Why is my markdown rate spiking in store cluster 3?",
-      "ms": 17711,
-      "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('textarea').first() to be visible\u001b[22m\n"
+      "ms": 31967,
+      "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('input[aria-label=\"Message\"]').first() to be visible\u001b[22m\n"
     },
     {
       "vertical": "Manufacturing",
       "question": "Which data sources do I need to compute OEE end-to-end?",
-      "ms": 17596,
-      "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('textarea').first() to be visible\u001b[22m\n"
+      "ms": 31998,
+      "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('input[aria-label=\"Message\"]').first() to be visible\u001b[22m\n"
     },
     {
       "vertical": "CrossCutting",
       "question": "What's the difference between 3NF and Data Vault?",
-      "ms": 17973,
-      "error": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('textarea').first() to be visible\u001b[22m\n"
+      "ms": 32572,
+      "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('input[aria-label=\"Message\"]').first() to be visible\u001b[22m\n"
     }
   ]
 }
