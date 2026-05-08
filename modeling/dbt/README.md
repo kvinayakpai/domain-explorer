@@ -14,10 +14,10 @@ modeling/dbt/
   packages.yml                # dbt-utils
   models/
     payments/                       # 10 stg + 6 int + 6 mart  (39 tests)
-    p_and_c_claims/                 # 10 stg + 6 int + 6 mart
-    merchandising/                  # 10 stg + 5 int + 6 mart
-    demand_planning/                # 10 stg + 5 int + 5 mart
-    hotel_revenue_management/       # 10 stg + 5 int + 6 mart
+    p_and_c_claims/                 # 10 stg + 6 int + 10 mart
+    merchandising/                  # 10 stg + 5 int + 9 mart
+    demand_planning/                # 10 stg + 5 int + 8 mart
+    hotel_revenue_management/       # 10 stg + 5 int + 9 mart
 ```
 
 Each anchor follows the same shape:
@@ -87,6 +87,22 @@ Payments build:
 The hubs are deliberately thin (business key + load metadata) and the
 satellites carry a `hashdiff` so downstream incremental loaders can detect
 attribute change without re-comparing every column.
+
+## Marts per anchor
+
+The marts layer for each anchor follows the same star-schema shape:
+
+| Anchor                     | Dimensions                                                                  | Facts                                                                                                          |
+| -------------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `payments`                 | dim_customer, dim_merchant, dim_date                                        | fct_payments, fct_settlements, fct_chargebacks                                                                 |
+| `p_and_c_claims`           | dim_policyholder, dim_policy, dim_claim, dim_adjuster, dim_date             | fct_claims, fct_claims_daily, fct_payments, fct_claim_payments, fct_reserves                                   |
+| `merchandising`            | dim_product, dim_store, dim_vendor, dim_date                                | fct_sales, fct_sales_daily, fct_inventory_snapshots, fct_returns, fct_markdowns                                |
+| `demand_planning`          | dim_item, dim_location, dim_date                                            | fct_demand, fct_forecast, fct_forecast_accuracy, fct_shipments, fct_inventory_positions                        |
+| `hotel_revenue_management` | dim_property, dim_room_type, dim_rate_plan, dim_guest, dim_channel, dim_date | fct_reservations, fct_daily_inventory, fct_daily_revenue                                                       |
+
+`fct_claim_payments` is kept alongside the brief-aligned `fct_payments`
+for back-compatibility with existing dashboards built on the original
+mart name. New work should target `fct_payments`.
 
 ## Lineage
 

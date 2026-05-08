@@ -18,6 +18,12 @@ models:
         tests: [unique, not_null]
       - name: sku
         tests: [unique, not_null]
+      - name: vendor_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_vendor')
+              field: vendor_id
   - name: dim_store
     description: Store dimension keyed by md5(store_id).
     columns:
@@ -44,6 +50,18 @@ models:
         tests: [unique, not_null]
       - name: sale_line_id
         tests: [unique, not_null]
+      - name: sku
+        tests:
+          - relationships:
+              to: ref('dim_product')
+              field: sku
+  - name: fct_sales_daily
+    description: Grain = one row per (sale_date, store, channel). Daily aggregates rolled up from fct_sales.
+    columns:
+      - name: sales_daily_key
+        tests: [unique, not_null]
+      - name: sale_date_key
+        tests: [not_null]
   - name: fct_inventory_snapshots
     description: Grain = one row per (snapshot, sku, store).
     columns:
@@ -58,3 +76,20 @@ models:
         tests: [unique, not_null]
       - name: return_id
         tests: [unique, not_null]
+  - name: fct_markdowns
+    description: Grain = one row per markdown event with vendor / category / band context.
+    columns:
+      - name: markdown_key
+        tests: [unique, not_null]
+      - name: markdown_id
+        tests: [unique, not_null]
+      - name: sku
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_product')
+              field: sku
+      - name: markdown_band
+        tests:
+          - accepted_values:
+              values: [shallow, standard, deep, clearance]

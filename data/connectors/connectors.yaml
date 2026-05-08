@@ -1,19 +1,22 @@
 # 23 connector patterns spanning the verticals seeded in data/taxonomy.
+# `stubPath` marks the patterns that have a runnable Python stub under
+# services/connectors/<name>/. See services/connectors/README.md for the
+# full stub directory.
 connectors:
-  - { id: conn.rest, type: REST, protocol: HTTPS, auth: OAuth2, typicalSources: [Stripe, Salesforce, Cisco Crosswork], latency: realtime, modes: [pull, push] }
+  - { id: conn.rest, type: REST, protocol: HTTPS, auth: OAuth2, typicalSources: [Stripe, Salesforce, Cisco Crosswork], latency: realtime, modes: [pull, push], stubPath: services/connectors/rest_json/ }
   - { id: conn.webhook, type: Webhook, protocol: HTTPS, auth: HMAC, typicalSources: [Stripe, Veeva], latency: realtime, modes: [push] }
-  - { id: conn.swift_iso20022, type: SWIFT MT/ISO20022, protocol: MQ/file, auth: PKI, typicalSources: [Temenos, Finastra, SWIFT], latency: near-realtime, modes: [push, file] }
+  - { id: conn.swift_iso20022, type: SWIFT MT/ISO20022, protocol: MQ/file, auth: PKI, typicalSources: [Temenos, Finastra, SWIFT], latency: near-realtime, modes: [push, file], stubPath: services/connectors/swift_mt/ }
   - { id: conn.iso8583, type: ISO8583, protocol: TCP, auth: PKI/MAC, typicalSources: [FIS Profile, ACI EPS], latency: realtime, modes: [stream] }
   - { id: conn.ach_nacha, type: ACH/NACHA file, protocol: SFTP, auth: SSH key, typicalSources: [US banks], latency: batch, modes: [file] }
   - { id: conn.sap_idoc, type: SAP IDoc, protocol: RFC/file, auth: SAP user, typicalSources: [SAP IS-Retail, SAP ECC], latency: near-realtime, modes: [push, file] }
-  - { id: conn.sap_rfc, type: SAP RFC/BAPI, protocol: RFC, auth: SAP user, typicalSources: [SAP IBP, SAP DM, SAP TRM], latency: realtime, modes: [pull, push] }
+  - { id: conn.sap_rfc, type: SAP RFC/BAPI, protocol: RFC, auth: SAP user, typicalSources: [SAP IBP, SAP DM, SAP TRM], latency: realtime, modes: [pull, push], stubPath: services/connectors/sap_rfc/ }
   - { id: conn.jms, type: JMS, protocol: JMS, auth: Mutual TLS, typicalSources: [Guidewire, ACI EPS], latency: realtime, modes: [stream] }
-  - { id: conn.cdc_kafka, type: CDC via Kafka, protocol: Kafka, auth: SASL/SCRAM, typicalSources: [Salesforce, Manhattan Active, Nokia NetAct], latency: realtime, modes: [stream] }
+  - { id: conn.cdc_kafka, type: CDC via Kafka, protocol: Kafka, auth: SASL/SCRAM, typicalSources: [Salesforce, Manhattan Active, Nokia NetAct], latency: realtime, modes: [stream], stubPath: services/connectors/kafka/ }
   - { id: conn.edi_852_810, type: EDI 852/810, protocol: AS2, auth: PKI, typicalSources: [Retail trading partners], latency: batch, modes: [file] }
   - { id: conn.htng, type: HTNG, protocol: SOAP/XML, auth: WS-Security, typicalSources: [Opera PMS, Amadeus], latency: near-realtime, modes: [push, pull] }
-  - { id: conn.opc_ua, type: OPC UA, protocol: OPC UA, auth: PKI, typicalSources: [Siemens Opcenter, Rockwell FactoryTalk], latency: realtime, modes: [stream, pull] }
-  - { id: conn.mqtt, type: MQTT, protocol: MQTT, auth: TLS + cred, typicalSources: [GE Proficy, Landis+Gyr], latency: realtime, modes: [stream] }
-  - { id: conn.sparkplug_b, type: Sparkplug B, protocol: MQTT, auth: TLS + cred, typicalSources: [GE Proficy, edge brokers], latency: realtime, modes: [stream] }
+  - { id: conn.opc_ua, type: OPC UA, protocol: OPC UA, auth: PKI, typicalSources: [Siemens Opcenter, Rockwell FactoryTalk], latency: realtime, modes: [stream, pull], stubPath: services/connectors/opc_ua/ }
+  - { id: conn.mqtt, type: MQTT, protocol: MQTT, auth: TLS + cred, typicalSources: [GE Proficy, Landis+Gyr], latency: realtime, modes: [stream], stubPath: services/connectors/mqtt/ }
+  - { id: conn.sparkplug_b, type: Sparkplug B, protocol: MQTT, auth: TLS + cred, typicalSources: [GE Proficy, edge brokers], latency: realtime, modes: [stream], stubPath: services/connectors/mqtt/ }
   - { id: conn.snmp, type: SNMP, protocol: SNMP, auth: community/v3, typicalSources: [Nokia NetAct, network elements], latency: near-realtime, modes: [pull, push] }
   - { id: conn.netconf_yang, type: NetConf/YANG, protocol: NetConf, auth: SSH, typicalSources: [Ericsson ENM, Cisco IOS-XR], latency: near-realtime, modes: [pull, push] }
   - { id: conn.e2b_r3, type: E2B(R3), protocol: HL7 XML, auth: AS2/SFTP, typicalSources: [Argus, LifeSphere, Vault Safety], latency: batch, modes: [file] }

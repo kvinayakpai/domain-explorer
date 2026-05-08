@@ -27,6 +27,12 @@ models:
         tests: [unique, not_null]
       - name: policy_id
         tests: [unique, not_null]
+      - name: policyholder_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_policyholder')
+              field: policyholder_id
   - name: dim_adjuster
     description: Adjuster dimension with seniority band.
     columns:
@@ -34,6 +40,27 @@ models:
         tests: [unique, not_null]
       - name: adjuster_id
         tests: [unique, not_null]
+  - name: dim_claim
+    description: Claim dimension — descriptive attributes for each filed claim.
+    columns:
+      - name: claim_key
+        tests: [unique, not_null]
+      - name: claim_id
+        tests: [unique, not_null]
+      - name: policy_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_policy')
+              field: policy_id
+      - name: report_lag_band
+        tests:
+          - accepted_values:
+              values: [same_day, within_week, within_month, late, unknown]
+      - name: fraud_risk_band
+        tests:
+          - accepted_values:
+              values: [low, medium, high, unknown]
   - name: dim_date
     description: Conformed daily date dimension for P&C claims.
     columns:
@@ -45,9 +72,52 @@ models:
       - name: claim_key
         tests: [unique, not_null]
       - name: claim_id
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('dim_claim')
+              field: claim_id
+  - name: fct_claims_daily
+    description: Grain = one row per (FNOL date, peril). Daily claim volume / incurred / paid / reserve aggregates.
+    columns:
+      - name: claims_daily_key
         tests: [unique, not_null]
+      - name: fnol_date_key
+        tests: [not_null]
+      - name: peril
+        tests: [not_null]
+  - name: fct_reserves
+    description: Grain = one row per reserve posting against a claim.
+    columns:
+      - name: reserve_key
+        tests: [unique, not_null]
+      - name: reserve_id
+        tests: [unique, not_null]
+      - name: claim_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_claim')
+              field: claim_id
+      - name: reserve_category_norm
+        tests:
+          - accepted_values:
+              values: [case, bulk, salvage, subrogation, other]
+  - name: fct_payments
+    description: Grain = one row per indemnity payment, with policy and peril context.
+    columns:
+      - name: payment_key
+        tests: [unique, not_null]
+      - name: payment_id
+        tests: [unique, not_null]
+      - name: claim_id
+        tests:
+          - relationships:
+              to: ref('dim_claim')
+              field: claim_id
   - name: fct_claim_payments
-    description: Grain = one row per indemnity payment.
+    description: Original grain = one row per indemnity payment (kept for back-compat with existing dashboards).
     columns:
       - name: payment_key
         tests: [unique, not_null]

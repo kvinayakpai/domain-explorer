@@ -37,6 +37,35 @@ models:
         tests: [unique, not_null]
       - name: demand_id
         tests: [unique, not_null]
+      - name: item_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_item')
+              field: item_id
+      - name: location_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_location')
+              field: location_id
+  - name: fct_forecast
+    description: Grain = one row per forecast prediction; surfaces forecast_qty and 80% prediction interval bands.
+    columns:
+      - name: forecast_key
+        tests: [unique, not_null]
+      - name: forecast_id
+        tests: [unique, not_null]
+      - name: item_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_item')
+              field: item_id
+      - name: pi_band
+        tests:
+          - accepted_values:
+              values: [tight, moderate, wide, unknown]
   - name: fct_forecast_accuracy
     description: Grain = one row per forecast/error pair, with accuracy and PI hit-rate.
     columns:
@@ -44,6 +73,21 @@ models:
         tests: [unique, not_null]
       - name: error_id
         tests: [unique, not_null]
+  - name: fct_shipments
+    description: Grain = one row per outbound shipment line, with transit and on-time signals.
+    columns:
+      - name: shipment_key
+        tests: [unique, not_null]
+      - name: shipment_id
+        tests: [unique, not_null]
+      - name: delivery_status
+        tests:
+          - accepted_values:
+              values: [on_time, late, in_transit]
+      - name: transit_band
+        tests:
+          - accepted_values:
+              values: [next_day, three_day, one_week, over_one_week, unknown]
   - name: fct_inventory_positions
     description: Grain = one row per inventory position observation.
     columns:

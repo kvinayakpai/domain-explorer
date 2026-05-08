@@ -25,6 +25,42 @@ models:
         tests: [unique, not_null]
       - name: room_type_id
         tests: [unique, not_null]
+  - name: dim_rate_plan
+    description: Rate plan dimension with discount and length-of-stay segmentation.
+    columns:
+      - name: rate_plan_key
+        tests: [unique, not_null]
+      - name: rate_plan_id
+        tests: [unique, not_null]
+      - name: property_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_property')
+              field: property_id
+      - name: plan_segment
+        tests:
+          - accepted_values:
+              values: [rack, flexible, standard_promo, deep_promo, unknown]
+      - name: los_segment
+        tests:
+          - accepted_values:
+              values: [flex, short_los, week_min, extended]
+  - name: dim_guest
+    description: Guest dimension with loyalty band and stay band.
+    columns:
+      - name: guest_key
+        tests: [unique, not_null]
+      - name: guest_id
+        tests: [unique, not_null]
+      - name: loyalty_band
+        tests:
+          - accepted_values:
+              values: [top, mid_high, mid, low, none, other]
+      - name: stay_band
+        tests:
+          - accepted_values:
+              values: [first_stay, occasional, regular, frequent, super_frequent, unknown]
   - name: dim_channel
     description: Distribution channel dimension with commission band.
     columns:
@@ -44,6 +80,8 @@ models:
         tests: [unique, not_null]
       - name: reservation_id
         tests: [unique, not_null]
+      - name: property_key
+        tests: [not_null]
   - name: fct_daily_inventory
     description: Grain = one row per (room_type, stay_date), with RevPAR and yield.
     columns:
@@ -51,3 +89,16 @@ models:
         tests: [unique, not_null]
       - name: inv_id
         tests: [unique, not_null]
+  - name: fct_daily_revenue
+    description: Grain = one row per (property, stay_date), combining inventory, pricing and reservation revenue.
+    columns:
+      - name: daily_revenue_key
+        tests: [unique, not_null]
+      - name: property_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_property')
+              field: property_id
+      - name: stay_date_key
+        tests: [not_null]
