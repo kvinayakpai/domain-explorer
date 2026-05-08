@@ -315,7 +315,11 @@ export function AssistantChat({ personas }: { personas: PersonaOption[] }) {
             ) : (
               <div className="space-y-3">
                 {messages.map((m, i) => (
-                  <div key={i} className={cn("flex flex-col gap-1", m.role === "user" ? "items-end" : "items-start")}>
+                  <div
+                    key={i}
+                    className={cn("flex flex-col gap-1", m.role === "user" ? "items-end" : "items-start")}
+                    data-testid={m.role === "user" ? "user-message-row" : "assistant-message-row"}
+                  >
                     <div
                       className={cn(
                         "max-w-[88%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm leading-relaxed shadow-sm",
@@ -323,6 +327,7 @@ export function AssistantChat({ personas }: { personas: PersonaOption[] }) {
                           ? "bg-primary text-primary-foreground"
                           : "bg-card border",
                       )}
+                      data-testid={m.role === "user" ? "user-message" : "assistant-message"}
                     >
                       {m.content || (m.role === "assistant" && sending && i === messages.length - 1
                         ? "thinking…"
