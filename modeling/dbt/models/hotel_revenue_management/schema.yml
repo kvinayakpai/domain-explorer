@@ -68,7 +68,7 @@ models:
         tests: [unique, not_null]
       - name: channel_id
         tests: [unique, not_null]
-  - name: dim_date
+  - name: dim_date_hotel
     description: Conformed daily date dimension for hotel RM.
     columns:
       - name: date_key

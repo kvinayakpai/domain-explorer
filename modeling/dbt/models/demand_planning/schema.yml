@@ -25,7 +25,7 @@ models:
         tests: [unique, not_null]
       - name: location_id
         tests: [unique, not_null]
-  - name: dim_date
+  - name: dim_date_demand_planning
     description: Conformed daily date dimension reusing the planning calendar.
     columns:
       - name: date_key

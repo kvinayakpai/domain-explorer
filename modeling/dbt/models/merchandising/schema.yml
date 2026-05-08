@@ -38,7 +38,7 @@ models:
         tests: [unique, not_null]
       - name: vendor_id
         tests: [unique, not_null]
-  - name: dim_date
+  - name: dim_date_merchandising
     description: Conformed daily date dimension for merchandising.
     columns:
       - name: date_key

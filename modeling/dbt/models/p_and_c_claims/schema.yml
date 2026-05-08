@@ -61,7 +61,7 @@ models:
         tests:
           - accepted_values:
               values: [low, medium, high, unknown]
-  - name: dim_date
+  - name: dim_date_p_and_c
     description: Conformed daily date dimension for P&C claims.
     columns:
       - name: date_key
@@ -104,7 +104,7 @@ models:
         tests:
           - accepted_values:
               values: [case, bulk, salvage, subrogation, other]
-  - name: fct_payments
+  - name: fct_premium_payments
     description: Grain = one row per indemnity payment, with policy and peril context.
     columns:
       - name: payment_key
