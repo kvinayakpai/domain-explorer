@@ -27,7 +27,10 @@
     "dbt:test:demand_planning": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt test --select demand_planning+",
     "dbt:test:hotel_revenue_management": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt test --select hotel_revenue_management+",
     "dbt:test:all": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt test --select payments+ p_and_c_claims+ merchandising+ demand_planning+ hotel_revenue_management+",
-    "kg:build": "python kg/build_graph.py --data-root data --out kg"
+    "kg:build": "python kg/build_graph.py --data-root data --out kg",
+    "cli:dev": "node packages/cli/bin/init.js",
+    "cli:test": "pnpm --filter @domain-explorer/init test",
+    "cli:build": "pnpm --filter @domain-explorer/init build || echo \"(no build step; CLI is plain ESM)\""
   },
   "devDependencies": {
     "playwright": "~1.48.2",
