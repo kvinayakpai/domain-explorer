@@ -12,6 +12,7 @@
     "typecheck": "pnpm -r --filter \"./apps/*\" --filter \"./packages/*\" typecheck",
     "test": "pnpm -r --filter \"./apps/*\" --filter \"./packages/*\" test",
     "test:py": "python -m pytest -q",
+    "test:assistant": "pnpm --filter explorer-web exec vitest run __tests__/assistant-grounding.test.ts",
     "dbt:deps": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt deps",
     "dbt:build": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt deps && DBT_PROFILES_DIR=. dbt run --select payments+",
     "dbt:test": "cd modeling/dbt && DBT_PROFILES_DIR=. dbt test --select payments+",

@@ -3,6 +3,7 @@ import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { suggestionsForVertical, type AssistantSuggestion } from "@/lib/assistant-suggestions";
 
 interface PersonaOption {
   key: string;
@@ -22,12 +23,6 @@ interface ChatMessage {
   /** Mode tag: "live" (Claude API) or "demo" (canned fallback). */
   mode?: "live" | "demo";
 }
-
-const SUGGESTIONS = [
-  "What KPIs does the Head of Payments care about?",
-  "Which source systems feed P&C claim leakage?",
-  "Walk me from RevPAR back to the operational dataset.",
-];
 
 export function AssistantChat({ personas }: { personas: PersonaOption[] }) {
   const [personaKey, setPersonaKey] = React.useState<string>(personas[0]?.key ?? "");
@@ -52,6 +47,14 @@ export function AssistantChat({ personas }: { personas: PersonaOption[] }) {
   }, [personas]);
 
   const activePersona = personas.find((p) => p.key === personaKey);
+
+  // Suggestion chips filtered by the active persona's vertical.
+  // Falls back to the curated cross-vertical tour set when no persona
+  // is selected (or the persona selector hasn't initialised yet).
+  const suggestions = React.useMemo<AssistantSuggestion[]>(
+    () => suggestionsForVertical(activePersona?.vertical, 6),
+    [activePersona?.vertical],
+  );
 
   async function send(text?: string) {
     const message = (text ?? draft).trim();
@@ -185,18 +188,34 @@ export function AssistantChat({ personas }: { personas: PersonaOption[] }) {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Try asking</CardTitle>
+            <CardTitle className="text-sm">
+              Try asking
+              {activePersona ? (
+                <span className="ml-1 font-normal text-muted-foreground">
+                  · {activePersona.vertical}
+                </span>
+              ) : null}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {SUGGESTIONS.map((s) => (
+            {suggestions.map((s) => (
               <button
-                key={s}
+                key={s.id}
                 type="button"
-                onClick={() => send(s)}
+                onClick={() => {
+                  // If the suggestion declares a persona key and that persona
+                  // exists in the registry, re-select it before sending so
+                  // the grounding step picks up the right vertical.
+                  if (s.personaKey && personas.find((p) => p.key === s.personaKey)) {
+                    setPersonaKey(s.personaKey);
+                  }
+                  void send(s.text);
+                }}
                 className="w-full rounded-md border px-2 py-1.5 text-left text-xs hover:bg-accent"
                 disabled={sending}
+                title={s.expectedAnswerSummary}
               >
-                {s}
+                {s.text}
               </button>
             ))}
           </CardContent>

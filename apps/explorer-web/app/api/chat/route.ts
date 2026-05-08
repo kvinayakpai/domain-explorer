@@ -1,19 +1,9 @@
 import { NextRequest } from "next/server";
 import { buildGrounding, buildCannedAnswer, renderGroundingForLlm } from "@/lib/grounding";
+import { systemPromptFor } from "@/lib/assistant-prompts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const SYSTEM_PROMPT_BASE = `You are the Domain Explorer assistant. You answer questions grounded \
-in a typed YAML registry of industry subdomains, personas, decisions, KPIs, source systems, and \
-connector patterns. The user has selected a persona; treat their question as coming from that \
-person's perspective and prioritise the decisions and KPIs they own.
-
-Hard rules:
-- Ground every claim in the GROUNDING CONTEXT below. If something is not in the context, say so.
-- When listing KPIs, source systems, or connectors, prefer the records you were given.
-- Be concise. Prefer short paragraphs and tight bullet lists over long prose.
-- Never invent KPI ids or vendor products that aren't in the context.`;
 
 interface ChatBody {
   message?: string;
@@ -208,7 +198,11 @@ export async function POST(req: NextRequest) {
     personaKey: body.personaKey,
   });
   const groundingText = renderGroundingForLlm(grounding);
-  const systemPrompt = `${SYSTEM_PROMPT_BASE}\n\n${groundingText}`;
+  // Pick a vertical-tailored system prompt based on the resolved persona's
+  // vertical (BFSI, Insurance, Healthcare, ...). Falls back to the generic
+  // variant when no persona is selected.
+  const verticalPrompt = systemPromptFor(grounding.persona?.vertical);
+  const systemPrompt = `${verticalPrompt}\n\n${groundingText}`;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (apiKey) {
