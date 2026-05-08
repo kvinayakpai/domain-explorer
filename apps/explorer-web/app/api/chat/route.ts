@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
-import { buildGrounding, buildCannedAnswer, renderGroundingForLlm } from "@/lib/grounding";
+import { buildGrounding, renderGroundingForLlm } from "@/lib/grounding";
 import { systemPromptFor } from "@/lib/assistant-prompts";
+import { chat, type LLMChunk } from "@/lib/llm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,139 +38,45 @@ function readBody(raw: unknown): ChatBody {
   return { message, personaKey, history };
 }
 
-/** Stream a plain-text response in the SSE-ish format the client expects. */
-function streamText(text: string, recordsUsed: string[], mode: "live" | "demo"): Response {
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      // Header event — tells the client which mode + grounding records are in use.
-      const header = JSON.stringify({ kind: "header", mode, recordsUsed });
-      controller.enqueue(encoder.encode(`event: header\ndata: ${header}\n\n`));
-      // Chunk the canned answer into ~50-char windows so the UI gets a streamy feel.
-      const step = 60;
-      for (let i = 0; i < text.length; i += step) {
-        const chunk = text.slice(i, i + step);
-        controller.enqueue(
-          encoder.encode(`event: delta\ndata: ${JSON.stringify({ text: chunk })}\n\n`),
-        );
-        // small async tick so the network actually flushes between chunks
-        await new Promise((r) => setTimeout(r, 8));
-      }
-      controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
-      controller.close();
-    },
-  });
-  return new Response(stream, {
-    headers: {
-      "content-type": "text/event-stream; charset=utf-8",
-      "cache-control": "no-cache, no-transform",
-      "x-accel-buffering": "no",
-    },
-  });
-}
-
-// Minimal structural type describing the slice of the Anthropic SDK we use.
-// We avoid importing the SDK's types at the top level because the SDK is
-// loaded lazily and may not be installed in every deployment.
-type AnthropicCtor = new (cfg: { apiKey: string }) => AnthropicClient;
-
-interface AnthropicClient {
-  messages: {
-    stream(args: {
-      model: string;
-      max_tokens: number;
-      system: string;
-      messages: { role: "user" | "assistant"; content: string }[];
-    }): AnthropicStream;
-  };
-}
-
-interface AnthropicStream {
-  on(event: "text", listener: (delta: string) => void): void;
-  on(event: "error", listener: (err: Error) => void): void;
-  on(event: "end", listener: () => void): void;
-  finalMessage(): Promise<unknown>;
-}
-
-interface AnthropicModule {
-  default?: AnthropicCtor;
-  Anthropic?: AnthropicCtor;
-}
-
 /**
- * Try to load the Anthropic SDK lazily. Returns null if it isn't installed —
- * the route then falls back to canned mode.
+ * Bridge an `LLMChunk` async iterable onto the SSE wire format the existing
+ * client expects. Adds a `header` event (mode + grounding records) up-front so
+ * the UI can show the "live / demo / cached" badge immediately.
  */
-async function loadAnthropic(): Promise<AnthropicCtor | null> {
-  try {
-    const mod = (await import("@anthropic-ai/sdk").catch(() => null)) as
-      | AnthropicModule
-      | null;
-    if (!mod) return null;
-    const ctor = mod.default ?? mod.Anthropic;
-    return ctor ?? null;
-  } catch {
-    return null;
-  }
-}
-
-async function streamFromAnthropic(opts: {
-  apiKey: string;
-  systemPrompt: string;
-  history: { role: "user" | "assistant"; content: string }[];
-  message: string;
+function streamFromLlm(opts: {
+  iter: AsyncIterable<LLMChunk>;
   recordsUsed: string[];
-}): Promise<Response | null> {
-  const Anthropic = await loadAnthropic();
-  if (!Anthropic) return null;
-  const client: AnthropicClient = new Anthropic({ apiKey: opts.apiKey });
-
-  const messages = [
-    ...opts.history.map((h) => ({ role: h.role, content: h.content })),
-    { role: "user" as const, content: opts.message },
-  ];
-
+}): Response {
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      try {
-        const header = JSON.stringify({
-          kind: "header",
-          mode: "live",
-          recordsUsed: opts.recordsUsed,
-        });
-        controller.enqueue(encoder.encode(`event: header\ndata: ${header}\n\n`));
-
-        const upstream: AnthropicStream = client.messages.stream({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1024,
-          system: opts.systemPrompt,
-          messages,
-        });
-        upstream.on("text", (delta: string) => {
-          controller.enqueue(
-            encoder.encode(`event: delta\ndata: ${JSON.stringify({ text: delta })}\n\n`),
-          );
-        });
-        upstream.on("error", (err: Error) => {
-          controller.enqueue(
-            encoder.encode(
-              `event: error\ndata: ${JSON.stringify({ message: String(err?.message ?? err) })}\n\n`,
-            ),
-          );
-          controller.close();
-        });
-        upstream.on("end", () => {
-          controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
-          controller.close();
-        });
-        await upstream.finalMessage().catch(() => undefined);
-      } catch (e) {
+      const send = (event: string, payload: unknown) => {
         controller.enqueue(
-          encoder.encode(
-            `event: error\ndata: ${JSON.stringify({ message: String((e as Error)?.message ?? e) })}\n\n`,
-          ),
+          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`),
         );
+      };
+
+      // Initial header — we don't yet know which provider answered, so default
+      // to "live" and let the trailing `done` event update the UI badge.
+      send("header", { kind: "header", mode: "live", recordsUsed: opts.recordsUsed });
+
+      try {
+        for await (const chunk of opts.iter) {
+          if (chunk.type === "content") {
+            if (chunk.text) send("delta", { text: chunk.text });
+          } else if (chunk.type === "citation") {
+            send("citation", { source: chunk.source, label: chunk.label });
+          } else if (chunk.type === "done") {
+            send("done", {
+              provider: chunk.provider,
+              cached: Boolean(chunk.cached),
+              latencyMs: chunk.latencyMs,
+            });
+          }
+        }
+      } catch (e) {
+        send("error", { message: String((e as Error)?.message ?? e) });
+      } finally {
         controller.close();
       }
     },
@@ -202,21 +109,27 @@ export async function POST(req: NextRequest) {
   // vertical (BFSI, Insurance, Healthcare, ...). Falls back to the generic
   // variant when no persona is selected.
   const verticalPrompt = systemPromptFor(grounding.persona?.vertical);
-  const systemPrompt = `${verticalPrompt}\n\n${groundingText}`;
+  // The new citation-discipline rule: the model MUST emit `[REF:<id>]` markers
+  // after each claim. The streaming layer in `lib/llm/provider.ts` parses
+  // these out and forwards them as separate `citation` SSE events.
+  const citationGuidance =
+    "EVERY claim must be followed by a [REF:<id>] tag where <id> is a registry " +
+    "entry (subdomain id, KPI id, source system id, glossary term). The " +
+    "frontend will replace these tags with citations.";
+  const systemPrompt = `${verticalPrompt}\n\n${groundingText}\n\n${citationGuidance}`;
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (apiKey) {
-    const live = await streamFromAnthropic({
-      apiKey,
-      systemPrompt,
-      history: body.history ?? [],
-      message,
-      recordsUsed: grounding.recordsUsed,
-    });
-    if (live) return live;
-    // SDK couldn't be loaded — fall through to canned mode.
-  }
+  const messages = [
+    ...(body.history ?? []).map((h) => ({ role: h.role, content: h.content })),
+    { role: "user" as const, content: message },
+  ];
 
-  const answer = buildCannedAnswer(message, grounding);
-  return streamText(answer, grounding.recordsUsed, "demo");
+  const iter = chat({
+    system: systemPrompt,
+    messages,
+    persona: grounding.persona?.key,
+    vertical: grounding.persona?.vertical,
+    signal: req.signal,
+  });
+
+  return streamFromLlm({ iter, recordsUsed: grounding.recordsUsed });
 }

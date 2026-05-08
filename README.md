@@ -53,9 +53,15 @@ pnpm --filter explorer-web dev
 #    so the explorer works without any further setup).
 npm run kg:build
 
-# 4. (optional) Enable the live Claude assistant on /assistant.
+# 4. (optional) Enable the live multi-provider assistant on /assistant.
 cp .env.example .env
-# then set ANTHROPIC_API_KEY=sk-ant-...
+# then set ANY ONE of the following provider keys:
+#   ANTHROPIC_API_KEY=sk-ant-...        # Claude (default primary)
+#   OPENAI_API_KEY=sk-...               # GPT-4 / GPT-4o
+#   GOOGLE_API_KEY=...                  # Gemini
+#   LITELLM_BASE_URL=http://localhost:4000  # LiteLLM proxy fronting any/all of the above
+# Optional: order the providers explicitly (default: anthropic,mock).
+#   LLM_PROVIDERS=anthropic,openai,google,mock
 
 # 5. (optional) Run the API
 uv run uvicorn app.main:app --reload --app-dir services/api
@@ -83,7 +89,7 @@ To add a new subdomain: drop a YAML file in `data/taxonomy/` matching the schema
 - `/governance`, `/catalog`, `/glossary`, `/lineage`, `/dq` — governance backbone.
 - `/kg` — vertical-filterable subgraph rendered straight from `kg/graph.json` (click a node to see its 1-hop neighbourhood).
 - `/demo` and `/demo/<vertical>` — 3-screen scripted tours per vertical (persona pain → answer + lineage → platform stack).
-- `/assistant` — Claude-powered assistant grounded by the KG (with a YAML-direct fallback when the API or graph isn't available).
+- `/assistant` — multi-provider assistant grounded by the KG. Routes through a vendor-agnostic abstraction (Claude / GPT / Gemini / Llama via LiteLLM) with automatic failover, an in-memory response cache (sub-100ms on repeats), inline `[REF:<id>]` citations rendered as chips, and a 50-entry canned-answer set in `data/canned-answers.json` as a bulletproof offline fallback. See `apps/explorer-web/lib/llm/` for the provider chain.
 
 ## Tests
 

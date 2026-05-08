@@ -14,6 +14,9 @@ const nextConfig = {
       "@duckdb/node-bindings-win32-x64",
       "pg",
       "pg-native",
+      "@anthropic-ai/sdk",
+      "openai",
+      "@google/generative-ai",
     ],
   },
   webpack: (config, { isServer }) => {
@@ -26,7 +29,10 @@ const nextConfig = {
             request === "@duckdb/node-bindings" ||
             (request && request.startsWith("@duckdb/node-bindings-")) ||
             request === "pg" ||
-            request === "pg-native"
+            request === "pg-native" ||
+            request === "@anthropic-ai/sdk" ||
+            request === "openai" ||
+            request === "@google/generative-ai"
           ) {
             return callback(null, "commonjs " + request);
           }

@@ -1,0 +1,306 @@
+[
+  {
+    "matchSubstring": "kpis does the head of payments care",
+    "vertical": "BFSI",
+    "response": "The Head of Payments tracks six core KPIs every week:\n\n1. STP Rate — straight-through processing percentage. Higher is better; sub-95% means manual intervention is eating margin. [REF:pay.kpi.stp_rate]\n2. Settlement Latency — average hours between auth and settlement; drives working-capital tied up in float. [REF:pay.kpi.settlement_latency]\n3. Chargeback Ratio — chargebacks ÷ sales count; > 1% triggers card-network monitoring programs. [REF:pay.kpi.chargeback_ratio]\n4. Auth Failure Rate (AFR) — failed auths ÷ total auths; spikes here usually mean a misconfigured fraud rule. [REF:pay.kpi.afr]\n5. Interchange Revenue — sum of interchange amount; the top-line for the issuer side. [REF:pay.kpi.interchange_revenue]\n6. Dispute Resolution Time — avg days from open to resolved; long tails point at understaffed ops queues. [REF:pay.kpi.dispute_resolution_time]\n\nThese roll up to four decisions: rail choice, fraud thresholds, dispute handling, and acquirer/processor partner mix.",
+    "citations": [
+      "pay.kpi.stp_rate",
+      "pay.kpi.settlement_latency",
+      "pay.kpi.chargeback_ratio",
+      "pay.kpi.afr",
+      "pay.kpi.interchange_revenue",
+      "pay.kpi.dispute_resolution_time"
+    ]
+  },
+  {
+    "matchSubstring": "stp rate down to the source-system field",
+    "vertical": "BFSI",
+    "response": "STP Rate lineage in five hops:\n\nStep 1 — KPI definition: STP Rate = straight_through_count / total_count, computed at the BI layer. [REF:pay.kpi.stp_rate]\nStep 2 — Mart fact: fact_payment_auth has columns is_stp (boolean) and auth_id; the BI query SUMs is_stp and divides by COUNT(*).\nStep 3 — Source: is_stp is derived in dbt from auth_status_code IN ('00','APPROVED') AND manual_review_flag = false.\nStep 4 — Source system: auth_status_code originates in the card-switch (ISO 8583 field DE39), manual_review_flag in the fraud platform (Sift / Forter event).\nStep 5 — Field-level: ISO 8583 DE39 → Kafka topic auth.events.v1 → Iceberg landing zone → silver.payment_auth → gold.fact_payment_auth.\n\nLineage hop count, governance owners, and dbt model names are all kept in sync via the OpenLineage events emitted by the dbt runner.",
+    "citations": [
+      "pay.kpi.stp_rate",
+      "pay.d.partner_mix",
+      "src.iso8583_switch",
+      "src.fraud_platform"
+    ]
+  },
+  {
+    "matchSubstring": "difference between 3nf and data vault",
+    "response": "3NF and Data Vault are both normalised models, but optimise for different things:\n\n3NF (Codd, 1971) — minimises redundancy by enforcing functional-dependency rules. Great for OLTP because every fact lives in exactly one place; every update is one row. Painful for analytics because joins explode and history tracking requires bolt-on Type-2 columns.\n\nData Vault 2.0 (Dan Linstedt) — separates business keys (Hubs), relationships (Links), and descriptive context (Satellites). Each Satellite is insert-only and time-stamped, so full history comes free. Loads parallelise because every Hub/Link/Sat is independent. The trade-off: 2-3x the table count, queries always need a Point-In-Time table, and BI tools usually hit a downstream star schema rather than the raw vault.\n\nRule of thumb: 3NF for the operational source-of-truth, Data Vault for the integration layer when you need bi-temporal history and source-system parallelism, and a Kimball star on top for consumption.",
+    "citations": ["glossary.3nf", "glossary.data_vault", "glossary.kimball_star"]
+  },
+  {
+    "matchSubstring": "what is straight-through processing",
+    "vertical": "BFSI",
+    "response": "Straight-Through Processing (STP) means a transaction flows from initiation to settlement without manual intervention — no exception queue, no human keying, no secondary review. In payments STP rate is the headline ops metric: 99% means 1 of every 100 transactions costs you analyst time. The lift usually comes from cleaner reference data (BIC/IBAN validity), tighter fraud rules so fewer auths fall into review, and reconciling settlement files automatically against the auth ledger. [REF:pay.kpi.stp_rate]",
+    "citations": ["pay.kpi.stp_rate", "glossary.stp"]
+  },
+  {
+    "matchSubstring": "claims subrogation",
+    "vertical": "Insurance",
+    "response": "Subrogation is the carrier recovering paid loss from a responsible third party — most often another insurer or an at-fault driver's policy. Two KPIs matter:\n\n• Subrogation Recovery Rate = recovered $ ÷ identified-recoverable $ — should sit at 65-80% in a well-run unit. [REF:claims_sub.kpi.recovery_rate]\n• Cycle Time to Demand = days from claim closed to demand letter issued — under 30 days keeps statute-of-limitation risk low. [REF:claims_sub.kpi.cycle_time]\n\nThe data lineage runs claim → loss-cause coding → subro flag → recovery ledger; misses are usually under-coded loss causes (the adjuster never flagged the third-party fault).",
+    "citations": ["claims_sub.kpi.recovery_rate", "claims_sub.kpi.cycle_time"]
+  },
+  {
+    "matchSubstring": "actuarial pricing",
+    "vertical": "Insurance",
+    "response": "Actuarial pricing decisions revolve around loss-cost adequacy and competitive position. Core KPIs: Loss Ratio (incurred losses ÷ earned premium), Combined Ratio (loss + expense), Rate Adequacy (filed rate ÷ indicated rate), and Hit Ratio for new business quotes. The pricing data spine: policy-admin (exposure) joined to the claims warehouse (loss) at policy-period grain, with a separate experience-period view for trend. GLMs are still standard for personal lines — GBMs encroach for commercial.",
+    "citations": ["actuarial.kpi.loss_ratio", "actuarial.kpi.rate_adequacy"]
+  },
+  {
+    "matchSubstring": "underwriting decisions",
+    "vertical": "Insurance",
+    "response": "Underwriting decisions split into accept/decline, term/condition, and price. The workhorse KPIs are Quote-to-Bind Conversion, Loss Ratio by underwriter, and Referral Override Rate (underwriters overruling the rules engine). The data pipeline: submission → enrichment (MVR, prior-loss, property data) → rules engine → priced quote. Audit trails of every override land in the governance lake — required by Solvency II and most state DOIs.",
+    "citations": ["uw.kpi.quote_to_bind", "uw.kpi.loss_ratio_uw"]
+  },
+  {
+    "matchSubstring": "reinsurance treaty",
+    "vertical": "Insurance",
+    "response": "Reinsurance treaties shift loss above attachment to the reinsurer. The two big shapes are quota-share (proportional) and excess-of-loss (XoL). Operations care about cession accuracy — the bordereaux must reconcile to the cedant's policy-admin within 3% — and recoverable timing, because cash from a slow reinsurer ties up surplus. The data lineage runs claim → cession rule → bordereau → reinsurer ledger, with monthly settlement files as the reconciliation point.",
+    "citations": ["reins.kpi.cession_accuracy", "reins.kpi.recoverable_aging"]
+  },
+  {
+    "matchSubstring": "ehr data integration",
+    "vertical": "Healthcare",
+    "response": "EHR integration is FHIR-first for new builds and HL7 v2 for the long tail of legacy interfaces. The hard parts: patient identity (MPI matching across systems), terminology mapping (SNOMED ↔ ICD-10 ↔ LOINC), and consent. The minimum viable lineage runs FHIR Patient resource → MPI matched id → enterprise patient master → analytics patient table, with each hop preserving the source-system ids in a crosswalk.",
+    "citations": ["glossary.fhir", "glossary.hl7", "glossary.mpi"]
+  },
+  {
+    "matchSubstring": "clinical decision support",
+    "vertical": "Healthcare",
+    "response": "Clinical Decision Support (CDS) layers evidence-based prompts into the EHR workflow. Decisions: alert vs. silent, pre-order vs. post-order, hard-stop vs. advisory. KPIs: Alert Override Rate (above 90% means alert fatigue), Time-to-Action, and Outcome Lift on the targeted condition. The data spine: EHR observation stream → CDS Hooks endpoint → recommendation → audit log. CDS Hooks (HL7) is the modern integration point.",
+    "citations": ["cds.kpi.override_rate", "cds.kpi.time_to_action"]
+  },
+  {
+    "matchSubstring": "telehealth",
+    "vertical": "Healthcare",
+    "response": "Telehealth ops centre on visit completion and parity. KPIs: Show Rate, Average Session Duration, Tech-Failure Drop Rate, and Post-Visit NPS. Connectivity issues drive the biggest churn — instrumenting WebRTC stats per session and joining them to the visit fact lets you tie quality complaints to specific carriers/regions.",
+    "citations": ["telehealth.kpi.show_rate", "telehealth.kpi.tech_failure"]
+  },
+  {
+    "matchSubstring": "patient engagement",
+    "vertical": "Healthcare",
+    "response": "Patient engagement programs are scored on activation and persistence. KPIs: Portal Activation Rate, 30-day Active Rate, Message Response Rate, and downstream Adherence Lift. The data crosses the EHR (clinical context) and the engagement platform (sends, opens, replies); the join key is the MRN-scoped MPI id.",
+    "citations": ["engage.kpi.activation", "engage.kpi.adherence_lift"]
+  },
+  {
+    "matchSubstring": "store ops",
+    "vertical": "Retail",
+    "response": "Store ops live and die by labour productivity and on-shelf availability. KPIs: Sales per Labour Hour, On-Shelf Availability, Shrink %, and Conversion Rate. The data fabric joins POS (transactions) to the WFM system (scheduled vs. worked hours) and the perpetual-inventory feed (counts vs. system on-hand). Fresh categories need RFID or vision-based shelf scans because perpetual inventory drifts within hours.",
+    "citations": ["store.kpi.labour_productivity", "store.kpi.osa", "store.kpi.shrink"]
+  },
+  {
+    "matchSubstring": "ecommerce funnel",
+    "vertical": "Retail",
+    "response": "The classic funnel is Visit → Product View → Add-to-Cart → Checkout-Start → Order. Conversion drops at each step quantify friction. KPIs to wire up: Conversion Rate by traffic source, Cart Abandonment, Checkout Drop, AOV, Refund Rate. Identity stitching across guest sessions is the bottleneck — most teams use a deterministic email/phone match plus a probabilistic fingerprint for the gaps.",
+    "citations": ["ecom.kpi.conversion", "ecom.kpi.cart_abandon", "ecom.kpi.aov"]
+  },
+  {
+    "matchSubstring": "loyalty",
+    "vertical": "Retail",
+    "response": "Loyalty programs trade margin for behaviour change. KPIs: Enrolment Rate, Active-Member Rate (90-day), Incremental Spend Lift, Redemption Rate, and Liability ($ value of unredeemed points). The unit-economics test: incremental margin from member transactions must exceed the points-cost; otherwise the program is subsidising would-be customers.",
+    "citations": ["loyalty.kpi.active_rate", "loyalty.kpi.liability"]
+  },
+  {
+    "matchSubstring": "trade promotion",
+    "vertical": "CPG",
+    "response": "Trade promotion ROI is the canonical CPG question. KPIs: Promo Lift %, Pass-Through Rate (manufacturer $ that reach shelf), Gross-to-Net %, and incremental volume vs. baseline. The data join: shipments (manufacturer) ↔ POS (retailer) ↔ trade-fund ledger ↔ promo calendar. Most lift estimates come from a causal-impact / synthetic-control comparison against non-promoted stores.",
+    "citations": ["tpm.kpi.lift", "tpm.kpi.pass_through"]
+  },
+  {
+    "matchSubstring": "retail execution",
+    "vertical": "CPG",
+    "response": "Retail execution is the field side of CPG — making sure your product is on the right shelf, at the right price, with the right POS material. KPIs: Distribution % (stores with the SKU), Share of Shelf, Price Compliance, and OOS Rate. Image-recognition apps replace clipboard audits — the field rep snaps the shelf and the model returns the planogram delta.",
+    "citations": ["rex.kpi.distribution", "rex.kpi.share_of_shelf"]
+  },
+  {
+    "matchSubstring": "predictive maintenance",
+    "vertical": "Manufacturing",
+    "response": "Predictive maintenance shifts repairs from time-based to condition-based. KPIs: Mean-Time-Between-Failure (MTBF), Unplanned Downtime hours, Maintenance $ per Unit Output, and PdM Hit Rate (predictions that resulted in an actual avoided failure). The data: equipment telemetry (PLC / OPC-UA) → time-series store → anomaly model → CMMS work order. False-positive cost is operator hours and missed throughput, so the precision/recall trade-off needs the cost of a missed failure to be at least 10x the cost of a wasted inspection.",
+    "citations": ["pdm.kpi.mtbf", "pdm.kpi.unplanned_downtime"]
+  },
+  {
+    "matchSubstring": "supplier quality",
+    "vertical": "Manufacturing",
+    "response": "Supplier quality is graded by Defect PPM (parts-per-million defective at incoming inspection), On-Time Delivery, and Cost-of-Poor-Quality (COPQ) attributable to the supplier. The data spine: incoming inspection results → SPC → supplier scorecard → procurement system. APQP, PPAP, and 8D are the workflow artefacts.",
+    "citations": ["sq.kpi.defect_ppm", "sq.kpi.otd"]
+  },
+  {
+    "matchSubstring": "supply chain visibility",
+    "vertical": "Manufacturing",
+    "response": "Supply-chain visibility means knowing where every node and shipment is in near-real-time. KPIs: Order-to-Delivery time, Perfect Order Rate, Inventory Days, and Lead-Time Variance. The fabric: ERP (orders) + WMS (inventory) + TMS (shipments) + carrier APIs (tracking) + supplier portals (exceptions). The hard part is multi-tier — your tier-2 supplier's stockout breaks your line three weeks later, and most carriers don't share that.",
+    "citations": ["scv.kpi.order_to_delivery", "scv.kpi.perfect_order"]
+  },
+  {
+    "matchSubstring": "value-based care",
+    "vertical": "Healthcare",
+    "response": "Value-based care contracts pay for outcomes, not visits. KPIs: PMPM cost vs. benchmark, Quality-Score (HEDIS / Stars), Readmission Rate, and Risk-Adjustment Accuracy. The data: claims (utilisation) ↔ EHR (clinical detail) ↔ care-management workflow ↔ contract attribution. Risk adjustment is a dedicated team — coding completeness drives 5-10% of revenue in MA contracts.",
+    "citations": ["vbc.kpi.pmpm", "vbc.kpi.readmissions"]
+  },
+  {
+    "matchSubstring": "revenue cycle",
+    "vertical": "Healthcare",
+    "response": "Revenue Cycle Management spans patient access → claim submission → adjudication → patient pay. KPIs: Days in A/R, Clean-Claim Rate (claims accepted on first submission), Denial Rate, and Net Collection Rate. The biggest leak is front-end: bad eligibility checks at registration cause downstream denials weeks later.",
+    "citations": ["rcm.kpi.days_in_ar", "rcm.kpi.denial_rate"]
+  },
+  {
+    "matchSubstring": "network slicing",
+    "vertical": "Telecom",
+    "response": "5G network slicing partitions a single physical network into multiple isolated logical networks, each tuned for a use-case (low-latency for industrial IoT, high-throughput for fixed wireless). KPIs: Slice Throughput SLA Adherence, Slice Latency p99, Slice Allocation Time. The data flow: orchestrator (ONAP/OSM) ↔ NSSF ↔ AMF/SMF ↔ UPF metrics — joined to the customer SLA contract.",
+    "citations": ["slice.kpi.sla_adherence", "slice.kpi.latency_p99"]
+  },
+  {
+    "matchSubstring": "subscriber billing",
+    "vertical": "Telecom",
+    "response": "Subscriber billing decisions: rate-plan design, proration accuracy, dispute exposure. KPIs: Bill-Run On-Time %, Adjustment Rate (post-issue corrections), and Days-Sales-Outstanding. The pipeline: usage records (CDR/IPDR) → mediation → rating → billing → invoice → collections. The mediation layer is where most quality issues hide — duplicates, late records, schema drift from a new network element.",
+    "citations": ["bill.kpi.on_time", "bill.kpi.adjustments"]
+  },
+  {
+    "matchSubstring": "churn",
+    "vertical": "Telecom",
+    "response": "Churn KPIs: Voluntary Churn % (post-paid), Involuntary Churn % (pre-paid expirations), Churn Save Rate (retention offers accepted), and lifetime-value-weighted churn. The signal mix that predicts well: bill shock, dropped-call rate near home BTS, support-call volume in the last 30 days, and competitor footprint changes. Save offers are funded from a separate retention budget — keeping the budget under control is its own KPI.",
+    "citations": ["churn.kpi.voluntary", "churn.kpi.save_rate"]
+  },
+  {
+    "matchSubstring": "video streaming qoe",
+    "vertical": "Media",
+    "response": "Quality of Experience for streaming is a function of startup time, rebuffer ratio, and average bitrate. KPIs: Video Start Failures, Rebuffer Ratio (rebuffer secs ÷ play secs), Average Bitrate, and Exits-Before-Video-Start. The data path: player SDK → analytics ingest → CDN logs join → edge POP attribution. ABR ladders matter: a too-aggressive top rung causes rebuffer on slow links, a too-conservative one looks soft on big screens.",
+    "citations": ["qoe.kpi.rebuffer", "qoe.kpi.start_failures"]
+  },
+  {
+    "matchSubstring": "ad inventory",
+    "vertical": "Media",
+    "response": "Ad inventory ops balance fill rate against floor price and viewability. KPIs: Fill Rate, eCPM, Viewability %, and Invalid-Traffic %. The auction stack: SSP receives bids → DSPs respond → winner serves the creative → impression beacon fires. IVT detection (bot traffic) is now table-stakes before any ad-server reporting; otherwise eCPM is misleadingly inflated.",
+    "citations": ["adinv.kpi.fill_rate", "adinv.kpi.viewability"]
+  },
+  {
+    "matchSubstring": "renewable generation",
+    "vertical": "Energy",
+    "response": "Renewable generation ops track Capacity Factor (actual output ÷ nameplate × hours), Curtailment %, and Forecast Error (MAE between day-ahead schedule and actual). The data spine: SCADA telemetry → time-series store → forecast model (NWP-driven) → bidding system → settlement. Curtailment from grid congestion shows up as a cliff in the output series — usually correlated with neighbouring plants.",
+    "citations": ["renew.kpi.capacity_factor", "renew.kpi.forecast_error"]
+  },
+  {
+    "matchSubstring": "carbon accounting",
+    "vertical": "Energy",
+    "response": "Carbon accounting splits Scope 1 (direct), Scope 2 (purchased energy), and Scope 3 (value chain) — Scope 3 is 70%+ of most companies' footprint. KPIs: tonnes CO2e, Carbon Intensity (CO2e per unit output), and Data Coverage % (suppliers reporting actuals vs. spend-based estimates). The data is messy — supplier emissions data quality is the biggest moat for a credible audit.",
+    "citations": ["carbon.kpi.intensity", "carbon.kpi.coverage"]
+  },
+  {
+    "matchSubstring": "grid ops",
+    "vertical": "Utilities",
+    "response": "Grid operations centre on reliability and balancing. KPIs: SAIDI (system-average interruption duration), SAIFI (frequency), CAIDI (customer-average duration), and Frequency Excursion events. The control loop: SCADA → EMS (state estimation) → AGC (regulation) → market dispatch. DER (distributed energy resource) growth makes the historical assumption "load and generation are at separate sides" obsolete — distribution-level OMS now needs ADMS-grade visibility.",
+    "citations": ["grid.kpi.saidi", "grid.kpi.saifi"]
+  },
+  {
+    "matchSubstring": "outage management",
+    "vertical": "Utilities",
+    "response": "OMS workflows: detect (AMI / customer call / SCADA), confirm, isolate, dispatch, restore, post-mortem. KPIs: Outage Detection Time, Mean Time to Restore (MTTR), Repeat-Outage Rate, and Customer Impact Hours. AMI 'last-gasp' messages cut detection time from minutes to seconds — but only if the OMS can ingest them at the rate of a major storm (10x normal volumes).",
+    "citations": ["oms.kpi.mttr", "oms.kpi.detection_time"]
+  },
+  {
+    "matchSubstring": "emergency response",
+    "vertical": "PublicSector",
+    "response": "Public-safety response KPIs: 911 Pickup Time (NENA standard is 95% < 15s), Dispatch Time, Response Time (call to on-scene), and Closure Rate. The CAD (computer-aided dispatch) is the spine — every call gets a unique CFS id, with timestamps at every state transition. Mutual-aid handoffs are a recurring data quality issue (same incident, two CFS ids, double-counted).",
+    "citations": ["er.kpi.response_time", "er.kpi.pickup_time"]
+  },
+  {
+    "matchSubstring": "social services",
+    "vertical": "PublicSector",
+    "response": "Social-services case management KPIs: Time-to-Eligibility, Case Closure Rate, Re-Entry Rate (clients returning after closure), and SNAP/TANF processing-time SLAs. The data spine: intake form → eligibility engine → benefit issuance → outcomes tracking. Federal performance reporting (e.g. ACF, FNS) drives most of the schema — local agencies layer on their own custom fields.",
+    "citations": ["ss.kpi.time_to_eligibility", "ss.kpi.reentry"]
+  },
+  {
+    "matchSubstring": "saas metrics",
+    "vertical": "HiTech",
+    "response": "The classic SaaS KPI set: ARR, Net Revenue Retention (NRR), Gross Revenue Retention, CAC Payback, Magic Number, and Logo Churn. NRR > 120% is the modern bar for top-decile B2B SaaS. The data spine: CRM (deals) ↔ billing (subscription state) ↔ product analytics (usage) — joined at the account_id level. Cohort views matter more than period views; a single quarter can mask the trend.",
+    "citations": ["saas.kpi.nrr", "saas.kpi.cac_payback", "saas.kpi.magic_number"]
+  },
+  {
+    "matchSubstring": "developer relations",
+    "vertical": "HiTech",
+    "response": "DevRel KPIs split into reach (docs visits, GitHub stars, Discord members) and conversion (sign-ups from a tutorial, time-to-first-call, sample-app forks). The hardest measurement: attribution of pipeline to a specific dev event. Tracking utm parameters from event collateral all the way through to a closed deal needs a deterministic identity stitch — most teams settle for self-reported source on the sales call.",
+    "citations": ["devrel.kpi.time_to_first_call"]
+  },
+  {
+    "matchSubstring": "chip design",
+    "vertical": "HiTech",
+    "response": "Chip design (EDA) program KPIs are dominated by tape-out schedule and verification coverage. KPIs: Verification Coverage %, Bug Find Rate per cycle, License Utilisation (EDA tools are expensive — > 80% sustained util is the goal), and Time-to-Tapeout vs. plan. The data spine: simulation farm → coverage DB → bug-tracker (Jira/Bugzilla) → schedule. Coverage closure is a long-tail problem; the last 5% takes as long as the first 80%.",
+    "citations": ["chip.kpi.coverage", "chip.kpi.tapeout"]
+  },
+  {
+    "matchSubstring": "bench management",
+    "vertical": "ProfessionalServices",
+    "response": "Professional services bench KPIs: Utilisation %, Bench-Days, Days-to-Staff, and Margin per Consultant. Utilisation is target-banded by level (analyst 80-85%, manager 70-75%, partner 50-60%) — going above the band burns out the team and sacrifices investment time. The data: HR (roster) ↔ time-tracking (utilisation) ↔ project mgmt (staffing demand) ↔ opportunity pipeline (forward-looking demand).",
+    "citations": ["bench.kpi.utilisation", "bench.kpi.bench_days"]
+  },
+  {
+    "matchSubstring": "legal case management",
+    "vertical": "ProfessionalServices",
+    "response": "Legal case management KPIs: Cycle Time per Matter, Realisation Rate (billed ÷ worked), Write-off %, and Outside-Counsel Cost per Matter. The data spine: matter intake → time-keeping → invoicing → outcome tracking. ALSP (alternative legal service providers) and AI-drafting tools are pushing realisation back up by automating the long-tail document review.",
+    "citations": ["legal.kpi.cycle_time", "legal.kpi.realisation"]
+  },
+  {
+    "matchSubstring": "airline disruption",
+    "vertical": "TTH",
+    "response": "Disruption ops centre on minimising mis-connect impact when a flight cancels. KPIs: D0 (departure on-time), Mis-Connect Rate, Re-Accommodation Time, and Crew-Legality Breach Rate (a crew member rolling out of legal duty hours). The data: ops feed (flight legs) ↔ crew planning ↔ PNR (passengers) ↔ rebooking engine. The replan is a constraint-solve — every minute of delay costs $$ in compensation under EU261/EC261.",
+    "citations": ["airline.kpi.misconnect", "airline.kpi.d0"]
+  },
+  {
+    "matchSubstring": "vacation rentals",
+    "vertical": "TTH",
+    "response": "Vacation-rental ops KPIs: Listing Conversion %, RevPAR (rev per available night), Cleaning-Turn-Time, and Cancellation-Refund $. The supply side is messy: hosts, channel managers (PMS), OTAs (Airbnb / Vrbo / Booking) — the same listing exists in 3-5 systems with different ids. Channel manager outages are the #1 source of double-booked nights.",
+    "citations": ["vr.kpi.revpar", "vr.kpi.conversion"]
+  },
+  {
+    "matchSubstring": "fraud detection",
+    "vertical": "BFSI",
+    "response": "Fraud detection trades off precision against recall. KPIs: Approval Rate, Fraud Loss bps, False-Positive Ratio (legit blocked ÷ legit total), and Manual Review Queue Time. The model stack: real-time rules + behavioural model + device fingerprint + velocity check. A lift in approval rate without a corresponding spike in losses is the holy grail; the more common shape is a tightening that costs 50bps of revenue for every 5bps of loss reduction.",
+    "citations": ["fraud.kpi.approval_rate", "fraud.kpi.fpr"]
+  },
+  {
+    "matchSubstring": "kyc",
+    "vertical": "BFSI",
+    "response": "KYC/AML decisions: onboard, decline, EDD (enhanced due diligence). KPIs: Time-to-Onboard, KYC Refresh-Backlog, SAR Filing Volume, and False-Positive Ratio at sanctions screening. The data spine: customer record + sanctions list + adverse-media + transaction monitoring. The biggest cost driver is review FTEs — every 1% drop in screening FPR saves a measurable headcount.",
+    "citations": ["kyc.kpi.time_to_onboard", "kyc.kpi.fpr"]
+  },
+  {
+    "matchSubstring": "lending decisions",
+    "vertical": "BFSI",
+    "response": "Lending decisions: approve / decline / counter-offer at what price. KPIs: Approval Rate, Funded $, 30-DPD Default %, Charge-Off %, and Yield. The credit waterfall: bureau data → fraud check → policy rules → credit model → pricing tier. Adverse-action notices (FCRA / ECOA) require traceable feature-level explanations — the lineage from raw bureau attribute to model output must survive an audit.",
+    "citations": ["lending.kpi.approval", "lending.kpi.default_30dpd"]
+  },
+  {
+    "matchSubstring": "what is data lineage",
+    "response": "Data lineage is the documented path of data from its source through every transformation to its consumption. There are two common levels: column-level (which source column feeds which derived column) and row-level (the operations that produced a specific row). OpenLineage is the de-facto open standard for emitting lineage events from compute engines (Spark, dbt, Airflow). Lineage matters most for impact analysis (\"if I change this source, what breaks?\") and regulatory traceability (\"prove this KPI was computed correctly\").",
+    "citations": ["glossary.lineage", "glossary.openlineage"]
+  },
+  {
+    "matchSubstring": "what is a data mesh",
+    "response": "Data Mesh (Zhamak Dehghani, 2019) treats data as a product owned by the domain team that produces it, with a self-serve platform providing the common infrastructure and a federated governance model setting global rules. The four principles: (1) domain ownership, (2) data as a product, (3) self-serve platform, (4) federated computational governance. The trap: most orgs adopt the org-chart change without the platform investment, which devolves into ungoverned silos.",
+    "citations": ["glossary.data_mesh"]
+  },
+  {
+    "matchSubstring": "what is a data product",
+    "response": "A data product is a discoverable, addressable, trustworthy, self-describing, interoperable, and secure dataset — Zhamak's DATSIS acronym. It has an SLA, an owner, a schema contract, documented semantics, observability, and access controls. The common implementation is a versioned table (or topic) with: a yaml/json contract, automated schema-drift checks, an SLA-monitored freshness check, and a human-readable docs page generated from the contract.",
+    "citations": ["glossary.data_product", "glossary.datsis"]
+  },
+  {
+    "matchSubstring": "what is openlineage",
+    "response": "OpenLineage is an open standard for emitting metadata events about data pipelines — start, complete, fail. Each event carries a Job (the runner), a Run (a specific execution), and a list of input/output Datasets with optional column-level lineage. Integrations exist for Airflow, dbt, Spark, Flink, and most modern orchestrators. Receivers like Marquez or DataHub aggregate the events into a navigable lineage graph.",
+    "citations": ["glossary.openlineage"]
+  },
+  {
+    "matchSubstring": "what is a knowledge graph",
+    "response": "A knowledge graph stores entities and the relationships between them as nodes and labelled edges, typically queried with a graph language (Cypher / openCypher / SPARQL / Gremlin). For data platforms it's the natural shape for catalog + lineage + semantics — a KPI is a node, the columns that feed it are nodes, the dbt models that compute it are nodes, and the edges encode \"derived_from\" / \"references\" / \"owned_by\". Graph queries find impact-analysis paths (\"what KPIs depend on column X\") that joins in SQL make awkward.",
+    "citations": ["glossary.knowledge_graph", "glossary.cypher"]
+  },
+  {
+    "matchSubstring": "iceberg vs delta",
+    "response": "Apache Iceberg and Delta Lake are both open table formats over object storage. They share the core ideas: ACID via metadata snapshots, schema evolution, time-travel, hidden partitioning. Differences in practice: Iceberg's metadata is more engine-neutral (Trino, Spark, Flink, Snowflake all read/write natively); Delta's tightest integration is with Spark/Databricks. Iceberg's row-level update path uses position-deletes + equality-deletes; Delta uses Deletion Vectors. For new green-field builds in 2026, Iceberg's multi-engine story is the deciding factor for most teams.",
+    "citations": ["glossary.iceberg", "glossary.delta_lake"]
+  },
+  {
+    "matchSubstring": "what is straight-through",
+    "response": "Straight-through processing is any workflow that completes from start to finish with no human intervention. Outside payments the term shows up in trade settlement, claims fast-track, and loan auto-decisioning. The metric you want is STP rate; the lever is usually data quality at the entry point — every missing reference field becomes an exception.",
+    "citations": ["glossary.stp"]
+  }
+]

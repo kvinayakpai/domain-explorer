@@ -15,6 +15,11 @@ interface PersonaOption {
   level: string;
 }
 
+interface CitationRef {
+  source: string;
+  label?: string;
+}
+
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -22,6 +27,37 @@ interface ChatMessage {
   recordsUsed?: string[];
   /** Mode tag: "live" (Claude API) or "demo" (canned fallback). */
   mode?: "live" | "demo";
+  /** Inline citations parsed from `[REF:<id>]` tags or supplied by canned answers. */
+  citations?: CitationRef[];
+  /** The provider that produced this answer (anthropic / openai / google / canned / cache). */
+  provider?: string;
+  /** Whether this answer came from the response cache. */
+  cached?: boolean;
+  /** End-to-end latency in milliseconds (server-reported). */
+  latencyMs?: number;
+}
+
+/** Map a provider name onto a friendly badge label. */
+function providerLabel(p?: string, cached?: boolean): string {
+  if (cached) return "Cached";
+  switch (p) {
+    case "anthropic":
+      return "Claude";
+    case "openai":
+      return "GPT-4";
+    case "google":
+      return "Gemini";
+    case "litellm":
+      return "LiteLLM";
+    case "canned":
+      return "Demo Mode";
+    case "mock":
+      return "Mock";
+    case "cache":
+      return "Cached";
+    default:
+      return p ?? "";
+  }
 }
 
 export function AssistantChat({ personas }: { personas: PersonaOption[] }) {
@@ -30,6 +66,7 @@ export function AssistantChat({ personas }: { personas: PersonaOption[] }) {
   const [draft, setDraft] = React.useState<string>("");
   const [sending, setSending] = React.useState(false);
   const [openGrounding, setOpenGrounding] = React.useState<number | null>(null);
+  const [hoverCite, setHoverCite] = React.useState<{ msg: number; ref: number } | null>(null);
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
@@ -119,6 +156,42 @@ export function AssistantChat({ personas }: { personas: PersonaOption[] }) {
                   content: prior.content + parsed.text,
                   recordsUsed: receivedRecords,
                   mode,
+                })),
+              );
+            } catch {
+              /* ignore */
+            }
+          } else if (evt.event === "citation") {
+            try {
+              const parsed = JSON.parse(evt.data) as { source: string; label?: string };
+              if (parsed && typeof parsed.source === "string") {
+                setMessages((prev) =>
+                  replaceLastAssistant(prev, (prior) => {
+                    const cites = prior.citations ?? [];
+                    if (cites.find((c) => c.source === parsed.source)) return prior;
+                    return {
+                      ...prior,
+                      citations: [...cites, { source: parsed.source, label: parsed.label }],
+                    };
+                  }),
+                );
+              }
+            } catch {
+              /* ignore */
+            }
+          } else if (evt.event === "done") {
+            try {
+              const parsed = JSON.parse(evt.data) as {
+                provider?: string;
+                cached?: boolean;
+                latencyMs?: number;
+              };
+              setMessages((prev) =>
+                replaceLastAssistant(prev, (prior) => ({
+                  ...prior,
+                  provider: parsed.provider,
+                  cached: parsed.cached,
+                  latencyMs: parsed.latencyMs,
                 })),
               );
             } catch {
@@ -226,7 +299,7 @@ export function AssistantChat({ personas }: { personas: PersonaOption[] }) {
           <CardTitle className="flex items-center justify-between text-base">
             <span>Conversation</span>
             <Badge className="bg-muted text-muted-foreground" aria-label="API mode hint">
-              Claude-grounded · KG retrieval
+              Multi-provider · KG-grounded
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -255,6 +328,65 @@ export function AssistantChat({ personas }: { personas: PersonaOption[] }) {
                         ? "thinking…"
                         : "")}
                     </div>
+                    {m.role === "assistant" && (m.provider || typeof m.latencyMs === "number") ? (
+                      <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                        {m.provider ? (
+                          <span
+                            className={cn(
+                              "rounded-full border px-1.5 py-0.5 font-medium",
+                              m.cached
+                                ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                                : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+                            )}
+                            aria-label={`Provider: ${providerLabel(m.provider, m.cached)}`}
+                          >
+                            {providerLabel(m.provider, m.cached)}
+                          </span>
+                        ) : null}
+                        {typeof m.latencyMs === "number" ? (
+                          <span
+                            className="rounded-full border border-border/50 bg-muted px-1.5 py-0.5 text-muted-foreground"
+                            aria-label={`Latency: ${m.latencyMs} ms`}
+                          >
+                            {m.latencyMs} ms
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {m.role === "assistant" && m.citations && m.citations.length > 0 ? (
+                      <div className="flex flex-wrap items-center gap-1 text-[10px]">
+                        <span className="text-muted-foreground">cites:</span>
+                        {m.citations.map((c, ci) => (
+                          <span key={ci} className="relative">
+                            <button
+                              type="button"
+                              onMouseEnter={() => setHoverCite({ msg: i, ref: ci })}
+                              onMouseLeave={() => setHoverCite(null)}
+                              onFocus={() => setHoverCite({ msg: i, ref: ci })}
+                              onBlur={() => setHoverCite(null)}
+                              className="rounded-full border border-blue-500/40 bg-blue-500/10 px-1.5 py-0.5 font-mono text-blue-700 hover:bg-blue-500/20 dark:text-blue-300"
+                              title={c.source}
+                            >
+                              [{ci + 1}] {c.label ?? c.source}
+                            </button>
+                            {hoverCite && hoverCite.msg === i && hoverCite.ref === ci ? (
+                              <span className="absolute left-0 top-full z-10 mt-1 w-64 rounded-md border bg-popover p-2 text-[11px] text-popover-foreground shadow-md">
+                                <span className="block font-mono text-muted-foreground">
+                                  {c.source}
+                                </span>
+                                {c.label ? (
+                                  <span className="mt-1 block">{c.label}</span>
+                                ) : (
+                                  <span className="mt-1 block text-muted-foreground">
+                                    Registry entry — open the catalog to inspect.
+                                  </span>
+                                )}
+                              </span>
+                            ) : null}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                     {m.role === "assistant" && m.recordsUsed && m.recordsUsed.length > 0 ? (
                       <div className="text-xs">
                         <button

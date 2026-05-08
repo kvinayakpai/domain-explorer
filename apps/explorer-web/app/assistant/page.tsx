@@ -6,7 +6,11 @@ export const dynamic = "force-dynamic";
 
 export default function AssistantPage() {
   const personas = listPersonaOptions();
-  const liveMode = Boolean(process.env.ANTHROPIC_API_KEY);
+  const liveProviders: string[] = [];
+  if (process.env.ANTHROPIC_API_KEY) liveProviders.push("Claude");
+  if (process.env.OPENAI_API_KEY) liveProviders.push("GPT");
+  if (process.env.GOOGLE_API_KEY) liveProviders.push("Gemini");
+  if (process.env.LITELLM_BASE_URL) liveProviders.push("LiteLLM");
   return (
     <div className="space-y-6">
       <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Assistant" }]} />
@@ -18,15 +22,19 @@ export default function AssistantPage() {
           openCypher templates under{" "}
           <code className="rounded bg-muted px-1 text-xs">kg/cypher/</code>.
         </p>
-        {liveMode ? (
+        {liveProviders.length > 0 ? (
           <p className="text-xs text-muted-foreground">
-            Live mode — answers come from Claude grounded on KG context.
+            Live mode — providers in failover order: {liveProviders.join(" → ")}. Repeat questions
+            stream from the in-memory cache.
           </p>
         ) : (
           <p className="text-xs text-muted-foreground">
-            Demo mode — set <code className="rounded bg-muted px-1">ANTHROPIC_API_KEY</code> to
-            enable live Claude responses. Without a key the assistant returns a deterministic
-            structured answer built from the same context bundle.
+            Demo mode — set any of <code className="rounded bg-muted px-1">ANTHROPIC_API_KEY</code>,{" "}
+            <code className="rounded bg-muted px-1">OPENAI_API_KEY</code>,{" "}
+            <code className="rounded bg-muted px-1">GOOGLE_API_KEY</code>, or{" "}
+            <code className="rounded bg-muted px-1">LITELLM_BASE_URL</code> to enable a live
+            provider. Without one the assistant streams from{" "}
+            <code className="rounded bg-muted px-1">data/canned-answers.json</code>.
           </p>
         )}
       </header>

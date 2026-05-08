@@ -88,6 +88,54 @@ In the sandbox the trace step itself wouldn't complete (it stalled at
 - `lib/duckdb.ts` uses `DuckDBInstance.create(path)` (not `fromFile`) and
   `con.runAndReadAll(sql).getRowObjectsJson()` for serialization safety.
 
+## Multi-provider LLM abstraction
+
+`apps/explorer-web/lib/llm/` exposes a vendor-agnostic `chat({ system,
+messages, persona, signal })` entry point used by `app/api/chat/route.ts`.
+Concrete providers cover Anthropic (`@anthropic-ai/sdk`), OpenAI (`openai`),
+Google Gemini (`@google/generative-ai`), and a LiteLLM proxy (any OpenAI-
+compatible endpoint). A `MockProvider` is always available as the final
+fallback so demos never break.
+
+Resolution order on every call:
+
+1. **Canned answer** — substring match against
+   `data/canned-answers.json` (50 entries spanning the 16 verticals plus
+   cross-cutting questions). First hit wins; persona/vertical hints break ties.
+2. **Response cache** — in-memory LRU keyed on
+   `SHA256({ system, messages, persona, model })`. Default 200 entries / 1 h
+   TTL. Cache hits replay the chunk list verbatim with `cached: true` on the
+   trailing `done` event so the UI can show a "Cached" badge.
+3. **Failover provider chain** — ordered by `LLM_PROVIDERS`
+   (default `anthropic,mock`). When `LITELLM_BASE_URL` is set, `litellm` is
+   prepended automatically so all traffic flows through the gateway. Rate-
+   limit / timeout / 5xx errors fall through to the next provider; the layer
+   tracks `last-success` and reorders the chain on subsequent calls.
+
+### Env vars
+
+| Var                  | Purpose                                                             |
+| -------------------- | ------------------------------------------------------------------- |
+| `ANTHROPIC_API_KEY`  | Claude (default primary)                                            |
+| `ANTHROPIC_MODEL`    | Override the Claude model id (default `claude-sonnet-4-6`)          |
+| `OPENAI_API_KEY`     | GPT-4 / GPT-4o                                                      |
+| `OPENAI_MODEL`       | Override the OpenAI model id (default `gpt-4o-mini`)                |
+| `GOOGLE_API_KEY`     | Gemini                                                              |
+| `GOOGLE_MODEL`       | Override the Gemini model id (default `gemini-1.5-flash`)           |
+| `LITELLM_BASE_URL`   | LiteLLM proxy URL (e.g. `http://localhost:4000`)                    |
+| `LITELLM_API_KEY`    | Optional bearer for the proxy                                       |
+| `LITELLM_MODEL`      | Override the model id sent to the proxy                             |
+| `LLM_PROVIDERS`      | Comma list controlling provider order (default `anthropic,mock`)    |
+
+### Citation discipline
+
+The route handler appends a "EVERY claim must be followed by a `[REF:<id>]`
+tag" rule to the system prompt. Each provider streams the model output
+through `RefStreamBuffer` which extracts `[REF:<id>]` markers (even when
+they're split across delta chunks) and forwards them as separate
+`event: citation` SSE frames. The chat UI renders them as inline footnote
+chips with hover previews.
+
 ## DuckDB API quick reference (1.2.0-alpha)
 
 ```ts
