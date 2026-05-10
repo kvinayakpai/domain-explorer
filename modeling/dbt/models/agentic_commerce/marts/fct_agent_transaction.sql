@@ -3,7 +3,7 @@
 with t as (select * from {{ ref('stg_agentic_commerce__agent_transactions') }}),
      a as (select * from {{ ref('dim_agent') }}),
      p as (select * from {{ ref('dim_principal') }}),
-     m as (select * from {{ ref('dim_merchant') }}),
+     m as (select * from {{ ref('dim_merchant_agentic') }}),
      s as (select * from {{ ref('dim_authorization_scope') }})
 
 select

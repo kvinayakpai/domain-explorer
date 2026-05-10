@@ -79,6 +79,7 @@ kg/graph.gpickle
 # Sandbox-only test detritus.
 _test_*.txt
 _sync_probe.txt
+_sync_check.txt
 
 # Build artefact — produced by package-zip.ps1, not source.
 domain-explorer-portable.zip

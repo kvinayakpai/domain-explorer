@@ -118,7 +118,7 @@ models:
       - name: principal_id
         tests: [unique, not_null]
 
-  - name: dim_merchant
+  - name: dim_merchant_agentic
     description: Dimension for merchants with agent-awareness flags.
     columns:
       - name: merchant_sk
@@ -150,7 +150,7 @@ models:
           - relationships: { to: ref('dim_agent'), field: agent_sk }
       - name: merchant_sk
         tests:
-          - relationships: { to: ref('dim_merchant'), field: merchant_sk }
+          - relationships: { to: ref('dim_merchant_agentic'), field: merchant_sk }
 
   - name: fct_intent_event
     description: Fact — one row per IntentMandate. Grain of agentic-conversion attribution.
