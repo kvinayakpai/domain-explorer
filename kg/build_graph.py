@@ -443,7 +443,7 @@ def main(argv: list[str] | None = None) -> int:
             kinds[data.get("kind", "?")] = kinds.get(data.get("kind", "?"), 0) + 1
         print(
             f"KG built: {g.number_of_nodes()} nodes, {g.number_of_edges()} edges "
-            f"→ {pickle_path} + {json_path}"
+            f"-> {pickle_path} + {json_path}"
         )
         for k, n in sorted(kinds.items(), key=lambda kv: -kv[1]):
             print(f"  {k:18s} {n}")

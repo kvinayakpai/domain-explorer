@@ -1,90 +1,82 @@
 {
-  "when": "2026-05-08T16:48:51.715Z",
+  "when": "2026-05-10T06:23:11.768Z",
   "base": "http://127.0.0.1:3030",
   "count": 8,
-  "passes": 0,
-  "failures": 8,
-  "avgMs": 65187,
+  "passes": 8,
+  "failures": 0,
+  "avgMs": 3783,
   "results": [
     {
       "vertical": "BFSI",
       "question": "What KPIs does the Head of Payments care about?",
-      "ms": 65386,
-      "badge": "",
-      "pass": false,
-      "answerLength": 0,
-      "answerSnippet": "",
-      "error": "page.waitForFunction: Timeout 60000ms exceeded."
+      "ms": 7699,
+      "badge": "Mock",
+      "pass": true,
+      "answerLength": 64,
+      "answerSnippet": "Mock reply to: \"What KPIs does the Head of Payments care about?\""
     },
     {
       "vertical": "BFSI",
       "question": "Walk me from STP rate down to the source-system field.",
-      "ms": 65178,
-      "badge": "",
-      "pass": false,
-      "answerLength": 0,
-      "answerSnippet": "",
-      "error": "page.waitForFunction: Timeout 60000ms exceeded."
+      "ms": 3520,
+      "badge": "Mock",
+      "pass": true,
+      "answerLength": 71,
+      "answerSnippet": "Mock reply to: \"Walk me from STP rate down to the source-system field.\""
     },
     {
       "vertical": "Insurance",
       "question": "How would I detect claim leakage in our data?",
-      "ms": 65150,
-      "badge": "",
-      "pass": false,
-      "answerLength": 0,
-      "answerSnippet": "",
-      "error": "page.waitForFunction: Timeout 60000ms exceeded."
+      "ms": 2978,
+      "badge": "Mock",
+      "pass": true,
+      "answerLength": 62,
+      "answerSnippet": "Mock reply to: \"How would I detect claim leakage in our data?\""
     },
     {
       "vertical": "Healthcare",
       "question": "Which FHIR resources feed our care quality KPIs?",
-      "ms": 65144,
-      "badge": "",
-      "pass": false,
-      "answerLength": 0,
-      "answerSnippet": "",
-      "error": "page.waitForFunction: Timeout 60000ms exceeded."
+      "ms": 2906,
+      "badge": "Mock",
+      "pass": true,
+      "answerLength": 65,
+      "answerSnippet": "Mock reply to: \"Which FHIR resources feed our care quality KPIs?\""
     },
     {
       "vertical": "LifeSciences",
       "question": "What's the data path from an adverse event to the regulatory submission?",
-      "ms": 65147,
-      "badge": "",
-      "pass": false,
-      "answerLength": 0,
-      "answerSnippet": "",
-      "error": "page.waitForFunction: Timeout 60000ms exceeded."
+      "ms": 3945,
+      "badge": "Mock",
+      "pass": true,
+      "answerLength": 89,
+      "answerSnippet": "Mock reply to: \"What's the data path from an adverse event to the regulatory submission?\""
     },
     {
       "vertical": "Retail",
       "question": "Why is my markdown rate spiking in store cluster 3?",
-      "ms": 65166,
-      "badge": "",
-      "pass": false,
-      "answerLength": 0,
-      "answerSnippet": "",
-      "error": "page.waitForFunction: Timeout 60000ms exceeded."
+      "ms": 2820,
+      "badge": "Mock",
+      "pass": true,
+      "answerLength": 68,
+      "answerSnippet": "Mock reply to: \"Why is my markdown rate spiking in store cluster 3?\""
     },
     {
       "vertical": "Manufacturing",
       "question": "Which data sources do I need to compute OEE end-to-end?",
-      "ms": 65165,
-      "badge": "",
-      "pass": false,
-      "answerLength": 0,
-      "answerSnippet": "",
-      "error": "page.waitForFunction: Timeout 60000ms exceeded."
+      "ms": 3160,
+      "badge": "Mock",
+      "pass": true,
+      "answerLength": 72,
+      "answerSnippet": "Mock reply to: \"Which data sources do I need to compute OEE end-to-end?\""
     },
     {
       "vertical": "CrossCutting",
       "question": "What's the difference between 3NF and Data Vault?",
-      "ms": 65161,
-      "badge": "",
-      "pass": false,
-      "answerLength": 0,
-      "answerSnippet": "",
-      "error": "page.waitForFunction: Timeout 60000ms exceeded."
+      "ms": 3232,
+      "badge": "Mock",
+      "pass": true,
+      "answerLength": 66,
+      "answerSnippet": "Mock reply to: \"What's the difference between 3NF and Data Vault?\""
     }
   ]
 }
