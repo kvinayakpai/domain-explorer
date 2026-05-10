@@ -1,65 +1,90 @@
 {
-  "when": "2026-05-08T16:30:09.822Z",
+  "when": "2026-05-08T16:48:51.715Z",
   "base": "http://127.0.0.1:3030",
   "count": 8,
-  "failures": 0,
-  "avgMs": 13183,
+  "passes": 0,
+  "failures": 8,
+  "avgMs": 65187,
   "results": [
     {
       "vertical": "BFSI",
       "question": "What KPIs does the Head of Payments care about?",
-      "ms": 13382,
+      "ms": 65386,
       "badge": "",
-      "responseSnippet": "ity Lead — Water Utilities Chief Actuary · C-suite Try asking· Insurance How would I detect claim leakage in our data?What pulls claim cycle time longer than target?How is subrogation recovery rate built?Show me the lineage for fact_payments_daily.Which subdomains have full data models vs lightweight?Pick any persona and show me their decisions and supporting KPIs. Conversation Multi-provider · KG-grounded Pick a persona and ask anything about their decisions, KPIs, or source systems. Send Domain Explorer · MIT · 16 verticals · 116 subdomains seeded · 182 glossary terms · 390 curated KPIs"
+      "pass": false,
+      "answerLength": 0,
+      "answerSnippet": "",
+      "error": "page.waitForFunction: Timeout 60000ms exceeded."
     },
     {
       "vertical": "BFSI",
       "question": "Walk me from STP rate down to the source-system field.",
-      "ms": 13166,
+      "ms": 65178,
       "badge": "",
-      "responseSnippet": "ity Lead — Water Utilities Chief Actuary · C-suite Try asking· Insurance How would I detect claim leakage in our data?What pulls claim cycle time longer than target?How is subrogation recovery rate built?Show me the lineage for fact_payments_daily.Which subdomains have full data models vs lightweight?Pick any persona and show me their decisions and supporting KPIs. Conversation Multi-provider · KG-grounded Pick a persona and ask anything about their decisions, KPIs, or source systems. Send Domain Explorer · MIT · 16 verticals · 116 subdomains seeded · 182 glossary terms · 390 curated KPIs"
+      "pass": false,
+      "answerLength": 0,
+      "answerSnippet": "",
+      "error": "page.waitForFunction: Timeout 60000ms exceeded."
     },
     {
       "vertical": "Insurance",
       "question": "How would I detect claim leakage in our data?",
-      "ms": 13160,
+      "ms": 65150,
       "badge": "",
-      "responseSnippet": "ity Lead — Water Utilities Chief Actuary · C-suite Try asking· Insurance How would I detect claim leakage in our data?What pulls claim cycle time longer than target?How is subrogation recovery rate built?Show me the lineage for fact_payments_daily.Which subdomains have full data models vs lightweight?Pick any persona and show me their decisions and supporting KPIs. Conversation Multi-provider · KG-grounded Pick a persona and ask anything about their decisions, KPIs, or source systems. Send Domain Explorer · MIT · 16 verticals · 116 subdomains seeded · 182 glossary terms · 390 curated KPIs"
+      "pass": false,
+      "answerLength": 0,
+      "answerSnippet": "",
+      "error": "page.waitForFunction: Timeout 60000ms exceeded."
     },
     {
       "vertical": "Healthcare",
       "question": "Which FHIR resources feed our care quality KPIs?",
-      "ms": 13169,
+      "ms": 65144,
       "badge": "",
-      "responseSnippet": "ity Lead — Water Utilities Chief Actuary · C-suite Try asking· Insurance How would I detect claim leakage in our data?What pulls claim cycle time longer than target?How is subrogation recovery rate built?Show me the lineage for fact_payments_daily.Which subdomains have full data models vs lightweight?Pick any persona and show me their decisions and supporting KPIs. Conversation Multi-provider · KG-grounded Pick a persona and ask anything about their decisions, KPIs, or source systems. Send Domain Explorer · MIT · 16 verticals · 116 subdomains seeded · 182 glossary terms · 390 curated KPIs"
+      "pass": false,
+      "answerLength": 0,
+      "answerSnippet": "",
+      "error": "page.waitForFunction: Timeout 60000ms exceeded."
     },
     {
       "vertical": "LifeSciences",
       "question": "What's the data path from an adverse event to the regulatory submission?",
-      "ms": 13144,
+      "ms": 65147,
       "badge": "",
-      "responseSnippet": "ity Lead — Water Utilities Chief Actuary · C-suite Try asking· Insurance How would I detect claim leakage in our data?What pulls claim cycle time longer than target?How is subrogation recovery rate built?Show me the lineage for fact_payments_daily.Which subdomains have full data models vs lightweight?Pick any persona and show me their decisions and supporting KPIs. Conversation Multi-provider · KG-grounded Pick a persona and ask anything about their decisions, KPIs, or source systems. Send Domain Explorer · MIT · 16 verticals · 116 subdomains seeded · 182 glossary terms · 390 curated KPIs"
+      "pass": false,
+      "answerLength": 0,
+      "answerSnippet": "",
+      "error": "page.waitForFunction: Timeout 60000ms exceeded."
     },
     {
       "vertical": "Retail",
       "question": "Why is my markdown rate spiking in store cluster 3?",
-      "ms": 13154,
+      "ms": 65166,
       "badge": "",
-      "responseSnippet": "ity Lead — Water Utilities Chief Actuary · C-suite Try asking· Insurance How would I detect claim leakage in our data?What pulls claim cycle time longer than target?How is subrogation recovery rate built?Show me the lineage for fact_payments_daily.Which subdomains have full data models vs lightweight?Pick any persona and show me their decisions and supporting KPIs. Conversation Multi-provider · KG-grounded Pick a persona and ask anything about their decisions, KPIs, or source systems. Send Domain Explorer · MIT · 16 verticals · 116 subdomains seeded · 182 glossary terms · 390 curated KPIs"
+      "pass": false,
+      "answerLength": 0,
+      "answerSnippet": "",
+      "error": "page.waitForFunction: Timeout 60000ms exceeded."
     },
     {
       "vertical": "Manufacturing",
       "question": "Which data sources do I need to compute OEE end-to-end?",
-      "ms": 13138,
+      "ms": 65165,
       "badge": "",
-      "responseSnippet": "ity Lead — Water Utilities Chief Actuary · C-suite Try asking· Insurance How would I detect claim leakage in our data?What pulls claim cycle time longer than target?How is subrogation recovery rate built?Show me the lineage for fact_payments_daily.Which subdomains have full data models vs lightweight?Pick any persona and show me their decisions and supporting KPIs. Conversation Multi-provider · KG-grounded Pick a persona and ask anything about their decisions, KPIs, or source systems. Send Domain Explorer · MIT · 16 verticals · 116 subdomains seeded · 182 glossary terms · 390 curated KPIs"
+      "pass": false,
+      "answerLength": 0,
+      "answerSnippet": "",
+      "error": "page.waitForFunction: Timeout 60000ms exceeded."
     },
     {
       "vertical": "CrossCutting",
       "question": "What's the difference between 3NF and Data Vault?",
-      "ms": 13150,
+      "ms": 65161,
       "badge": "",
-      "responseSnippet": "ity Lead — Water Utilities Chief Actuary · C-suite Try asking· Insurance How would I detect claim leakage in our data?What pulls claim cycle time longer than target?How is subrogation recovery rate built?Show me the lineage for fact_payments_daily.Which subdomains have full data models vs lightweight?Pick any persona and show me their decisions and supporting KPIs. Conversation Multi-provider · KG-grounded Pick a persona and ask anything about their decisions, KPIs, or source systems. Send Domain Explorer · MIT · 16 verticals · 116 subdomains seeded · 182 glossary terms · 390 curated KPIs"
+      "pass": false,
+      "answerLength": 0,
+      "answerSnippet": "",
+      "error": "page.waitForFunction: Timeout 60000ms exceeded."
     }
   ]
 }
