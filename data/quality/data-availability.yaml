@@ -1135,3 +1135,21 @@ subdomains:
     tier: 3
     citations: []
     notes: Would require imagination — not recommended. Pricefx / PROS / Vendavo schemas are proprietary; only basic price-list entity is generic.
+
+  # CrossCutting horizontal — added with the agentic_commerce anchor (2026-Q2).
+  - id: agentic_commerce
+    vertical: CrossCutting
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'AP2 — Agentic Payments Protocol', url: 'https://ap2-protocol.org' }
+      - { name: 'Visa Trusted Agent Protocol / Visa Agent Toolkit', url: 'https://developer.visa.com/agentic' }
+      - { name: 'Mastercard Agent Pay', url: 'https://developer.mastercard.com/agent-pay' }
+      - { name: 'Stripe Agentic Commerce SDK', url: 'https://docs.stripe.com/agents' }
+      - { name: 'Anthropic Model Context Protocol', url: 'https://modelcontextprotocol.io' }
+      - { name: 'OAuth 2.1 + RFC 9396 RAR', url: 'https://datatracker.ietf.org/doc/rfc9396/' }
+      - { name: 'Skyfire (KYA / agent payments)', url: 'https://skyfire.xyz' }
+      - { name: 'Crossmint headless checkout', url: 'https://docs.crossmint.com/agents' }
+      - { name: 'W3C Secure Payment Confirmation', url: 'https://www.w3.org/TR/secure-payment-confirmation/' }
+    entities: [Agent, Principal, Merchant, AuthorizationGrant, AgentSession, IntentEvent, ToolCall, Cart, AgentTransaction, AttributionLink, TrustScoreEvent, Dispute]
+    notes: New flagship anchor — fully attributed against AP2/MCP/Visa/Mastercard/Stripe public docs.

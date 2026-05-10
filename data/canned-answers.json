@@ -302,5 +302,74 @@
     "matchSubstring": "what is straight-through",
     "response": "Straight-through processing is any workflow that completes from start to finish with no human intervention. Outside payments the term shows up in trade settlement, claims fast-track, and loan auto-decisioning. The metric you want is STP rate; the lever is usually data quality at the entry point — every missing reference field becomes an exception.",
     "citations": ["glossary.stp"]
+  },
+  {
+    "matchSubstring": "what is agentic commerce",
+    "vertical": "CrossCutting",
+    "response": "Agentic commerce is the discovery, authorization, payment, and fulfillment of transactions where AI agents act on behalf of human principals. The 2026 ecosystem stack:\n\n• Identity & delegation — AP2 (Agentic Payments Protocol) defines IntentMandate / CartMandate / PaymentMandate as signed payloads. Visa Trusted Agent Protocol and Mastercard Agent Pay carry an Agent Authorization ID (AAID) in the auth message via the Visa AGI / Mastercard AAI flag.\n• Discovery — merchants publish catalogs over Anthropic's Model Context Protocol (MCP) — Stripe, Shopify, PayPal, Square all run public MCP servers.\n• Payment rails — Stripe Agentic Commerce SDK and Klarna Agent SDK on the merchant side; Skyfire and Crossmint as agent-native payments infra.\n• Authorization — OAuth 2.1 + RFC 9396 Rich Authorization Requests carry scoped delegation grants (max amount, merchant set, expiry).\n\nThe headline KPI is Agent-Attributable GMV %. The hardest data problem is intent-grain attribution — a principal expresses intent on Monday, the agent transacts on Friday, and last-click models erase the agent. [REF:ac.kpi.agent_attributable_gmv_pct]",
+    "citations": [
+      "ac.kpi.agent_attributable_gmv_pct",
+      "ac.kpi.agent_conversion_rate",
+      "glossary.ap2",
+      "glossary.mcp",
+      "glossary.agent_identity_aaid"
+    ]
+  },
+  {
+    "matchSubstring": "attribute revenue to an agent",
+    "vertical": "CrossCutting",
+    "response": "Agent attribution must run at intent grain, not session grain. The minimal model:\n\n1. Persist every IntentMandate as the unit of credit — intent_id is the join key, not the visit or session.\n2. When a PaymentMandate captures, walk back through the AP2 mandate chain (PaymentMandate → CartMandate → IntentMandate) and write rows into attribution_link with a model in {first_touch, last_touch, linear, time_decay, ml_uplift} and a 0..1 weight.\n3. Default to time_decay with a half-life tuned per category — apparel and electronics tolerate 7-day; groceries should be 24-48h.\n4. Surface the multi-touch view in fct_agent_transaction joined to attribution_link; let BI sum weight × amount_usd to roll up Agent-Attributable GMV.\n5. Accept that disputes and refunds arrive days later — your attribution rows must be re-keyed by intent_id so corrections fan out cleanly.\n\n[REF:ac.kpi.agent_attributable_gmv_pct]",
+    "citations": [
+      "ac.kpi.agent_attributable_gmv_pct",
+      "ac.kpi.agent_conversion_rate",
+      "glossary.intentmandate",
+      "glossary.agentic_conversion"
+    ]
+  },
+  {
+    "matchSubstring": "payment rails support agents",
+    "vertical": "CrossCutting",
+    "response": "Five rails are agent-aware as of mid-2026:\n\n• Cards via Visa Trusted Agent Protocol — Visa AGI flag in the auth message, AAID-keyed agent identity, dispute carry-back to the operator under AP2 §7.\n• Cards via Mastercard Agent Pay — AAI flag, Authorization Token for Agents, similar carry-back semantics.\n• Stripe Agentic Commerce SDK — CheckoutSessions tagged with agent context, SetupIntents bound to a delegation grant.\n• Skyfire — agent-native payment tokens with per-call billing; no card-network hop, settles in stables or USD.\n• Crossmint — headless checkout for agents; fiat or stables; targets any merchant via a hosted wallet.\n\nKlarna Agent SDK adds BNPL under the same delegation model. PayPal MCP exposes Pay-with-PayPal as a tool call. The underlying ISO 20022 / ISO 8583 messages still apply — agentic doesn't replace ACH, SEPA, wires; it adds the AAID flag and signed mandate hash on top.",
+    "citations": [
+      "src.visa_agent_toolkit",
+      "src.mastercard_agent_pay",
+      "src.stripe_agentic_sdk",
+      "src.skyfire",
+      "src.crossmint"
+    ]
+  },
+  {
+    "matchSubstring": "what's ap2",
+    "vertical": "CrossCutting",
+    "response": "AP2 — the Agentic Payments Protocol — is an open spec (Google + Visa + Mastercard + Amex et al., circa 2026-Q1) that defines three signed payloads that flow through every agent purchase:\n\n• IntentMandate — signed by the principal; declares what they want done (budget, deadline, category).\n• CartMandate — built by the agent and presented for one-tap confirmation; lines, taxes, shipping, totals.\n• PaymentMandate — authorizes the actual debit; references both upstream mandates; its signature is what the network verifies before authorization.\n\nKey AP2 features beyond the mandate chain: AAID (Agent Authorization ID) for cross-network agent identity; delegation chain proof from principal → operator → agent → merchant; carry-back of disputes to the agent operator under §7 when agent fault is established; signal exchange under §6 for cross-network KYA where contractually permitted. AP2 sits on top of OAuth 2.1 + RFC 9396 RAR for the delegation substrate.",
+    "citations": [
+      "glossary.ap2",
+      "glossary.intentmandate",
+      "glossary.cartmandate",
+      "glossary.paymentmandate",
+      "glossary.agent_identity_aaid"
+    ]
+  },
+  {
+    "matchSubstring": "prevent agent fraud",
+    "vertical": "CrossCutting",
+    "response": "Agent fraud looks bot-like by design — high cadence, machine-clean inputs, IP shifts. Don't apply human-trained fraud rules unchanged. The 2026 playbook:\n\n1. Verify identity, not behavior — require AAID + signed operator JWT + AP2 delegation chain. Reject self-asserted bearer agents above trivial amounts.\n2. KYA score the agent itself — Skyfire, Visa KYA, Mastercard AAI feed cross-network signals; build local features on top (per-merchant velocity, refund rate, dispute rate by AAID).\n3. Step up the human, not the agent — when amount crosses the grant's stepup_required_above_minor or when KYA score is uncertain, fire WebAuthn or W3C Secure Payment Confirmation back to the principal. [REF:ac.kpi.stepup_rate]\n4. Bind the payment token — cryptographically tie the tokenized PAN to the AAID + grant_id + merchant tuple so a stolen token can't replay.\n5. Cache trust short — KYA score TTL ≤ 60s; subscribe to Skyfire deny-list webhooks and Visa AAID revocation feed; on stale-score uncertainty, step up rather than block.\n6. Capture the chain at dispute time — preserve the IntentMandate + CartMandate + tool_call trace so AP2 §7 carry-back arbitration has evidence.\n\n[REF:ac.kpi.agent_chargeback_rate] [REF:ac.kpi.cross_agent_trust_score]",
+    "citations": [
+      "ac.kpi.agent_chargeback_rate",
+      "ac.kpi.cross_agent_trust_score",
+      "ac.kpi.stepup_rate",
+      "glossary.agent_trust_score_kya",
+      "glossary.payment_token_binding"
+    ]
+  },
+  {
+    "matchSubstring": "what is mcp",
+    "vertical": "CrossCutting",
+    "response": "MCP — the Model Context Protocol — is Anthropic's open JSON-RPC 2.0 contract that lets an LLM agent talk to external tools, resources, and prompts in a standardized way. The wire format is plain JSON-RPC 2.0 over HTTPS or stdio.\n\nAn MCP server exposes three primitives: tools (callable methods like search_products), resources (addressable data the agent can read), and prompts (templates the operator can compose). For commerce, the canonical MCP servers are run by Stripe, Shopify, Square, and PayPal — they expose product search, cart manipulation, and checkout as named tools the agent can invoke. Auth is OAuth2 plus capability tokens scoped to the specific agent + grant.\n\nFrom the data side, every method invocation is one row in tool_call: server_name, tool_name, latency_ms, cost_usd, status. The server logs are firehose-volume — millions of rows/day for an active merchant — and the right move is to keep the high-cardinality trace in a hot store and roll call counts into fct_tool_call for KPIs like Mean Tool-Call Cost per Conversion.",
+    "citations": [
+      "glossary.mcp",
+      "glossary.tool_call",
+      "ac.kpi.tool_call_cost"
+    ]
   }
 ]

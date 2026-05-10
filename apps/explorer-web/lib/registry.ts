@@ -40,4 +40,5 @@ export const VERTICALS = [
   { slug: "PublicSector", label: "Public Sector" },
   { slug: "HiTech", label: "Hi-Tech" },
   { slug: "ProfessionalServices", label: "Professional Services" },
+  { slug: "CrossCutting", label: "Cross-Cutting / Horizontal" },
 ] as const;

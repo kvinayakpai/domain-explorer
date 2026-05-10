@@ -1133,3 +1133,115 @@ terms:
     related_subdomains: [customer_analytics, ehr_integrations]
     related_kpis: []
     steward: Data Lineage Steward
+
+  # ===========================================================================
+  # Agentic Commerce — added with the agentic_commerce anchor.
+  # ===========================================================================
+  - name: AP2
+    aliases: [Agentic Payments Protocol]
+    definition: Open protocol (Google + Visa + Mastercard + Amex et al.) that defines IntentMandate, CartMandate, and PaymentMandate as signed payloads carrying agent-initiated purchase authority through the payments stack. Includes carry-back of disputes to agent operators.
+    related_subdomains: [agentic_commerce, payments, fraud]
+    related_kpis: [ac.kpi.agent_attributable_gmv_pct, ac.kpi.agent_chargeback_rate]
+    steward: Open Agent Standards Architect
+  - name: MCP
+    aliases: [Model Context Protocol]
+    definition: JSON-RPC 2.0 contract published by Anthropic for connecting LLM agents to external tools, resources, and prompts. Implemented by Stripe, Shopify, Square, PayPal MCP servers among others.
+    related_subdomains: [agentic_commerce]
+    related_kpis: [ac.kpi.catalog_mcp_discoverability, ac.kpi.tool_call_cost]
+    steward: Open Agent Standards Architect
+  - name: Agent Identity (AAID)
+    aliases: [AAID, Agent Authorization ID]
+    definition: Network-issued identifier (Visa Trusted Agent Protocol / Mastercard Agent Pay) that uniquely identifies a transacting agent across operators. Carried in the auth message via the Visa AGI / Mastercard AAI flag.
+    related_subdomains: [agentic_commerce, fraud]
+    related_kpis: [ac.kpi.agent_id_verification_pass]
+    steward: Agent Trust & Safety Lead
+  - name: Delegation Chain
+    aliases: []
+    definition: The signed chain of authority from principal → operator → agent → merchant that proves an agent's transaction was legitimately authorized. Verified at AP2 PaymentMandate evaluation time.
+    related_subdomains: [agentic_commerce]
+    related_kpis: [ac.kpi.agent_id_verification_pass]
+    steward: Agent Trust & Safety Lead
+  - name: Intent Event
+    aliases: [IntentMandate]
+    definition: Signed declaration of what the principal wants the agent to accomplish (budget, deadline, category). The grain at which agentic-conversion attribution is computed.
+    related_subdomains: [agentic_commerce]
+    related_kpis: [ac.kpi.agent_conversion_rate, ac.kpi.intent_to_purchase_p50]
+    steward: Agent Experience PM
+  - name: Step-Up Auth (SPC / WebAuthn)
+    aliases: [Secure Payment Confirmation, FIDO2]
+    definition: Out-of-band re-authentication of the human principal via WebAuthn or W3C Secure Payment Confirmation when an agent transaction crosses a risk-threshold (amount, new merchant, anomalous geography).
+    related_subdomains: [agentic_commerce, fraud, payments]
+    related_kpis: [ac.kpi.stepup_rate]
+    steward: Payments Risk Officer
+  - name: Tool Call
+    aliases: [MCP Method Invocation]
+    definition: A single JSON-RPC 2.0 method invocation an agent sends to an MCP server (e.g. search_products, create_cart, payment_intent.create). Recorded for trace, billing, and audit.
+    related_subdomains: [agentic_commerce]
+    related_kpis: [ac.kpi.tool_call_cost]
+    steward: Merchant Agent Integration Engineer
+  - name: Agentic Conversion
+    aliases: []
+    definition: A purchase whose attribution chain terminates at an agent's IntentMandate rather than a click on a marketing surface. Multi-touch credit assignment must operate at intent grain.
+    related_subdomains: [agentic_commerce]
+    related_kpis: [ac.kpi.agent_attributable_gmv_pct, ac.kpi.agent_conversion_rate]
+    steward: Head of Agentic Commerce
+  - name: Cart Handoff
+    aliases: []
+    definition: The signed transfer of a built CartMandate from agent to principal for one-tap confirmation, or from one agent to another agent (cross-platform).
+    related_subdomains: [agentic_commerce]
+    related_kpis: []
+    steward: Agent Experience PM
+  - name: Payment Token Binding
+    aliases: []
+    definition: Cryptographic binding of a tokenized payment instrument to a specific agent + grant + merchant tuple, so a stolen token cannot be replayed in a different context.
+    related_subdomains: [agentic_commerce, payments]
+    related_kpis: [ac.kpi.agent_chargeback_rate]
+    steward: Payments Risk Officer
+  - name: RAR
+    aliases: [Rich Authorization Request, RFC 9396]
+    definition: OAuth 2.0 extension (RFC 9396) that lets an authorization request carry structured authorization_details (amount caps, merchant scope, expiry). The protocol substrate AP2 IntentMandates ride on.
+    related_subdomains: [agentic_commerce]
+    related_kpis: []
+    steward: Open Agent Standards Architect
+  - name: Agent Trust Score (KYA)
+    aliases: [Know-Your-Agent]
+    definition: Composite trust index for an agent derived from operator attestation, behavioral history, dispute rate, and cross-network signals (Skyfire, Visa KYA, Mastercard AAI).
+    related_subdomains: [agentic_commerce, fraud]
+    related_kpis: [ac.kpi.cross_agent_trust_score]
+    steward: Agent Trust & Safety Lead
+  - name: Counterparty Agent
+    aliases: []
+    definition: A non-buying agent on the other side of an agent-to-agent interaction — typically a merchant-side concierge or negotiator. Both sides require KYA and signed delegation.
+    related_subdomains: [agentic_commerce]
+    related_kpis: []
+    steward: Agent Trust & Safety Lead
+  - name: Principal
+    aliases: [Cardholder of Record]
+    definition: Human user on whose behalf an agent acts. Remains the cardholder of record for all dispute and refund purposes.
+    related_subdomains: [agentic_commerce, payments]
+    related_kpis: [ac.kpi.human_override_rate]
+    steward: Chief Privacy Officer
+  - name: Bearer Agent
+    aliases: []
+    definition: An agent that holds a delegation token by virtue of possession (analogous to a bearer instrument). Risky relative to attested agents and typically capped at low amounts.
+    related_subdomains: [agentic_commerce]
+    related_kpis: []
+    steward: Agent Trust & Safety Lead
+  - name: IntentMandate
+    aliases: []
+    definition: AP2 payload signed by the principal expressing what they want done. First node in the AP2 mandate chain.
+    related_subdomains: [agentic_commerce]
+    related_kpis: [ac.kpi.agent_conversion_rate]
+    steward: Open Agent Standards Architect
+  - name: CartMandate
+    aliases: []
+    definition: AP2 payload built by the agent and presented to the principal for one-tap confirmation. Contains line items, totals, merchant — signed for non-repudiation.
+    related_subdomains: [agentic_commerce]
+    related_kpis: []
+    steward: Open Agent Standards Architect
+  - name: PaymentMandate
+    aliases: []
+    definition: AP2 payload that authorizes the actual debit. References the CartMandate and IntentMandate; its signature is the substrate networks check before authorization.
+    related_subdomains: [agentic_commerce]
+    related_kpis: [ac.kpi.agent_chargeback_rate]
+    steward: Open Agent Standards Architect

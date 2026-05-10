@@ -46,6 +46,7 @@ VERTICAL_LABELS: dict[str, str] = {
     "PublicSector": "Public Sector",
     "HiTech": "Hi-Tech",
     "ProfessionalServices": "Professional Services",
+    "CrossCutting": "Cross-Cutting / Horizontal",
 }
 
 
@@ -190,6 +191,9 @@ def build_graph(data_root: Path) -> nx.MultiDiGraph:
     # ---- Cross-vertical KPI registry ----
     for raw in _read_yaml_dir(data_root / "kpis"):
         for k in (raw or {}).get("kpis", []) or []:
+            # Skip entries that aren't registry/master shape (e.g. sql.yaml uses kpi_id).
+            if not isinstance(k, dict) or "id" not in k or "name" not in k:
+                continue
             kid = f"kpi:{k['id']}"
             if not g.has_node(kid):
                 g.add_node(

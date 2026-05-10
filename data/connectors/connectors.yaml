@@ -26,3 +26,13 @@ connectors:
   - { id: conn.cim_61968, type: CIM/IEC 61968, protocol: XML/JMS, auth: PKI, typicalSources: [Itron, Oracle MDM], latency: near-realtime, modes: [stream] }
   - { id: conn.ibm_mq, type: IBM MQ, protocol: MQ, auth: SSL + cert, typicalSources: [Mainframes, GenTax], latency: near-realtime, modes: [stream] }
   - { id: conn.soap, type: SOAP, protocol: HTTPS, auth: WS-Security, typicalSources: [GenTax, legacy SOAP services], latency: near-realtime, modes: [pull, push] }
+
+  # Agentic Commerce connectors
+  - { id: conn.stripe_agentic_rest, type: Stripe Agentic SDK REST, protocol: HTTPS JSON, auth: Bearer + agent JWT, typicalSources: [Stripe Agentic SDK], latency: realtime, modes: [pull, push] }
+  - { id: conn.mcp_jsonrpc, type: MCP (JSON-RPC 2.0), protocol: HTTPS or stdio JSON-RPC, auth: OAuth2 + capability tokens, typicalSources: [Stripe MCP, Shopify MCP, PayPal MCP, merchant MCP servers], latency: realtime, modes: [pull, push] }
+  - { id: conn.ap2_endpoint, type: AP2 mandate endpoint, protocol: HTTPS JSON, auth: mTLS + signed mandates, typicalSources: [Visa AP2, Google Gemini Buy-for-Me, merchant AP2], latency: realtime, modes: [push] }
+  - { id: conn.mastercard_agent_api, type: Mastercard Agent Pay API, protocol: HTTPS JSON, auth: OAuth2 + mTLS, typicalSources: [Mastercard Agent Pay], latency: realtime, modes: [pull, push] }
+  - { id: conn.skyfire_token_api, type: Skyfire payment-token API, protocol: HTTPS, auth: API key + agent attestation, typicalSources: [Skyfire], latency: realtime, modes: [pull] }
+  - { id: conn.crossmint_checkout, type: Crossmint headless checkout, protocol: HTTPS, auth: HMAC + agent header, typicalSources: [Crossmint], latency: realtime, modes: [push, pull] }
+  - { id: conn.oauth_rar, type: OAuth 2.1 + RFC 9396 RAR, protocol: HTTPS, auth: PKCE + DPoP + RAR, typicalSources: [Auth0 RAR, Visa AP2 authz], latency: realtime, modes: [pull, push] }
+  - { id: conn.operator_jwt, type: Operator JWT attestation header, protocol: HTTPS, auth: signed JWT (ES256), typicalSources: [Anthropic, OpenAI, Google, Amazon agent operators], latency: realtime, modes: [push] }

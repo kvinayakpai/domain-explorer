@@ -684,3 +684,76 @@ rules:
     expectation: "bid.status in OpenRTB-aligned outcomes"
     severity: medium
     sql: "SELECT COUNT(*) FROM programmatic_advertising.bid WHERE status NOT IN ('won','lost','no-decision','rejected')"
+
+  # ---------- agentic_commerce (CrossCutting) ----------
+  - id: dq_agentic_001
+    subdomain: agentic_commerce
+    table: agentic_commerce.agent_transaction
+    column: amount_minor
+    rule_type: range
+    expectation: "agent transaction amount strictly positive"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM agentic_commerce.agent_transaction WHERE amount_minor IS NULL OR amount_minor <= 0"
+
+  - id: dq_agentic_002
+    subdomain: agentic_commerce
+    table: agentic_commerce.authorization_grant
+    column: scope_expires_at
+    rule_type: range
+    expectation: "RFC 9396 RAR grant must have an expiry"
+    severity: high
+    sql: "SELECT COUNT(*) FROM agentic_commerce.authorization_grant WHERE scope_expires_at IS NULL"
+
+  - id: dq_agentic_003
+    subdomain: agentic_commerce
+    table: agentic_commerce.intent_event
+    column: agent_id
+    rule_type: foreign_key
+    expectation: "every intent_event.agent_id resolves in agent"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM agentic_commerce.intent_event i LEFT JOIN agentic_commerce.agent a ON i.agent_id = a.agent_id WHERE a.agent_id IS NULL"
+
+  - id: dq_agentic_004
+    subdomain: agentic_commerce
+    table: agentic_commerce.agent_transaction
+    column: status
+    rule_type: distribution
+    expectation: "transaction status in AP2-aligned outcomes"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM agentic_commerce.agent_transaction WHERE status NOT IN ('authorized','captured','declined','reversed','refunded','disputed')"
+
+  - id: dq_agentic_005
+    subdomain: agentic_commerce
+    table: agentic_commerce.cart
+    column: total_minor
+    rule_type: invariant
+    expectation: "cart total = subtotal + tax + shipping"
+    severity: high
+    sql: "SELECT COUNT(*) FROM agentic_commerce.cart WHERE total_minor <> (subtotal_minor + tax_minor + shipping_minor)"
+
+  - id: dq_agentic_006
+    subdomain: agentic_commerce
+    table: agentic_commerce.dispute
+    column: outcome
+    rule_type: distribution
+    expectation: "dispute.outcome restricted to {won,lost,withdrawn,carried_back}"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM agentic_commerce.dispute WHERE outcome NOT IN ('won','lost','withdrawn','carried_back')"
+
+  - id: dq_agentic_007
+    subdomain: agentic_commerce
+    table: agentic_commerce.tool_call
+    column: latency_ms
+    rule_type: range
+    expectation: "MCP tool-call latency between 0 and 60s"
+    severity: low
+    sql: "SELECT COUNT(*) FROM agentic_commerce.tool_call WHERE latency_ms IS NOT NULL AND (latency_ms < 0 OR latency_ms > 60000)"
+
+  - id: dq_agentic_008
+    subdomain: agentic_commerce
+    table: agentic_commerce.agent
+    column: kya_trust_score
+    rule_type: range
+    expectation: "KYA trust score in [0,100]"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM agentic_commerce.agent WHERE kya_trust_score IS NOT NULL AND (kya_trust_score < 0 OR kya_trust_score > 100)"

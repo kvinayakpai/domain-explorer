@@ -1,0 +1,443 @@
+id: agentic_commerce
+name: Agentic Commerce
+vertical: CrossCutting
+oneLiner: Discovery, authorization, payment, and fulfillment of transactions where AI agents act on behalf of human principals across merchants, payment networks, and open agent protocols.
+
+# Authoritative sources (as of mid-2026):
+#   AP2 — Agentic Payments Protocol (Google, Visa, Mastercard, Amex et al.)
+#     https://ap2-protocol.org — IntentMandate, CartMandate, PaymentMandate.
+#   Visa Agent Toolkit / Visa Trusted Agent Protocol (VAP)
+#     https://developer.visa.com/agentic — agent identity, scoped delegation,
+#     cardholder-of-record passthrough, dispute carry-back.
+#   Mastercard Agent Pay
+#     https://developer.mastercard.com/agent-pay — Authorization Tokens for Agents,
+#     network-issued agent identity (AAID), risk signals.
+#   Stripe Agentic Commerce SDK + Stripe MCP server
+#     https://docs.stripe.com/agents — checkout sessions with agent context,
+#     SetupIntents bound to delegation grants, refund-by-agent.
+#   Anthropic Model Context Protocol (MCP)
+#     https://modelcontextprotocol.io — JSON-RPC 2.0 server contract; Shopify MCP,
+#     official Stripe MCP, Square MCP, PayPal MCP.
+#   Skyfire — agent-native payment infrastructure
+#     https://skyfire.xyz — KYA (Know-Your-Agent), per-call payment tokens.
+#   Crossmint — wallets + checkout for agents
+#     https://docs.crossmint.com/agents — headless checkout, fiat + stables.
+#   Klarna Agent SDK; OpenAI Operator API; Google Gemini Buy-for-Me; Amazon Buy-for-Me.
+#   OAuth 2.1 (draft-ietf-oauth-v2-1) + RFC 9396 Rich Authorization Requests
+#     — scoped delegation grants ({"type":"agentic_purchase","max_amount":...,"merchant":...}).
+#   W3C Web Payments — Payment Request API + agent-aware Secure Payment Confirmation.
+#   ISO 20022 (still applies to underlying rails) and PCI DSS v4.0 for token vaults.
+
+personas:
+  - { name: Head of Agentic Commerce, title: VP, Head of Agentic Commerce, level: VP }
+  - { name: Agent Trust & Safety Lead, title: Director, Agent Trust & Safety, level: Director }
+  - { name: Payments Risk Officer, title: Senior Director, Agent Payments Risk, level: Director }
+  - { name: Agent Experience PM, title: Principal PM, Agent Experience, level: Manager }
+  - { name: Merchant Agent Integration Engineer, title: Staff Engineer, Merchant Agent Integration, level: IC }
+  - { name: Chief Privacy Officer, title: Chief Privacy Officer, level: C-suite }
+  - { name: Open Agent Standards Architect, title: Principal Architect, Open Agent Standards, level: IC }
+
+decisions:
+  - { id: ac.d.stepup_threshold, statement: "Should we accept agent-initiated purchases above $X without step-up authentication of the human principal?" }
+  - { id: ac.d.intent_attribution, statement: "How do we attribute conversion when an agent acts on a human's stated intent days earlier — does the credit go to the agent, the principal, or the prior referrer?" }
+  - { id: ac.d.merchant_tiering, statement: "Which merchants get our agent-aware checkout rails versus being treated as legacy headless web targets?" }
+  - { id: ac.d.agent_block, statement: "Block, throttle, or pass an inbound agent based on its KYA score and recent dispute history." }
+  - { id: ac.d.delegation_scope, statement: "Approve a delegation grant scope (RFC 9396 authorization_details) for a new agent — what max amount, merchant set, expiry?" }
+  - { id: ac.d.refund_route, statement: "When a purchased item is wrong but the agent session has expired, should we refund to the original method or hold for reorder?" }
+  - { id: ac.d.dispute_carryback, statement: "Carry a chargeback back to the agent operator (per Visa AP2 carry-back) or absorb on-network." }
+  - { id: ac.d.mcp_publish, statement: "Publish a product catalog over an MCP server vs leave agents to scrape the storefront." }
+  - { id: ac.d.cart_takeover, statement: "Allow an agent to take over a human cart mid-session, or require a fresh intent." }
+  - { id: ac.d.identity_proof, statement: "Require attested agent identity (signed JWT from operator) versus accept self-asserted user agent string." }
+
+kpis:
+  - id: ac.kpi.agent_attributable_gmv_pct
+    name: Agent-Attributable GMV %
+    formula: sum(agent_attributable_gmv) / sum(total_gmv)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [ac.d.merchant_tiering, ac.d.mcp_publish]
+  - id: ac.kpi.agent_conversion_rate
+    name: Agent Conversion Rate
+    formula: agent_purchases / agent_intent_events
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [ac.d.intent_attribution, ac.d.cart_takeover]
+  - id: ac.kpi.agent_chargeback_rate
+    name: Agent-Initiated Chargeback Rate
+    formula: agent_chargebacks / agent_transactions
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [ac.d.stepup_threshold, ac.d.dispute_carryback]
+  - id: ac.kpi.intent_to_purchase_p50
+    name: Intent-to-Purchase Latency (P50)
+    formula: percentile(purchase_ts - intent_ts, 0.50)
+    unit: seconds
+    direction: lower_is_better
+    decisionsSupported: [ac.d.cart_takeover]
+  - id: ac.kpi.intent_to_purchase_p95
+    name: Intent-to-Purchase Latency (P95)
+    formula: percentile(purchase_ts - intent_ts, 0.95)
+    unit: seconds
+    direction: lower_is_better
+    decisionsSupported: [ac.d.cart_takeover]
+  - id: ac.kpi.stepup_rate
+    name: Step-Up Auth Rate
+    formula: stepup_required / agent_authorizations
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [ac.d.stepup_threshold]
+  - id: ac.kpi.auth_refresh_rate
+    name: Agent Authorization Refresh Rate
+    formula: refreshed_grants / agent_grants_total
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [ac.d.delegation_scope]
+  - id: ac.kpi.agent_id_verification_pass
+    name: Agent Identity Verification Pass Rate
+    formula: agent_id_verified / agent_auth_attempts
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [ac.d.identity_proof, ac.d.agent_block]
+  - id: ac.kpi.cross_agent_trust_score
+    name: Cross-Agent Trust Score (median)
+    formula: median(kya_trust_score)
+    unit: index
+    direction: higher_is_better
+    decisionsSupported: [ac.d.agent_block]
+  - id: ac.kpi.refund_rate_agent
+    name: Refund Rate on Agent Purchases
+    formula: agent_refunds / agent_purchases
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [ac.d.refund_route]
+  - id: ac.kpi.human_override_rate
+    name: Human Override Rate
+    formula: human_overrides / agent_proposed_purchases
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [ac.d.stepup_threshold]
+  - id: ac.kpi.catalog_mcp_discoverability
+    name: Catalog Discoverability via MCP
+    formula: products_listed_via_mcp / products_listed_total
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [ac.d.mcp_publish]
+  - id: ac.kpi.agent_affinity
+    name: Agent Affinity (returning agents per merchant)
+    formula: distinct_agents_repeat_30d / distinct_agents_30d
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [ac.d.merchant_tiering]
+  - id: ac.kpi.tool_call_cost
+    name: Mean Tool-Call Cost per Conversion
+    formula: sum(tool_call_cost) / count(agent_purchases)
+    unit: USD
+    direction: lower_is_better
+
+dataModel:
+  entities:
+    - name: agent
+      description: Autonomous AI agent that may transact on behalf of a principal. Identified by AAID (Agent Authorization ID) per AP2 / Mastercard Agent Pay registry.
+      keys: [agent_id]
+      attributes:
+        - { name: agent_id, type: varchar(64), isPrimaryKey: true }
+        - { name: aaid, type: varchar(64), description: "Network-issued Agent Authorization ID (AP2 §4.2 / Mastercard Agent Pay)" }
+        - { name: operator_org, type: varchar(255), description: "Operator: anthropic|openai|google|amazon|klarna|merchant_internal" }
+        - { name: agent_kind, type: varchar(32), description: "shopping_assistant|task_agent|browser_agent|chat_agent|workflow_agent" }
+        - { name: model_family, type: varchar(64), description: "claude-opus-4|gpt-4o|gemini-2-ultra|...; recorded for risk attribution" }
+        - { name: kya_status, type: varchar(16), description: "Know-Your-Agent: verified|self_asserted|denied" }
+        - { name: kya_trust_score, type: "decimal(5,2)", description: "Skyfire/Visa-derived trust index 0..100" }
+        - { name: created_at, type: timestamp }
+        - { name: status, type: varchar(16), description: "active|paused|blocked|retired" }
+
+    - name: principal
+      description: Human user on whose behalf an agent acts. The cardholder-of-record per Visa Trusted Agent Protocol passthrough.
+      keys: [principal_id]
+      attributes:
+        - { name: principal_id, type: varchar(64), isPrimaryKey: true }
+        - { name: external_user_ref, type: varchar(128), description: "Pseudonymous user ref from issuer/wallet" }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: kyc_level, type: varchar(8), description: "L0|L1|L2|L3 per FATF tiering" }
+        - { name: created_at, type: timestamp }
+        - { name: stepup_capable, type: boolean, description: "WebAuthn / SPC / push step-up enrolled" }
+        - { name: status, type: varchar(16) }
+
+    - name: merchant
+      description: Merchant / seller, optionally agent-aware (publishes MCP server, accepts AP2 PaymentMandate).
+      keys: [merchant_id]
+      attributes:
+        - { name: merchant_id, type: varchar(64), isPrimaryKey: true }
+        - { name: legal_name, type: varchar(255) }
+        - { name: domain, type: varchar(255) }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: mcc, type: varchar(4), description: "ISO 18245 Merchant Category Code" }
+        - { name: agent_aware_tier, type: varchar(16), description: "tier1_native|tier2_mcp|tier3_legacy" }
+        - { name: mcp_endpoint, type: text, description: "JSON-RPC 2.0 MCP server URL" }
+        - { name: ap2_endpoint, type: text, description: "AP2 mandate verification endpoint" }
+        - { name: created_at, type: timestamp }
+
+    - name: authorization_grant
+      description: OAuth 2.1 + RFC 9396 Rich Authorization Request issued by the principal authorizing an agent for a scoped purchase set. AP2 IntentMandate maps onto this.
+      keys: [grant_id]
+      attributes:
+        - { name: grant_id, type: varchar(64), isPrimaryKey: true }
+        - { name: principal_id, type: varchar(64), isForeignKey: true, references: principal.principal_id }
+        - { name: agent_id, type: varchar(64), isForeignKey: true, references: agent.agent_id }
+        - { name: rar_type, type: varchar(64), description: "RFC 9396 authorization_details.type — agentic_purchase | recurring_purchase | refund" }
+        - { name: max_amount_minor, type: bigint, description: "Cap in ISO 4217 minor units" }
+        - { name: max_amount_currency, type: varchar(3) }
+        - { name: merchant_scope, type: text, description: "JSON: allowed merchant_ids or domain wildcards" }
+        - { name: category_scope, type: text, description: "JSON: MCC/ISO category constraints" }
+        - { name: per_txn_cap_minor, type: bigint }
+        - { name: scope_expires_at, type: timestamp }
+        - { name: stepup_required_above_minor, type: bigint }
+        - { name: issued_at, type: timestamp }
+        - { name: revoked_at, type: timestamp }
+        - { name: status, type: varchar(16), description: "active|expired|revoked|exhausted" }
+
+    - name: agent_session
+      description: Bounded interaction window during which an agent operates under a grant. Maps to AP2 session and to MCP tool-call session.
+      keys: [session_id]
+      attributes:
+        - { name: session_id, type: varchar(64), isPrimaryKey: true }
+        - { name: agent_id, type: varchar(64), isForeignKey: true, references: agent.agent_id }
+        - { name: principal_id, type: varchar(64), isForeignKey: true, references: principal.principal_id }
+        - { name: grant_id, type: varchar(64), isForeignKey: true, references: authorization_grant.grant_id }
+        - { name: started_at, type: timestamp }
+        - { name: ended_at, type: timestamp }
+        - { name: client_signature, type: text, description: "Signed JWT from operator attesting session origin" }
+        - { name: principal_present, type: boolean, description: "Was the human in the loop at session start?" }
+
+    - name: intent_event
+      description: Stated intent from principal-to-agent ("buy me running shoes under $120 by Friday"). AP2 IntentMandate. The grain of agentic conversion attribution.
+      keys: [intent_id]
+      attributes:
+        - { name: intent_id, type: varchar(64), isPrimaryKey: true }
+        - { name: session_id, type: varchar(64), isForeignKey: true, references: agent_session.session_id }
+        - { name: principal_id, type: varchar(64), isForeignKey: true, references: principal.principal_id }
+        - { name: agent_id, type: varchar(64), isForeignKey: true, references: agent.agent_id }
+        - { name: intent_text_hash, type: varchar(128), description: "SHA-256 of normalized intent text (PII not persisted)" }
+        - { name: category_hint, type: varchar(64) }
+        - { name: budget_min_minor, type: bigint }
+        - { name: budget_max_minor, type: bigint }
+        - { name: budget_currency, type: varchar(3) }
+        - { name: deadline_ts, type: timestamp }
+        - { name: state, type: varchar(16), description: "received|searching|cart_built|awaiting_auth|fulfilled|abandoned|expired" }
+        - { name: created_at, type: timestamp }
+        - { name: resolved_at, type: timestamp }
+
+    - name: tool_call
+      description: One MCP tool invocation made by the agent in service of an intent. Recorded for trace, billing, audit.
+      keys: [tool_call_id]
+      attributes:
+        - { name: tool_call_id, type: varchar(64), isPrimaryKey: true }
+        - { name: session_id, type: varchar(64), isForeignKey: true, references: agent_session.session_id }
+        - { name: intent_id, type: varchar(64), isForeignKey: true, references: intent_event.intent_id }
+        - { name: server_name, type: varchar(64), description: "stripe-mcp|shopify-mcp|merchant-mcp|search-mcp" }
+        - { name: tool_name, type: varchar(128) }
+        - { name: started_at, type: timestamp }
+        - { name: latency_ms, type: integer }
+        - { name: cost_usd, type: "decimal(10,6)", description: "Per-call cost — Skyfire/Crossmint per-call payment" }
+        - { name: status, type: varchar(16), description: "ok|error|timeout|rate_limited|denied" }
+        - { name: input_size_bytes, type: integer }
+        - { name: output_size_bytes, type: integer }
+
+    - name: cart
+      description: AP2 CartMandate — items the agent intends to purchase, signed for principal review.
+      keys: [cart_id]
+      attributes:
+        - { name: cart_id, type: varchar(64), isPrimaryKey: true }
+        - { name: intent_id, type: varchar(64), isForeignKey: true, references: intent_event.intent_id }
+        - { name: merchant_id, type: varchar(64), isForeignKey: true, references: merchant.merchant_id }
+        - { name: subtotal_minor, type: bigint }
+        - { name: tax_minor, type: bigint }
+        - { name: shipping_minor, type: bigint }
+        - { name: total_minor, type: bigint }
+        - { name: currency, type: varchar(3) }
+        - { name: line_count, type: smallint }
+        - { name: signed_payload_hash, type: varchar(128), description: "SHA-256 of the canonical AP2 CartMandate JSON" }
+        - { name: signature_alg, type: varchar(16), description: "ES256|RS256" }
+        - { name: built_at, type: timestamp }
+        - { name: confirmed_by_principal, type: boolean }
+        - { name: confirmation_ts, type: timestamp }
+
+    - name: agent_transaction
+      description: Authorization+capture record for an agent-initiated payment. AP2 PaymentMandate execution.
+      keys: [agent_txn_id]
+      attributes:
+        - { name: agent_txn_id, type: varchar(64), isPrimaryKey: true }
+        - { name: cart_id, type: varchar(64), isForeignKey: true, references: cart.cart_id }
+        - { name: grant_id, type: varchar(64), isForeignKey: true, references: authorization_grant.grant_id }
+        - { name: agent_id, type: varchar(64), isForeignKey: true, references: agent.agent_id }
+        - { name: principal_id, type: varchar(64), isForeignKey: true, references: principal.principal_id }
+        - { name: merchant_id, type: varchar(64), isForeignKey: true, references: merchant.merchant_id }
+        - { name: psp, type: varchar(32), description: "stripe|adyen|braintree|skyfire|crossmint|klarna" }
+        - { name: rail, type: varchar(16), description: "card|ach|sepa|stable_usd|wire" }
+        - { name: scheme, type: varchar(16), description: "Visa|Mastercard|Amex|Discover|JCB|n/a" }
+        - { name: agent_indicator, type: varchar(16), description: "Visa AGI / Mastercard AAI flag carried in auth message" }
+        - { name: amount_minor, type: bigint }
+        - { name: currency, type: varchar(3) }
+        - { name: stepup_method, type: varchar(16), description: "none|webauthn|spc|push|sms|email_otp" }
+        - { name: status, type: varchar(16), description: "authorized|captured|declined|reversed|refunded|disputed" }
+        - { name: authorized_at, type: timestamp }
+        - { name: captured_at, type: timestamp }
+        - { name: decline_reason, type: varchar(64) }
+        - { name: latency_ms, type: integer, description: "End-to-end auth latency including network hop" }
+
+    - name: attribution_link
+      description: Conversion attribution edge from intent to transaction; supports multi-touch & delayed-credit models.
+      keys: [attribution_id]
+      attributes:
+        - { name: attribution_id, type: varchar(64), isPrimaryKey: true }
+        - { name: intent_id, type: varchar(64), isForeignKey: true, references: intent_event.intent_id }
+        - { name: agent_txn_id, type: varchar(64), isForeignKey: true, references: agent_transaction.agent_txn_id }
+        - { name: model, type: varchar(32), description: "first_touch|last_touch|linear|time_decay|ml_uplift" }
+        - { name: weight, type: "decimal(5,4)", description: "0..1 share of the conversion credit" }
+        - { name: lookback_seconds, type: integer }
+        - { name: created_at, type: timestamp }
+
+    - name: trust_score_event
+      description: KYA / Skyfire trust-score datapoint, time-stamped, append-only.
+      keys: [trust_event_id]
+      attributes:
+        - { name: trust_event_id, type: varchar(64), isPrimaryKey: true }
+        - { name: agent_id, type: varchar(64), isForeignKey: true, references: agent.agent_id }
+        - { name: source, type: varchar(32), description: "skyfire|visa_kya|mastercard_aai|merchant_local" }
+        - { name: score, type: "decimal(5,2)" }
+        - { name: signal_summary, type: text }
+        - { name: observed_at, type: timestamp }
+
+    - name: dispute
+      description: Chargeback / dispute on an agent transaction. Includes carry-back flag per Visa AP2 §7.
+      keys: [dispute_id]
+      attributes:
+        - { name: dispute_id, type: varchar(64), isPrimaryKey: true }
+        - { name: agent_txn_id, type: varchar(64), isForeignKey: true, references: agent_transaction.agent_txn_id }
+        - { name: reason_code, type: varchar(8), description: "Visa/Mastercard reason code" }
+        - { name: opened_at, type: timestamp }
+        - { name: resolved_at, type: timestamp }
+        - { name: amount_minor, type: bigint }
+        - { name: currency, type: varchar(3) }
+        - { name: outcome, type: varchar(16), description: "won|lost|withdrawn|carried_back" }
+        - { name: carryback_to_operator, type: boolean, description: "AP2 carry-back to agent operator" }
+
+  relationships:
+    - { from: agent_session, to: agent, kind: many_to_one }
+    - { from: agent_session, to: principal, kind: many_to_one }
+    - { from: agent_session, to: authorization_grant, kind: many_to_one }
+    - { from: authorization_grant, to: principal, kind: many_to_one }
+    - { from: authorization_grant, to: agent, kind: many_to_one }
+    - { from: intent_event, to: agent_session, kind: many_to_one }
+    - { from: tool_call, to: agent_session, kind: many_to_one }
+    - { from: tool_call, to: intent_event, kind: many_to_one }
+    - { from: cart, to: intent_event, kind: many_to_one }
+    - { from: cart, to: merchant, kind: many_to_one }
+    - { from: agent_transaction, to: cart, kind: many_to_one }
+    - { from: agent_transaction, to: authorization_grant, kind: many_to_one }
+    - { from: agent_transaction, to: merchant, kind: many_to_one }
+    - { from: attribution_link, to: intent_event, kind: many_to_one }
+    - { from: attribution_link, to: agent_transaction, kind: many_to_one }
+    - { from: trust_score_event, to: agent, kind: many_to_one }
+    - { from: dispute, to: agent_transaction, kind: many_to_one }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/agentic_commerce_3nf.sql
+  vault: modeling/ddl/agentic_commerce_vault.sql
+  dimensional: modeling/ddl/agentic_commerce_dim.sql
+
+sourceSystems:
+  - { vendor: Stripe, product: Agentic Commerce SDK, category: Agent Payments SDK }
+  - { vendor: Stripe, product: Stripe MCP server, category: MCP Server }
+  - { vendor: Visa, product: Visa Agent Toolkit / Trusted Agent Protocol, category: Agent Network }
+  - { vendor: Visa, product: Visa AP2 Authorization Server, category: AP2 Authorization Server }
+  - { vendor: Mastercard, product: Mastercard Agent Pay, category: Agent Network }
+  - { vendor: Skyfire, product: Skyfire Agent Payments, category: Agent-Native Payments }
+  - { vendor: Crossmint, product: Crossmint Headless Checkout, category: Agent Wallet & Checkout }
+  - { vendor: Anthropic, product: Claude API & MCP servers, category: Agent Operator API }
+  - { vendor: OpenAI, product: OpenAI Operator API, category: Agent Operator API }
+  - { vendor: Google, product: Gemini Agent API / Buy-for-Me, category: Agent Operator API }
+  - { vendor: Amazon, product: Amazon Buy-for-Me, category: Agent Operator API }
+  - { vendor: Klarna, product: Klarna Agent SDK, category: Agent Payments SDK }
+  - { vendor: Shopify, product: Shopify MCP Server, category: MCP Server }
+  - { vendor: Auth0 (Okta), product: Auth0 with RFC 9396 RAR, category: OAuth 2.1 Authorization Server }
+  - { vendor: PayPal, product: PayPal MCP Server, category: MCP Server }
+
+connectors:
+  - { type: Stripe Agentic SDK REST, protocol: HTTPS JSON, auth: Bearer + agent JWT }
+  - { type: Stripe MCP (JSON-RPC 2.0), protocol: HTTPS / stdio, auth: OAuth2 + MCP capability tokens }
+  - { type: Visa AP2 endpoint, protocol: HTTPS JSON, auth: mTLS + signed mandates }
+  - { type: Mastercard Agent Pay API, protocol: HTTPS JSON, auth: OAuth2 + mTLS }
+  - { type: Skyfire payment-token API, protocol: HTTPS, auth: API key + agent attestation }
+  - { type: MCP server (generic), protocol: JSON-RPC 2.0 over HTTPS or stdio, auth: OAuth2 + capability token }
+  - { type: OAuth 2.1 / RFC 9396 RAR, protocol: HTTPS, auth: PKCE + DPoP }
+  - { type: Webhook (transaction events), protocol: HTTPS, auth: HMAC signed }
+  - { type: Crossmint checkout webhook, protocol: HTTPS, auth: HMAC + agent header }
+  - { type: Operator JWT attestation header, protocol: HTTPS, auth: signed JWT (ES256) }
+
+ingestionChallenges:
+  - High-cardinality intent events — millions of agent intents per day across operators, with bursty windows tied to chat traffic spikes.
+  - Agent session windowing is non-trivial; sessions span multiple MCP servers and may pause/resume across hours.
+  - Tool-call traces are deeply nested — each agent purchase can fan out to 30–200 tool calls across MCP servers.
+  - MCP server log volume is enormous and unstructured; ingest must extract method/params/result without persisting principal-level PII.
+  - Dual-rail event streams (operator API webhooks + network agent-indicator messages) require correlation by signed mandate hash.
+  - Late-binding refunds and disputes arrive days/weeks after the agent session has closed — the intent-to-purchase attribution must accept revisions.
+  - Operator clock skew across Anthropic/OpenAI/Google/Amazon means session timestamps disagree by up to seconds; canonical time must be derived.
+
+integrationChallenges:
+  - name: Agent identity is not the human
+    description: The cardholder of record is the principal, but the actor at the API is the agent. Standard fraud rules trained on human behavior misfire because tool-call cadence, IP, and device signals look bot-like by design.
+    mitigation: Adopt AP2 IntentMandate signature + AAID (Agent Authorization ID) + Visa AGI / Mastercard AAI auth-message flags; build agent-aware fraud features (KYA score, operator reputation, signed delegation chain).
+  - name: Refund authorization when the agent is gone
+    description: The original agent session ends within hours, but refund eligibility lasts months. Without durable consent, customer service has no on-file authority to refund-via-agent or push the refund to a different rail.
+    mitigation: Mint a long-lived refund-only RAR grant at purchase time; persist principal-side refund consent in a wallet artifact (Visa Trusted Agent Refund Token).
+  - name: Cross-platform agent identity
+    description: An agent run by Anthropic today might be repurposed by another operator tomorrow. There is no universal agent registry — KYA scores diverge across networks.
+    mitigation: Track operator+model+version triple; require attested operator JWT; cross-publish trust signals via AP2 §6 signal exchange where contractually permitted.
+  - name: Real-time vs cached agent trust
+    description: A sub-200ms checkout path can't fetch fresh KYA on every transaction; cached scores risk authorizing a recently-blacklisted agent.
+    mitigation: Cache KYA score with TTL ≤ 60s; subscribe to real-time revocation streams (Skyfire deny-list webhooks, Visa AAID revocation feed); apply step-up rather than block on stale-score uncertainty.
+  - name: PII propagation through agents
+    description: Agents can echo principal PII into prompts, tool calls, and merchant payloads, often unintentionally. GDPR Art. 5 data minimization is hard to enforce when an LLM is the routing layer.
+    mitigation: Tokenize PII before tool-call entry; enforce schema-level redaction at the MCP server boundary; log only hashes of intent text; require operators to declare PII handling under DPA addenda.
+  - name: Intent-to-conversion windowing
+    description: A principal expresses intent on Monday; the agent transacts on Friday. Standard last-click attribution erases the agent's role, but pure first-touch over-credits a vague intent.
+    mitigation: Implement multi-touch attribution at the intent-grain (intent_id), not the session-grain; default to time-decay with an operator-tunable half-life.
+  - name: Step-up auth UX across operators
+    description: Each operator surfaces step-up differently — chat modal, push notification, browser hand-off. Inconsistent UX kills conversion and confuses fraud telemetry.
+    mitigation: Adopt W3C Secure Payment Confirmation (SPC) where supported; use FIDO2/WebAuthn assertions carried in AP2 PaymentMandate; document per-operator fallback ladders.
+  - name: Dispute carry-back attribution
+    description: When a chargeback lands, was it the merchant's fault, the agent's misinterpretation, or the principal changing their mind? Visa AP2 §7 introduces carry-back-to-operator but requires evidence of agent fault.
+    mitigation: Capture the signed CartMandate + IntentMandate at dispute time; preserve tool_call trace; arbitration follows AP2 evidence specification.
+  - name: Catalog freshness for MCP
+    description: Agents shop a stale MCP-published catalog and select OOS or wrong-priced items, generating refunds and trust loss.
+    mitigation: Cache TTL ≤ 60s on MCP product responses; expose inventory and price as separate fast-path resources; reject stale CartMandates at checkout.
+
+glossaryTerms:
+  - AP2
+  - MCP
+  - Agent Identity (AAID)
+  - Delegation Chain
+  - Intent Event
+  - Step-Up Auth (SPC / WebAuthn)
+  - Tool Call
+  - Agentic Conversion
+  - Cart Handoff
+  - Payment Token Binding
+  - RAR (Rich Authorization Request, RFC 9396)
+  - Agent Trust Score (KYA)
+  - Counterparty Agent
+  - Principal
+  - Bearer Agent
+  - IntentMandate
+  - CartMandate
+  - PaymentMandate
+
+standards:
+  - { id: ap2, name: Agentic Payments Protocol (AP2), version: "0.4 (2026-Q1)", url: "https://ap2-protocol.org" }
+  - { id: mcp, name: Model Context Protocol, version: "2025-11-spec", url: "https://modelcontextprotocol.io" }
+  - { id: oauth_2_1, name: OAuth 2.1, version: "draft-ietf-oauth-v2-1", url: "https://datatracker.ietf.org/doc/draft-ietf-oauth-v2-1/" }
+  - { id: rfc_9396, name: RFC 9396 — OAuth 2.0 Rich Authorization Requests, version: "RFC 9396", url: "https://datatracker.ietf.org/doc/rfc9396/" }
+  - { id: iso_20022, name: ISO 20022 (underlying rails), version: "2024", url: "https://www.iso20022.org" }
+  - { id: pci_dss_4, name: PCI DSS, version: "4.0", url: "https://www.pcisecuritystandards.org/" }
+  - { id: spc, name: W3C Secure Payment Confirmation, version: "2025 CR", url: "https://www.w3.org/TR/secure-payment-confirmation/" }
+  - { id: webauthn, name: WebAuthn Level 3, version: "L3", url: "https://www.w3.org/TR/webauthn-3/" }

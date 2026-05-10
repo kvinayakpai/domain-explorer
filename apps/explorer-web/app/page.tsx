@@ -30,6 +30,7 @@ const VERTICAL_TAGLINES: Record<string, string> = {
   PublicSector: "Benefits, court, tax, transit, emergency response.",
   HiTech: "FinOps, telemetry, marketplaces, EDA, DevRel, yield.",
   ProfessionalServices: "Time, billing, legal matters, audit, knowledge.",
+  CrossCutting: "Agentic commerce and other horizontal patterns spanning verticals.",
 };
 
 export default function HomePage() {

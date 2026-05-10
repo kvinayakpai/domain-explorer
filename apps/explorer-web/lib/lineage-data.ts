@@ -57,6 +57,7 @@ export const ANCHOR_KEYS = [
   "real_world_evidence",
   "settlement_clearing",
   "programmatic_advertising",
+  "agentic_commerce",
 ] as const;
 
 export type AnchorKey = (typeof ANCHOR_KEYS)[number];
@@ -1381,6 +1382,79 @@ const programmaticAdvertising: LineageGraph = {
   ],
 };
 
+// ---------------------------------------------------------------------------
+// agentic_commerce  (AP2 / Visa Trusted Agent / Mastercard Agent Pay / Stripe Agentic SDK / MCP)
+// ---------------------------------------------------------------------------
+
+const agenticCommerce: LineageGraph = {
+  title: "Agentic Commerce",
+  vertical: "CrossCutting",
+  oneLiner:
+    "AI agents transacting on behalf of human principals — IntentMandate to PaymentMandate via AP2, Stripe Agentic SDK, MCP servers, and OAuth 2.1 + RFC 9396 RAR.",
+  nodes: [
+    { id: "src.stripe_ag", label: "Stripe Agentic SDK", sub: "Agent Payments SDK", layer: 0, row: 0, kind: "source" },
+    { id: "src.visa_ap2", label: "Visa AP2 Authz Server", sub: "AP2 Mandates", layer: 0, row: 1, kind: "source" },
+    { id: "src.mc_agent_pay", label: "Mastercard Agent Pay", sub: "Agent Network", layer: 0, row: 2, kind: "source" },
+    { id: "src.skyfire", label: "Skyfire", sub: "Agent-Native Payments / KYA", layer: 0, row: 3, kind: "source" },
+    { id: "src.mcp", label: "MCP Servers (Stripe / Shopify / PayPal)", sub: "JSON-RPC 2.0", layer: 0, row: 4, kind: "source" },
+    { id: "stg.agent", label: "stg_agentic_commerce__agents", sub: "view", layer: 1, row: 0, kind: "stage" },
+    { id: "stg.grant", label: "stg_agentic_commerce__authorization_grants", sub: "RFC 9396 RAR", layer: 1, row: 1, kind: "stage" },
+    { id: "stg.intent", label: "stg_agentic_commerce__intent_events", sub: "AP2 IntentMandate", layer: 1, row: 2, kind: "stage" },
+    { id: "stg.tool", label: "stg_agentic_commerce__tool_calls", sub: "MCP invocations", layer: 1, row: 3, kind: "stage" },
+    { id: "stg.txn", label: "stg_agentic_commerce__agent_transactions", sub: "AP2 PaymentMandate", layer: 1, row: 4, kind: "stage" },
+    { id: "vault.h_agent", label: "h_agent", sub: "Vault hub", layer: 2, row: 0, kind: "vault" },
+    { id: "vault.h_intent", label: "h_intent", sub: "Vault hub", layer: 2, row: 1, kind: "vault" },
+    { id: "vault.h_grant", label: "h_grant", sub: "Vault hub", layer: 2, row: 2, kind: "vault" },
+    { id: "vault.l_grant", label: "l_authorization_grant", sub: "Vault link", layer: 2, row: 3, kind: "vault" },
+    { id: "vault.l_attr", label: "l_purchase_attribution", sub: "Vault link", layer: 2, row: 4, kind: "vault" },
+    { id: "vault.s_trust", label: "s_agent_trust_score", sub: "Vault sat (KYA)", layer: 3, row: 0, kind: "vault" },
+    { id: "vault.s_intent", label: "s_intent_state", sub: "Vault sat", layer: 3, row: 1, kind: "vault" },
+    { id: "vault.s_scope", label: "s_authorization_scope", sub: "Vault sat (RAR)", layer: 3, row: 2, kind: "vault" },
+    { id: "vault.s_status", label: "s_purchase_status", sub: "Vault sat", layer: 3, row: 3, kind: "vault" },
+    { id: "mart.fct_txn", label: "fct_agent_transaction", sub: "fact (per PaymentMandate)", layer: 4, row: 0, kind: "mart" },
+    { id: "mart.fct_intent", label: "fct_intent_event", sub: "fact (per IntentMandate)", layer: 4, row: 1, kind: "mart" },
+    { id: "mart.fct_authz", label: "fct_authorization_event", sub: "fact (per grant event)", layer: 4, row: 2, kind: "mart" },
+    { id: "mart.dim_agent", label: "dim_agent", sub: "Type-2 dim", layer: 4, row: 3, kind: "mart" },
+    { id: "mart.dim_merch", label: "dim_merchant", sub: "dim", layer: 4, row: 4, kind: "mart" },
+    { id: "kpi.gmv", label: "Agent-Attributable GMV %", sub: "ac.kpi.agent_attributable_gmv_pct", layer: 5, row: 0, kind: "kpi" },
+    { id: "kpi.conv", label: "Agent Conversion Rate", sub: "ac.kpi.agent_conversion_rate", layer: 5, row: 1, kind: "kpi" },
+    { id: "kpi.cb", label: "Agent Chargeback Rate", sub: "ac.kpi.agent_chargeback_rate", layer: 5, row: 2, kind: "kpi" },
+    { id: "kpi.lat", label: "Intent-to-Purchase P95", sub: "ac.kpi.intent_to_purchase_p95", layer: 5, row: 3, kind: "kpi" },
+    { id: "kpi.trust", label: "Cross-Agent Trust Score", sub: "ac.kpi.cross_agent_trust_score", layer: 5, row: 4, kind: "kpi" },
+  ],
+  edges: [
+    { from: "src.stripe_ag", to: "stg.txn" },
+    { from: "src.visa_ap2", to: "stg.intent" },
+    { from: "src.visa_ap2", to: "stg.grant" },
+    { from: "src.mc_agent_pay", to: "stg.txn" },
+    { from: "src.skyfire", to: "stg.agent" },
+    { from: "src.mcp", to: "stg.tool" },
+    { from: "src.mcp", to: "stg.intent" },
+    { from: "stg.agent", to: "vault.h_agent" },
+    { from: "stg.agent", to: "vault.s_trust" },
+    { from: "stg.intent", to: "vault.h_intent" },
+    { from: "stg.intent", to: "vault.s_intent" },
+    { from: "stg.grant", to: "vault.h_grant" },
+    { from: "stg.grant", to: "vault.s_scope" },
+    { from: "stg.grant", to: "vault.l_grant" },
+    { from: "stg.txn", to: "vault.s_status" },
+    { from: "stg.txn", to: "vault.l_attr" },
+    { from: "stg.tool", to: "vault.s_status" },
+    { from: "vault.s_status", to: "mart.fct_txn" },
+    { from: "vault.l_attr", to: "mart.fct_txn" },
+    { from: "vault.s_intent", to: "mart.fct_intent" },
+    { from: "vault.s_scope", to: "mart.fct_authz" },
+    { from: "vault.h_agent", to: "mart.dim_agent" },
+    { from: "vault.s_trust", to: "mart.dim_agent" },
+    { from: "stg.txn", to: "mart.dim_merch" },
+    { from: "mart.fct_txn", to: "kpi.gmv" },
+    { from: "mart.fct_intent", to: "kpi.conv" },
+    { from: "mart.fct_txn", to: "kpi.cb" },
+    { from: "mart.fct_intent", to: "kpi.lat" },
+    { from: "mart.dim_agent", to: "kpi.trust" },
+  ],
+};
+
 export const anchorLineages: Record<AnchorKey, LineageGraph> = {
   payments,
   p_and_c_claims: pAndCClaims,
@@ -1399,6 +1473,7 @@ export const anchorLineages: Record<AnchorKey, LineageGraph> = {
   real_world_evidence: realWorldEvidence,
   settlement_clearing: settlementClearing,
   programmatic_advertising: programmaticAdvertising,
+  agentic_commerce: agenticCommerce,
 };
 
 // Slug used in the URL — same as the AnchorKey but we keep them aligned
@@ -1421,4 +1496,5 @@ export const anchorSlugs: Record<AnchorKey, string> = {
   real_world_evidence: "real_world_evidence",
   settlement_clearing: "settlement_clearing",
   programmatic_advertising: "programmatic_advertising",
+  agentic_commerce: "agentic_commerce",
 };

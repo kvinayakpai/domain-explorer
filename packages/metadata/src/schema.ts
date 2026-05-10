@@ -18,6 +18,7 @@ export const Vertical = z.enum([
   "PublicSector",
   "HiTech",
   "ProfessionalServices",
+  "CrossCutting",
 ]);
 export type Vertical = z.infer<typeof Vertical>;
 

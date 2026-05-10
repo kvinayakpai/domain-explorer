@@ -54,3 +54,8 @@ models:
         +materialized: ephemeral
       marts:
         +materialized: table
+    agentic_commerce:
+      staging:
+        +materialized: view
+      marts:
+        +materialized: table

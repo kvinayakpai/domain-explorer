@@ -55,3 +55,20 @@ sources:
   - { id: src.sap_trm, vendor: SAP, product: Tax & Revenue Management, category: Tax Platform, primaryConnectors: [conn.sap_rfc, conn.rest] }
   - { id: src.gentax, vendor: Fast Enterprises, product: GenTax, category: Tax Platform, primaryConnectors: [conn.soap, conn.rest] }
   - { id: src.legacy_mainframe, vendor: In-house, product: Mainframe COBOL, category: Legacy, primaryConnectors: [conn.ibm_mq, conn.file_sftp] }
+
+  # Agentic Commerce (CrossCutting)
+  - { id: src.stripe_agentic_sdk, vendor: Stripe, product: Agentic Commerce SDK, category: Agent Payments SDK, primaryConnectors: [conn.stripe_agentic_rest, conn.webhook] }
+  - { id: src.stripe_mcp, vendor: Stripe, product: Stripe MCP server, category: MCP Server, primaryConnectors: [conn.mcp_jsonrpc] }
+  - { id: src.visa_agent_toolkit, vendor: Visa, product: Visa Agent Toolkit / Trusted Agent Protocol, category: Agent Network, primaryConnectors: [conn.ap2_endpoint, conn.iso8583] }
+  - { id: src.visa_ap2_authz, vendor: Visa, product: Visa AP2 Authorization Server, category: AP2 Authorization Server, primaryConnectors: [conn.ap2_endpoint, conn.oauth_rar] }
+  - { id: src.mastercard_agent_pay, vendor: Mastercard, product: Mastercard Agent Pay, category: Agent Network, primaryConnectors: [conn.mastercard_agent_api, conn.iso8583] }
+  - { id: src.skyfire, vendor: Skyfire, product: Skyfire Agent Payments, category: Agent-Native Payments, primaryConnectors: [conn.skyfire_token_api, conn.webhook] }
+  - { id: src.crossmint, vendor: Crossmint, product: Crossmint Headless Checkout, category: Agent Wallet & Checkout, primaryConnectors: [conn.crossmint_checkout, conn.webhook] }
+  - { id: src.anthropic_claude, vendor: Anthropic, product: Claude API & MCP servers, category: Agent Operator API, primaryConnectors: [conn.rest, conn.mcp_jsonrpc] }
+  - { id: src.openai_operator, vendor: OpenAI, product: OpenAI Operator API, category: Agent Operator API, primaryConnectors: [conn.rest, conn.mcp_jsonrpc] }
+  - { id: src.google_gemini_agent, vendor: Google, product: Gemini Agent API / Buy-for-Me, category: Agent Operator API, primaryConnectors: [conn.rest, conn.ap2_endpoint] }
+  - { id: src.amazon_buyforme, vendor: Amazon, product: Amazon Buy-for-Me, category: Agent Operator API, primaryConnectors: [conn.rest] }
+  - { id: src.klarna_agent_sdk, vendor: Klarna, product: Klarna Agent SDK, category: Agent Payments SDK, primaryConnectors: [conn.rest, conn.webhook] }
+  - { id: src.shopify_mcp, vendor: Shopify, product: Shopify MCP Server, category: MCP Server, primaryConnectors: [conn.mcp_jsonrpc] }
+  - { id: src.auth0_rar, vendor: Auth0 (Okta), product: Auth0 with RFC 9396 RAR, category: OAuth 2.1 Authorization Server, primaryConnectors: [conn.oauth_rar] }
+  - { id: src.paypal_mcp, vendor: PayPal, product: PayPal MCP Server, category: MCP Server, primaryConnectors: [conn.mcp_jsonrpc] }

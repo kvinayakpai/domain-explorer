@@ -971,3 +971,141 @@ kpis:
     vertical: Media
     subdomains: [programmatic_advertising]
     related_personas: [Head of Programmatic, Ad Ops Engineer]
+
+  # ============================================================
+  # Anchor: Agentic Commerce (CrossCutting)
+  # ============================================================
+  - id: ac.kpi.agent_attributable_gmv_pct
+    name: Agent-Attributable GMV %
+    formula: sum(agent_attributable_gmv) / sum(total_gmv)
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of total merchandise value attributable, via signed AP2 IntentMandate chains, to AI agents acting on behalf of human principals. The headline horizon-shift KPI for agentic commerce.
+    vertical: CrossCutting
+    subdomains: [agentic_commerce]
+    related_personas: [Head of Agentic Commerce, Merchant Agent Integration Engineer]
+    decisionsSupported: [ac.d.merchant_tiering, ac.d.mcp_publish]
+  - id: ac.kpi.agent_conversion_rate
+    name: Agent Conversion Rate
+    formula: agent_purchases / agent_intent_events
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of agent IntentMandates that resolve to a captured PaymentMandate within the deadline window. The agentic analog to the e-commerce funnel conversion rate.
+    vertical: CrossCutting
+    subdomains: [agentic_commerce]
+    related_personas: [Head of Agentic Commerce, Agent Experience PM]
+    decisionsSupported: [ac.d.intent_attribution, ac.d.cart_takeover]
+  - id: ac.kpi.agent_chargeback_rate
+    name: Agent-Initiated Chargeback Rate
+    formula: agent_chargebacks / agent_transactions
+    unit: "%"
+    direction: lower_is_better
+    definition: Disputes opened on agent transactions divided by all agent transactions. Above ~0.7% triggers Visa AP2 §7 carry-back review and Mastercard Agent Pay scrutiny.
+    vertical: CrossCutting
+    subdomains: [agentic_commerce, fraud, payments]
+    related_personas: [Payments Risk Officer, Agent Trust & Safety Lead]
+    decisionsSupported: [ac.d.stepup_threshold, ac.d.dispute_carryback]
+  - id: ac.kpi.intent_to_purchase_p50
+    name: Intent-to-Purchase Latency (P50)
+    formula: percentile(purchase_ts - intent_ts, 0.50)
+    unit: seconds
+    direction: lower_is_better
+    definition: Median elapsed time from IntentMandate signing to PaymentMandate capture. Surfaces tool-call cost and MCP catalog freshness pain.
+    vertical: CrossCutting
+    subdomains: [agentic_commerce]
+    related_personas: [Agent Experience PM]
+    decisionsSupported: [ac.d.cart_takeover]
+  - id: ac.kpi.intent_to_purchase_p95
+    name: Intent-to-Purchase Latency (P95)
+    formula: percentile(purchase_ts - intent_ts, 0.95)
+    unit: seconds
+    direction: lower_is_better
+    definition: P95 elapsed time from IntentMandate signing to PaymentMandate capture. The tail that breaks long-running shopping sessions.
+    vertical: CrossCutting
+    subdomains: [agentic_commerce]
+    related_personas: [Agent Experience PM]
+  - id: ac.kpi.stepup_rate
+    name: Step-Up Auth Rate
+    formula: stepup_required / agent_authorizations
+    unit: "%"
+    direction: target_band
+    definition: Share of agent authorizations that required out-of-band step-up (WebAuthn / SPC / push). Too low risks fraud; too high kills conversion.
+    vertical: CrossCutting
+    subdomains: [agentic_commerce, payments]
+    related_personas: [Payments Risk Officer, Agent Experience PM]
+    decisionsSupported: [ac.d.stepup_threshold]
+  - id: ac.kpi.cross_agent_trust_score
+    name: Cross-Agent Trust Score (median)
+    formula: median(kya_trust_score)
+    unit: index
+    direction: higher_is_better
+    definition: Median Know-Your-Agent trust index across active agents. Aggregates Skyfire, Visa KYA, Mastercard AAI, and merchant-local signals.
+    vertical: CrossCutting
+    subdomains: [agentic_commerce, fraud]
+    related_personas: [Agent Trust & Safety Lead]
+    decisionsSupported: [ac.d.agent_block]
+  - id: ac.kpi.refund_rate_agent
+    name: Refund Rate on Agent Purchases
+    formula: agent_refunds / agent_purchases
+    unit: "%"
+    direction: lower_is_better
+    definition: Refunds on agent transactions divided by agent purchases. Driven by stale catalogs, wrong-cart selections, and principal regret.
+    vertical: CrossCutting
+    subdomains: [agentic_commerce]
+    related_personas: [Head of Agentic Commerce, Agent Experience PM]
+    decisionsSupported: [ac.d.refund_route]
+  - id: ac.kpi.catalog_mcp_discoverability
+    name: Catalog Discoverability via MCP
+    formula: products_listed_via_mcp / products_listed_total
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of merchant SKUs published over an MCP server (with current price + inventory). Drives agent discoverability without scraping.
+    vertical: CrossCutting
+    subdomains: [agentic_commerce]
+    related_personas: [Merchant Agent Integration Engineer]
+    decisionsSupported: [ac.d.mcp_publish]
+  - id: ac.kpi.agent_id_verification_pass
+    name: Agent Identity Verification Pass Rate
+    formula: agent_id_verified / agent_auth_attempts
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of agent transactions where AAID + operator JWT + delegation chain verified successfully at AP2 PaymentMandate evaluation.
+    vertical: CrossCutting
+    subdomains: [agentic_commerce]
+    related_personas: [Agent Trust & Safety Lead]
+  - id: ac.kpi.human_override_rate
+    name: Human Override Rate
+    formula: human_overrides / agent_proposed_purchases
+    unit: "%"
+    direction: target_band
+    definition: Share of agent-proposed purchases the principal modified or cancelled at confirmation step. Too high signals poor agent-PM alignment.
+    vertical: CrossCutting
+    subdomains: [agentic_commerce]
+    related_personas: [Agent Experience PM]
+  - id: ac.kpi.tool_call_cost
+    name: Mean Tool-Call Cost per Conversion
+    formula: sum(tool_call_cost) / count(agent_purchases)
+    unit: USD
+    direction: lower_is_better
+    definition: Sum of MCP tool-call costs divided by closed agent purchases. Proxy for agent loop efficiency and Skyfire/Crossmint per-call billing exposure.
+    vertical: CrossCutting
+    subdomains: [agentic_commerce]
+    related_personas: [Merchant Agent Integration Engineer]
+  - id: ac.kpi.agent_affinity
+    name: Agent Affinity (returning agents)
+    formula: distinct_agents_repeat_30d / distinct_agents_30d
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of agents that transacted at the merchant in the last 30 days who returned within the same window.
+    vertical: CrossCutting
+    subdomains: [agentic_commerce]
+    related_personas: [Head of Agentic Commerce]
+  - id: ac.kpi.auth_refresh_rate
+    name: Agent Authorization Refresh Rate
+    formula: refreshed_grants / agent_grants_total
+    unit: "%"
+    direction: target_band
+    definition: Share of authorization_grants refreshed within their TTL versus expiring. Too low means principals re-authorize often (bad UX); too high may indicate scope creep.
+    vertical: CrossCutting
+    subdomains: [agentic_commerce]
+    related_personas: [Agent Experience PM, Agent Trust & Safety Lead]

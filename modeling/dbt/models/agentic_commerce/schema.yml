@@ -1,0 +1,165 @@
+version: 2
+
+models:
+  # ---------- Staging ----------
+  - name: stg_agentic_commerce__agents
+    description: One row per agent. AAID-keyed identity per AP2 / Mastercard Agent Pay.
+    columns:
+      - name: agent_id
+        tests: [unique, not_null]
+      - name: kya_status
+        tests:
+          - accepted_values:
+              values: [verified, self_asserted, denied]
+
+  - name: stg_agentic_commerce__principals
+    description: Human cardholder-of-record per Visa Trusted Agent Protocol.
+    columns:
+      - name: principal_id
+        tests: [unique, not_null]
+
+  - name: stg_agentic_commerce__merchants
+    description: Merchant; agent-aware tier indicates AP2/MCP support.
+    columns:
+      - name: merchant_id
+        tests: [unique, not_null]
+      - name: agent_aware_tier
+        tests:
+          - accepted_values:
+              values: [tier1_native, tier2_mcp, tier3_legacy]
+
+  - name: stg_agentic_commerce__authorization_grants
+    description: OAuth 2.1 + RFC 9396 RAR delegation grant (AP2 IntentMandate).
+    columns:
+      - name: grant_id
+        tests: [unique, not_null]
+      - name: principal_id
+        tests:
+          - not_null
+          - relationships: { to: ref('stg_agentic_commerce__principals'), field: principal_id }
+      - name: agent_id
+        tests:
+          - not_null
+          - relationships: { to: ref('stg_agentic_commerce__agents'), field: agent_id }
+
+  - name: stg_agentic_commerce__agent_sessions
+    description: Bounded interaction window an agent operates under a grant.
+    columns:
+      - name: session_id
+        tests: [unique, not_null]
+      - name: grant_id
+        tests:
+          - relationships: { to: ref('stg_agentic_commerce__authorization_grants'), field: grant_id }
+
+  - name: stg_agentic_commerce__intent_events
+    description: AP2 IntentMandate; the grain of agentic-conversion attribution.
+    columns:
+      - name: intent_id
+        tests: [unique, not_null]
+      - name: state
+        tests:
+          - accepted_values:
+              values: [received, searching, cart_built, awaiting_auth, fulfilled, abandoned, expired]
+
+  - name: stg_agentic_commerce__tool_calls
+    description: One MCP tool invocation per row.
+    columns:
+      - name: tool_call_id
+        tests: [unique, not_null]
+
+  - name: stg_agentic_commerce__carts
+    description: AP2 CartMandate snapshot.
+    columns:
+      - name: cart_id
+        tests: [unique, not_null]
+
+  - name: stg_agentic_commerce__agent_transactions
+    description: AP2 PaymentMandate execution.
+    columns:
+      - name: agent_txn_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [authorized, captured, declined, reversed, refunded, disputed]
+
+  - name: stg_agentic_commerce__attribution_links
+    description: Multi-touch attribution edge from intent to transaction.
+    columns:
+      - name: attribution_id
+        tests: [unique, not_null]
+
+  - name: stg_agentic_commerce__trust_score_events
+    description: Append-only Skyfire/Visa-KYA trust score datapoint.
+    columns:
+      - name: trust_event_id
+        tests: [unique, not_null]
+
+  - name: stg_agentic_commerce__disputes
+    description: Chargeback / dispute on an agent transaction.
+    columns:
+      - name: dispute_id
+        tests: [unique, not_null]
+
+  # ---------- Marts ----------
+  - name: dim_agent
+    description: Type-2 dimension for agents (operator, model family, KYA status).
+    columns:
+      - name: agent_sk
+        tests: [unique, not_null]
+      - name: agent_id
+        tests: [unique, not_null]
+
+  - name: dim_principal
+    description: Dimension for the human principal.
+    columns:
+      - name: principal_sk
+        tests: [unique, not_null]
+      - name: principal_id
+        tests: [unique, not_null]
+
+  - name: dim_merchant
+    description: Dimension for merchants with agent-awareness flags.
+    columns:
+      - name: merchant_sk
+        tests: [unique, not_null]
+      - name: merchant_id
+        tests: [unique, not_null]
+
+  - name: dim_authorization_scope
+    description: Delegation grant scope (RFC 9396 authorization_details).
+    columns:
+      - name: scope_sk
+        tests: [unique, not_null]
+      - name: grant_id
+        tests: [unique, not_null]
+
+  - name: dim_date_agentic
+    description: Date dimension scoped to the agentic_commerce window. Suffix avoids collision with other anchors' dim_date.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+
+  - name: fct_agent_transaction
+    description: Fact — one row per AP2 PaymentMandate execution. Joins to dim_agent, dim_principal, dim_merchant, dim_authorization_scope.
+    columns:
+      - name: agent_txn_id
+        tests: [unique, not_null]
+      - name: agent_sk
+        tests:
+          - relationships: { to: ref('dim_agent'), field: agent_sk }
+      - name: merchant_sk
+        tests:
+          - relationships: { to: ref('dim_merchant'), field: merchant_sk }
+
+  - name: fct_intent_event
+    description: Fact — one row per IntentMandate. Grain of agentic-conversion attribution.
+    columns:
+      - name: intent_id
+        tests: [unique, not_null]
+
+  - name: fct_authorization_event
+    description: Fact — issued/revoked events for delegation grants.
+    columns:
+      - name: grant_event_id
+        tests: [unique, not_null]

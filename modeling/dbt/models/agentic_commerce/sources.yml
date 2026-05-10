@@ -1,0 +1,75 @@
+version: 2
+
+sources:
+  - name: agentic_commerce
+    description: |
+      Synthetic Agentic Commerce source schema produced by
+      synthetic-data/agentic_commerce/generate.py and loaded into the populated
+      DuckDB. Mirrors what an agent-aware merchant + AP2 issuer + MCP server
+      would land after CDC.
+    schema: agentic_commerce
+    tables:
+      - name: agent
+        description: One row per AI agent. AAID-keyed identity per AP2/Mastercard Agent Pay.
+        columns:
+          - name: agent_id
+            tests: [unique, not_null]
+      - name: principal
+        description: Human cardholder-of-record per Visa Trusted Agent Protocol.
+        columns:
+          - name: principal_id
+            tests: [unique, not_null]
+      - name: merchant
+        description: Merchant; agent-aware tier indicates AP2/MCP support.
+        columns:
+          - name: merchant_id
+            tests: [unique, not_null]
+      - name: authorization_grant
+        description: OAuth 2.1 + RFC 9396 RAR delegation grant (AP2 IntentMandate).
+        columns:
+          - name: grant_id
+            tests: [unique, not_null]
+          - name: principal_id
+            tests: [not_null]
+          - name: agent_id
+            tests: [not_null]
+      - name: agent_session
+        description: Bounded interaction window an agent operates under a grant.
+        columns:
+          - name: session_id
+            tests: [unique, not_null]
+      - name: intent_event
+        description: Stated intent (AP2 IntentMandate). Grain of agentic-conversion attribution.
+        columns:
+          - name: intent_id
+            tests: [unique, not_null]
+      - name: tool_call
+        description: One MCP tool invocation per row.
+        columns:
+          - name: tool_call_id
+            tests: [unique, not_null]
+      - name: cart
+        description: AP2 CartMandate snapshot.
+        columns:
+          - name: cart_id
+            tests: [unique, not_null]
+      - name: agent_transaction
+        description: AP2 PaymentMandate execution.
+        columns:
+          - name: agent_txn_id
+            tests: [unique, not_null]
+      - name: attribution_link
+        description: Multi-touch attribution edge from intent to transaction.
+        columns:
+          - name: attribution_id
+            tests: [unique, not_null]
+      - name: trust_score_event
+        description: Append-only Skyfire/Visa-KYA trust score datapoint.
+        columns:
+          - name: trust_event_id
+            tests: [unique, not_null]
+      - name: dispute
+        description: Chargeback / dispute on an agent transaction.
+        columns:
+          - name: dispute_id
+            tests: [unique, not_null]
