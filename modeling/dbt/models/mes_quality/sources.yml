@@ -1,0 +1,66 @@
+version: 2
+
+sources:
+  - name: mes_quality
+    description: |
+      MES & Quality source schema. Captures plant/line/equipment master plus
+      production work-order, operation, scrap, downtime, sensor, inspection,
+      and defect telemetry. Supports OEE / FPY / scrap / MTBF analytics.
+    schema: mes_quality
+    tables:
+      - name: plants
+        description: Plant master.
+        columns:
+          - name: plant_id
+            tests: [unique, not_null]
+      - name: lines
+        description: Production lines.
+        columns:
+          - name: line_id
+            tests: [unique, not_null]
+          - name: plant_id
+            tests: [not_null]
+      - name: equipment
+        description: Equipment master.
+        columns:
+          - name: equipment_id
+            tests: [unique, not_null]
+          - name: line_id
+            tests: [not_null]
+      - name: work_orders
+        description: Work orders.
+        columns:
+          - name: work_order_id
+            tests: [unique, not_null]
+          - name: line_id
+            tests: [not_null]
+      - name: operations
+        description: Per-step operations under a work order.
+        columns:
+          - name: op_id
+            tests: [unique, not_null]
+      - name: sensor_readings
+        description: Equipment sensor readings.
+        columns:
+          - name: reading_id
+            tests: [unique, not_null]
+      - name: scrap_events
+        description: Scrap events on a work order.
+        columns:
+          - name: scrap_id
+            tests: [unique, not_null]
+      - name: downtime_events
+        description: Downtime windows per equipment.
+        columns:
+          - name: downtime_id
+            tests: [unique, not_null]
+      - name: inspections
+        description: Quality inspections on work orders.
+        columns:
+          - name: inspection_id
+            tests: [unique, not_null]
+      - name: defects
+        description: Defects discovered during inspections.
+        columns:
+          - name: defect_id
+            tests: [unique, not_null]

@@ -1,0 +1,138 @@
+version: 2
+
+models:
+  # ---------- Staging ----------
+  - name: stg_mes_quality__plants
+    description: Plant master.
+    columns:
+      - name: plant_id
+        tests: [unique, not_null]
+  - name: stg_mes_quality__lines
+    description: Production lines.
+    columns:
+      - name: line_id
+        tests: [unique, not_null]
+  - name: stg_mes_quality__equipment
+    description: Equipment master.
+    columns:
+      - name: equipment_id
+        tests: [unique, not_null]
+  - name: stg_mes_quality__work_orders
+    description: Work orders.
+    columns:
+      - name: work_order_id
+        tests: [unique, not_null]
+  - name: stg_mes_quality__operations
+    description: Operations.
+    columns:
+      - name: op_id
+        tests: [unique, not_null]
+  - name: stg_mes_quality__sensor_readings
+    description: Sensor readings.
+    columns:
+      - name: reading_id
+        tests: [unique, not_null]
+  - name: stg_mes_quality__scrap_events
+    description: Scrap events.
+    columns:
+      - name: scrap_id
+        tests: [unique, not_null]
+  - name: stg_mes_quality__downtime_events
+    description: Downtime events.
+    columns:
+      - name: downtime_id
+        tests: [unique, not_null]
+  - name: stg_mes_quality__inspections
+    description: Inspections.
+    columns:
+      - name: inspection_id
+        tests: [unique, not_null]
+  - name: stg_mes_quality__defects
+    description: Defects logged on inspections.
+    columns:
+      - name: defect_id
+        tests: [unique, not_null]
+
+  # ---------- Marts: dims ----------
+  - name: dim_date_mes_quality
+    description: Conformed date dimension for MES analytics.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+  - name: dim_plant
+    description: Plant dimension keyed by md5(plant_id).
+    columns:
+      - name: plant_key
+        tests: [unique, not_null]
+      - name: plant_id
+        tests: [unique, not_null]
+  - name: dim_line
+    description: Line dimension.
+    columns:
+      - name: line_key
+        tests: [unique, not_null]
+      - name: line_id
+        tests: [unique, not_null]
+      - name: plant_key
+        tests:
+          - relationships: { to: ref('dim_plant'), field: plant_key }
+  - name: dim_equipment
+    description: Equipment dimension.
+    columns:
+      - name: equipment_key
+        tests: [unique, not_null]
+      - name: equipment_id
+        tests: [unique, not_null]
+      - name: line_key
+        tests:
+          - relationships: { to: ref('dim_line'), field: line_key }
+  - name: dim_product_mes_quality
+    description: Product / SKU dimension distilled from work orders. Suffixed to avoid collision with merchandising/dim_product.
+    columns:
+      - name: product_key
+        tests: [unique, not_null]
+      - name: product_id
+        tests: [unique, not_null]
+
+  # ---------- Marts: facts ----------
+  - name: fct_work_orders
+    description: Grain = one row per work order, with line/product FKs.
+    columns:
+      - name: work_order_key
+        tests: [unique, not_null]
+      - name: work_order_id
+        tests: [unique, not_null]
+      - name: line_key
+        tests:
+          - relationships: { to: ref('dim_line'), field: line_key }
+  - name: fct_scrap_events
+    description: Grain = one row per scrap event.
+    columns:
+      - name: scrap_key
+        tests: [unique, not_null]
+      - name: scrap_id
+        tests: [unique, not_null]
+  - name: fct_downtime_events
+    description: Grain = one row per downtime event.
+    columns:
+      - name: downtime_key
+        tests: [unique, not_null]
+      - name: downtime_id
+        tests: [unique, not_null]
+      - name: equipment_key
+        tests:
+          - relationships: { to: ref('dim_equipment'), field: equipment_key }
+  - name: fct_inspections
+    description: Grain = one row per inspection.
+    columns:
+      - name: inspection_key
+        tests: [unique, not_null]
+      - name: inspection_id
+        tests: [unique, not_null]
+  - name: fct_sensor_anomalies
+    description: Grain = one row per anomalous sensor reading.
+    columns:
+      - name: anomaly_key
+        tests: [unique, not_null]
+      - name: reading_id
+        tests: [unique, not_null]
