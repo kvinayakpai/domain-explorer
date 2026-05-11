@@ -1,0 +1,159 @@
+version: 2
+
+models:
+  # ---------- Staging ----------
+  - name: stg_programmatic_advertising__advertiser
+    description: Advertiser master.
+    columns:
+      - name: advertiser_id
+        tests: [unique, not_null]
+  - name: stg_programmatic_advertising__campaign
+    description: Campaign master.
+    columns:
+      - name: campaign_id
+        tests: [unique, not_null]
+  - name: stg_programmatic_advertising__creative
+    description: Creative master.
+    columns:
+      - name: creative_id
+        tests: [unique, not_null]
+  - name: stg_programmatic_advertising__bid_request
+    description: OpenRTB BidRequest.
+    columns:
+      - name: request_id
+        tests: [unique, not_null]
+  - name: stg_programmatic_advertising__imp
+    description: OpenRTB Imp.
+    columns:
+      - name: imp_id
+        tests: [unique, not_null]
+  - name: stg_programmatic_advertising__bid_response
+    description: OpenRTB BidResponse.
+    columns:
+      - name: response_id
+        tests: [unique, not_null]
+  - name: stg_programmatic_advertising__bid
+    description: OpenRTB Bid.
+    columns:
+      - name: bid_id
+        tests: [unique, not_null]
+  - name: stg_programmatic_advertising__auction_event
+    description: Auction outcome.
+    columns:
+      - name: auction_event_id
+        tests: [unique, not_null]
+  - name: stg_programmatic_advertising__impression_event
+    description: Impression delivery event.
+    columns:
+      - name: impression_event_id
+        tests: [unique, not_null]
+  - name: stg_programmatic_advertising__video_event
+    description: VAST tracking events.
+    columns:
+      - name: video_event_id
+        tests: [unique, not_null]
+  - name: stg_programmatic_advertising__click_event
+    description: Clicks.
+    columns:
+      - name: click_event_id
+        tests: [unique, not_null]
+  - name: stg_programmatic_advertising__conversion_event
+    description: Post-click conversions.
+    columns:
+      - name: conversion_event_id
+        tests: [unique, not_null]
+
+  # ---------- Marts: dims ----------
+  - name: dim_date_programmatic_advertising
+    description: Conformed date dimension for programmatic_advertising.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+  - name: dim_advertiser
+    description: Advertiser dimension.
+    columns:
+      - name: advertiser_key
+        tests: [unique, not_null]
+      - name: advertiser_id
+        tests: [unique, not_null]
+  - name: dim_campaign
+    description: Campaign dimension; FK advertiser_key.
+    columns:
+      - name: campaign_key
+        tests: [unique, not_null]
+      - name: campaign_id
+        tests: [unique, not_null]
+      - name: advertiser_key
+        tests:
+          - relationships: { to: ref('dim_advertiser'), field: advertiser_key }
+  - name: dim_creative
+    description: Creative dimension.
+    columns:
+      - name: creative_key
+        tests: [unique, not_null]
+      - name: creative_id
+        tests: [unique, not_null]
+  - name: dim_dsp
+    description: DSP dimension.
+    columns:
+      - name: dsp_key
+        tests: [unique, not_null]
+      - name: dsp_id
+        tests: [unique, not_null]
+  - name: dim_publisher
+    description: Publisher dimension.
+    columns:
+      - name: publisher_key
+        tests: [unique, not_null]
+      - name: publisher_id
+        tests: [unique, not_null]
+
+  # ---------- Marts: facts ----------
+  - name: fct_bid_requests
+    description: Grain = one row per OpenRTB BidRequest with response/bid roll-ups.
+    columns:
+      - name: request_key
+        tests: [unique, not_null]
+      - name: request_id
+        tests: [unique, not_null]
+      - name: publisher_key
+        tests:
+          - relationships: { to: ref('dim_publisher'), field: publisher_key }
+  - name: fct_bids
+    description: Grain = one row per bid.
+    columns:
+      - name: bid_key
+        tests: [unique, not_null]
+      - name: bid_id
+        tests: [unique, not_null]
+      - name: advertiser_key
+        tests:
+          - relationships: { to: ref('dim_advertiser'), field: advertiser_key }
+  - name: fct_impressions
+    description: Grain = one row per delivered impression.
+    columns:
+      - name: impression_key
+        tests: [unique, not_null]
+      - name: impression_event_id
+        tests: [unique, not_null]
+  - name: fct_clicks
+    description: Grain = one row per click.
+    columns:
+      - name: click_key
+        tests: [unique, not_null]
+      - name: click_event_id
+        tests: [unique, not_null]
+  - name: fct_conversions
+    description: Grain = one row per conversion.
+    columns:
+      - name: conversion_key
+        tests: [unique, not_null]
+      - name: conversion_event_id
+        tests: [unique, not_null]
+  - name: fct_video_events
+    description: Grain = one row per VAST tracking event.
+    columns:
+      - name: video_event_key
+        tests: [unique, not_null]
+      - name: video_event_id
+        tests: [unique, not_null]

@@ -1,0 +1,73 @@
+version: 2
+
+sources:
+  - name: programmatic_advertising
+    description: |
+      Programmatic Advertising source schema (IAB OpenRTB 2.6 / AdCOM 1.0 / VAST 4.2).
+      Captures the full RTB lifecycle: bid request, imp objects, bid responses,
+      individual bids, auction outcome, impression delivery (with viewability +
+      IVT classification), VAST video events, clicks, and post-click conversions.
+    schema: programmatic_advertising
+    tables:
+      - name: advertiser
+        description: Advertiser master.
+        columns:
+          - name: advertiser_id
+            tests: [unique, not_null]
+      - name: campaign
+        description: Campaign with budget + bid strategy.
+        columns:
+          - name: campaign_id
+            tests: [unique, not_null]
+          - name: advertiser_id
+            tests: [not_null]
+      - name: creative
+        description: Creative asset (banner / video / native / audio).
+        columns:
+          - name: creative_id
+            tests: [unique, not_null]
+      - name: bid_request
+        description: OpenRTB BidRequest.
+        columns:
+          - name: request_id
+            tests: [unique, not_null]
+      - name: imp
+        description: OpenRTB Imp object (one row per impression slot in a request).
+        columns:
+          - name: imp_id
+            tests: [unique, not_null]
+      - name: bid_response
+        description: OpenRTB BidResponse from a DSP.
+        columns:
+          - name: response_id
+            tests: [unique, not_null]
+      - name: bid
+        description: Individual bid carried in a bid response.
+        columns:
+          - name: bid_id
+            tests: [unique, not_null]
+      - name: auction_event
+        description: Auction outcome (winning bid).
+        columns:
+          - name: auction_event_id
+            tests: [unique, not_null]
+      - name: impression_event
+        description: Delivered impression with viewability + IVT classification.
+        columns:
+          - name: impression_event_id
+            tests: [unique, not_null]
+      - name: video_event
+        description: VAST 4.x video tracking events.
+        columns:
+          - name: video_event_id
+            tests: [unique, not_null]
+      - name: click_event
+        description: Click events.
+        columns:
+          - name: click_event_id
+            tests: [unique, not_null]
+      - name: conversion_event
+        description: Post-click conversion events.
+        columns:
+          - name: conversion_event_id
+            tests: [unique, not_null]
