@@ -1,0 +1,63 @@
+version: 2
+
+sources:
+  - name: ev_charging
+    description: |
+      EV Charging source schema in domain-explorer.duckdb.
+      Mirrors a CPO operational store post-CDC, OCPP 2.0.1 + OCPI 2.2.1.
+      Tables match what synthetic-data/ev_charging/generate.py writes.
+    schema: ev_charging
+    tables:
+      - name: cpo
+        description: Charge-point operator master file.
+        columns:
+          - name: cpo_id
+            tests: [unique, not_null]
+      - name: location
+        description: Charging-site / location master file.
+        columns:
+          - name: location_id
+            tests: [unique, not_null]
+          - name: cpo_id
+            tests: [not_null]
+      - name: charging_station
+        description: One row per charging station; FK to location.
+        columns:
+          - name: station_id
+            tests: [unique, not_null]
+      - name: connector
+        description: Connectors per station (OCPP EVSE-connector pairs).
+        columns:
+          - name: connector_id
+            tests: [unique, not_null]
+          - name: station_id
+            tests: [not_null]
+      - name: authorization
+        description: Authorize requests by id_token (RFID / ISO15118 / eMAID).
+        columns:
+          - name: authorization_id
+            tests: [unique, not_null]
+      - name: transaction
+        description: OCPP charging transactions; one row per session.
+        columns:
+          - name: transaction_id
+            tests: [unique, not_null]
+          - name: connector_id
+            tests: [not_null]
+      - name: meter_value
+        description: OCPP MeterValue samples (~60s cadence) per transaction.
+        columns:
+          - name: meter_value_id
+            tests: [unique, not_null]
+          - name: transaction_id
+            tests: [not_null]
+      - name: ocpi_tariff
+        description: OCPI tariff catalog for billing / roaming.
+        columns:
+          - name: tariff_id
+            tests: [unique, not_null]
+      - name: reservation
+        description: OCPP reservation events per connector.
+        columns:
+          - name: reservation_id
+            tests: [unique, not_null]

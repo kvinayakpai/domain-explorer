@@ -1,0 +1,78 @@
+version: 2
+
+models:
+  - name: stg_ev_charging__transaction
+    description: Lightly typed view over ev_charging.transaction.
+    columns:
+      - name: transaction_id
+        tests: [unique, not_null]
+  - name: stg_ev_charging__connector
+    description: Lightly typed view over ev_charging.connector.
+    columns:
+      - name: connector_id
+        tests: [unique, not_null]
+  - name: stg_ev_charging__charging_station
+    description: Lightly typed view over ev_charging.charging_station.
+    columns:
+      - name: station_id
+        tests: [unique, not_null]
+  - name: stg_ev_charging__location
+    description: Lightly typed view over ev_charging.location.
+    columns:
+      - name: location_id
+        tests: [unique, not_null]
+  - name: stg_ev_charging__authorization
+    description: Lightly typed view over ev_charging.authorization.
+    columns:
+      - name: authorization_id
+        tests: [unique, not_null]
+
+  - name: dim_station
+    description: Charging-station dimension keyed by md5(station_id).
+    columns:
+      - name: station_key
+        tests: [unique, not_null]
+      - name: station_id
+        tests: [unique, not_null]
+  - name: dim_connector
+    description: Connector dimension keyed by md5(connector_id).
+    columns:
+      - name: connector_key
+        tests: [unique, not_null]
+      - name: connector_id
+        tests: [unique, not_null]
+  - name: dim_location_ev_charging
+    description: Location dimension; suffixed to avoid collision with demand_planning.dim_location.
+    columns:
+      - name: location_key
+        tests: [unique, not_null]
+      - name: location_id
+        tests: [unique, not_null]
+  - name: dim_date_ev_charging
+    description: Conformed daily date dimension for the ev-charging anchor.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+  - name: fct_transactions
+    description: Grain = one OCPP transaction; FKs to dim_connector, dim_station, dim_date_ev_charging.
+    columns:
+      - name: transaction_key
+        tests: [unique, not_null]
+      - name: transaction_id
+        tests: [unique, not_null]
+      - name: connector_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_connector')
+              field: connector_key
+  - name: fct_meter_values
+    description: Grain = one OCPP MeterValue sample.
+    columns:
+      - name: meter_value_id
+        tests: [unique, not_null]
+  - name: fct_authorizations
+    description: Grain = one Authorize request.
+    columns:
+      - name: authorization_id
+        tests: [unique, not_null]
