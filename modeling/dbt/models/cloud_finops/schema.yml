@@ -1,0 +1,78 @@
+version: 2
+
+models:
+  - name: stg_cloud_finops__billing_account
+    description: Lightly typed view over cloud_finops.billing_account.
+    columns:
+      - name: billing_account_id
+        tests: [unique, not_null]
+  - name: stg_cloud_finops__charge_record
+    description: Lightly typed view over cloud_finops.charge_record (FOCUS-shaped); adds charge_date_key.
+    columns:
+      - name: charge_record_id
+        tests: [unique, not_null]
+  - name: stg_cloud_finops__invoice
+    description: Lightly typed view over cloud_finops.invoice.
+    columns:
+      - name: invoice_id
+        tests: [unique, not_null]
+  - name: stg_cloud_finops__budget
+    description: Lightly typed view over cloud_finops.budget; adds utilization_ratio.
+    columns:
+      - name: budget_id
+        tests: [unique, not_null]
+  - name: stg_cloud_finops__commitment
+    description: Lightly typed view over cloud_finops.commitment.
+    columns:
+      - name: commitment_id
+        tests: [unique, not_null]
+
+  - name: dim_billing_account
+    description: Billing-account dimension keyed by md5(billing_account_id).
+    columns:
+      - name: billing_account_key
+        tests: [unique, not_null]
+      - name: billing_account_id
+        tests: [unique, not_null]
+  - name: dim_service
+    description: Service catalog dimension; surrogate key on (provider, service_name).
+    columns:
+      - name: service_key
+        tests: [unique, not_null]
+  - name: dim_region
+    description: Region catalog dimension; surrogate key on (provider, region_id).
+    columns:
+      - name: region_key
+        tests: [unique, not_null]
+  - name: dim_date_cloud_finops
+    description: Conformed daily date dimension for the cloud-finops anchor.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+  - name: fct_charges
+    description: Grain = one FOCUS ChargeRecord; FKs to dim_billing_account, dim_service, dim_region, dim_date_cloud_finops.
+    columns:
+      - name: charge_key
+        tests: [unique, not_null]
+      - name: charge_record_id
+        tests: [unique, not_null]
+      - name: billing_account_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_billing_account')
+              field: billing_account_key
+  - name: fct_invoices
+    description: Grain = one monthly invoice.
+    columns:
+      - name: invoice_key
+        tests: [unique, not_null]
+      - name: invoice_id
+        tests: [unique, not_null]
+  - name: fct_budgets
+    description: Grain = one budget period; carries actual / forecast / alert state.
+    columns:
+      - name: budget_key
+        tests: [unique, not_null]
+      - name: budget_id
+        tests: [unique, not_null]

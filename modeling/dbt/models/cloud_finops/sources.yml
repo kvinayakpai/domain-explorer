@@ -1,0 +1,54 @@
+version: 2
+
+sources:
+  - name: cloud_finops
+    description: |
+      Cloud FinOps source schema in domain-explorer.duckdb.
+      FOCUS 1.0 (FinOps Open Cost & Usage Spec) shaped charge records plus
+      billing-account / commitment / budget metadata. Tables match what
+      synthetic-data/cloud_finops/generate.py writes.
+    schema: cloud_finops
+    tables:
+      - name: billing_account
+        description: Cloud billing accounts; one per provider tenancy.
+        columns:
+          - name: billing_account_id
+            tests: [unique, not_null]
+      - name: service
+        description: Service catalog (provider + service_name + categories).
+      - name: region
+        description: Region catalog per provider.
+      - name: invoice
+        description: Monthly invoices issued to billing accounts.
+        columns:
+          - name: invoice_id
+            tests: [unique, not_null]
+          - name: billing_account_id
+            tests: [not_null]
+      - name: charge_record
+        description: FOCUS-shaped charge records (Usage / Purchase / Tax / Adjustment / Credit).
+        columns:
+          - name: charge_record_id
+            tests: [unique, not_null]
+          - name: billing_account_id
+            tests: [not_null]
+      - name: resource_tag
+        description: Resource tag key-value pairs over time.
+        columns:
+          - name: tag_id
+            tests: [unique, not_null]
+      - name: commitment
+        description: SavingsPlan / RI / CUD commitments per account.
+        columns:
+          - name: commitment_id
+            tests: [unique, not_null]
+      - name: allocation
+        description: Cost-allocation rules / showback splits per cost center.
+        columns:
+          - name: allocation_id
+            tests: [unique, not_null]
+      - name: budget
+        description: Budgets with actuals + forecast + alert thresholds.
+        columns:
+          - name: budget_id
+            tests: [unique, not_null]
