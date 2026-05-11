@@ -59,3 +59,87 @@ models:
         +materialized: view
       marts:
         +materialized: table
+    smart_metering:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    ev_charging:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    tax_administration:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    cloud_finops:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    clinical_trials:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    pharmacovigilance:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    ehr_integrations:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    real_world_evidence:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    capital_markets:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    settlement_clearing:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    mes_quality:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    programmatic_advertising:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table

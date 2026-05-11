@@ -1,0 +1,76 @@
+version: 2
+
+sources:
+  - name: capital_markets
+    description: |
+      Capital Markets source schema (FIX 4.4 / FpML 5 / IAB AdCOM-adjacent).
+      Mirror of front-to-back trade lifecycle data: instrument & party masters,
+      orders, executions, booked trades, OTC FpML, positions, allocations,
+      market-data snapshots, and risk factors.
+    schema: capital_markets
+    tables:
+      - name: instrument
+        description: Instrument master (ISIN/CUSIP/FIGI, CFI code, asset class, exchange).
+        columns:
+          - name: instrument_id
+            tests: [unique, not_null]
+      - name: party
+        description: Counterparty / broker / custodian / CCP master with LEI / BIC.
+        columns:
+          - name: party_id
+            tests: [unique, not_null]
+      - name: account
+        description: Trading account owned by a party.
+        columns:
+          - name: account_id
+            tests: [unique, not_null]
+          - name: owner_party_id
+            tests: [not_null]
+      - name: order
+        description: FIX-style order (NewOrderSingle / replace / cancel terminal state).
+        columns:
+          - name: order_id
+            tests: [unique, not_null]
+          - name: instrument_id
+            tests: [not_null]
+          - name: account_id
+            tests: [not_null]
+      - name: execution
+        description: FIX execution report (fill).
+        columns:
+          - name: execution_id
+            tests: [unique, not_null]
+          - name: order_id
+            tests: [not_null]
+      - name: trade
+        description: Booked trade derived from (one or more) executions.
+        columns:
+          - name: trade_id
+            tests: [unique, not_null]
+      - name: fpml_trade
+        description: FpML OTC derivative trade (IRS / FxFwd / CDS / TRS).
+        columns:
+          - name: fpml_trade_id
+            tests: [unique, not_null]
+      - name: position
+        description: End-of-day position snapshot (account x instrument x date).
+        columns:
+          - name: position_id
+            tests: [unique, not_null]
+      - name: allocation
+        description: Block-trade allocation to client accounts.
+        columns:
+          - name: allocation_id
+            tests: [unique, not_null]
+          - name: trade_id
+            tests: [not_null]
+      - name: market_data_snapshot
+        description: Top-of-book bid/ask snapshots from venues.
+        columns:
+          - name: snapshot_id
+            tests: [unique, not_null]
+      - name: risk_factor
+        description: Daily risk-factor levels (FX / IR / EQ / Commodity).
+        columns:
+          - name: risk_factor_id
+            tests: [unique, not_null]

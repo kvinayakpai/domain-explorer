@@ -1,0 +1,134 @@
+version: 2
+
+models:
+  # ---------- Staging ----------
+  - name: stg_capital_markets__instrument
+    description: Lightly typed view over the instrument master.
+    columns:
+      - name: instrument_id
+        tests: [unique, not_null]
+  - name: stg_capital_markets__party
+    description: Counterparty / broker / custodian / CCP master.
+    columns:
+      - name: party_id
+        tests: [unique, not_null]
+  - name: stg_capital_markets__account
+    description: Trading account.
+    columns:
+      - name: account_id
+        tests: [unique, not_null]
+  - name: stg_capital_markets__order
+    description: FIX orders.
+    columns:
+      - name: order_id
+        tests: [unique, not_null]
+  - name: stg_capital_markets__execution
+    description: FIX execution reports.
+    columns:
+      - name: execution_id
+        tests: [unique, not_null]
+  - name: stg_capital_markets__trade
+    description: Booked trades.
+    columns:
+      - name: trade_id
+        tests: [unique, not_null]
+  - name: stg_capital_markets__fpml_trade
+    description: FpML OTC derivatives.
+    columns:
+      - name: fpml_trade_id
+        tests: [unique, not_null]
+  - name: stg_capital_markets__position
+    description: End-of-day positions.
+    columns:
+      - name: position_id
+        tests: [unique, not_null]
+  - name: stg_capital_markets__allocation
+    description: Trade allocations.
+    columns:
+      - name: allocation_id
+        tests: [unique, not_null]
+  - name: stg_capital_markets__market_data_snapshot
+    description: Market-data top-of-book.
+    columns:
+      - name: snapshot_id
+        tests: [unique, not_null]
+  - name: stg_capital_markets__risk_factor
+    description: Risk-factor curves.
+    columns:
+      - name: risk_factor_id
+        tests: [unique, not_null]
+
+  # ---------- Marts: dims ----------
+  - name: dim_date_capital_markets
+    description: Conformed date dimension for capital_markets analytics.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+  - name: dim_instrument_capital_markets
+    description: Instrument dimension keyed by md5(instrument_id).
+    columns:
+      - name: instrument_key
+        tests: [unique, not_null]
+      - name: instrument_id
+        tests: [unique, not_null]
+  - name: dim_party_capital_markets
+    description: Counterparty dimension.
+    columns:
+      - name: party_key
+        tests: [unique, not_null]
+      - name: party_id
+        tests: [unique, not_null]
+  - name: dim_account_capital_markets
+    description: Account dimension.
+    columns:
+      - name: account_key
+        tests: [unique, not_null]
+      - name: account_id
+        tests: [unique, not_null]
+  - name: dim_venue_capital_markets
+    description: Execution venue dimension keyed by MIC.
+    columns:
+      - name: venue_key
+        tests: [unique, not_null]
+      - name: mic
+        tests: [unique, not_null]
+
+  # ---------- Marts: facts ----------
+  - name: fct_executions
+    description: Grain = one row per FIX execution; FKs to dim_instrument_capital_markets / dim_account_capital_markets / dim_venue_capital_markets.
+    columns:
+      - name: execution_key
+        tests: [unique, not_null]
+      - name: execution_id
+        tests: [unique, not_null]
+      - name: instrument_key
+        tests:
+          - relationships: { to: ref('dim_instrument_capital_markets'), field: instrument_key }
+  - name: fct_trades
+    description: Grain = one row per booked trade.
+    columns:
+      - name: trade_key
+        tests: [unique, not_null]
+      - name: trade_id
+        tests: [unique, not_null]
+      - name: instrument_key
+        tests:
+          - relationships: { to: ref('dim_instrument_capital_markets'), field: instrument_key }
+      - name: account_key
+        tests:
+          - relationships: { to: ref('dim_account_capital_markets'), field: account_key }
+  - name: fct_positions_daily
+    description: Grain = position_id (account x instrument x as_of_date).
+    columns:
+      - name: position_key
+        tests: [unique, not_null]
+      - name: instrument_key
+        tests:
+          - relationships: { to: ref('dim_instrument_capital_markets'), field: instrument_key }
+  - name: fct_allocations
+    description: Grain = one row per trade allocation.
+    columns:
+      - name: allocation_key
+        tests: [unique, not_null]
+      - name: allocation_id
+        tests: [unique, not_null]
