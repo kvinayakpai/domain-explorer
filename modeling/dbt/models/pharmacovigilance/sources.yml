@@ -1,0 +1,73 @@
+version: 2
+
+sources:
+  - name: pharmacovigilance
+    description: |
+      Pharmacovigilance / drug safety case management source schema.
+      Populated by synthetic-data/pharmacovigilance/generate.py.
+      Models ICSR-style intake (E2B(R3)), case follow-ups, signal detection,
+      and regulatory submissions.
+    schema: pharmacovigilance
+    tables:
+      - name: products
+        description: Product master file (drug products under surveillance).
+        columns:
+          - name: product_id
+            tests: [unique, not_null]
+      - name: patients
+        description: De-identified patient demographics referenced by cases.
+        columns:
+          - name: patient_id
+            tests: [unique, not_null]
+      - name: reporters
+        description: People reporting safety cases (HCPs, consumers, regulators).
+        columns:
+          - name: reporter_id
+            tests: [unique, not_null]
+      - name: cases
+        description: Individual Case Safety Report (ICSR) header rows.
+        columns:
+          - name: case_id
+            tests: [unique, not_null]
+          - name: patient_id
+            tests: [not_null]
+          - name: reporter_id
+            tests: [not_null]
+          - name: primary_product_id
+            tests: [not_null]
+      - name: adverse_events
+        description: Adverse-event reactions tied to a case (multiple per case).
+        columns:
+          - name: ae_id
+            tests: [unique, not_null]
+          - name: case_id
+            tests: [not_null]
+      - name: case_drugs
+        description: Drugs implicated by role (suspect/concomitant/interacting/treatment).
+        columns:
+          - name: case_drug_id
+            tests: [unique, not_null]
+          - name: case_id
+            tests: [not_null]
+          - name: product_id
+            tests: [not_null]
+      - name: narratives
+        description: Case-level free-text narratives (versioned).
+        columns:
+          - name: narrative_id
+            tests: [unique, not_null]
+      - name: follow_ups
+        description: Case follow-up events (clarifications/outcome updates).
+        columns:
+          - name: followup_id
+            tests: [unique, not_null]
+      - name: signals
+        description: Signal-detection events (disproportionality / literature).
+        columns:
+          - name: signal_id
+            tests: [unique, not_null]
+      - name: regulatory_submissions
+        description: Submissions to regulatory agencies (E2B(R3)/PSUR).
+        columns:
+          - name: submission_id
+            tests: [unique, not_null]

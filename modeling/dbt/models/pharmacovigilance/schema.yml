@@ -1,0 +1,54 @@
+version: 2
+
+models:
+  - name: stg_pharmacovigilance__cases
+    description: Lightly typed view over the source cases (ICSR header) table.
+    columns:
+      - name: case_id
+        tests: [unique, not_null]
+  - name: stg_pharmacovigilance__products
+    description: Lightly typed view over the source products table.
+    columns:
+      - name: product_id
+        tests: [unique, not_null]
+  - name: stg_pharmacovigilance__patients
+    description: Lightly typed view over the source patients table.
+    columns:
+      - name: patient_id
+        tests: [unique, not_null]
+  - name: stg_pharmacovigilance__adverse_events
+    description: Lightly typed view over case-level adverse event reactions.
+    columns:
+      - name: ae_id
+        tests: [unique, not_null]
+  - name: dim_product_pharmacovigilance
+    description: Product dimension keyed by md5(product_id).
+    columns:
+      - name: product_key
+        tests: [unique, not_null]
+      - name: product_id
+        tests: [unique, not_null]
+  - name: dim_patient_pharmacovigilance
+    description: De-identified PV patient dimension.
+    columns:
+      - name: patient_key
+        tests: [unique, not_null]
+      - name: patient_id
+        tests: [unique, not_null]
+  - name: dim_date_pharmacovigilance
+    description: Conformed daily date dimension scoped to pharmacovigilance.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+  - name: fct_case_pharmacovigilance
+    description: Grain = one row per ICSR case with received_date_key + AE/follow-up counts.
+    columns:
+      - name: case_key
+        tests: [unique, not_null]
+      - name: case_id
+        tests: [unique, not_null]
+  - name: fct_adverse_event_pharmacovigilance
+    description: Grain = one row per case-level adverse event reaction.
+    columns:
+      - name: ae_id
+        tests: [unique, not_null]
