@@ -1,0 +1,153 @@
+version: 2
+
+models:
+  # ---------- Staging ----------
+  - name: stg_settlement_clearing__party
+    description: Party master.
+    columns:
+      - name: party_id
+        tests: [unique, not_null]
+  - name: stg_settlement_clearing__instrument
+    description: Instrument master.
+    columns:
+      - name: instrument_id
+        tests: [unique, not_null]
+  - name: stg_settlement_clearing__trade
+    description: Trade headers.
+    columns:
+      - name: trade_id
+        tests: [unique, not_null]
+  - name: stg_settlement_clearing__settlement_instruction
+    description: ISO 20022 sese.023 settlement instructions.
+    columns:
+      - name: ssi_id
+        tests: [unique, not_null]
+  - name: stg_settlement_clearing__matching_status
+    description: Matching status events.
+    columns:
+      - name: matching_status_id
+        tests: [unique, not_null]
+  - name: stg_settlement_clearing__settlement_confirmation
+    description: Settlement confirmation events.
+    columns:
+      - name: confirmation_id
+        tests: [unique, not_null]
+  - name: stg_settlement_clearing__failed_settlement
+    description: Failed settlement events.
+    columns:
+      - name: failure_id
+        tests: [unique, not_null]
+  - name: stg_settlement_clearing__margin_call
+    description: Margin calls.
+    columns:
+      - name: margin_call_id
+        tests: [unique, not_null]
+  - name: stg_settlement_clearing__collateral_movement
+    description: Collateral movements.
+    columns:
+      - name: collateral_movement_id
+        tests: [unique, not_null]
+  - name: stg_settlement_clearing__reconciliation_break
+    description: Recon breaks.
+    columns:
+      - name: break_id
+        tests: [unique, not_null]
+  - name: stg_settlement_clearing__cns_obligation
+    description: CNS obligations.
+    columns:
+      - name: cns_id
+        tests: [unique, not_null]
+  - name: stg_settlement_clearing__buyin
+    description: CSDR buy-ins.
+    columns:
+      - name: buyin_id
+        tests: [unique, not_null]
+
+  # ---------- Marts: dims ----------
+  - name: dim_date_settlement_clearing
+    description: Conformed date dimension for settlement_clearing analytics.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+  - name: dim_party_settlement_clearing
+    description: Party dimension keyed by md5(party_id).
+    columns:
+      - name: party_key
+        tests: [unique, not_null]
+      - name: party_id
+        tests: [unique, not_null]
+  - name: dim_instrument_settlement_clearing
+    description: Instrument dimension.
+    columns:
+      - name: instrument_key
+        tests: [unique, not_null]
+      - name: instrument_id
+        tests: [unique, not_null]
+  - name: dim_csd
+    description: CSD dimension distilled from trade + confirmation feeds.
+    columns:
+      - name: csd_key
+        tests: [unique, not_null]
+      - name: csd_id
+        tests: [unique, not_null]
+  - name: dim_ccp
+    description: CCP dimension distilled from trade feed.
+    columns:
+      - name: ccp_key
+        tests: [unique, not_null]
+      - name: ccp_id
+        tests: [unique, not_null]
+
+  # ---------- Marts: facts ----------
+  - name: fct_settlements_settlement_clearing
+    description: Grain = one row per settlement instruction (sese.023 final state).
+    columns:
+      - name: settlement_key
+        tests: [unique, not_null]
+      - name: ssi_id
+        tests: [unique, not_null]
+      - name: instrument_key
+        tests:
+          - relationships: { to: ref('dim_instrument_settlement_clearing'), field: instrument_key }
+  - name: fct_settlement_fails
+    description: Grain = one row per failure event.
+    columns:
+      - name: fail_key
+        tests: [unique, not_null]
+      - name: failure_id
+        tests: [unique, not_null]
+  - name: fct_margin_calls
+    description: Grain = one row per margin call.
+    columns:
+      - name: margin_call_key
+        tests: [unique, not_null]
+      - name: margin_call_id
+        tests: [unique, not_null]
+  - name: fct_collateral_movements
+    description: Grain = one row per collateral movement.
+    columns:
+      - name: collateral_movement_key
+        tests: [unique, not_null]
+      - name: collateral_movement_id
+        tests: [unique, not_null]
+  - name: fct_recon_breaks
+    description: Grain = one row per reconciliation break.
+    columns:
+      - name: break_key
+        tests: [unique, not_null]
+      - name: break_id
+        tests: [unique, not_null]
+  - name: fct_cns_obligations
+    description: Grain = participant x instrument x as_of_date.
+    columns:
+      - name: cns_key
+        tests: [unique, not_null]
+      - name: cns_id
+        tests: [unique, not_null]
+  - name: fct_buyins
+    description: Grain = one row per CSDR buy-in.
+    columns:
+      - name: buyin_key
+        tests: [unique, not_null]
+      - name: buyin_id
+        tests: [unique, not_null]

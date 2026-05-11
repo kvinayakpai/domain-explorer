@@ -1,0 +1,72 @@
+version: 2
+
+sources:
+  - name: settlement_clearing
+    description: |
+      Settlement & Clearing source schema (ISO 20022 sese.* / semt.* / colr.*).
+      Captures the full post-trade lifecycle: instructions, matching, confirmation,
+      fails, margin calls, collateral, recon breaks, CNS obligations, and buy-ins.
+    schema: settlement_clearing
+    tables:
+      - name: party
+        description: Parties (account owner / CSD / CCP / cash agent / settlement agent).
+        columns:
+          - name: party_id
+            tests: [unique, not_null]
+      - name: instrument
+        description: Instruments under settlement.
+        columns:
+          - name: instrument_id
+            tests: [unique, not_null]
+      - name: trade
+        description: Trade headers feeding settlement.
+        columns:
+          - name: trade_id
+            tests: [unique, not_null]
+      - name: settlement_instruction
+        description: ISO 20022 sese.023 settlement instructions.
+        columns:
+          - name: ssi_id
+            tests: [unique, not_null]
+          - name: trade_id
+            tests: [not_null]
+      - name: matching_status
+        description: Matching status events on each SSI (MACH / NMAT / PEND / CANC).
+        columns:
+          - name: matching_status_id
+            tests: [unique, not_null]
+      - name: settlement_confirmation
+        description: ISO 20022 settlement confirmation (sese.025).
+        columns:
+          - name: confirmation_id
+            tests: [unique, not_null]
+      - name: failed_settlement
+        description: Failed settlement event w/ CSDR penalty.
+        columns:
+          - name: failure_id
+            tests: [unique, not_null]
+      - name: margin_call
+        description: Variation / initial / default-fund margin call.
+        columns:
+          - name: margin_call_id
+            tests: [unique, not_null]
+      - name: collateral_movement
+        description: Collateral pledge / return / substitution.
+        columns:
+          - name: collateral_movement_id
+            tests: [unique, not_null]
+      - name: reconciliation_break
+        description: Position / cash / trade / FX-PvP recon break.
+        columns:
+          - name: break_id
+            tests: [unique, not_null]
+      - name: cns_obligation
+        description: DTCC NSCC Continuous Net Settlement obligations.
+        columns:
+          - name: cns_id
+            tests: [unique, not_null]
+      - name: buyin
+        description: CSDR mandatory buy-in events.
+        columns:
+          - name: buyin_id
+            tests: [unique, not_null]
