@@ -1,0 +1,52 @@
+version: 2
+
+models:
+  - name: stg_clinical_trials__study
+    description: Lightly typed view over the source study table.
+    columns:
+      - name: studyid
+        tests: [unique, not_null]
+  - name: stg_clinical_trials__site
+    description: Lightly typed view over the source site table.
+    columns:
+      - name: siteid
+        tests: [unique, not_null]
+  - name: stg_clinical_trials__subject
+    description: Lightly typed view over SDTM DM (Demographics).
+    columns:
+      - name: usubjid
+        tests: [unique, not_null]
+  - name: stg_clinical_trials__adverse_event
+    description: Lightly typed view over SDTM AE.
+    columns:
+      - name: aeseq
+        tests: [unique, not_null]
+  - name: dim_study
+    description: Study dimension keyed by md5(studyid).
+    columns:
+      - name: study_key
+        tests: [unique, not_null]
+      - name: studyid
+        tests: [unique, not_null]
+  - name: dim_subject
+    description: Subject dimension keyed by md5(usubjid).
+    columns:
+      - name: subject_key
+        tests: [unique, not_null]
+      - name: usubjid
+        tests: [unique, not_null]
+  - name: dim_date_clinical_trials
+    description: Conformed daily date dimension scoped to clinical_trials.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+  - name: fct_adverse_event_clinical_trials
+    description: Grain = one row per SDTM AE, with FKs to dim_subject/dim_study/dim_site and onset_date_key.
+    columns:
+      - name: ae_id
+        tests: [unique, not_null]
+  - name: fct_visit_clinical_trials
+    description: Grain = one row per subject-visit instance from SDTM SV.
+    columns:
+      - name: visit_key
+        tests: [unique, not_null]

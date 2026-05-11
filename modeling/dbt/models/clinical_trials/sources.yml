@@ -1,0 +1,63 @@
+version: 2
+
+sources:
+  - name: clinical_trials
+    description: |
+      CDISC SDTM-aligned clinical trials operational data store.
+      Populated by the synthetic-data generator at synthetic-data/clinical_trials/generate.py.
+      Mirrors what an EDC + ePRO feed would land after CDC.
+    schema: clinical_trials
+    tables:
+      - name: study
+        description: One row per protocol / clinical study.
+        columns:
+          - name: studyid
+            tests: [unique, not_null]
+      - name: site
+        description: Investigator sites enrolling subjects for a study.
+        columns:
+          - name: siteid
+            tests: [unique, not_null]
+          - name: studyid
+            tests: [not_null]
+      - name: subject
+        description: SDTM Demographics (DM) — one row per enrolled subject.
+        columns:
+          - name: usubjid
+            tests: [unique, not_null]
+          - name: studyid
+            tests: [not_null]
+          - name: siteid
+            tests: [not_null]
+      - name: visit
+        description: SDTM Subject Visits (SV) — one row per subject-visit instance.
+        columns:
+          - name: usubjid
+            tests: [not_null]
+      - name: adverse_event
+        description: SDTM Adverse Events (AE) domain.
+        columns:
+          - name: aeseq
+            tests: [unique, not_null]
+          - name: usubjid
+            tests: [not_null]
+      - name: concomitant_medication
+        description: SDTM Concomitant Medications (CM) domain.
+        columns:
+          - name: cmseq
+            tests: [unique, not_null]
+      - name: lab
+        description: SDTM Laboratory Test Results (LB) domain.
+        columns:
+          - name: lbseq
+            tests: [unique, not_null]
+      - name: ecg
+        description: SDTM ECG Test Results (EG) domain.
+        columns:
+          - name: egseq
+            tests: [unique, not_null]
+      - name: exposure
+        description: SDTM Exposure (EX) domain - investigational product administrations.
+        columns:
+          - name: exseq
+            tests: [unique, not_null]
