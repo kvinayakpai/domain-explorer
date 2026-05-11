@@ -1,0 +1,64 @@
+version: 2
+
+sources:
+  - name: real_world_evidence
+    description: |
+      Real-World Evidence schema modeled on OMOP CDM v5.4 (OHDSI).
+      Populated by synthetic-data/real_world_evidence/generate.py.
+      Standard CDM tables: person, observation_period, visit_occurrence,
+      condition_occurrence, drug_exposure, procedure_occurrence, measurement,
+      cohort, cohort_attribute, concept.
+    schema: real_world_evidence
+    tables:
+      - name: concept
+        description: OMOP concept reference table (subset).
+        columns:
+          - name: concept_id
+            tests: [unique, not_null]
+      - name: person
+        description: OMOP Person dimension.
+        columns:
+          - name: person_id
+            tests: [unique, not_null]
+      - name: observation_period
+        description: OMOP Observation Period - continuous span of EHR coverage.
+        columns:
+          - name: observation_period_id
+            tests: [unique, not_null]
+          - name: person_id
+            tests: [not_null]
+      - name: visit_occurrence
+        description: OMOP Visit Occurrence (encounter).
+        columns:
+          - name: visit_occurrence_id
+            tests: [unique, not_null]
+          - name: person_id
+            tests: [not_null]
+      - name: condition_occurrence
+        description: OMOP Condition Occurrence.
+        columns:
+          - name: condition_occurrence_id
+            tests: [unique, not_null]
+          - name: person_id
+            tests: [not_null]
+      - name: drug_exposure
+        description: OMOP Drug Exposure.
+        columns:
+          - name: drug_exposure_id
+            tests: [unique, not_null]
+          - name: person_id
+            tests: [not_null]
+      - name: procedure_occurrence
+        description: OMOP Procedure Occurrence.
+        columns:
+          - name: procedure_occurrence_id
+            tests: [unique, not_null]
+      - name: measurement
+        description: OMOP Measurement (LOINC-coded labs/vitals).
+        columns:
+          - name: measurement_id
+            tests: [unique, not_null]
+      - name: cohort
+        description: OMOP Cohort - person-day inclusions in study cohorts.
+      - name: cohort_attribute
+        description: OMOP Cohort Attribute - attributes attached to cohort members.

@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: stg_real_world_evidence__person
+    description: Lightly typed view over OMOP Person.
+    columns:
+      - name: person_id
+        tests: [unique, not_null]
+  - name: stg_real_world_evidence__visit_occurrence
+    description: Lightly typed view over OMOP Visit Occurrence.
+    columns:
+      - name: visit_occurrence_id
+        tests: [unique, not_null]
+  - name: stg_real_world_evidence__condition_occurrence
+    description: Lightly typed view over OMOP Condition Occurrence.
+    columns:
+      - name: condition_occurrence_id
+        tests: [unique, not_null]
+  - name: stg_real_world_evidence__measurement
+    description: Lightly typed view over OMOP Measurement.
+    columns:
+      - name: measurement_id
+        tests: [unique, not_null]
+  - name: stg_real_world_evidence__concept
+    description: Lightly typed view over OMOP Concept reference.
+    columns:
+      - name: concept_id
+        tests: [unique, not_null]
+  - name: dim_person_rwe
+    description: OMOP Person dimension keyed by md5(person_id).
+    columns:
+      - name: person_key
+        tests: [unique, not_null]
+      - name: person_id
+        tests: [unique, not_null]
+  - name: dim_concept_rwe
+    description: OMOP Concept dimension subset.
+    columns:
+      - name: concept_id
+        tests: [unique, not_null]
+  - name: dim_date_rwe
+    description: Conformed daily date dimension scoped to real_world_evidence.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+  - name: fct_condition_rwe
+    description: Grain = one row per OMOP Condition Occurrence.
+    columns:
+      - name: condition_occurrence_id
+        tests: [unique, not_null]
+  - name: fct_measurement_rwe
+    description: Grain = one row per OMOP Measurement.
+    columns:
+      - name: measurement_id
+        tests: [unique, not_null]
