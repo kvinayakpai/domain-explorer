@@ -1,0 +1,54 @@
+version: 2
+
+models:
+  - name: stg_ehr_integrations__patient
+    description: Lightly typed view over FHIR Patient.
+    columns:
+      - name: patient_id
+        tests: [unique, not_null]
+  - name: stg_ehr_integrations__encounter
+    description: Lightly typed view over FHIR Encounter.
+    columns:
+      - name: encounter_id
+        tests: [unique, not_null]
+  - name: stg_ehr_integrations__practitioner
+    description: Lightly typed view over FHIR Practitioner.
+    columns:
+      - name: practitioner_id
+        tests: [unique, not_null]
+  - name: stg_ehr_integrations__observation
+    description: Lightly typed view over FHIR Observation (LOINC labs+vitals).
+    columns:
+      - name: observation_id
+        tests: [unique, not_null]
+  - name: dim_patient_ehr
+    description: Patient dimension keyed by md5(patient_id) for ehr_integrations.
+    columns:
+      - name: patient_key
+        tests: [unique, not_null]
+      - name: patient_id
+        tests: [unique, not_null]
+  - name: dim_practitioner_ehr
+    description: Practitioner dimension keyed by md5(practitioner_id) for ehr_integrations.
+    columns:
+      - name: practitioner_key
+        tests: [unique, not_null]
+      - name: practitioner_id
+        tests: [unique, not_null]
+  - name: dim_date_ehr
+    description: Conformed daily date dimension scoped to ehr_integrations.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+  - name: fct_encounter_ehr
+    description: Grain = one row per FHIR Encounter, with FKs to dim_patient_ehr/dim_practitioner_ehr.
+    columns:
+      - name: encounter_key
+        tests: [unique, not_null]
+      - name: encounter_id
+        tests: [unique, not_null]
+  - name: fct_observation_ehr
+    description: Grain = one row per FHIR Observation (LOINC).
+    columns:
+      - name: observation_id
+        tests: [unique, not_null]

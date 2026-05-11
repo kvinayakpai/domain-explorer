@@ -1,0 +1,74 @@
+version: 2
+
+sources:
+  - name: ehr_integrations
+    description: |
+      EHR integration source schema modeled on HL7 FHIR R4 + USCDI v3.
+      Populated by synthetic-data/ehr_integrations/generate.py.
+      Resources: Organization, Practitioner, Patient, Encounter, Observation,
+      Condition, MedicationRequest, AllergyIntolerance, Immunization, Coverage,
+      Procedure, DiagnosticReport.
+    schema: ehr_integrations
+    tables:
+      - name: organization
+        description: FHIR Organization (provider/payer/lab/pharmacy).
+        columns:
+          - name: organization_id
+            tests: [unique, not_null]
+      - name: practitioner
+        description: FHIR Practitioner with NPI + qualification.
+        columns:
+          - name: practitioner_id
+            tests: [unique, not_null]
+      - name: patient
+        description: FHIR Patient with USCDI demographics.
+        columns:
+          - name: patient_id
+            tests: [unique, not_null]
+      - name: encounter
+        description: FHIR Encounter (visit) record.
+        columns:
+          - name: encounter_id
+            tests: [unique, not_null]
+          - name: patient_id
+            tests: [not_null]
+      - name: observation
+        description: FHIR Observation - LOINC-coded labs and vitals.
+        columns:
+          - name: observation_id
+            tests: [unique, not_null]
+      - name: condition
+        description: FHIR Condition - ICD-10-CM problem list / encounter dx.
+        columns:
+          - name: condition_id
+            tests: [unique, not_null]
+      - name: medication_request
+        description: FHIR MedicationRequest - RxNorm-coded prescription orders.
+        columns:
+          - name: medication_request_id
+            tests: [unique, not_null]
+      - name: allergy_intolerance
+        description: FHIR AllergyIntolerance.
+        columns:
+          - name: allergy_id
+            tests: [unique, not_null]
+      - name: immunization
+        description: FHIR Immunization (CVX-coded).
+        columns:
+          - name: immunization_id
+            tests: [unique, not_null]
+      - name: coverage
+        description: FHIR Coverage (insurance plan).
+        columns:
+          - name: coverage_id
+            tests: [unique, not_null]
+      - name: procedure
+        description: FHIR Procedure (CPT-coded).
+        columns:
+          - name: procedure_id
+            tests: [unique, not_null]
+      - name: diagnostic_report
+        description: FHIR DiagnosticReport.
+        columns:
+          - name: diagnostic_report_id
+            tests: [unique, not_null]
