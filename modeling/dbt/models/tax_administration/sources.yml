@@ -1,0 +1,73 @@
+version: 2
+
+sources:
+  - name: tax_administration
+    description: |
+      Tax Administration source schema in domain-explorer.duckdb.
+      Mirrors an IRS MeF-style operational store post-CDC, with FATCA/CRS
+      reportable accounts. Tables match what
+      synthetic-data/tax_administration/generate.py writes.
+    schema: tax_administration
+    tables:
+      - name: taxpayer
+        description: Taxpayer master file (individuals + entities).
+        columns:
+          - name: taxpayer_id
+            tests: [unique, not_null]
+      - name: return
+        description: Filed tax returns. NB `return` is a reserved word — refs use the source() macro.
+        columns:
+          - name: return_id
+            tests: [unique, not_null]
+          - name: taxpayer_id
+            tests: [not_null]
+      - name: form
+        description: Forms attached to a return (1040, 1120, 1065 etc).
+        columns:
+          - name: form_id
+            tests: [unique, not_null]
+          - name: return_id
+            tests: [not_null]
+      - name: schedule
+        description: Schedules attached to a return (Schedule A/B/C/...).
+        columns:
+          - name: schedule_id
+            tests: [unique, not_null]
+          - name: return_id
+            tests: [not_null]
+      - name: transmission
+        description: MeF transmission envelopes (one per submission).
+        columns:
+          - name: transmission_id
+            tests: [unique, not_null]
+      - name: acknowledgement
+        description: MeF acks per transmission (A/R/T/E status).
+        columns:
+          - name: ack_id
+            tests: [unique, not_null]
+          - name: transmission_id
+            tests: [not_null]
+      - name: audit
+        description: Examination cases opened against returns.
+        columns:
+          - name: audit_id
+            tests: [unique, not_null]
+          - name: return_id
+            tests: [not_null]
+      - name: fatca_account
+        description: FATCA / CRS reportable financial accounts.
+        columns:
+          - name: fatca_account_id
+            tests: [unique, not_null]
+      - name: withholding
+        description: Withholding statements (W-2, 1099 family) per taxpayer.
+        columns:
+          - name: withholding_id
+            tests: [unique, not_null]
+      - name: payment
+        description: Payments applied against a return (EFTPS, ACH, etc).
+        columns:
+          - name: payment_id
+            tests: [unique, not_null]
+          - name: return_id
+            tests: [not_null]

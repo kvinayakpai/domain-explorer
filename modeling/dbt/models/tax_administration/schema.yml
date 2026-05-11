@@ -1,0 +1,75 @@
+version: 2
+
+models:
+  - name: stg_tax_administration__taxpayer
+    description: Lightly typed view over tax_administration.taxpayer.
+    columns:
+      - name: taxpayer_id
+        tests: [unique, not_null]
+  - name: stg_tax_administration__return
+    description: Lightly typed view over tax_administration.return; adds days_late.
+    columns:
+      - name: return_id
+        tests: [unique, not_null]
+  - name: stg_tax_administration__transmission
+    description: Lightly typed view over tax_administration.transmission; adds transit_seconds.
+    columns:
+      - name: transmission_id
+        tests: [unique, not_null]
+  - name: stg_tax_administration__acknowledgement
+    description: Lightly typed view over tax_administration.acknowledgement.
+    columns:
+      - name: ack_id
+        tests: [unique, not_null]
+  - name: stg_tax_administration__audit
+    description: Lightly typed view over tax_administration.audit.
+    columns:
+      - name: audit_id
+        tests: [unique, not_null]
+
+  - name: dim_taxpayer
+    description: Taxpayer dimension keyed by md5(taxpayer_id).
+    columns:
+      - name: taxpayer_key
+        tests: [unique, not_null]
+      - name: taxpayer_id
+        tests: [unique, not_null]
+  - name: dim_form
+    description: Form dimension distinct on form_code.
+    columns:
+      - name: form_key
+        tests: [unique, not_null]
+      - name: form_code
+        tests: [unique, not_null]
+  - name: dim_date_tax_administration
+    description: Conformed daily date dimension for the tax-administration anchor.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+  - name: fct_tax_returns
+    description: Grain = one filed return; FKs to dim_taxpayer, dim_date_tax_administration, dim_form. Suffixed `_tax_returns` to avoid collision with merchandising.fct_returns.
+    columns:
+      - name: return_key
+        tests: [unique, not_null]
+      - name: return_id
+        tests: [unique, not_null]
+      - name: taxpayer_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_taxpayer')
+              field: taxpayer_key
+  - name: fct_tax_payments
+    description: Grain = one payment applied to a return; suffixed to avoid collision with payments.fct_payments.
+    columns:
+      - name: payment_key
+        tests: [unique, not_null]
+      - name: payment_id
+        tests: [unique, not_null]
+  - name: fct_audits
+    description: Grain = one audit case opened against a return.
+    columns:
+      - name: audit_key
+        tests: [unique, not_null]
+      - name: audit_id
+        tests: [unique, not_null]
