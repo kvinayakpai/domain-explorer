@@ -1,0 +1,62 @@
+version: 2
+
+sources:
+  - name: smart_metering
+    description: |
+      Smart Metering source schema in domain-explorer.duckdb.
+      Mirrors an AMI head-end / meter data management (MDM) operational store
+      after CDC. Tables match what synthetic-data/smart_metering/generate.py
+      writes (ANSI C12.19/C12.22 + DLMS/COSEM aligned).
+    schema: smart_metering
+    tables:
+      - name: service_point
+        description: One row per metered premise / usage point.
+        columns:
+          - name: service_point_id
+            tests: [unique, not_null]
+      - name: meter
+        description: One row per physical meter; FK to service_point.
+        columns:
+          - name: meter_id
+            tests: [unique, not_null]
+          - name: service_point_id
+            tests: [not_null]
+      - name: meter_read
+        description: AMI interval reads (15-minute) keyed by (meter, ts, OBIS).
+        columns:
+          - name: read_id
+            tests: [unique, not_null]
+          - name: meter_id
+            tests: [not_null]
+      - name: billing_determinant
+        description: Monthly billing determinants (kWh, kW demand) per meter.
+        columns:
+          - name: billing_determinant_id
+            tests: [unique, not_null]
+          - name: meter_id
+            tests: [not_null]
+      - name: field_order
+        description: Field-service work orders (install/remove/repair/etc).
+        columns:
+          - name: field_order_id
+            tests: [unique, not_null]
+      - name: ami_event
+        description: AMI / DLMS event stream from meters.
+        columns:
+          - name: event_id
+            tests: [unique, not_null]
+      - name: asset_register
+        description: Distribution-grid asset register (transformers, reclosers).
+        columns:
+          - name: asset_id
+            tests: [unique, not_null]
+      - name: outage_event
+        description: Outage events tied to feeders/service points.
+        columns:
+          - name: outage_id
+            tests: [unique, not_null]
+      - name: tamper_event
+        description: Suspected meter tamper detections from AMI analytics.
+        columns:
+          - name: tamper_id
+            tests: [unique, not_null]

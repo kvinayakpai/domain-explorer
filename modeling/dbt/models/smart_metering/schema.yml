@@ -1,0 +1,79 @@
+version: 2
+
+models:
+  - name: stg_smart_metering__meter
+    description: Lightly typed view over smart_metering.meter.
+    columns:
+      - name: meter_id
+        tests: [unique, not_null]
+  - name: stg_smart_metering__service_point
+    description: Lightly typed view over smart_metering.service_point.
+    columns:
+      - name: service_point_id
+        tests: [unique, not_null]
+  - name: stg_smart_metering__meter_read
+    description: Lightly typed view over smart_metering.meter_read; adds read_date_key.
+    columns:
+      - name: read_id
+        tests: [unique, not_null]
+  - name: stg_smart_metering__billing_determinant
+    description: Lightly typed view over smart_metering.billing_determinant.
+    columns:
+      - name: billing_determinant_id
+        tests: [unique, not_null]
+  - name: stg_smart_metering__outage_event
+    description: Lightly typed view over smart_metering.outage_event.
+    columns:
+      - name: outage_id
+        tests: [unique, not_null]
+
+  - name: dim_meter_smart_metering
+    description: Meter dimension keyed by md5(meter_id). Suffixed to avoid future name collisions.
+    columns:
+      - name: meter_key
+        tests: [unique, not_null]
+      - name: meter_id
+        tests: [unique, not_null]
+  - name: dim_service_point
+    description: Service-point dimension keyed by md5(service_point_id).
+    columns:
+      - name: service_point_key
+        tests: [unique, not_null]
+      - name: service_point_id
+        tests: [unique, not_null]
+  - name: dim_date_smart_metering
+    description: Conformed daily date dimension for the smart-metering anchor.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+  - name: fct_meter_reads
+    description: Grain = one AMI interval read; FKs to dim_meter_smart_metering, dim_service_point, dim_date_smart_metering.
+    columns:
+      - name: read_key
+        tests: [unique, not_null]
+      - name: read_id
+        tests: [unique, not_null]
+      - name: meter_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_meter_smart_metering')
+              field: meter_key
+  - name: fct_outages
+    description: Grain = one outage event with SAIDI contribution.
+    columns:
+      - name: outage_id
+        tests: [unique, not_null]
+      - name: outage_key
+        tests: [unique, not_null]
+  - name: fct_billing_determinants
+    description: Grain = one monthly billing determinant per meter.
+    columns:
+      - name: billing_determinant_id
+        tests: [unique, not_null]
+      - name: meter_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_meter_smart_metering')
+              field: meter_key
