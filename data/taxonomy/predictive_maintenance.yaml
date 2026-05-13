@@ -1,36 +1,433 @@
 id: predictive_maintenance
 name: Predictive Maintenance
 vertical: Manufacturing
-oneLiner: ML-driven prediction of equipment failure using sensor telemetry and historical maintenance.
+oneLiner: Sensor-driven prediction of equipment failure, remaining useful life (RUL), and optimal maintenance intervention using time-series analytics, anomaly detection, and condition-based monitoring across plant assets.
+
+# Authoritative sources (as of mid-2026):
+#   ISO 13374 — Condition monitoring and diagnostics of machine systems.
+#     Six-block model: Data Acquisition, Manipulation, State Detection,
+#     Health Assessment, Prognostic Assessment, Advisory Generation.
+#   ISO 14224 — Petroleum/petrochemical/natural-gas industries — collection
+#     and exchange of reliability and maintenance data for equipment.
+#     The canonical reliability data dictionary (failure modes, failure
+#     mechanisms, time-to-failure semantics).
+#   ISA-95 — Enterprise-control system integration. Defines L0-L4 boundaries
+#     and the Equipment Hierarchy (Enterprise → Site → Area → Work Center
+#     → Work Unit → Equipment Module).
+#   IEC 61508 — Functional safety of electrical/electronic/programmable
+#     electronic safety-related systems. Drives SIL ratings for protective
+#     trips that PdM advisories interact with.
+#   IEC 62443 — OT cybersecurity. Bears on edge↔cloud bridging.
+#   OPC UA (IEC 62541) — the de-facto OT-IT bridge protocol.
+#   OPC UA Information Model PA-DIM — Process Automation Device Information Model.
+#   MQTT v5 (OASIS) and Sparkplug B — high-throughput sensor telemetry.
+#   MIMOSA OSA-CBM / OSA-EAI — Open System Architecture for Condition-Based
+#     Maintenance / Enterprise Application Integration. Reference data models
+#     and message contracts for PdM.
+#   NASA C-MAPSS dataset (Saxena et al., 2008) — turbofan RUL benchmark;
+#     defines the canonical Health Index and EOL signal patterns.
+#   PHM Society Data Challenges (2008-2025) — published failure-mode catalogs
+#     for bearings, gearboxes, batteries, semiconductor tools.
+#   Vendors:
+#     PTC ThingWorx (Industrial IoT platform), https://www.ptc.com/en/products/thingworx
+#     Siemens MindSphere / Industrial Edge, https://siemens.mindsphere.io
+#     GE Digital Predix / APM (Asset Performance Management),
+#       https://www.ge.com/digital/applications/asset-performance-management
+#     Aveva PI System (OSIsoft historian), https://www.aveva.com/en/products/pi-system/
+#     IBM Maximo Application Suite — APM + EAM, https://www.ibm.com/products/maximo
+#     Honeywell Forge for Industrial, https://www.honeywell.com/us/en/forge
+#     AspenTech Aspen Mtell — prescriptive PdM,
+#       https://www.aspentech.com/en/products/asset-performance-management/aspen-mtell
+#     Augury Machine Health, https://www.augury.com
+#     Uptake (formerly Caterpillar partnership), https://www.uptake.com
+#     SparkCognition SparkPredict, https://www.sparkcognition.com
+#     Senseye Predictive Maintenance (Siemens acquisition, 2022),
+#       https://www.senseye.io
+#     SKF @ptitude / Observer, Emerson AMS Machine Works (vibration analytics)
+#     Rockwell FactoryTalk Analytics for Devices, Schneider EcoStruxure APM
+#   Standards bodies / academic:
+#     ISO TC 108 (Mechanical vibration & shock).
+#     SAE JA1011/JA1012 (Reliability-Centered Maintenance).
 
 personas:
-  - { name: 'Head of Reliability', title: 'Head of Reliability Engineering', level: Director }
-  - { name: 'Data Science Lead', title: 'Data Science Lead - PdM', level: Manager }
-  - { name: 'Maintenance Engineer', title: 'Sr Maintenance Engineer', level: IC }
+  - { name: Maintenance Director, title: Director, Plant Maintenance & Reliability, level: Director }
+  - { name: Reliability Engineer, title: Senior Reliability Engineer, level: IC }
+  - { name: Vibration Analyst, title: ISO 18436-2 Cat-III Vibration Analyst, level: IC }
+  - { name: Plant Manager, title: Plant Manager, level: Director }
+  - { name: Data Scientist (Time Series), title: Principal Data Scientist, Industrial AI, level: IC }
+  - { name: Asset Manager, title: VP, Asset Management, level: VP }
+  - { name: Maintenance Planner/Scheduler, title: Maintenance Planner/Scheduler, level: IC }
+  - { name: Operations Excellence Lead, title: Senior Director, Operational Excellence, level: Director }
+
+decisions:
+  - { id: pm.d.intervention_now, statement: "Should we pull the line down now for intervention, run until the next planned shutdown, or push to the following window?" }
+  - { id: pm.d.alert_threshold, statement: "Where should the anomaly-detection threshold sit — favoring recall (more false positives) or precision (more missed failures)?" }
+  - { id: pm.d.cbm_vs_tbm, statement: "Should this asset class move from time-based (calendar) maintenance to condition-based maintenance, or remain on PM intervals?" }
+  - { id: pm.d.sensor_retrofit, statement: "Is this fleet worth retrofitting with wireless vibration / ultrasound / thermal sensors, or is the existing PLC/historian data sufficient?" }
+  - { id: pm.d.spares_stocking, statement: "Given a predicted failure window, do we expedite spare-parts procurement, draw from regional stock, or accept extended downtime?" }
+  - { id: pm.d.work_order_priority, statement: "When the RUL-based queue conflicts with the human planner's queue, which work orders get crew assignment first?" }
+  - { id: pm.d.model_retrain, statement: "Trigger model retraining now (sensor drift detected, label sparsity has improved, or operating regime shifted) or hold?" }
+  - { id: pm.d.edge_vs_cloud, statement: "Run this anomaly detector at the edge (sub-100ms latency, but limited features) or in the cloud (richer features, but historian round-trip)?" }
+  - { id: pm.d.failure_mode_action, statement: "For this predicted failure mode (bearing inner-race vs. outer-race, gear pitting, lubrication starvation), which prescriptive action — lubricate, align, replace, derate?" }
+  - { id: pm.d.advisory_publish, statement: "Should the model's advisory go straight to the CMMS work-order queue, route through a human reliability engineer first, or auto-trigger a safety trip per IEC 61508 SIL classification?" }
 
 kpis:
-  - { id: pdm.kpi.unplanned_dt, name: 'Unplanned Downtime', formula: 'sum(unplanned_minutes)', unit: 'minutes', direction: lower_is_better }
-  - { id: pdm.kpi.precision, name: 'Model Precision', formula: 'tp / (tp+fp)', unit: '%', direction: higher_is_better }
-  - { id: pdm.kpi.recall, name: 'Model Recall', formula: 'tp / (tp+fn)', unit: '%', direction: higher_is_better }
-  - { id: pdm.kpi.mtbf, name: 'MTBF', formula: 'operating_time / failures', unit: 'hours', direction: higher_is_better }
-  - { id: pdm.kpi.work_order_lead, name: 'Work Order Lead Time', formula: 'alert_to_wo', unit: 'hours', direction: lower_is_better }
+  - id: pm.kpi.mtbf
+    name: Mean Time Between Failures (MTBF)
+    formula: sum(operating_hours_between_failures) / count(failure_events)
+    unit: hours
+    direction: higher_is_better
+    decisionsSupported: [pm.d.cbm_vs_tbm, pm.d.intervention_now]
+  - id: pm.kpi.mttr
+    name: Mean Time To Repair (MTTR)
+    formula: sum(repair_minutes) / count(repair_events)
+    unit: minutes
+    direction: lower_is_better
+    decisionsSupported: [pm.d.spares_stocking, pm.d.work_order_priority]
+  - id: pm.kpi.oee
+    name: Overall Equipment Effectiveness (OEE)
+    formula: availability * performance * quality
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [pm.d.cbm_vs_tbm, pm.d.intervention_now]
+  - id: pm.kpi.asset_availability
+    name: Asset Availability %
+    formula: (scheduled_runtime - unplanned_downtime) / scheduled_runtime
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [pm.d.intervention_now, pm.d.cbm_vs_tbm]
+  - id: pm.kpi.predictive_precision
+    name: Predictive Accuracy — Precision
+    formula: true_positives / (true_positives + false_positives)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [pm.d.alert_threshold, pm.d.model_retrain]
+  - id: pm.kpi.predictive_recall
+    name: Predictive Accuracy — Recall (% Failures Predicted)
+    formula: true_positives / (true_positives + false_negatives)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [pm.d.alert_threshold, pm.d.model_retrain]
+  - id: pm.kpi.lead_time_to_failure
+    name: Lead Time to Failure (P-F interval realized)
+    formula: avg(failure_ts - prediction_ts) where alert_was_correct
+    unit: hours
+    direction: higher_is_better
+    decisionsSupported: [pm.d.spares_stocking, pm.d.intervention_now]
+  - id: pm.kpi.planned_vs_unplanned_pct
+    name: Planned vs Unplanned Maintenance %
+    formula: planned_wo_count / (planned_wo_count + unplanned_wo_count)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [pm.d.cbm_vs_tbm, pm.d.work_order_priority]
+  - id: pm.kpi.maint_cost_per_operating_hour
+    name: Maintenance Cost per Operating Hour
+    formula: sum(maintenance_cost) / sum(operating_hours)
+    unit: USD/hour
+    direction: lower_is_better
+    decisionsSupported: [pm.d.cbm_vs_tbm, pm.d.sensor_retrofit]
+  - id: pm.kpi.spare_stockout_rate
+    name: Spare-Part Stockout Rate
+    formula: stockout_events / parts_demand_events
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [pm.d.spares_stocking]
+  - id: pm.kpi.false_positive_rate
+    name: False-Positive Rate
+    formula: false_positives / (false_positives + true_negatives)
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [pm.d.alert_threshold, pm.d.advisory_publish]
+  - id: pm.kpi.rul_prediction_error
+    name: RUL Prediction Error %
+    formula: mean(abs(rul_pred - rul_actual) / rul_actual)
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [pm.d.model_retrain, pm.d.intervention_now]
+  - id: pm.kpi.pct_failures_predicted
+    name: % of Failures Predicted (advance-warning coverage)
+    formula: predicted_failure_events / total_failure_events
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [pm.d.alert_threshold, pm.d.model_retrain]
+  - id: pm.kpi.production_loss_avoided_pct
+    name: % Production Loss Avoided
+    formula: avoided_production_loss_units / (avoided_production_loss_units + actual_production_loss_units)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [pm.d.intervention_now, pm.d.advisory_publish]
 
 dataModel:
   entities:
-    - { name: Asset, description: 'Plant asset under maintenance' }
-    - { name: Sensor, description: 'Telemetry sensor' }
-    - { name: FailureMode, description: 'Catalogued failure mode' }
-    - { name: ModelPrediction, description: 'PdM model output' }
-    - { name: WorkOrder, description: 'Generated maintenance WO' }
+    - name: asset
+      description: Physical plant asset under maintenance — pump, motor, compressor, turbine, gearbox, conveyor. Keyed by tag-id in the ISA-95 equipment hierarchy. Per ISO 14224 §6 the canonical reliability unit.
+      keys: [asset_id]
+      attributes:
+        - { name: asset_id, type: varchar(64), isPrimaryKey: true }
+        - { name: tag_id, type: varchar(128), description: "ISA-95 equipment hierarchical tag e.g. Site.Area.Line.Pump-101" }
+        - { name: asset_class, type: varchar(64), description: "pump|motor|compressor|turbine|gearbox|conveyor|HVAC|valve|heat_exchanger" }
+        - { name: manufacturer, type: varchar(128), description: "OEM — SKF, Siemens, ABB, Emerson, Atlas Copco, Caterpillar, ..." }
+        - { name: model_number, type: varchar(128) }
+        - { name: serial_number, type: varchar(128) }
+        - { name: site_id, type: varchar(64), description: "ISA-95 Site" }
+        - { name: area_id, type: varchar(64), description: "ISA-95 Area" }
+        - { name: line_id, type: varchar(64), description: "ISA-95 Line / Work Center" }
+        - { name: criticality, type: varchar(8), description: "A|B|C — RCM (SAE JA1011) criticality classification" }
+        - { name: install_date, type: date }
+        - { name: design_life_hours, type: integer }
+        - { name: rated_kw, type: "decimal(10,2)" }
+        - { name: status, type: varchar(16), description: "running|stopped|standby|maintenance|decommissioned" }
+
+    - name: sensor
+      description: Telemetry channel attached to an asset. Vibration (accelerometer), temperature (RTD/thermocouple), pressure, flow, current, oil-particle, ultrasound, acoustic emission, etc.
+      keys: [sensor_id]
+      attributes:
+        - { name: sensor_id, type: varchar(64), isPrimaryKey: true }
+        - { name: asset_id, type: varchar(64), isForeignKey: true, references: asset.asset_id }
+        - { name: sensor_type, type: varchar(32), description: "vibration_accel|vibration_velocity|temp_rtd|temp_thermo|pressure|flow|current|voltage|oil_particle|ultrasound|acoustic" }
+        - { name: measurement_location, type: varchar(64), description: "DE bearing|NDE bearing|casing axial|casing radial|stator winding|lube inlet" }
+        - { name: unit, type: varchar(16), description: "g|mm/s|degC|bar|m3/h|A|V|ppm|dB" }
+        - { name: sampling_hz, type: "decimal(10,2)", description: "Sampling rate in Hz" }
+        - { name: range_min, type: "decimal(15,6)" }
+        - { name: range_max, type: "decimal(15,6)" }
+        - { name: alarm_low, type: "decimal(15,6)", description: "ISO 10816 / 20816 vibration severity zone B/C/D thresholds where applicable" }
+        - { name: alarm_high, type: "decimal(15,6)" }
+        - { name: install_date, type: date }
+        - { name: status, type: varchar(16), description: "active|drifted|failed|removed" }
+
+    - name: sensor_reading
+      description: Time-stamped scalar sample from a sensor. The high-cardinality fact at minute or sub-minute grain.
+      keys: [reading_id]
+      attributes:
+        - { name: reading_id, type: bigint, isPrimaryKey: true }
+        - { name: sensor_id, type: varchar(64), isForeignKey: true, references: sensor.sensor_id }
+        - { name: asset_id, type: varchar(64), isForeignKey: true, references: asset.asset_id }
+        - { name: reading_ts, type: timestamp }
+        - { name: value, type: "decimal(15,6)" }
+        - { name: quality_code, type: smallint, description: "OPC-UA StatusCode (192=Good, 64=Uncertain, 0=Bad)" }
+        - { name: is_anomaly, type: boolean, description: "Local-threshold or model-flagged anomaly" }
+        - { name: ingestion_ts, type: timestamp, description: "Watermark for late-arriving data" }
+
+    - name: failure_mode
+      description: Catalogued failure mode per ISO 14224 Annex B / vendor FMEA library. e.g. bearing inner-race fault, gear pitting, lubrication starvation.
+      keys: [failure_mode_id]
+      attributes:
+        - { name: failure_mode_id, type: varchar(32), isPrimaryKey: true }
+        - { name: fault_code, type: varchar(16), description: "ISO 14224 failure code — BRD|GBR|VIB|OVH|..." }
+        - { name: description, type: varchar(255) }
+        - { name: applicable_asset_class, type: varchar(64) }
+        - { name: characteristic_frequency_hz, type: "decimal(10,2)", description: "Bearing BPFO/BPFI/BSF/FTF or gear mesh frequency where applicable" }
+        - { name: typical_p_f_interval_hours, type: integer, description: "Time from potential-failure detectable to functional failure (RCM P-F curve)" }
+        - { name: severity_tier, type: varchar(8), description: "S1|S2|S3 — IEC 61508-aligned" }
+
+    - name: failure_event
+      description: Observed equipment failure. The label class for supervised models. Sparse — failures are rare.
+      keys: [failure_event_id]
+      attributes:
+        - { name: failure_event_id, type: varchar(64), isPrimaryKey: true }
+        - { name: asset_id, type: varchar(64), isForeignKey: true, references: asset.asset_id }
+        - { name: failure_mode_id, type: varchar(32), isForeignKey: true, references: failure_mode.failure_mode_id }
+        - { name: failure_ts, type: timestamp }
+        - { name: detected_by, type: varchar(16), description: "model_alert|operator|inspection|protective_trip|catastrophic" }
+        - { name: downtime_minutes, type: integer }
+        - { name: production_loss_units, type: bigint }
+        - { name: root_cause, type: text }
+        - { name: corrective_action, type: text }
+        - { name: cost_usd, type: "decimal(15,2)", description: "Total cost: labor + parts + downtime impact" }
+
+    - name: work_order
+      description: CMMS-issued maintenance order — preventive (TBM), condition-based (CBM/PdM-triggered), corrective (post-failure). Per ISO 14224 §8.
+      keys: [work_order_id]
+      attributes:
+        - { name: work_order_id, type: varchar(64), isPrimaryKey: true }
+        - { name: asset_id, type: varchar(64), isForeignKey: true, references: asset.asset_id }
+        - { name: wo_type, type: varchar(16), description: "preventive|corrective|predictive|inspection|emergency" }
+        - { name: wo_priority, type: smallint, description: "1..5 (1=emergency)" }
+        - { name: triggered_by_prediction_id, type: varchar(64), description: "FK to prediction if PdM-triggered" }
+        - { name: scheduled_start, type: timestamp }
+        - { name: actual_start, type: timestamp }
+        - { name: actual_end, type: timestamp }
+        - { name: labor_hours, type: "decimal(8,2)" }
+        - { name: parts_cost_usd, type: "decimal(15,2)" }
+        - { name: labor_cost_usd, type: "decimal(15,2)" }
+        - { name: status, type: varchar(16), description: "open|in_progress|completed|cancelled|rejected" }
+        - { name: failure_event_id, type: varchar(64), description: "FK if WO closed a failure" }
+        - { name: crew_id, type: varchar(64) }
+
+    - name: prediction
+      description: One PdM model output — anomaly score, RUL estimate, or failure-mode classification — at a point in time for an asset.
+      keys: [prediction_id]
+      attributes:
+        - { name: prediction_id, type: varchar(64), isPrimaryKey: true }
+        - { name: asset_id, type: varchar(64), isForeignKey: true, references: asset.asset_id }
+        - { name: model_id, type: varchar(64) }
+        - { name: model_version, type: varchar(32) }
+        - { name: prediction_ts, type: timestamp }
+        - { name: prediction_type, type: varchar(16), description: "anomaly_score|rul|fault_class|health_index" }
+        - { name: anomaly_score, type: "decimal(8,4)", description: "Normalized 0..1 anomaly score (autoencoder reconstruction error / isolation forest / etc.)" }
+        - { name: rul_hours, type: integer, description: "Remaining Useful Life estimate in hours" }
+        - { name: rul_confidence_lower, type: integer }
+        - { name: rul_confidence_upper, type: integer }
+        - { name: predicted_failure_mode_id, type: varchar(32), description: "FK to failure_mode for classification outputs" }
+        - { name: severity, type: varchar(8), description: "info|warning|alarm|critical" }
+        - { name: feature_snapshot_hash, type: varchar(64), description: "SHA-256 of normalized feature vector used at inference" }
+
+    - name: maintenance_plan
+      description: Plan rules — interval-based (calendar/runtime), condition-based (sensor threshold), or predictive (model-driven) — that define when work orders auto-generate.
+      keys: [plan_id]
+      attributes:
+        - { name: plan_id, type: varchar(64), isPrimaryKey: true }
+        - { name: asset_id, type: varchar(64), isForeignKey: true, references: asset.asset_id }
+        - { name: plan_type, type: varchar(16), description: "calendar|runtime|condition|predictive" }
+        - { name: interval_value, type: integer }
+        - { name: interval_unit, type: varchar(16), description: "days|operating_hours|cycles" }
+        - { name: trigger_condition, type: text, description: "JSON expression for condition/predictive plans" }
+        - { name: job_plan_template, type: varchar(64), description: "Reference to CMMS job plan / SOP" }
+        - { name: active, type: boolean }
+        - { name: created_at, type: timestamp }
+
+    - name: model_version
+      description: Trained model artifact reference. Tracks model lineage and rollback. Required by IEC 61508 traceability and AI governance.
+      keys: [model_version_id]
+      attributes:
+        - { name: model_version_id, type: varchar(64), isPrimaryKey: true }
+        - { name: model_id, type: varchar(64) }
+        - { name: algorithm, type: varchar(64), description: "autoencoder|isolation_forest|xgboost|lstm|transformer|prophet|arima" }
+        - { name: trained_on_from_ts, type: timestamp }
+        - { name: trained_on_to_ts, type: timestamp }
+        - { name: holdout_precision, type: "decimal(5,4)" }
+        - { name: holdout_recall, type: "decimal(5,4)" }
+        - { name: holdout_rul_mape, type: "decimal(5,4)" }
+        - { name: deployed_at, type: timestamp }
+        - { name: deprecated_at, type: timestamp }
+        - { name: champion, type: boolean }
+
+  relationships:
+    - { from: sensor, to: asset, kind: many_to_one }
+    - { from: sensor_reading, to: sensor, kind: many_to_one }
+    - { from: sensor_reading, to: asset, kind: many_to_one }
+    - { from: failure_event, to: asset, kind: many_to_one }
+    - { from: failure_event, to: failure_mode, kind: many_to_one }
+    - { from: work_order, to: asset, kind: many_to_one }
+    - { from: work_order, to: failure_event, kind: many_to_one }
+    - { from: prediction, to: asset, kind: many_to_one }
+    - { from: prediction, to: failure_mode, kind: many_to_one }
+    - { from: maintenance_plan, to: asset, kind: many_to_one }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/predictive_maintenance_3nf.sql
+  vault: modeling/ddl/predictive_maintenance_vault.sql
+  dimensional: modeling/ddl/predictive_maintenance_dim.sql
 
 sourceSystems:
-  - { vendor: 'GE', product: 'Predix', category: 'IIoT' }
-  - { vendor: 'PTC', product: 'ThingWorx', category: 'IIoT' }
-  - { vendor: 'AVEVA', product: 'PI System', category: 'Historian' }
-  - { vendor: 'Siemens', product: 'Senseye', category: 'PdM SaaS' }
-  - { vendor: 'IBM', product: 'Maximo', category: 'EAM' }
+  - { vendor: PTC, product: ThingWorx (IIoT Platform), category: IIoT Platform }
+  - { vendor: Siemens, product: MindSphere / Industrial Edge, category: IIoT Platform }
+  - { vendor: Siemens, product: Senseye Predictive Maintenance, category: PdM SaaS }
+  - { vendor: GE Digital, product: Predix / APM, category: APM Platform }
+  - { vendor: Aveva (OSIsoft), product: PI System / PI Asset Framework, category: Process Historian }
+  - { vendor: IBM, product: Maximo Application Suite — APM, category: APM Platform }
+  - { vendor: IBM, product: Maximo EAM, category: EAM/CMMS }
+  - { vendor: Honeywell, product: Forge for Industrial, category: APM Platform }
+  - { vendor: AspenTech, product: Aspen Mtell, category: Prescriptive PdM }
+  - { vendor: Augury, product: Augury Machine Health, category: PdM SaaS (vibration/ultrasound) }
+  - { vendor: Uptake, product: Uptake APM, category: APM Platform }
+  - { vendor: SparkCognition, product: SparkPredict, category: AI/ML PdM }
+  - { vendor: Rockwell, product: FactoryTalk Analytics for Devices, category: APM Edge }
+  - { vendor: Schneider Electric, product: EcoStruxure Asset Advisor, category: APM Platform }
+  - { vendor: SKF, product: SKF @ptitude Observer, category: Vibration Analytics }
+  - { vendor: Emerson, product: AMS Machine Works, category: Vibration Analytics }
+  - { vendor: Siemens, product: SIMATIC S7 PLC, category: PLC/SCADA }
+  - { vendor: Rockwell, product: ControlLogix PLC, category: PLC/SCADA }
 
 connectors:
-  - { type: 'OPC-UA', protocol: 'TCP', auth: 'Cert' }
-  - { type: 'MQTT', protocol: 'TCP', auth: 'TLS' }
-  - { type: 'REST', protocol: 'HTTPS', auth: 'OAuth2' }
+  - { type: OPC UA, protocol: OPC UA binary/HTTPS, auth: PKI mutual TLS }
+  - { type: MQTT v5, protocol: MQTT over TLS, auth: TLS + JWT/cred }
+  - { type: Sparkplug B, protocol: MQTT, auth: TLS + cred }
+  - { type: Modbus TCP, protocol: TCP, auth: none (network-isolated) }
+  - { type: PROFINET, protocol: Ethernet IRT, auth: none (network-isolated) }
+  - { type: EtherNet/IP (CIP), protocol: TCP/UDP, auth: CIP Security }
+  - { type: PI Web API, protocol: HTTPS, auth: Kerberos / OIDC }
+  - { type: ThingWorx REST, protocol: HTTPS, auth: AppKey / OAuth2 }
+  - { type: MindSphere IoT TimeSeries API, protocol: HTTPS, auth: OAuth2 }
+  - { type: Maximo OSLC REST, protocol: HTTPS, auth: OAuth2 / Basic }
+  - { type: Augury REST, protocol: HTTPS, auth: API key }
+  - { type: Vendor webhook (alarm/event), protocol: HTTPS, auth: HMAC signed }
+  - { type: Historian file feed (.dat / .pi), protocol: SFTP, auth: SSH key }
+  - { type: Edge gateway (Sparkplug→Kafka), protocol: Kafka, auth: SASL/SCRAM }
+
+ingestionChallenges:
+  - High-velocity time-series volume — a single mid-size plant with 5,000 channels at 1-second cadence emits ~430M points/day; a vibration FFT channel at 25 kHz emits 2GB/hour/sensor.
+  - Downsampling vs raw retention — keeping FFT-grade raw for model retraining vs minute-aggregates for BI is a 1000× storage delta; default policy is 30-day raw + 7-year aggregates.
+  - Schema evolution — sensors are added, removed, and re-tagged daily; tag aliases proliferate and break joins to ISA-95 hierarchy.
+  - Replay/backfill — historian batches arrive hours-to-days late after WAN outages; PdM features must accept retro-corrections without restating closed work orders.
+  - Edge-cloud time skew — PLC clocks drift up to seconds/day without NTP; canonical time must be derived from the historian or NTP-stamped at ingest.
+  - Multi-vendor protocol fragmentation — same plant runs OPC UA from Siemens PLCs, Modbus from older Rockwell drives, MQTT from wireless add-on sensors, and proprietary serial from SKF analyzers — all needing protocol bridges.
+
+integrationChallenges:
+  - name: OT/IT bridge — air gaps and IEC 62443 zones
+    description: OT networks are intentionally isolated (Purdue Model L0-L2 segregated from L3-L4 IT). Pulling sensor data into a cloud PdM platform requires brokered DMZs, OPC UA tunneling, and security-zone classification per IEC 62443-3-3.
+    mitigation: Deploy unidirectional data diodes or OPC UA aggregating servers in the DMZ; sign every payload with edge-issued JWTs; minimize bi-directional channels — advisories return as out-of-band CMMS work orders not direct setpoints.
+  - name: Multi-vendor protocol fragmentation
+    description: A plant has Siemens S7 PLCs over PROFINET, Rockwell ControlLogix over EtherNet/IP, GE Mark VIe controllers, Emerson DeltaV DCS, plus retrofit wireless gateways pushing MQTT. Each speaks a different dialect with subtly different timestamp and quality semantics.
+    mitigation: Standardize on OPC UA at the historian boundary; use Sparkplug B for greenfield wireless; maintain a canonical tag-naming dictionary (ISA-95 hierarchical) with vendor alias tables; reject ingestion of any tag without a canonical asset_id mapping.
+  - name: Edge-vs-cloud computation
+    description: Anomaly detection at the edge gives sub-100ms response and works during WAN outages, but the edge can only host small models; cloud has richer features (cross-asset correlations, fleet-wide retraining) but adds round-trip latency and depends on connectivity.
+    mitigation: Two-tier model deployment — small autoencoder + threshold at edge for protective trips and immediate alerts; larger transformer/LSTM in cloud for RUL estimation, fault classification, and multi-asset features. Sync model versions through a CI/CD model registry; champion/challenger at both tiers.
+  - name: ML model versioning and governance
+    description: Models retrained every few weeks must be reproducible — what data window, what hyperparameters, which features. When a model misfires (false positive that caused a needless shutdown, or false negative that missed a failure), engineers need to roll back and explain.
+    mitigation: Model registry (MLflow / Vertex / SageMaker) with immutable model_version_id; feature_snapshot_hash on every prediction row enabling exact replay; IEC 61508-aligned audit trail when model output feeds a safety function; champion/challenger A/B at the asset level before fleet-wide promotion.
+  - name: Label sparsity — failures are rare
+    description: A given asset class may see 1-5 failures per year. Supervised models need labels; semi-supervised and unsupervised approaches help but still need ground-truth validation. The negative class is overwhelmingly dominant.
+    mitigation: Combine supervised classifiers (where labels exist via failure_event) with unsupervised anomaly detection (autoencoders, isolation forests, one-class SVM) for the long tail; treat operator log + work-order text as weak labels; synthesize failure profiles via physics-based digital twins where available; use survival analysis (Cox PH, DeepSurv) for RUL where censoring dominates.
+  - name: False-positive cost
+    description: A spurious high-severity alert can trigger a needless line shutdown costing tens of thousands of dollars per hour and erode operator trust in the system; tighten the threshold and false negatives (missed failures) increase.
+    mitigation: Calibrate thresholds per asset criticality (RCM A/B/C); require human reliability-engineer review on first-time fault modes; track precision and false-positive rate as first-class KPIs; tune cost-weighted F-beta on a per-asset-class basis where the cost of FN >> FP for critical assets.
+  - name: Sensor drift and quality
+    description: Vibration accelerometers age, RTDs decalibrate, oil sensors clog. Drift silently degrades model precision over months; PdM models trained on clean data see steady degradation that itself looks like a failure signal.
+    mitigation: Continuous data-quality monitoring on every sensor — stuck-at, flatline, range-violation, NaN-rate, cross-correlation drift; track sensor_status transitions in a satellite; automated re-calibration tickets via CMMS; weight features by quality_code at inference.
+  - name: Bridging CMMS and predictive advisories
+    description: Maintenance teams already operate to a CMMS-driven plan; PdM advisories must integrate into the existing work-order queue, not bypass it. Direct CMMS write-back risks workflow chaos; advisory-only risks being ignored.
+    mitigation: Route predictions through a configurable workflow — auto-create draft work orders in Maximo/SAP PM for review, surface RUL forecast on the planner board, allow the planner to approve/defer/dismiss; track advisory adoption rate as a KPI; only auto-create for high-confidence + asset-criticality combinations.
+  - name: Failure-mode taxonomy alignment
+    description: ISO 14224 codes vary across plants and vendors; SKF, Emerson, and Augury each use slightly different bearing-fault labels. Cross-fleet learning needs a canonical taxonomy.
+    mitigation: Maintain a fault_code crosswalk to ISO 14224 codes; require vendor outputs to be mapped to the canonical failure_mode_id at ingest; reject unmapped codes for cross-fleet aggregation.
+
+dataModels:
+  threeNF: modeling/ddl/predictive_maintenance_3nf.sql
+  vault: modeling/ddl/predictive_maintenance_vault.sql
+  dimensional: modeling/ddl/predictive_maintenance_dim.sql
+
+glossaryTerms:
+  - RUL
+  - MTBF
+  - MTTR
+  - Condition-Based Maintenance (CBM)
+  - Prescriptive Maintenance
+  - Fault Tree
+  - FMEA
+  - Bearing Fault Frequency (BPFO/BPFI/BSF/FTF)
+  - P-F Curve
+  - OT/IT Convergence
+  - OPC UA
+  - MQTT / Sparkplug B
+  - SCADA
+  - PLC
+  - Historian
+  - Golden Window
+  - Autoencoder Anomaly
+  - Spectral Analysis (FFT)
+  - Kurtosis
+  - Vibration Severity (ISO 10816/20816)
+
+standards:
+  - { id: opc_ua, name: OPC UA (IEC 62541), version: "1.05", url: "https://opcfoundation.org/about/opc-technologies/opc-ua/" }
+  - { id: mqtt_v5, name: MQTT v5, version: "5.0 (OASIS)", url: "https://docs.oasis-open.org/mqtt/mqtt/v5.0/" }
+  - { id: sparkplug_b, name: Sparkplug B, version: "3.0", url: "https://sparkplug.eclipse.org/" }
+  - { id: isa_95, name: ISA-95 (IEC 62264) Enterprise-Control System Integration, version: "Part 1-7", url: "https://www.isa.org/standards-and-publications/isa-standards/isa-standards-committees/isa95" }
+  - { id: iec_61508, name: IEC 61508 Functional Safety, version: "2.0 (2010)", url: "https://webstore.iec.ch/publication/5515" }
+  - { id: iec_62443, name: IEC 62443 OT Cybersecurity, version: "3-3:2013", url: "https://www.iec.ch/cyber-security" }
+  - { id: iso_13374, name: ISO 13374 Condition monitoring and diagnostics — Data processing, communication, and presentation, version: "Parts 1-4", url: "https://www.iso.org/standard/61322.html" }
+  - { id: iso_14224, name: ISO 14224 Reliability and maintenance data, version: "2016", url: "https://www.iso.org/standard/64076.html" }
+  - { id: iso_10816, name: ISO 10816/20816 Mechanical vibration evaluation, version: "2016", url: "https://www.iso.org/standard/63439.html" }
+  - { id: sae_ja1011, name: SAE JA1011 Reliability-Centered Maintenance, version: "JA1011/JA1012", url: "https://www.sae.org/standards/content/ja1011_200908/" }
+  - { id: mimosa_osa_cbm, name: MIMOSA OSA-CBM Open System Architecture for CBM, version: "3.3.1", url: "https://www.mimosa.org/" }

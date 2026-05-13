@@ -1,0 +1,99 @@
+version: 2
+
+sources:
+  - name: direct_store_delivery
+    description: |
+      Synthetic Direct Store Delivery source schema produced by
+      synthetic-data/direct_store_delivery/generate.py and loaded into the
+      populated DuckDB. Mirrors what a CPG manufacturer's DSD operation
+      (SAP DSD / Aldata Apollo / Trimble Roadnet + PeopleNet ELD /
+      Epicor DSD + Eagle / Salient CMx / AFS DSD / ToolsGroup / Descartes /
+      WorkWave / Manhattan Active Routing) plus driver/sales handheld
+      (Honeywell CN80, Zebra TC78) plus retailer EDI 894/895/940/945
+      would land after CDC.
+    schema: direct_store_delivery
+    tables:
+      - name: account
+        description: Retailer / customer hierarchy at headquarter level (DSD-scoped).
+        columns:
+          - name: account_id
+            tests: [unique, not_null]
+      - name: outlet
+        description: Store-level outlet served by DSD routes.
+        columns:
+          - name: outlet_id
+            tests: [unique, not_null]
+          - name: account_id
+            tests: [not_null]
+      - name: product
+        description: DSD SKU master, GS1 GTIN-keyed, refrigerated/perishable flags.
+        columns:
+          - name: sku_id
+            tests: [unique, not_null]
+      - name: route
+        description: Master route — recurring sequence of stops on a service-day pattern.
+        columns:
+          - name: route_id
+            tests: [unique, not_null]
+      - name: driver
+        description: DSD driver / driver-sales rep with CDL + ELD identifier.
+        columns:
+          - name: driver_id
+            tests: [unique, not_null]
+      - name: vehicle
+        description: Truck/van running DSD routes; carries telematics provider tag.
+        columns:
+          - name: vehicle_id
+            tests: [unique, not_null]
+      - name: stop
+        description: Scheduled stop on a route-day; (route_id, route_day, sequence) grain.
+        columns:
+          - name: stop_id
+            tests: [unique, not_null]
+          - name: route_id
+            tests: [not_null]
+          - name: outlet_id
+            tests: [not_null]
+      - name: dsd_order
+        description: An order written or delivered at a stop (presell / deliver / return / swap).
+        columns:
+          - name: order_id
+            tests: [unique, not_null]
+          - name: stop_id
+            tests: [not_null]
+      - name: dsd_order_line
+        description: One SKU line on a DSD order.
+        columns:
+          - name: order_line_id
+            tests: [unique, not_null]
+          - name: order_id
+            tests: [not_null]
+      - name: settlement
+        description: Daily driver settlement — cash + check + EFT + returns reconciliation.
+        columns:
+          - name: settlement_id
+            tests: [unique, not_null]
+          - name: route_id
+            tests: [not_null]
+      - name: epod_event
+        description: Electronic Proof of Delivery — signature / photo / geo at the door.
+        columns:
+          - name: epod_id
+            tests: [unique, not_null]
+          - name: stop_id
+            tests: [not_null]
+      - name: perfect_store_audit
+        description: Perfect Store audit (distribution, planogram, freshness) per stop.
+        columns:
+          - name: audit_id
+            tests: [unique, not_null]
+      - name: route_telemetry
+        description: PeopleNet/Samsara/Geotab GPS + HOS + harsh-event telemetry.
+        columns:
+          - name: telemetry_id
+            tests: [unique, not_null]
+      - name: deduction
+        description: Retailer chargeback against a DSD invoice.
+        columns:
+          - name: deduction_id
+            tests: [unique, not_null]

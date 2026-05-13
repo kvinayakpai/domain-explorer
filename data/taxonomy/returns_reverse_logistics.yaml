@@ -1,0 +1,474 @@
+id: returns_reverse_logistics
+name: Returns & Reverse Logistics
+vertical: Retail
+oneLiner: End-to-end management of customer returns and reverse-logistics flows — return authorization, fraud screening, restock vs refurb vs liquidate vs donate disposition, refund issuance, and the recovery / sustainability ledger that runs the program.
+
+# Authoritative sources (mid-2026):
+#   Optoro — reverse-logistics SaaS (Returns Optimization Platform, OptiTurn liquidation marketplace, BULQ B-stock).
+#     https://www.optoro.com — disposition-engine + multi-channel recovery routing.
+#   Loop Returns — direct-to-consumer returns + exchanges platform.
+#     https://www.loopreturns.com — Shop Now / Bonus Credit / Workflows; Shopify Plus partner.
+#   Happy Returns (PayPal, acquired 2021; spun out to UPS in 2023) — box-free return drop-offs at Return Bars + PayPal-funded refunds.
+#     https://www.happyreturns.com — 10,000+ Return Bar locations across the US.
+#   Returnly — PayPal-acquired (2021) returns + instant credit platform; product folded into Happy Returns + PayPal Returns Manager.
+#     https://www.returnly.com
+#   Narvar Return & Exchange — branded post-purchase platform including returns, exchanges, refunds.
+#     https://www.narvar.com — Return & Exchange console + Narvar Concierge in-store drop-off.
+#   SAP Returns Management — SAP S/4HANA Retail Returns Order + Customer Returns process.
+#     https://help.sap.com/docs/SAP_S4HANA — return order types CRRE/CRSR, return delivery doc, customer return PGR.
+#   Manhattan Active WMS — Returns + Quality Inspection module (formerly WMOS Returns).
+#     https://www.manh.com — receiving lane for returns, disposition workflows, QC grading.
+#   Salesforce OMS Returns — Salesforce Order Management Returns (formerly part of Commerce Cloud OMS).
+#     https://help.salesforce.com — return order, RMA generation, refund orchestration.
+#   ReBound (UPS) — global cross-border returns management.
+#     https://www.reboundreturns.com — 150+ country returns routing; merchant of record return-leg consolidation.
+#   ZigZag Global (Global Blue) — international returns network with carrier+consolidation.
+#     https://www.zigzag.global — 220+ carriers across 170+ countries; returns-as-a-service.
+#   Doddle — last-mile returns drop-off network + carrier-agnostic returns API.
+#     https://www.doddle.com — print-in-store + paperless QR returns.
+#   Newmine — return-reason intelligence + chronic-returner analytics + RAaaS (Return Analytics as a Service).
+#     https://www.newmine.com — chronic-loss prevention from refund fraud + reason-code mining.
+#
+#   Liquidation / B-stock marketplaces:
+#     B-Stock Solutions (https://www.bstock.com), Liquidation.com (Liquidity Services),
+#     Direct Liquidation, BULQ (Optoro), eBay B-Stock private stores.
+#
+#   Donation / circular partners:
+#     Good360 (https://good360.org), Goodwill, Salvation Army, Cradle-to-Cradle Certified
+#     refurb partners, Renewable Computing Initiative resellers.
+#
+#   Standards & guidance:
+#     GS1 EPCIS 2.0 — event-level traceability for returned items (object/transaction/transformation events).
+#       https://www.gs1.org/standards/epcis
+#     ASC X12 EDI 180 — Return Merchandise Authorization & Notification.
+#       https://www.x12.org
+#     ISO 14040 / ISO 14044 — life-cycle assessment for carbon footprint of returned-goods disposition.
+#       https://www.iso.org/standard/37456.html
+#     ISO 14067 — product carbon footprint quantification (used for kg CO2e per return).
+#     FTC "Bots, Bills & Boxes" / state-level return policy disclosure rules — US returnless-refund guidance.
+#     PCI DSS v4.0 — applies whenever a refund hits an original card PAN.
+#     ASCM / CSCMP Reverse Logistics best-practice references.
+
+personas:
+  - { name: VP Reverse Logistics, title: VP, Reverse Logistics & Returns, level: VP }
+  - { name: Returns Operations Manager, title: Director, Returns Operations, level: Director }
+  - { name: Refurb Center Manager, title: Refurb / Customer Return Center Manager, level: Manager }
+  - { name: Returns Fraud Analyst, title: Returns Fraud Analyst, level: IC }
+  - { name: Sustainability / Circular Lead, title: Director, Circular Economy & Sustainability, level: Director }
+  - { name: Returns CX Lead, title: Returns Customer Experience Lead, level: Manager }
+  - { name: Recovery Manager, title: Recovery & Liquidation Manager, level: Manager }
+
+decisions:
+  - { id: rrl.d.keep_or_liquidate, statement: "For a received return, hold for re-stock vs route to refurb vs liquidate via B-Stock/Liquidation.com vs donate — choose the disposition lane that maximizes net recovery." }
+  - { id: rrl.d.refund_without_return, statement: "Issue a returnless refund (keep-it / returnless-refund) versus require shipment back to a CRC — based on item value, return shipping cost, and customer risk profile." }
+  - { id: rrl.d.fraud_block, statement: "Block, throttle, or step-up a customer return based on Newmine / internal chronic-returner score + Optoro flag + Loop / Narvar policy." }
+  - { id: rrl.d.refurb_route, statement: "Route a returned item to refurb (full grading + clean + repackage) vs A-/B-/C-grade resale vs scrap — gated on COGS recovery and refurb yield expectations." }
+  - { id: rrl.d.return_method_offer, statement: "Offer mail-return / in-store BORIS / Happy Returns Return Bar / Doddle QR drop-off / carrier pickup at checkout — per item category and customer geography." }
+  - { id: rrl.d.cross_border_route, statement: "Route a cross-border return via ZigZag / ReBound consolidation hub vs direct international shipping vs in-country liquidation — per duties/tax recoverability." }
+  - { id: rrl.d.restocking_fee_apply, statement: "Apply a restocking fee at refund time versus waive — driven by reason code, restock yield expectation, and customer LTV." }
+  - { id: rrl.d.donation_vs_landfill, statement: "Donate (via Good360 / Goodwill) versus recycle versus landfill non-resellable returns — gated on tax-deduction value, partner availability, and ISO 14040 carbon impact." }
+  - { id: rrl.d.policy_window_change, statement: "Tighten / loosen the return window (30 / 60 / 90 / 365 days) by category, customer tier, or holiday season — based on return rate and abuse trends." }
+  - { id: rrl.d.return_carrier_change, statement: "Switch return-leg carrier (USPS / UPS / FedEx / regional / Happy Returns consolidation) for a lane based on rate, transit time, and recovery yield." }
+
+kpis:
+  - id: rrl.kpi.return_rate
+    name: Return Rate %
+    formula: count(returns) / count(orders)
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [rrl.d.policy_window_change, rrl.d.return_method_offer]
+  - id: rrl.kpi.refund_issue_time
+    name: Refund Issue Time
+    formula: avg(refund_issued_ts - return_received_ts)
+    unit: hours
+    direction: lower_is_better
+    decisionsSupported: [rrl.d.return_method_offer]
+  - id: rrl.kpi.restocking_fee_capture_pct
+    name: Restocking Fee Capture %
+    formula: sum(restocking_fee_collected_minor) / sum(restocking_fee_eligible_minor)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [rrl.d.restocking_fee_apply]
+  - id: rrl.kpi.recovery_value_pct
+    name: Recovery Value % (Recovery / Cost)
+    formula: sum(recovered_value_minor) / sum(original_cogs_minor)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [rrl.d.keep_or_liquidate, rrl.d.refurb_route]
+  - id: rrl.kpi.refurb_yield_pct
+    name: Refurb Yield %
+    formula: sum(units_refurbed_to_resellable) / sum(units_routed_to_refurb)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [rrl.d.refurb_route]
+  - id: rrl.kpi.liquidation_yield_pct
+    name: Liquidation Yield %
+    formula: sum(liquidation_proceeds_minor) / sum(liquidation_cogs_minor)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [rrl.d.keep_or_liquidate]
+  - id: rrl.kpi.returnless_refund_rate
+    name: Returnless Refund Rate
+    formula: count(returnless_refunds) / count(refunds)
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [rrl.d.refund_without_return]
+  - id: rrl.kpi.return_fraud_rate
+    name: Return Fraud Rate
+    formula: count(returns_flagged_fraud) / count(returns)
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [rrl.d.fraud_block]
+  - id: rrl.kpi.cost_to_process_return
+    name: Cost to Process Return
+    formula: sum(processing_cost_minor) / count(returns_processed)
+    unit: USD
+    direction: lower_is_better
+    decisionsSupported: [rrl.d.return_method_offer, rrl.d.return_carrier_change]
+  - id: rrl.kpi.days_to_disposition
+    name: Days to Disposition
+    formula: avg(disposition_decided_ts - return_received_ts)
+    unit: days
+    direction: lower_is_better
+    decisionsSupported: [rrl.d.keep_or_liquidate, rrl.d.refurb_route]
+  - id: rrl.kpi.cross_border_return_rate
+    name: Cross-Border Return Rate
+    formula: count(returns_cross_border) / count(returns)
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [rrl.d.cross_border_route]
+  - id: rrl.kpi.repeat_returner_rate
+    name: Customer Repeat-Returner Rate
+    formula: count(customers_with_3plus_returns_180d) / count(customers_with_returns_180d)
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [rrl.d.fraud_block, rrl.d.policy_window_change]
+  - id: rrl.kpi.net_cost_of_returns
+    name: Net Cost of Returns
+    formula: sum(refund_minor + processing_cost_minor + reverse_freight_minor - recovered_value_minor)
+    unit: USD
+    direction: lower_is_better
+    decisionsSupported: [rrl.d.keep_or_liquidate, rrl.d.return_method_offer]
+  - id: rrl.kpi.return_carbon_footprint_kg_co2e
+    name: Return Carbon Footprint (kg CO2e per return)
+    formula: sum(scope3_kg_co2e_return_leg + kg_co2e_disposition_lane) / count(returns)
+    unit: kgCO2e/return
+    direction: lower_is_better
+    decisionsSupported: [rrl.d.donation_vs_landfill, rrl.d.cross_border_route]
+
+dataModel:
+  entities:
+    - name: customer
+      description: Buying customer issuing the return. PII-tokenized; raw demographics live in the CRM only.
+      keys: [customer_id]
+      attributes:
+        - { name: customer_id, type: varchar(32), isPrimaryKey: true }
+        - { name: customer_ref_hash, type: varchar(64), description: "SHA-256(loyalty_id + salt) — PII tokenized" }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: loyalty_tier, type: varchar(16), description: "bronze|silver|gold|platinum|none" }
+        - { name: lifetime_orders, type: integer }
+        - { name: lifetime_returns, type: integer }
+        - { name: chronic_returner_flag, type: boolean, description: "Newmine + internal model classification" }
+        - { name: chronic_returner_score, type: "decimal(5,3)", description: "0..1 — chronic-returner / abuser score" }
+        - { name: status, type: varchar(16), description: "active|restricted|blocked" }
+        - { name: created_at, type: timestamp }
+
+    - name: sales_order
+      description: Original outbound sales order to which the return is attached. Joined for original COGS, channel, and ship-from node.
+      keys: [order_id]
+      attributes:
+        - { name: order_id, type: varchar(32), isPrimaryKey: true }
+        - { name: customer_id, type: varchar(32), isForeignKey: true, references: customer.customer_id }
+        - { name: channel, type: varchar(16), description: "ecom|store|marketplace|wholesale" }
+        - { name: order_ts, type: timestamp }
+        - { name: ship_node, type: varchar(32) }
+        - { name: subtotal_minor, type: bigint }
+        - { name: shipping_minor, type: bigint }
+        - { name: tax_minor, type: bigint }
+        - { name: total_minor, type: bigint }
+        - { name: currency, type: varchar(3) }
+
+    - name: return_authorization
+      description: RMA — Return Merchandise Authorization, issued before the customer ships back (or appears at a Return Bar / store). Maps to EDI 180.
+      keys: [rma_id]
+      attributes:
+        - { name: rma_id, type: varchar(32), isPrimaryKey: true }
+        - { name: order_id, type: varchar(32), isForeignKey: true, references: sales_order.order_id }
+        - { name: customer_id, type: varchar(32), isForeignKey: true, references: customer.customer_id }
+        - { name: issued_ts, type: timestamp }
+        - { name: expires_ts, type: timestamp, description: "RMA window — typically 14-30 days" }
+        - { name: return_method, type: varchar(32), description: "mail|boris_store|happy_returns_bar|doddle_qr|carrier_pickup|locker|returnless" }
+        - { name: return_platform, type: varchar(32), description: "Loop|Narvar|Optoro|HappyReturns|ReBound|ZigZag|Doddle|in_house|Salesforce_OMS|SAP_S4_Returns|Manh_Active_WMS" }
+        - { name: carrier, type: varchar(16), description: "USPS|UPS|FedEx|Hermes|EVRi|YunExpress|HappyReturns|n/a" }
+        - { name: tracking_number, type: varchar(64) }
+        - { name: cross_border, type: boolean }
+        - { name: source_country_iso2, type: varchar(2) }
+        - { name: destination_country_iso2, type: varchar(2) }
+        - { name: rma_status, type: varchar(16), description: "issued|in_transit|received|cancelled|expired" }
+        - { name: restocking_fee_eligible_minor, type: bigint }
+        - { name: epcis_event_uri, type: text, description: "GS1 EPCIS 2.0 object event pointer for the inbound return" }
+
+    - name: return_item
+      description: One returned SKU / unit on an RMA. The grain of disposition, refurb-yield, and recovery analytics.
+      keys: [return_item_id]
+      attributes:
+        - { name: return_item_id, type: varchar(32), isPrimaryKey: true }
+        - { name: rma_id, type: varchar(32), isForeignKey: true, references: return_authorization.rma_id }
+        - { name: order_id, type: varchar(32), isForeignKey: true, references: sales_order.order_id }
+        - { name: sku_id, type: varchar(32) }
+        - { name: gtin, type: varchar(14), description: "GS1 GTIN-14" }
+        - { name: category, type: varchar(64) }
+        - { name: quantity, type: integer }
+        - { name: unit_cogs_minor, type: bigint }
+        - { name: unit_retail_minor, type: bigint }
+        - { name: reason_code_id, type: varchar(16), isForeignKey: true, references: reason_code.reason_code_id }
+        - { name: condition_grade, type: varchar(8), description: "A|B|C|D|scrap — inspector grading at the CRC" }
+        - { name: disposition_id, type: varchar(16), isForeignKey: true, references: disposition.disposition_id }
+        - { name: disposition_decided_ts, type: timestamp }
+        - { name: serial_number, type: varchar(64), description: "Where item-level traceability applies" }
+
+    - name: reason_code
+      description: Catalog of normalized return reasons. Newmine + Loop + Narvar + Optoro feeds reconciled into a single taxonomy.
+      keys: [reason_code_id]
+      attributes:
+        - { name: reason_code_id, type: varchar(16), isPrimaryKey: true }
+        - { name: reason_code, type: varchar(32) }
+        - { name: reason_category, type: varchar(32), description: "fit|quality|wrong_item|damaged|changed_mind|late|gift|wardrobing|fraud_suspected|other" }
+        - { name: customer_facing_text, type: varchar(255) }
+        - { name: defect_attribution, type: varchar(32), description: "supplier|carrier|merchant|customer|unknown" }
+        - { name: actionable, type: boolean, description: "Whether the reason can drive a corrective action (vs noise like changed_mind)" }
+        - { name: severity, type: varchar(8), description: "low|medium|high|critical" }
+
+    - name: disposition
+      description: Catalog of disposition lanes (restock, refurb, liquidate, donate, recycle, scrap). Loaded from Optoro / Manhattan WMS / SAP S/4 Returns.
+      keys: [disposition_id]
+      attributes:
+        - { name: disposition_id, type: varchar(16), isPrimaryKey: true }
+        - { name: disposition_code, type: varchar(32), description: "restock_A|restock_open_box|refurb|b_stock_liquidation|donation|recycle|scrap|returnless" }
+        - { name: disposition_name, type: varchar(64) }
+        - { name: target_channel, type: varchar(32), description: "primary_inventory|open_box|b_stock_marketplace|donation_partner|recycler|landfill|n/a" }
+        - { name: typical_recovery_pct, type: "decimal(5,3)", description: "Empirical fraction of original COGS recovered through this lane" }
+        - { name: lane_owner, type: varchar(64), description: "Optoro|Manh_Active_WMS|SAP_S4_Returns|in_house_CRC|Good360|Liquidation_com|B-Stock|local_recycler" }
+
+    - name: refund
+      description: Money / credit issued back to the customer. May or may not be tied to a return_item (returnless refund).
+      keys: [refund_id]
+      attributes:
+        - { name: refund_id, type: varchar(32), isPrimaryKey: true }
+        - { name: rma_id, type: varchar(32) }
+        - { name: order_id, type: varchar(32), isForeignKey: true, references: sales_order.order_id }
+        - { name: customer_id, type: varchar(32), isForeignKey: true, references: customer.customer_id }
+        - { name: refund_type, type: varchar(16), description: "original_tender|store_credit|exchange|gift_card|returnless" }
+        - { name: refund_amount_minor, type: bigint }
+        - { name: currency, type: varchar(3) }
+        - { name: restocking_fee_collected_minor, type: bigint }
+        - { name: issued_ts, type: timestamp }
+        - { name: psp_refund_id, type: varchar(64), description: "PSP-side refund_id (Stripe re_*, PayPal txn id, Adyen pspReference)" }
+        - { name: payment_rail, type: varchar(16), description: "card|ach|paypal|store_credit|gift_card|crypto" }
+        - { name: status, type: varchar(16), description: "pending|issued|failed|reversed" }
+
+    - name: refurb_outcome
+      description: Refurb / Customer Return Center (CRC) outcome for items routed to refurb. One row per return_item per refurb attempt.
+      keys: [refurb_outcome_id]
+      attributes:
+        - { name: refurb_outcome_id, type: varchar(32), isPrimaryKey: true }
+        - { name: return_item_id, type: varchar(32), isForeignKey: true, references: return_item.return_item_id }
+        - { name: crc_id, type: varchar(16) }
+        - { name: started_ts, type: timestamp }
+        - { name: completed_ts, type: timestamp }
+        - { name: labor_minutes, type: integer }
+        - { name: parts_cost_minor, type: bigint }
+        - { name: outcome, type: varchar(32), description: "refurbed_A|refurbed_B|refurbed_open_box|scrapped|sent_to_liquidation|returned_to_vendor" }
+        - { name: post_refurb_grade, type: varchar(8), description: "A|B|C|scrap" }
+        - { name: post_refurb_resale_value_minor, type: bigint, description: "Estimated or realized resale value after refurb" }
+
+    - name: liquidation_lot
+      description: Multi-item lot sold through a B-Stock / Liquidation.com / BULQ private store. Carries proceeds + recovery yield.
+      keys: [lot_id]
+      attributes:
+        - { name: lot_id, type: varchar(32), isPrimaryKey: true }
+        - { name: marketplace, type: varchar(32), description: "B-Stock|Liquidation_com|BULQ|Direct_Liquidation|eBay_B-Stock|Optoro_OptiTurn" }
+        - { name: lot_name, type: varchar(255) }
+        - { name: item_count, type: integer }
+        - { name: total_cogs_minor, type: bigint }
+        - { name: starting_bid_minor, type: bigint }
+        - { name: winning_bid_minor, type: bigint }
+        - { name: proceeds_minor, type: bigint }
+        - { name: currency, type: varchar(3) }
+        - { name: listed_ts, type: timestamp }
+        - { name: sold_ts, type: timestamp }
+        - { name: buyer_country_iso2, type: varchar(2) }
+        - { name: recovery_pct, type: "decimal(6,4)", description: "proceeds / cogs" }
+
+    - name: liquidation_lot_item
+      description: Bridge linking return_items to liquidation_lots (many return_items can land in one lot).
+      keys: [lot_item_id]
+      attributes:
+        - { name: lot_item_id, type: varchar(32), isPrimaryKey: true }
+        - { name: lot_id, type: varchar(32), isForeignKey: true, references: liquidation_lot.lot_id }
+        - { name: return_item_id, type: varchar(32), isForeignKey: true, references: return_item.return_item_id }
+        - { name: allocated_cogs_minor, type: bigint }
+        - { name: allocated_proceeds_minor, type: bigint }
+
+    - name: fraud_signal
+      description: Per-return / per-customer fraud signal from Newmine, Appriss-style models, and in-house chronic-returner detection.
+      keys: [fraud_signal_id]
+      attributes:
+        - { name: fraud_signal_id, type: varchar(32), isPrimaryKey: true }
+        - { name: rma_id, type: varchar(32) }
+        - { name: customer_id, type: varchar(32), isForeignKey: true, references: customer.customer_id }
+        - { name: source, type: varchar(32), description: "Newmine|Appriss_Retail|internal_xgb|Loop_workflow|Narvar_rule|Optoro_flag" }
+        - { name: signal_type, type: varchar(32), description: "wardrobing|serial_returner|wrong_item_swap|empty_box|receipt_fraud|cross_border_abuse|return_to_different_store|chronic_returner" }
+        - { name: score, type: "decimal(5,3)", description: "0..1 risk score" }
+        - { name: recommendation, type: varchar(16), description: "approve|verify|deny|stepup_required" }
+        - { name: scored_at, type: timestamp }
+
+    - name: carrier_label
+      description: Reverse-leg shipping label minted by Loop / Happy Returns / Doddle / ZigZag / ReBound — one row per RMA.
+      keys: [label_id]
+      attributes:
+        - { name: label_id, type: varchar(32), isPrimaryKey: true }
+        - { name: rma_id, type: varchar(32), isForeignKey: true, references: return_authorization.rma_id }
+        - { name: carrier, type: varchar(16) }
+        - { name: service_level, type: varchar(32), description: "ground|expedited|consolidation|drop_off_qr|return_bar" }
+        - { name: label_cost_minor, type: bigint }
+        - { name: prepaid_by_merchant, type: boolean }
+        - { name: created_ts, type: timestamp }
+        - { name: scanned_ts, type: timestamp }
+        - { name: delivered_ts, type: timestamp }
+        - { name: status, type: varchar(16), description: "issued|in_transit|delivered|exception|void" }
+        - { name: scope3_kg_co2e, type: "decimal(8,3)", description: "Reverse-leg emissions per ISO 14040 — published by carrier or estimated by EcoVadis" }
+
+  relationships:
+    - { from: sales_order, to: customer, kind: many_to_one }
+    - { from: return_authorization, to: sales_order, kind: many_to_one }
+    - { from: return_authorization, to: customer, kind: many_to_one }
+    - { from: return_item, to: return_authorization, kind: many_to_one }
+    - { from: return_item, to: reason_code, kind: many_to_one }
+    - { from: return_item, to: disposition, kind: many_to_one }
+    - { from: refund, to: sales_order, kind: many_to_one }
+    - { from: refund, to: customer, kind: many_to_one }
+    - { from: refurb_outcome, to: return_item, kind: many_to_one }
+    - { from: liquidation_lot_item, to: liquidation_lot, kind: many_to_one }
+    - { from: liquidation_lot_item, to: return_item, kind: many_to_one }
+    - { from: fraud_signal, to: customer, kind: many_to_one }
+    - { from: carrier_label, to: return_authorization, kind: many_to_one }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/returns_reverse_logistics_3nf.sql
+  vault: modeling/ddl/returns_reverse_logistics_vault.sql
+  dimensional: modeling/ddl/returns_reverse_logistics_dim.sql
+
+sourceSystems:
+  - { vendor: Optoro, product: Optoro Returns Optimization + OptiTurn + BULQ, category: Reverse Logistics / Disposition Engine }
+  - { vendor: PayPal (Happy Returns), product: Happy Returns Return Bars, category: Box-Free Returns Drop-off Network }
+  - { vendor: PayPal (Returnly), product: Returnly Instant Credit / PayPal Returns Manager, category: Returns + Instant Credit }
+  - { vendor: Loop, product: Loop Returns + Workflows, category: D2C Returns / Exchanges }
+  - { vendor: Narvar, product: Narvar Return & Exchange + Concierge, category: Branded Post-Purchase / Returns }
+  - { vendor: SAP, product: SAP S/4HANA Retail Returns Management, category: ERP Returns Process }
+  - { vendor: Manhattan Associates, product: Manhattan Active WMS Returns + QC, category: WMS Returns / Quality Inspection }
+  - { vendor: Salesforce, product: Salesforce OMS Returns, category: OMS Returns Orchestration }
+  - { vendor: ReBound (UPS), product: ReBound Cross-Border Returns, category: International Returns Routing }
+  - { vendor: ZigZag Global, product: ZigZag Returns-as-a-Service, category: Global Returns Network }
+  - { vendor: Doddle, product: Doddle Paperless QR Returns + Drop-off Network, category: Carrier-Agnostic Returns API }
+  - { vendor: Newmine, product: Newmine Chronic Returner Detection + Reason Mining, category: Returns Intelligence / Fraud }
+  - { vendor: B-Stock Solutions, product: B-Stock Private Marketplaces, category: B-Stock Liquidation Marketplace }
+  - { vendor: Liquidity Services, product: Liquidation.com + Direct Liquidation, category: Liquidation Marketplace }
+  - { vendor: Good360, product: Good360 Donation Network, category: Donation Partner Network }
+  - { vendor: FedEx, product: FedEx Returns API (Print Return Label / In-Person QR), category: Carrier Returns API }
+  - { vendor: UPS, product: UPS Returns API + UPS Returns Manager, category: Carrier Returns API }
+  - { vendor: USPS, product: USPS Returns API + Parcel Return Service, category: Carrier Returns API }
+  - { vendor: Amazon, product: Amazon Seller Central Returns / FBA Removal Orders, category: Marketplace Returns + Liquidation }
+  - { vendor: eBay, product: eBay B-Stock Private Stores, category: Marketplace Liquidation }
+
+connectors:
+  - { type: Optoro Returns API, protocol: HTTPS JSON, auth: OAuth2 + tenant key }
+  - { type: Loop Returns REST + Webhook, protocol: HTTPS JSON, auth: OAuth2 + HMAC webhook }
+  - { type: Happy Returns Return Bar REST + Webhook, protocol: HTTPS JSON, auth: API key + HMAC }
+  - { type: Narvar Return & Exchange REST + Webhook, protocol: HTTPS JSON, auth: OAuth2 + HMAC }
+  - { type: SAP S/4HANA Returns Order (BAPI / OData / IDoc), protocol: SAP RFC + HTTPS, auth: SAP user + token / mTLS }
+  - { type: Manhattan Active WMS REST (Returns + QC), protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: Salesforce OMS Returns Bulk + Streaming API, protocol: HTTPS JSON + CometD, auth: OAuth2 }
+  - { type: ReBound Cross-Border API, protocol: HTTPS JSON, auth: OAuth2 + mTLS }
+  - { type: ZigZag Global Returns API, protocol: HTTPS JSON, auth: API key }
+  - { type: Doddle Returns API + QR Drop-Off Webhook, protocol: HTTPS JSON, auth: OAuth2 + HMAC }
+  - { type: Newmine Chronic Returner Score API, protocol: HTTPS JSON, auth: API key + HMAC }
+  - { type: B-Stock Marketplace REST, protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: Liquidation.com Lot Webhook + REST, protocol: HTTPS JSON, auth: API key }
+  - { type: FedEx / UPS / USPS Returns API, protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: ASC X12 EDI 180 (Return Merchandise Authorization), protocol: AS2, auth: PKI }
+  - { type: ASC X12 EDI 214 (Carrier Status), protocol: AS2, auth: PKI }
+  - { type: GS1 EPCIS 2.0 (returned-goods events), protocol: HTTPS JSON over CBV 2.0, auth: OAuth2 + capability token }
+  - { type: Good360 Donation Receipt API, protocol: HTTPS JSON, auth: API key }
+  - { type: Marketplace Returns CDC (Amazon Seller, eBay), protocol: HTTPS JSON, auth: OAuth2 }
+
+ingestionChallenges:
+  - High-fan-out RMA → return_item explosion — a single multi-line order can generate one RMA with 12+ return_items; the disposition decision is per-item, but every customer-facing surface is per-RMA. Need separate streams keyed on (rma_id, return_item_id).
+  - Disposition is late-bound — the RMA + return_item lands in the warehouse hours after the customer initiates the return online; the inspector's condition grade and the disposition decision can lag the RMA by 1-21 days. Lineage must accept revisions to disposition_id on a return_item without rewriting earlier events.
+  - Cross-border RMAs span 3+ source systems — Loop or Narvar issues the RMA, ZigZag / ReBound runs the consolidation hub, the destination WMS (Manhattan / SAP) does receipt + QC. Correlating them requires an external_rma_ref that the merchant must mint and propagate.
+  - Returnless refunds bypass the warehouse entirely — there is no return_item row, only a refund tied to an order_id and a reason_code. Reconciling these against the inventory ledger is impossible because the item is still in the customer's hands; the analytics must treat returnless refunds as a virtual disposition.
+  - Refurb cycle outcomes need joining back days/weeks later — a returned phone may take 14 days at the CRC, post a refurb_outcome with a new condition grade, then re-enter sellable inventory under a new SKU (B-stock SKU). Lineage must link forward to the new SKU without breaking refurb-yield calculations.
+  - Liquidation proceeds are pro-rated across hundreds of items — a lot sells for $4,200; that allocates back to ~150 return_items. The liquidation_lot_item bridge must materialize the allocation rule (by cogs / by retail / equal) and capture the rule version for replay.
+
+integrationChallenges:
+  - name: RMA ↔ refund tied to the wrong order line
+    description: When a customer returns part of a multi-line order, the refund must be allocated to the specific line(s) returned, not the order header. Naive integrations refund-by-order, which over-refunds when the customer also got a discount on a non-returned line — and triggers chargebacks from the PSP for "amount exceeds capture".
+    mitigation: Persist the (order_id, order_line_id) reference on every return_item and compute the refund_amount_minor by re-running the original allocation rule (discount + tax + shipping share); store the original_allocation_rule_version so replays are deterministic; emit a DQ alert when sum(refund_amount_minor for an RMA) > captured amount on the order.
+  - name: Returnless refund evidence trail
+    description: A returnless refund issues money without an item returning to the warehouse, so there is no physical evidence of the customer's claim. Without a structured signal trail, the program is wide-open to "I never got it" abuse, but heavy-handed verification kills conversion.
+    mitigation: Persist a returnless_refund decision packet (image upload, reason code, customer history score, item value, return shipping cost saved) on the refund row; tie to fraud_signal_id when present; gate the path on a configurable item-value ceiling per category (per Newmine + internal model) and reconcile the per-period returnless-refund rate against margin impact.
+  - name: Reason code reconciliation across platforms
+    description: Loop, Narvar, Optoro, Happy Returns, and the merchant's POS each emit return reason codes on different taxonomies — "didn't fit" vs "size_too_small" vs "FIT_ISSUE_LARGE_TO_SMALL". Joining them downstream produces nonsense if you don't reconcile to a canonical taxonomy.
+    mitigation: Maintain a `reason_code` master in the warehouse with deterministic alias maps from each platform; require all staging models to map at ingest; emit a DQ alert when an upstream platform emits a code not in the alias map (unmapped_reason_code metric).
+  - name: Cross-border refund FX timing
+    description: A US merchant refunds an EU customer 30 days after the original purchase. The original capture was in EUR at one rate; the refund is at today's rate. PSPs (Stripe, Adyen) handle this differently — some refund in the original capture currency, some at refund-day FX. Mis-tracked, this lands as a FX gain/loss the finance team can't explain.
+    mitigation: Persist both `refund_amount_minor` (in transaction currency, what the customer received) and `refund_amount_book_minor` (in book currency at refund-day FX); store the PSP's FX-handling mode per refund; reconcile against the PSP's daily settlement file rather than the auth ledger.
+  - name: Refurb routing without grading SLA
+    description: When inspector grading at the CRC is slow, items pile up in pending-disposition status. The disposition decision then becomes time-pressured (route to liquidation rather than wait for refurb), eroding recovery yield. Manhattan and SAP S/4 Returns model "received but not graded" as the same state.
+    mitigation: Introduce a separate `condition_grade` slot on `return_item` that is null until the inspector signs off, and a `disposition_id` that is null until the disposition_decided_ts arrives; SLA the grading lag (target ≤2 business days) and report breach as a KPI; auto-route to a deferred-decision lane rather than auto-liquidating.
+  - name: Carrier-label cost not stamped on the RMA
+    description: When the merchant prepays the return label, Happy Returns / Loop / ZigZag charges a label fee per shipment, plus a per-bar consolidation fee at Happy Returns. These are emitted on a weekly invoice, not in the per-RMA webhook, so per-RMA Cost to Process is wrong until the invoice reconciles.
+    mitigation: Capture the label cost at issue time when the carrier API returns it; for vendors that bill weekly, run a settlement-allocation job that distributes the invoice line items back to carrier_label rows by tracking_number; expose both `provisional_label_cost_minor` and `settled_label_cost_minor` to make the lag visible.
+  - name: Linking liquidation proceeds to original COGS
+    description: A B-Stock lot of 200 items sells for $1,800. Recovery yield only makes sense if you can allocate the $1,800 back to the original 200 items' COGS — but the original COGS sits in the merch system, the lot in Optoro/B-Stock. Allocation rules (by cogs, by retail, equal) drive Recovery Value % swings of 5-15 percentage points.
+    mitigation: Materialize the bridge `liquidation_lot_item` with explicit `allocated_cogs_minor` and `allocated_proceeds_minor` per item, computed by a documented allocation rule (default: weight by unit_cogs); persist the rule version + as-of timestamp on each bridge row; report the headline KPI with both unallocated and pro-rated views.
+  - name: PII / chronic-returner shared-list contracts
+    description: Newmine + Appriss Retail + The Retail Equation (and merchant-to-merchant ALTO-style sharing) require sharing customer hashed identifiers across retailers. Naive integration leaks raw email/phone and breaks GDPR Art. 6 / CCPA.
+    mitigation: Tokenize `customer_ref_hash = SHA-256(email + tenant-salt)`; share only the hash + reason code categorical; persist DPA disclosure consent at the customer record level; honor the customer's right-to-erasure by emitting a tombstone event that invalidates the hash mapping downstream.
+  - name: Scope-3 carbon attribution for the return leg
+    description: ISO 14040 / 14067 require attributing reverse-leg emissions to the SKU and to the merchant's scope-3 ledger. Carriers (FedEx, UPS, USPS) publish per-shipment kg CO2e on different methodologies — some include last-mile only, some include sortation hub energy. Aggregating naively double-counts or under-counts.
+    mitigation: Persist `scope3_kg_co2e` per `carrier_label` from the carrier API where available; for the rest, apply a EcoVadis-published default factor by service-level + distance; document the methodology version per carrier; report two numbers (carrier-published vs default-factor) so the divergence is auditable.
+  - name: Restocking fee disclosure compliance
+    description: US states (CA, NY, FL among others) and the EU's Consumer Rights Directive require restocking-fee terms to be visible at purchase. Merchants that apply fees not disclosed at checkout face refund-amount enforcement and class-action exposure.
+    mitigation: Persist the policy version that governed the original sale on `sales_order` (or on the order's policy snapshot); evaluate restocking fee at refund time against THAT policy, not the current one; emit a DQ alert when a refund tries to apply a fee under a policy version that didn't include restocking-fee disclosure.
+
+glossaryTerms:
+  - RMA (Return Merchandise Authorization)
+  - RA (Return Authorization)
+  - returnless refund
+  - restocking fee
+  - refurb (Refurbishment)
+  - liquidation
+  - B-stock
+  - Open-Box
+  - A-grade / B-grade / C-grade
+  - days to refund
+  - reverse logistics
+  - BORIS (Buy Online Return In Store)
+  - CRC (Customer Return Center)
+  - forward-stocked returns
+  - scan-based trade
+  - recycling lane
+  - donation lane
+  - chronic returner
+  - wardrobing
+  - reason code
+
+standards:
+  - { id: gs1_epcis_2, name: GS1 EPCIS 2.0 — Event-level traceability for returned goods, version: "2.0 (2022, current)", url: "https://www.gs1.org/standards/epcis" }
+  - { id: asc_x12_edi_180, name: ASC X12 EDI 180 — Return Merchandise Authorization & Notification, version: "X12 v8060", url: "https://www.x12.org" }
+  - { id: iso_14040, name: ISO 14040 — Life-cycle assessment (principles & framework), version: "2006 + Amd 1 2020", url: "https://www.iso.org/standard/37456.html" }
+  - { id: iso_14044, name: ISO 14044 — Life-cycle assessment (requirements & guidelines), version: "2006", url: "https://www.iso.org/standard/38498.html" }
+  - { id: iso_14067, name: ISO 14067 — Product carbon footprint, version: "2018", url: "https://www.iso.org/standard/71206.html" }
+  - { id: pci_dss_4, name: PCI DSS, version: "4.0", url: "https://www.pcisecuritystandards.org" }
+  - { id: gs1_gtin, name: GS1 GTIN-14, version: "GS1 GenSpec 2024", url: "https://www.gs1.org/standards/id-keys/gtin" }

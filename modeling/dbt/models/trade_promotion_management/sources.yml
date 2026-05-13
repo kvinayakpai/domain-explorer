@@ -1,0 +1,73 @@
+version: 2
+
+sources:
+  - name: trade_promotion_management
+    description: |
+      Synthetic Trade Promotion Management source schema produced by
+      synthetic-data/trade_promotion_management/generate.py and loaded into the
+      populated DuckDB. Mirrors what a CPG manufacturer's TPM (SAP TPM /
+      Exceedra / BluePlanner / Anaplan) plus syndicated POS / panel sources
+      (Circana / NielsenIQ / Numerator) plus retailer EDI 852/867 feeds would
+      land after CDC.
+    schema: trade_promotion_management
+    tables:
+      - name: account
+        description: Retailer / customer hierarchy at headquarter level.
+        columns:
+          - name: account_id
+            tests: [unique, not_null]
+      - name: customer_outlet
+        description: Store-level outlet (one row per banner store).
+        columns:
+          - name: outlet_id
+            tests: [unique, not_null]
+          - name: account_id
+            tests: [not_null]
+      - name: product
+        description: Manufacturer SKU, GS1 GTIN-keyed.
+        columns:
+          - name: sku_id
+            tests: [unique, not_null]
+      - name: promotion
+        description: Planned trade promotion at account × brand × time grain.
+        columns:
+          - name: promotion_id
+            tests: [unique, not_null]
+          - name: account_id
+            tests: [not_null]
+      - name: promo_tactic
+        description: One tactical execution under a promotion.
+        columns:
+          - name: tactic_id
+            tests: [unique, not_null]
+          - name: promotion_id
+            tests: [not_null]
+          - name: sku_id
+            tests: [not_null]
+      - name: deduction
+        description: Retailer-issued chargeback claim against a manufacturer invoice.
+        columns:
+          - name: deduction_id
+            tests: [unique, not_null]
+          - name: account_id
+            tests: [not_null]
+      - name: baseline_forecast
+        description: Statistical baseline volume estimate per account × SKU × week.
+        columns:
+          - name: baseline_id
+            tests: [unique, not_null]
+      - name: lift_observation
+        description: Observed (post-event) incremental lift per tactic × week.
+        columns:
+          - name: lift_observation_id
+            tests: [unique, not_null]
+      - name: retailer_scan_data
+        description: Weekly retailer POS scan + on-hand inventory feed (EDI 852/867).
+        columns:
+          - name: scan_id
+            tests: [unique, not_null]
+      - name: trade_fund
+        description: Annual trade-spend fund pool by account × brand × tactic-class.
+        columns:
+          - name: fund_id
+            tests: [unique, not_null]

@@ -14,7 +14,7 @@ select
     d.location_id,
     l.h_location_hk                                     as location_key,
     d.period_date,
-    cast(strftime(d.period_date, '%Y%m%d') as integer)  as period_date_key,
+    cast({{ format_date('d.period_date', '%Y%m%d') }} as integer)  as period_date_key,
     d.quantity,
     d.channel,
     coalesce(it.unit_cost, 0.0) * d.quantity            as demand_value

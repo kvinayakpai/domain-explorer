@@ -1,0 +1,451 @@
+id: revenue_growth_management
+name: Revenue Growth Management
+vertical: CPG
+oneLiner: Net revenue management for CPG manufacturers — Price Pack Architecture (PPA), mix management, promo strategy, trade investment optimization, and gross-to-net waterfall across accounts, channels, and SKUs.
+
+# Authoritative sources (as of mid-2026):
+#   Vistex Solutions for Revenue Optimization / Pricing & Rebates
+#     https://www.vistex.com — pricing, rebates, deductions, channel incentive
+#     programs; SAP S/4HANA + Vistex Match Engine for net-revenue settlement.
+#   Pricefx Price Optimization & Management Suite
+#     https://www.pricefx.com — PriceBuilder, PriceOptimizer, PromotionManager,
+#     RebateManager. Cloud-native pricing platform; B2B/B2C CPG list-to-net.
+#   Model N Revenue Management Cloud (CPG / Consumer Goods)
+#     https://www.modeln.com — Revenue Cloud for High-Tech & Life Sciences; CPG
+#     trade and rebate settlement modules.
+#   PROS RGM (PROS Smart CPQ + RealPrice + Guidance)
+#     https://pros.com — willingness-to-pay scoring + dynamic pricing for B2B
+#     CPG channels.
+#   SAP S/4HANA Revenue Management & SAP Condition Contract Management (CCM)
+#     https://help.sap.com — condition contracts for rebates/chargebacks;
+#     gross-to-net waterfall accruals.
+#   Anaplan Connected Planning — PM (Pricing & Mix)
+#     https://www.anaplan.com — RGM connected models for portfolio mix,
+#     net-revenue plan, and price-pack scenario testing.
+#   Periscope by McKinsey — Performance Lens / RGM apps
+#     https://www.mckinsey.com/business-functions/operations/our-insights/periscope
+#     — pack architecture, price ladder, mix-optimization analytics.
+#   Boston Consulting Group (BCG OS / BCG X) — RGM toolkit
+#     https://www.bcg.com/capabilities/marketing-sales/pricing-revenue-growth
+#     — choice-based conjoint, KVI ladders, integrated commercial planning.
+#   Zilliant Price IQ / Sales IQ / Deal Manager
+#     https://www.zilliant.com — B2B price optimization, deal-level guidance.
+#   Revenue Analytics — Marketplace Pricing / RGM
+#     https://www.revenueanalytics.com — beverage/CPG net-revenue analytics.
+#   Plytix PIM — product information for pack/portfolio attribution.
+#     https://www.plytix.com
+#   Vendavo — Profit Analyzer / Deal Manager / Promotion Planner
+#     https://www.vendavo.com — price-waterfall analysis, margin leakage.
+#   IRI / Circana (merged 2022) — syndicated POS + panel for mix attribution
+#     https://www.circana.com — Liquid Data, mix and pack-share analytics.
+#   NielsenIQ Connect — syndicated retail measurement for channel mix
+#     https://nielseniq.com — Connect Discover, Connect+ Retail.
+#   ASC X12 EDI 832 — Price/Sales Catalog (list price exchange with trade).
+#     https://www.x12.org/products/transaction-sets
+#   GS1 — GTIN / GLN / GDSN for pack identification.
+#     https://www.gs1.org
+#   IFRS 15 — Revenue from Contracts with Customers (variable consideration,
+#     gross-to-net accruals).
+#     https://www.ifrs.org/issued-standards/list-of-standards/ifrs-15-revenue-from-contracts-with-customers/
+
+personas:
+  - { name: Chief Commercial Officer, title: Chief Commercial Officer, level: C-suite }
+  - { name: VP Revenue Management, title: VP, Revenue Growth Management, level: VP }
+  - { name: RGM Director, title: Director, Revenue Growth Management, level: Director }
+  - { name: Pricing Strategy Lead, title: Director, Pricing Strategy & Architecture, level: Director }
+  - { name: Mix Optimization Lead, title: Senior Manager, Mix & Portfolio Optimization, level: Manager }
+  - { name: Trade Investment Analyst, title: Senior Analyst, Trade Investment Optimization, level: IC }
+  - { name: Net Revenue Manager, title: Manager, Net Revenue Management & GTN, level: Manager }
+
+decisions:
+  - { id: rgm.d.pack_architecture, statement: "Lock the price-pack architecture for a category — entry/mainstream/premium pack ladder, gap spacing, and the SRP per pack tier — to maximize net revenue without leaving margin or volume on the table." }
+  - { id: rgm.d.list_price_move, statement: "Approve a list (wholesale) price change for a brand × pack, balancing elasticity, competitive index, channel mix, and gross-to-net pass-through to retailer SRP." }
+  - { id: rgm.d.mix_steer, statement: "Steer channel × pack × tier mix away from low-margin SKUs toward high-margin packs — adjust shelf assortment commitments, promo cadence, and trade-fund allocation to engineer the mix shift." }
+  - { id: rgm.d.promo_strategy, statement: "Choose the promo mechanic (TPR, feature, display, multibuy, BOGO, coupon, loyalty offer) and depth per account × pack × week given baseline lift, cannibalization, and trade-spend budget." }
+  - { id: rgm.d.trade_invest_allocation, statement: "Allocate annual trade investment across customers, brands, and pack tiers — accrual vs lump-sum vs pay-for-performance — to maximize net revenue ROI." }
+  - { id: rgm.d.gross_to_net_accrual, statement: "Set the gross-to-net accrual policy per customer × brand — rebate %, off-invoice allowance, marketing development funds, slotting amortization — to forecast list-to-net realization in financial close." }
+  - { id: rgm.d.value_pack_intro, statement: "Introduce a new value/super pack (e.g. 18-count value pack) in a category that risks down-trading from a premium 6-count — quantify cannibalization tolerance up front." }
+  - { id: rgm.d.channel_ladder, statement: "Maintain or break the price ladder across club, mass, grocery, convenience, and ecom channels — accept the price-perception risk of a club exclusive vs the gross-margin upside." }
+  - { id: rgm.d.deal_floor, statement: "Set the deal-floor (lowest price point on a tactic) below which the gross-to-net waterfall collapses — a hard guardrail enforced at deal-approval workflow." }
+  - { id: rgm.d.innovation_priority, statement: "Greenlight or kill an innovation SKU based on forecast incremental net revenue, mix-up potential, and cannibalization on existing portfolio." }
+
+kpis:
+  - id: rgm.kpi.net_revenue_per_unit
+    name: Net Revenue per Unit
+    formula: sum(net_revenue) / sum(units_sold)
+    unit: USD
+    direction: higher_is_better
+    decisionsSupported: [rgm.d.pack_architecture, rgm.d.list_price_move, rgm.d.mix_steer]
+  - id: rgm.kpi.price_realization
+    name: Price Realization
+    formula: sum(net_price * units) / sum(list_price * units)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [rgm.d.list_price_move, rgm.d.gross_to_net_accrual, rgm.d.deal_floor]
+  - id: rgm.kpi.mix_index
+    name: Mix Index (Premium Share of Volume)
+    formula: sum(premium_tier_units) / sum(total_units)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [rgm.d.mix_steer, rgm.d.pack_architecture]
+  - id: rgm.kpi.pack_margin_mix_pct
+    name: Pack Margin Mix %
+    formula: sum(margin_per_pack * units) / sum(units * benchmark_margin)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [rgm.d.pack_architecture, rgm.d.value_pack_intro]
+  - id: rgm.kpi.promo_effectiveness_index
+    name: Promo Effectiveness Index
+    formula: incremental_net_revenue / trade_spend
+    unit: ratio
+    direction: higher_is_better
+    decisionsSupported: [rgm.d.promo_strategy, rgm.d.trade_invest_allocation]
+  - id: rgm.kpi.trade_spend_roi
+    name: Trade Spend ROI
+    formula: (incremental_gross_profit - trade_spend) / trade_spend
+    unit: ratio
+    direction: higher_is_better
+    decisionsSupported: [rgm.d.trade_invest_allocation, rgm.d.promo_strategy]
+  - id: rgm.kpi.volume_variance
+    name: Volume Variance (vs Plan)
+    formula: (actual_units - plan_units) * plan_net_price
+    unit: USD
+    direction: higher_is_better
+    decisionsSupported: [rgm.d.mix_steer, rgm.d.promo_strategy]
+  - id: rgm.kpi.price_variance
+    name: Price Variance (vs Plan)
+    formula: (actual_net_price - plan_net_price) * actual_units
+    unit: USD
+    direction: higher_is_better
+    decisionsSupported: [rgm.d.list_price_move, rgm.d.gross_to_net_accrual]
+  - id: rgm.kpi.mix_variance
+    name: Mix Variance (vs Plan)
+    formula: sum((actual_share - plan_share) * (sku_net_price - portfolio_net_price) * total_units)
+    unit: USD
+    direction: higher_is_better
+    decisionsSupported: [rgm.d.mix_steer, rgm.d.channel_ladder]
+  - id: rgm.kpi.forward_buy_cost_pct
+    name: Forward Buy Cost %
+    formula: sum(forward_buy_cost_cents) / sum(trade_spend_cents)
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [rgm.d.promo_strategy, rgm.d.deal_floor]
+  - id: rgm.kpi.net_revenue_growth_pct
+    name: Net Revenue Growth %
+    formula: (net_revenue_t - net_revenue_t_minus_1) / net_revenue_t_minus_1
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [rgm.d.list_price_move, rgm.d.mix_steer, rgm.d.innovation_priority]
+  - id: rgm.kpi.channel_profitability
+    name: Channel Profitability
+    formula: sum(net_revenue_by_channel - cogs_by_channel - trade_by_channel) / sum(net_revenue_by_channel)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [rgm.d.channel_ladder, rgm.d.trade_invest_allocation]
+  - id: rgm.kpi.customer_account_profitability
+    name: Customer-Account Profitability
+    formula: sum(net_revenue_account - cogs_account - trade_account) / sum(net_revenue_account)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [rgm.d.trade_invest_allocation, rgm.d.deal_floor]
+  - id: rgm.kpi.innovation_sales_pct
+    name: Innovation Sales %
+    formula: sum(units_skus_launched_24m * net_price) / sum(total_net_revenue)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [rgm.d.innovation_priority, rgm.d.pack_architecture]
+
+dataModel:
+  entities:
+    - name: account
+      description: Retailer / customer headquarter. Mirrors SAP S/4HANA Customer master + Vistex Customer node. Carries channel ladder position (club, mass, grocery, drug, conv, ecom).
+      keys: [account_id]
+      attributes:
+        - { name: account_id, type: varchar(32), isPrimaryKey: true }
+        - { name: account_name, type: varchar(255), description: "Headquarter banner (Walmart, Costco, Kroger, ...)" }
+        - { name: parent_account_id, type: varchar(32) }
+        - { name: channel, type: varchar(32), description: "grocery|mass|club|drug|convenience|dollar|ecom|food_service" }
+        - { name: channel_tier, type: varchar(16), description: "premium|mainstream|value — anchor of channel ladder" }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: gln, type: varchar(13), description: "GS1 Global Location Number" }
+        - { name: status, type: varchar(16) }
+        - { name: created_at, type: timestamp }
+
+    - name: product
+      description: Manufacturer brand × sub-brand × variant — the merchandising key. Keyed by sku_id; carries category hierarchy used for mix attribution.
+      keys: [sku_id]
+      attributes:
+        - { name: sku_id, type: varchar(32), isPrimaryKey: true }
+        - { name: gtin, type: varchar(14), description: "GS1 GTIN-14" }
+        - { name: brand, type: varchar(64) }
+        - { name: sub_brand, type: varchar(64) }
+        - { name: category, type: varchar(64), description: "Snacks, Beverages, Personal Care, Pet, ..." }
+        - { name: subcategory, type: varchar(64) }
+        - { name: cogs_cents, type: bigint, description: "Cost of goods per case in minor units" }
+        - { name: launch_date, type: date }
+        - { name: lifecycle_stage, type: varchar(16), description: "intro|grow|core|decline|discontinued" }
+        - { name: innovation_flag, type: boolean, description: "Launched in trailing 24 months — feeds Innovation Sales %" }
+        - { name: status, type: varchar(16) }
+
+    - name: pack
+      description: Price-pack architecture entity. The pack ladder grain — one row per (brand × pack_size × tier). The unit of PPA strategy. Decoupled from product so a single brand can have many packs (entry 6-pack, mainstream 12-pack, value 24-pack, premium 6-pack glass).
+      keys: [pack_id]
+      attributes:
+        - { name: pack_id, type: varchar(32), isPrimaryKey: true }
+        - { name: sku_id, type: varchar(32), isForeignKey: true, references: product.sku_id }
+        - { name: pack_name, type: varchar(128), description: "e.g. 'Brand X 12-Pack Cans', 'Brand X 6-Pack Glass Premium'" }
+        - { name: pack_size_count, type: smallint, description: "Units per pack" }
+        - { name: pack_format, type: varchar(32), description: "can|bottle_pet|bottle_glass|carton|pouch|multipack|value_pack|super_pack" }
+        - { name: ppa_tier, type: varchar(16), description: "entry|mainstream|premium|value|super — PPA ladder position" }
+        - { name: ladder_rank, type: smallint, description: "Ordered position within ladder (1=entry, n=top)" }
+        - { name: benchmark_net_price_cents, type: bigint, description: "Target net price per pack for ladder gap analytics" }
+        - { name: benchmark_margin_cents, type: bigint, description: "Target margin per pack for Pack Margin Mix %" }
+        - { name: launch_date, type: date }
+        - { name: status, type: varchar(16) }
+
+    - name: price_list
+      description: List (wholesale) and recommended retail price per pack × account × effective window. The bi-temporal price tape — every list price change is a new row (insert-only). Mirrors SAP CCM condition contract + Vistex price-list snapshot. Sourced over EDI 832.
+      keys: [price_list_id]
+      attributes:
+        - { name: price_list_id, type: varchar(40), isPrimaryKey: true }
+        - { name: account_id, type: varchar(32), isForeignKey: true, references: account.account_id }
+        - { name: pack_id, type: varchar(32), isForeignKey: true, references: pack.pack_id }
+        - { name: list_price_cents, type: bigint, description: "Wholesale list price (case) in minor units" }
+        - { name: srp_cents, type: bigint, description: "Suggested retail price (each)" }
+        - { name: currency, type: varchar(3) }
+        - { name: effective_from, type: date }
+        - { name: effective_to, type: date }
+        - { name: recorded_at, type: timestamp, description: "Bi-temporal: when the row hit the warehouse" }
+        - { name: source_system, type: varchar(32), description: "SAP_CCM|Vistex|Pricefx|Model_N|EDI_832|manual" }
+        - { name: status, type: varchar(16) }
+
+    - name: price_event
+      description: Atomic list-price change event. The grain of the price-realization study — one row per pack × account × effective date. Sourced from Pricefx PriceBuilder / Vistex / EDI 832.
+      keys: [price_event_id]
+      attributes:
+        - { name: price_event_id, type: varchar(40), isPrimaryKey: true }
+        - { name: account_id, type: varchar(32), isForeignKey: true, references: account.account_id }
+        - { name: pack_id, type: varchar(32), isForeignKey: true, references: pack.pack_id }
+        - { name: event_type, type: varchar(16), description: "list_increase|list_decrease|srp_change|cost_change|currency_revaluation" }
+        - { name: prior_list_price_cents, type: bigint }
+        - { name: new_list_price_cents, type: bigint }
+        - { name: prior_srp_cents, type: bigint }
+        - { name: new_srp_cents, type: bigint }
+        - { name: currency, type: varchar(3) }
+        - { name: announced_at, type: timestamp }
+        - { name: effective_from, type: date }
+        - { name: source_system, type: varchar(32) }
+        - { name: approver_role, type: varchar(32), description: "VP_RGM|RGM_Director|CCO" }
+
+    - name: promo_plan
+      description: Strategic promo plan header at account × brand × fiscal period grain. Container for one or more deals. Sourced from Anaplan PM / Vistex / Periscope by McKinsey RGM apps.
+      keys: [promo_plan_id]
+      attributes:
+        - { name: promo_plan_id, type: varchar(32), isPrimaryKey: true }
+        - { name: account_id, type: varchar(32), isForeignKey: true, references: account.account_id }
+        - { name: name, type: varchar(255) }
+        - { name: brand, type: varchar(64) }
+        - { name: fiscal_year, type: smallint }
+        - { name: fiscal_quarter, type: smallint }
+        - { name: planned_net_revenue_cents, type: bigint }
+        - { name: planned_trade_spend_cents, type: bigint }
+        - { name: planned_volume_units, type: bigint }
+        - { name: forecast_roi, type: "decimal(6,2)" }
+        - { name: status, type: varchar(16), description: "draft|approved|in_market|closed|cancelled" }
+        - { name: created_by, type: varchar(64) }
+        - { name: created_at, type: timestamp }
+        - { name: approved_at, type: timestamp }
+
+    - name: deal
+      description: Tactical deal under a promo_plan — one row per account × pack × tactic × week window. Carries the gross-to-net build (off-invoice + scan-down + bill-back + MCB + slotting). Mirrors SAP CCM Condition Contract line / Vistex deal record.
+      keys: [deal_id]
+      attributes:
+        - { name: deal_id, type: varchar(40), isPrimaryKey: true }
+        - { name: promo_plan_id, type: varchar(32), isForeignKey: true, references: promo_plan.promo_plan_id }
+        - { name: account_id, type: varchar(32), isForeignKey: true, references: account.account_id }
+        - { name: pack_id, type: varchar(32), isForeignKey: true, references: pack.pack_id }
+        - { name: tactic_type, type: varchar(32), description: "off_invoice|scan_down|bill_back|mcb|tpr|feature|display|multibuy|bogo|coupon|loyalty|edlp" }
+        - { name: mechanic, type: varchar(32), description: "pct_off|dollar_off|2_for_X|case_allowance|conditional_rebate" }
+        - { name: discount_per_unit_cents, type: bigint }
+        - { name: rebate_pct, type: "decimal(6,4)", description: "Back-end rebate %; combined with off-invoice to derive list-to-net" }
+        - { name: deal_floor_cents, type: bigint, description: "Minimum net price guardrail" }
+        - { name: planned_units, type: bigint }
+        - { name: planned_spend_cents, type: bigint }
+        - { name: actual_units, type: bigint }
+        - { name: actual_spend_cents, type: bigint }
+        - { name: forward_buy_cost_cents, type: bigint, description: "Trade-loaded inventory cost attributable to this deal" }
+        - { name: start_date, type: date }
+        - { name: end_date, type: date }
+        - { name: settlement_method, type: varchar(16), description: "off_invoice|deduction|check|emc|edi820" }
+        - { name: status, type: varchar(16) }
+
+    - name: baseline
+      description: Statistical baseline net-revenue and volume estimate per account × pack × week — what would have sold without the deal. Outputs from Circana Unify / NielsenIQ / in-house ML or Periscope baseline model.
+      keys: [baseline_id]
+      attributes:
+        - { name: baseline_id, type: varchar(40), isPrimaryKey: true }
+        - { name: account_id, type: varchar(32), isForeignKey: true, references: account.account_id }
+        - { name: pack_id, type: varchar(32), isForeignKey: true, references: pack.pack_id }
+        - { name: week_start_date, type: date }
+        - { name: baseline_units, type: bigint }
+        - { name: baseline_net_revenue_cents, type: bigint }
+        - { name: model_name, type: varchar(64), description: "circana_unify|niq_baseline|periscope_glm|inhouse_ml|pricefx_optimizer" }
+        - { name: model_version, type: varchar(16) }
+        - { name: confidence_band_low_units, type: bigint }
+        - { name: confidence_band_high_units, type: bigint }
+        - { name: generated_at, type: timestamp }
+
+    - name: mix_segment
+      description: Channel × tier × category segment used to attribute mix variance. Periscope and BCG RGM toolkits both pivot on this grain.
+      keys: [segment_id]
+      attributes:
+        - { name: segment_id, type: varchar(32), isPrimaryKey: true }
+        - { name: channel, type: varchar(32) }
+        - { name: ppa_tier, type: varchar(16) }
+        - { name: category, type: varchar(64) }
+        - { name: target_share_pct, type: "decimal(6,4)", description: "Planned share of volume" }
+        - { name: target_net_revenue_per_unit_cents, type: bigint }
+
+    - name: sales_transaction
+      description: Invoiced shipment fact at account × pack × day grain — the source of actual realized list-to-net. Sourced from SAP S/4HANA SD.
+      keys: [transaction_id]
+      attributes:
+        - { name: transaction_id, type: varchar(40), isPrimaryKey: true }
+        - { name: account_id, type: varchar(32), isForeignKey: true, references: account.account_id }
+        - { name: pack_id, type: varchar(32), isForeignKey: true, references: pack.pack_id }
+        - { name: deal_id, type: varchar(40), isForeignKey: true, references: deal.deal_id }
+        - { name: invoice_date, type: date }
+        - { name: units, type: bigint }
+        - { name: gross_revenue_cents, type: bigint, description: "Units × list_price" }
+        - { name: off_invoice_cents, type: bigint, description: "Off-invoice allowance" }
+        - { name: rebate_accrual_cents, type: bigint, description: "Back-end accrual" }
+        - { name: scan_down_cents, type: bigint, description: "Scan-down redemption" }
+        - { name: bill_back_cents, type: bigint, description: "Bill-back claim" }
+        - { name: mcb_cents, type: bigint, description: "Manufacturer chargeback through distributor" }
+        - { name: slotting_cents, type: bigint, description: "Amortized slotting fee" }
+        - { name: marketing_dev_funds_cents, type: bigint, description: "MDF allocation" }
+        - { name: net_revenue_cents, type: bigint, description: "gross - all trade items - returns" }
+        - { name: cogs_cents, type: bigint }
+        - { name: currency, type: varchar(3) }
+        - { name: source_system, type: varchar(32), description: "SAP_S4_SD|Vistex|Model_N" }
+
+  relationships:
+    - { from: pack, to: product, kind: many_to_one }
+    - { from: price_list, to: account, kind: many_to_one }
+    - { from: price_list, to: pack, kind: many_to_one }
+    - { from: price_event, to: account, kind: many_to_one }
+    - { from: price_event, to: pack, kind: many_to_one }
+    - { from: promo_plan, to: account, kind: many_to_one }
+    - { from: deal, to: promo_plan, kind: many_to_one }
+    - { from: deal, to: account, kind: many_to_one }
+    - { from: deal, to: pack, kind: many_to_one }
+    - { from: baseline, to: account, kind: many_to_one }
+    - { from: baseline, to: pack, kind: many_to_one }
+    - { from: sales_transaction, to: account, kind: many_to_one }
+    - { from: sales_transaction, to: pack, kind: many_to_one }
+    - { from: sales_transaction, to: deal, kind: many_to_one }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/revenue_growth_management_3nf.sql
+  vault: modeling/ddl/revenue_growth_management_vault.sql
+  dimensional: modeling/ddl/revenue_growth_management_dim.sql
+
+sourceSystems:
+  - { vendor: Vistex, product: Vistex Solutions for Revenue Optimization, category: Pricing / Rebates / Net Revenue }
+  - { vendor: Pricefx, product: Pricefx Price Optimization & Management Suite, category: Pricing Platform }
+  - { vendor: Model N, product: Model N Revenue Management Cloud, category: Revenue Management / Channel Incentive }
+  - { vendor: PROS, product: PROS RGM (Smart CPQ + RealPrice + Guidance), category: B2B Price Optimization }
+  - { vendor: SAP, product: SAP S/4HANA Revenue Management + Condition Contract Management, category: ERP / Net Revenue Settlement }
+  - { vendor: Anaplan, product: Anaplan Connected Planning — PM (Pricing & Mix), category: RGM Connected Planning }
+  - { vendor: Periscope by McKinsey, product: Periscope Performance Lens / RGM apps, category: RGM Analytics }
+  - { vendor: Boston Consulting Group, product: BCG OS — RGM Toolkit, category: RGM Consulting Platform }
+  - { vendor: Zilliant, product: Zilliant Price IQ / Sales IQ / Deal Manager, category: B2B Price Optimization }
+  - { vendor: Revenue Analytics, product: Revenue Analytics Marketplace Pricing / RGM, category: Beverage/CPG RGM Analytics }
+  - { vendor: Vendavo, product: Vendavo Profit Analyzer / Deal Manager / Promotion Planner, category: Price Waterfall / Margin Analytics }
+  - { vendor: Plytix, product: Plytix PIM, category: Product Information Management }
+  - { vendor: Circana (formerly IRI), product: Circana Unify / Liquid Data, category: Syndicated POS & Panel — Mix }
+  - { vendor: NielsenIQ, product: NielsenIQ Connect / Connect+ Retail, category: Syndicated POS Measurement }
+  - { vendor: SAP, product: SAP S/4HANA SD/FI, category: ERP — Order / Invoice }
+
+connectors:
+  - { type: Vistex Solutions REST/SOAP, protocol: HTTPS, auth: OAuth2 / WS-Security, typicalSources: [Vistex] }
+  - { type: Pricefx REST API, protocol: HTTPS JSON, auth: OAuth2 + tenant key, typicalSources: [Pricefx] }
+  - { type: Model N REST API, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Model N Revenue Cloud] }
+  - { type: PROS Pricing REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [PROS RGM] }
+  - { type: SAP CCM IDoc COND_A04 / RFC, protocol: RFC/file, auth: SAP user, typicalSources: [SAP S/4HANA RM] }
+  - { type: Anaplan REST + Bulk, protocol: HTTPS JSON, auth: OAuth2 + cert, typicalSources: [Anaplan PM] }
+  - { type: Periscope by McKinsey API, protocol: HTTPS JSON, auth: OAuth2 + tenant key, typicalSources: [Periscope Performance Lens] }
+  - { type: BCG OS REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [BCG OS RGM] }
+  - { type: Zilliant REST API, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Zilliant Price IQ / Deal Manager] }
+  - { type: Vendavo REST API, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Vendavo Profit Analyzer] }
+  - { type: EDI 832 Price/Sales Catalog, protocol: AS2, auth: PKI, typicalSources: [Trading partners — list price exchange] }
+  - { type: Circana Liquid Data API, protocol: HTTPS REST, auth: OAuth2 + API key, typicalSources: [Circana] }
+  - { type: NielsenIQ Connect REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [NielsenIQ Connect] }
+  - { type: SAP SD IDoc (INVOIC02 / ORDERS05), protocol: RFC/file, auth: SAP user, typicalSources: [SAP S/4HANA SD] }
+  - { type: Plytix PIM REST, protocol: HTTPS JSON, auth: API key, typicalSources: [Plytix] }
+
+ingestionChallenges:
+  - Price waterfall reconciliation across systems — list price lives in SAP CCM, deal terms in Vistex/Pricefx, scan-down redemption in EDI 820 remittance, MCB cheques in Model N. The list-to-net waterfall must be re-built every period from 5-7 system flows with frequent reclassifications.
+  - Mix-attribution math is fragile — the standard volume × price × mix variance decomposition double-counts when SKUs cross PPA tiers mid-period; the canonical attribution requires holding plan_share and actual_share at the segment grain and re-running residuals.
+  - Syndicated data lag — Circana / NielsenIQ panel data for mix and pack-share metrics arrives at 4-8 week latency; in-market mix decisions get made on stale snapshots unless retailer scan + EDI 852 feeds are blended in.
+  - GTM (go-to-market) cost allocation — slotting fees, marketing development funds, and innovation launch budgets are committed years up-front but expensed against in-period revenue, creating a moving-target gross-to-net waterfall that finance and commercial argue about.
+  - Bi-temporal price history — a list price change announced May 1 effective June 1 creates the question "what was the list price for a June-shipped, May-deal-approved transaction?" The warehouse must persist both effective_from and recorded_at.
+  - Pack-master volatility — a single SKU re-pack (12-pack → 12-pack-with-bonus-can) generates a new GTIN that the master data team back-dates by weeks, leaving net revenue rows orphaned in staging.
+
+integrationChallenges:
+  - name: Price-waterfall reconciliation across systems
+    description: List price (SAP CCM), deal terms (Vistex / Pricefx), scan-down redemption (EDI 820 remittance), MCB cheques (Model N), slotting amortization (Finance), and currency revaluation (Treasury) must all reconcile to a single list-to-net number per account × pack × period. The gap between planned, accrued, and settled spans 60-180 days and is the largest controllable margin leak in CPG.
+    mitigation: Persist a deal_id on every settlement document at point-of-creation (Vistex Match Engine, SAP CCM); build a deterministic match pipeline producing list-to-net at the SKU × account × period grain with confidence scores and an explicit "unmatched bucket" so finance can audit drift; reconcile on a 90-day rolling refresh.
+  - name: Mix-attribution math
+    description: The volume × price × mix variance decomposition (the heart of RGM analytics) breaks when SKUs change PPA tier mid-period, when a new pack launches, or when channel ladder shifts. Naive subtraction produces residuals that get parked in "other" and are unintelligible to the CCO.
+    mitigation: Compute mix variance at the segment_id grain (channel × tier × category); hold plan_share and actual_share as time-stamped policy; rebuild waterfall daily; surface the residual as an explicit "unattributed mix" bucket with a drill-through to the offending SKUs.
+  - name: Syndicated data lag — mix decisions on stale snapshots
+    description: Circana and NielsenIQ project pack-share and channel-mix at total-category level with 4-8 week latency. In-flight RGM decisions (mid-quarter mix steer, channel ladder adjustment) get made against month-old data, undermining the value of the syndicated investment.
+    mitigation: Blend retailer EDI 852 scan feeds (2-5 day latency) for in-flight monitoring with syndicated panels (8-week truth) for closeout; tag every mix observation with source and projection_factor; downstream mix_variance always uses panel for closeout, EDI for in-flight.
+  - name: GTM cost allocation across periods
+    description: Slotting fees are paid up-front but earned across the SKU's first 12 months on shelf; marketing development funds are committed annually but spent monthly; innovation launch budgets span 24 months. Allocating these to net revenue at the SKU × period grain is judgement-heavy.
+    mitigation: Define a gross-to-net waterfall taxonomy (IFRS 15 variable consideration model) with stable amortization rules per cost class; record allocation_method on every GTN line; lock the policy annually and surface deviations on the controller dashboard.
+  - name: Bi-temporal pricing for deal-time vs ship-time
+    description: A deal approved May 15 references the list price effective at deal-creation time; a shipment May 28 references the list-price effective at ship time. If list price changes May 25, the realized net revenue depends on which price the system bound to. Misaligned binding creates retailer deduction disputes.
+    mitigation: Implement bi-temporal price storage (effective_from, recorded_at); deal calculations bind to the price as recorded at deal-creation time; ship-time calculations bind to ship-time effective price; the price_event log carries both old and new for audit; expose binding policy as a contract column on every deal.
+  - name: Pack-master volatility — new GTINs, late back-dating
+    description: A 12-pack with a "20% extra free" promo gets a new GTIN; the master data team back-dates the GTIN by weeks; sales rows on the new GTIN sit in staging unjoined to the pack-tier hierarchy and disappear from Mix Index dashboards.
+    mitigation: Run a daily orphan-row report on sales_transaction.pack_id IS NULL; stand up a master-data SLA on GS1 GDSN ingest; treat back-dated GTINs as a tracked event class (gtin_repack_event) with explicit fall-through rules.
+  - name: Channel ladder breakage
+    description: A club-exclusive 24-count value pack at $X is fine in isolation, but a customer who screenshots the club price and shows it at a grocery checkout creates a per-unit price comparison that breaks the channel ladder. The data sees one pack two prices; the customer experiences one product at two prices.
+    mitigation: Treat channel × pack as the price-policy grain; daily coherence DQ check that no channel's per-unit equivalent drops below another's by more than the policy band; alert on out-of-policy variance windows ≥24h.
+  - name: Counterfactual baselines disagree
+    description: Periscope GLM, Circana Unify baseline, NielsenIQ baseline, and in-house ML disagree by 5-30% on what a no-promo counterfactual looked like. Promo Effectiveness Index swings dramatically depending on which baseline the dashboard chose — a political minefield between finance and commercial.
+    mitigation: Persist all baselines side-by-side with model_name + model_version; require a single canonical baseline policy per account × category locked annually with CCO sign-off; expose baseline diff on the closeout layer so disagreement is visible, not hidden.
+  - name: Innovation cannibalization vs incrementality
+    description: A new pack introduction (the value 18-count) cannibalizes the mainstream 12-pack and the entry 6-pack. Innovation Sales % over-credits if it ignores cannibalization; under-credits if it folds in cannibalization broadly across unrelated SKUs.
+    mitigation: Define a cannibalization basket per innovation SKU at launch (default: same brand + adjacent pack tiers); compute Innovation Sales % net of basket cannibalization; require the launch business case to declare the basket and the cannibalization tolerance up-front.
+
+glossaryTerms:
+  - PPA (Price Pack Architecture)
+  - GTM (Go-To-Market)
+  - Net Revenue
+  - Gross-to-Net
+  - List-to-Net
+  - Price Realization
+  - Mix Shift
+  - Value Pack
+  - Super Pack
+  - Multipack
+  - Premium Tier
+  - Mainstream Tier
+  - Value Tier
+  - Channel Ladder
+  - Trade Prepayment
+  - Conditional Rebate
+  - Accrual
+  - Innovation Sales
+
+standards:
+  - { id: gs1_gtin, name: "GS1 GTIN-14", version: "GS1 GenSpec 2024", url: "https://www.gs1.org/standards/id-keys/gtin" }
+  - { id: gs1_gln, name: "GS1 GLN (Global Location Number)", version: "GLN", url: "https://www.gs1.org/standards/id-keys/gln" }
+  - { id: gs1_gdsn, name: "GS1 GDSN (Global Data Synchronisation Network)", version: "3.1", url: "https://www.gs1.org/services/gdsn" }
+  - { id: edi_832, name: "ASC X12 EDI 832 — Price/Sales Catalog", version: "X12 005010", url: "https://www.x12.org/products/transaction-sets" }
+  - { id: ifrs_15, name: "IFRS 15 — Revenue from Contracts with Customers (gross-to-net variable consideration)", version: "IFRS 15 (2018)", url: "https://www.ifrs.org/issued-standards/list-of-standards/ifrs-15-revenue-from-contracts-with-customers/" }
+  - { id: iso_8601, name: "ISO 8601 — Date and time format", version: "2019", url: "https://www.iso.org/iso-8601-date-and-time-format.html" }
+  - { id: iso_4217, name: "ISO 4217 — Currency codes (minor units for price storage)", version: "2024", url: "https://www.iso.org/iso-4217-currency-codes.html" }

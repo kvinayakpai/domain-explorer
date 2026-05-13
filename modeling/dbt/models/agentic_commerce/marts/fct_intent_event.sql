@@ -6,7 +6,7 @@ with i as (select * from {{ ref('stg_agentic_commerce__intent_events') }}),
 
 select
     i.intent_id,
-    cast(strftime(i.created_at, '%Y%m%d') as integer) as date_key,
+    cast({{ format_date('i.created_at', '%Y%m%d') }} as integer) as date_key,
     a.agent_sk,
     p.principal_sk,
     i.session_id,

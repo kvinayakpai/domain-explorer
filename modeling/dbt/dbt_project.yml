@@ -143,3 +143,87 @@ models:
         +materialized: ephemeral
       marts:
         +materialized: table
+    pricing_and_promotions:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    predictive_maintenance:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    trade_promotion_management:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    customer_loyalty_cdp:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    revenue_growth_management:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    omnichannel_oms:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    loss_prevention:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    direct_store_delivery:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    sop_supply_chain_planning:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    category_management:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    procurement_spend_analytics:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table
+    returns_reverse_logistics:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: ephemeral
+      marts:
+        +materialized: table

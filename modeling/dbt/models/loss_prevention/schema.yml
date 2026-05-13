@@ -1,0 +1,203 @@
+version: 2
+
+models:
+  # ---------- Staging ----------
+  - name: stg_loss_prevention__store
+    description: One row per store with LP staffing tier + EAS/RFID flags.
+    columns:
+      - name: store_id
+        tests: [unique, not_null]
+      - name: lp_staffing_tier
+        tests:
+          - accepted_values:
+              values: [T1, T2, T3]
+
+  - name: stg_loss_prevention__employee
+    description: One row per associate. PII pre-hashed.
+    columns:
+      - name: employee_id
+        tests: [unique, not_null]
+      - name: role
+        tests:
+          - accepted_values:
+              values: [cashier, supervisor, asset_protection, manager, stocker]
+
+  - name: stg_loss_prevention__item
+    description: SKU master with CRAVED scoring.
+    columns:
+      - name: item_id
+        tests: [unique, not_null]
+
+  - name: stg_loss_prevention__pos_transaction
+    description: POS receipt header.
+    columns:
+      - name: transaction_id
+        tests: [unique, not_null]
+      - name: store_id
+        tests:
+          - relationships: { to: ref('stg_loss_prevention__store'), field: store_id }
+
+  - name: stg_loss_prevention__pos_exception
+    description: One POS exception per row, normalized score.
+    columns:
+      - name: exception_id
+        tests: [unique, not_null]
+      - name: exception_type
+        tests:
+          - accepted_values:
+              values: [sweethearting, refund_no_receipt, void_after_tender, no_sale, cash_skim, price_override, barcode_swap, discount_abuse]
+      - name: source_system
+        tests:
+          - accepted_values:
+              values: [NCR_Voyix_LP, Oracle_XBR, Profitect, Aptos_LP, Sensormatic, Datalogic, NCR_Counterpoint, Honeywell]
+
+  - name: stg_loss_prevention__suspect
+    description: Suspect with tokenized PII + Auror/ALTO link ids.
+    columns:
+      - name: suspect_id
+        tests: [unique, not_null]
+
+  - name: stg_loss_prevention__incident
+    description: Discrete loss/theft event.
+    columns:
+      - name: incident_id
+        tests: [unique, not_null]
+      - name: incident_type
+        tests:
+          - accepted_values:
+              values: [external_shoplift, internal_theft, orc_boost, burglary, robbery, return_abuse, refund_fraud, cargo_theft]
+
+  - name: stg_loss_prevention__investigation
+    description: Investigation case.
+    columns:
+      - name: investigation_id
+        tests: [unique, not_null]
+      - name: incident_id
+        tests:
+          - relationships: { to: ref('stg_loss_prevention__incident'), field: incident_id }
+
+  - name: stg_loss_prevention__recovery
+    description: Recovered cash / merchandise / civil-demand.
+    columns:
+      - name: recovery_id
+        tests: [unique, not_null]
+
+  - name: stg_loss_prevention__fraud_score
+    description: Per-transaction refund-fraud score (Appriss Retail / internal).
+    columns:
+      - name: fraud_score_id
+        tests: [unique, not_null]
+      - name: recommendation
+        tests:
+          - accepted_values:
+              values: [approve, verify, deny]
+
+  - name: stg_loss_prevention__shrink_snapshot
+    description: Monthly shrink snapshot per store × department.
+    columns:
+      - name: snapshot_id
+        tests: [unique, not_null]
+
+  # ---------- Intermediate (Vault) ----------
+  - name: int_loss_prevention__hub_store
+    description: Vault hub for stores.
+  - name: int_loss_prevention__hub_employee
+    description: Vault hub for employees.
+  - name: int_loss_prevention__hub_exception
+    description: Vault hub for exceptions.
+  - name: int_loss_prevention__hub_incident
+    description: Vault hub for incidents.
+  - name: int_loss_prevention__hub_suspect
+    description: Vault hub for suspects.
+  - name: int_loss_prevention__hub_investigation
+    description: Vault hub for investigations.
+  - name: int_loss_prevention__link_exception_transaction
+    description: Vault link exception ↔ transaction ↔ store ↔ employee.
+  - name: int_loss_prevention__link_incident_suspect
+    description: Vault link incident ↔ suspect.
+  - name: int_loss_prevention__sat_exception_payload
+    description: Vault sat — exception type + score + source.
+  - name: int_loss_prevention__sat_incident_state
+    description: Vault sat — incident lifecycle state.
+  - name: int_loss_prevention__sat_investigation_state
+    description: Vault sat — investigation lifecycle state.
+  - name: int_loss_prevention__sat_shrink_snapshot
+    description: Vault sat — store × department shrink snapshot.
+
+  # ---------- Marts ----------
+  - name: dim_date_lp
+    description: Date dimension suffixed _lp to avoid collision with other anchors.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+
+  - name: dim_store_lp
+    description: Type-2 store dimension. _lp suffix vs merchandising / pricing_and_promotions dim_store.
+    columns:
+      - name: store_sk
+        tests: [unique, not_null]
+      - name: store_id
+        tests: [unique, not_null]
+
+  - name: dim_product_lp
+    description: Item dimension. _lp suffix avoids collision with merchandising / pricing.
+    columns:
+      - name: product_sk
+        tests: [unique, not_null]
+      - name: item_id
+        tests: [unique, not_null]
+
+  - name: dim_employee
+    description: Employee dimension (PII-hashed).
+    columns:
+      - name: employee_sk
+        tests: [unique, not_null]
+      - name: employee_id
+        tests: [unique, not_null]
+
+  - name: dim_incident_type
+    description: Incident type lookup with severity + NIBRS reportability.
+    columns:
+      - name: incident_type_sk
+        tests: [unique, not_null]
+      - name: incident_type
+        tests: [unique, not_null]
+
+  - name: fct_exceptions
+    description: Fact — one row per POS exception. Joins dim_store_lp / dim_employee / dim_date_lp.
+    columns:
+      - name: exception_id
+        tests: [unique, not_null]
+      - name: store_sk
+        tests:
+          - relationships: { to: ref('dim_store_lp'), field: store_sk }
+      - name: employee_sk
+        tests:
+          - relationships: { to: ref('dim_employee'), field: employee_sk }
+
+  - name: fct_incidents
+    description: Fact — one row per incident.
+    columns:
+      - name: incident_id
+        tests: [unique, not_null]
+      - name: store_sk
+        tests:
+          - relationships: { to: ref('dim_store_lp'), field: store_sk }
+
+  - name: fct_investigations
+    description: Fact — one row per investigation, with duration + recovery signals.
+    columns:
+      - name: investigation_id
+        tests: [unique, not_null]
+
+  - name: fct_recoveries
+    description: Fact — one row per recovery event.
+    columns:
+      - name: recovery_id
+        tests: [unique, not_null]
+
+  - name: fct_shrink_snapshot
+    description: Fact — store × department × month shrink ledger.
+    columns:
+      - name: snapshot_id
+        tests: [unique, not_null]

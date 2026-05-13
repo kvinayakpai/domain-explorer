@@ -371,5 +371,920 @@
       "glossary.tool_call",
       "ac.kpi.tool_call_cost"
     ]
+  },
+  {
+    "matchSubstring": "pricing and promotions",
+    "vertical": "Retail",
+    "response": "Retail Pricing & Promotions covers four interlocking workflows: regular price line management, promo planning + lift measurement, markdown optimization, and competitive price intelligence.\n\nThe vendor stack you'll see in a Tier-1 retailer:\n• Revionics Lifecycle Pricing and PROS Pricing — elasticity-driven price + markdown optimization.\n• Blue Yonder Pricing & Promotion (formerly JDA) — combined price/promo suite still dominant in grocery and apparel.\n• Oracle Retail Pricing Cloud Service (RPCS) and SAP for Retail / CAR — ERP-grade price catalog and IDoc-based propagation.\n• Eagle Eye AIR and Inmar Digital Promotions (Quotient) — coupon/promo issuance and digital settlement.\n• Wiser, Numerator, NielsenIQ Discover — competitive price + promo intelligence (scrape + receipt-derived).\n\nThe headline KPIs are Gross Margin %, Markdown %, Promo Lift %, Sell-Through Rate, Price Elasticity, Competitive Price Index (KVI), and Promo ROI. The hard data problem is that 5+ systems each own a piece of the realized price at scan time — the warehouse has to reconstruct that price-resolution decision per receipt. [REF:pp.kpi.gross_margin_pct] [REF:pp.kpi.promo_roi]",
+    "citations": [
+      "pp.kpi.gross_margin_pct",
+      "pp.kpi.markdown_pct",
+      "pp.kpi.promo_lift_pct",
+      "pp.kpi.competitive_price_index",
+      "pp.kpi.promo_roi",
+      "src.revionics",
+      "src.blueyonder_pricing"
+    ]
+  },
+  {
+    "matchSubstring": "kvi",
+    "vertical": "Retail",
+    "response": "KVI — Key Value Item — is the SKU whose price the shopper actually remembers and uses to form their perception of your retailer. Bananas, milk, the 12-pack of Coke, the 2L of bleach, premium dog food brand X. Retailers protect KVI prices against competitors at all costs because mispricing a KVI shifts store choice, not just basket.\n\nKVIs are typically 5-15% of SKUs but drive 50-80% of price-image. They sit alongside:\n• KVCs (Key Value Categories) — whole categories where price perception matters (produce, dairy, beverages).\n• Traffic builders — high-velocity items with thinner-than-average margin.\n• Background — everyday items where shoppers don't track price.\n• Premium — items with thicker margin where the brand carries the price perception.\n\nThe Competitive Price Index (own_price_kvi / weighted_compset_price_kvi) is the primary scorecard on KVIs and is recomputed weekly against scraped (Wiser, Price2Spy) or receipt-derived (Numerator, NielsenIQ) competitor prices. The hard part isn't computing the index; it's keeping the KVI list current — they go stale within 6-12 months as competitor assortment and shopper behavior shift. [REF:pp.kpi.competitive_price_index]",
+    "citations": [
+      "pp.kpi.competitive_price_index",
+      "pp.d.kvi_classification",
+      "glossary.kvi_(key_value_item)",
+      "glossary.kvc_(key_value_category)"
+    ]
+  },
+  {
+    "matchSubstring": "markdown optimization",
+    "vertical": "Retail",
+    "response": "Markdown optimization decides, per lifecycle SKU, when to take the first markdown and how deep — and then how to chain subsequent markdowns to hit an end-of-season sell-through target without leaving margin on the table.\n\nThe core inputs are:\n• Weeks-on-hand and weeks-to-deadline (e.g. season end, end-cap reset).\n• Realized elasticity at the cluster grain (Revionics, PROS, Blue Yonder all fit panel models).\n• Cost — to keep markdown depth from going below COGS unless the inventory liability dominates.\n• Competitor moves on the same SKU.\n• Optimizer recommendation vs category-manager override (track the Regret Factor on overrides).\n\nWhat makes this hard: optimizers want deeper-and-earlier markdowns to maximize realized margin in the actual world; category managers and brand teams resist because of price-image concerns. Capture optimizer_recommended vs actual on every markdown row; require a reason_override on overrides ≥10% deeper or earlier; and report Regret Factor on accepted-vs-overridden so the long-term tradeoff is visible. [REF:pp.kpi.markdown_pct] [REF:pp.kpi.regret_factor] [REF:pp.kpi.markdown_recovery_rate]",
+    "citations": [
+      "pp.kpi.markdown_pct",
+      "pp.kpi.regret_factor",
+      "pp.kpi.markdown_recovery_rate",
+      "pp.kpi.sell_through_rate",
+      "pp.d.markdown_cadence",
+      "src.revionics",
+      "src.blueyonder_markdown"
+    ]
+  },
+  {
+    "matchSubstring": "promo lift",
+    "vertical": "Retail",
+    "response": "Promo lift = (promo_units − baseline_units) / baseline_units — but only the naive version. The version that actually drives money is Net Lift = Own Lift − Cannibalized Units + Halo Units.\n\nThe three terms each need their own measurement:\n• Baseline — what would have sold at regular price absent the promo. Best estimated with a time-series counterfactual (Bayesian Structural Time Series or a Causal Forest on comparable non-promoted SKU-store-weeks).\n• Cannibalization — units transferred from a substitute SKU's baseline. Detect via cross-price elasticities at the cluster grain, then debit.\n• Halo — incremental sales on complement SKUs (chips during a soda promo, buns during a burger promo). Credit.\n\nA promo with 80% naive lift but 40% cannibalization is mathematically a 40% real lift; the trade dollars are buying half of what the ad team thinks they bought. Tools used: Revionics, Blue Yonder, Symphony RetailAI CINDE, Inmar Promo Analytics, NielsenIQ Discover. [REF:pp.kpi.promo_lift_pct] [REF:pp.kpi.cannibalization_rate] [REF:pp.kpi.promo_roi]",
+    "citations": [
+      "pp.kpi.promo_lift_pct",
+      "pp.kpi.cannibalization_rate",
+      "pp.kpi.promo_roi",
+      "pp.kpi.trade_spend_effectiveness",
+      "glossary.cannibalization",
+      "glossary.halo"
+    ]
+  },
+  {
+    "matchSubstring": "competitive price index",
+    "vertical": "Retail",
+    "response": "Competitive Price Index (CPI) = own_price / weighted_compset_price, computed at the KVI grain weekly. CPI = 1.00 means parity; CPI < 1.00 means you're cheaper; > 1.00 means you're more expensive.\n\nThe weighting is the subtle part. A category manager doesn't weight all competitors equally — Walmart and a regional grocer don't carry the same gravitational pull on your shopper. Weights are usually market-share or matched-shopper overlap derived from Numerator or NielsenIQ Discover panel data.\n\nThe data pipeline:\n1. Match own SKU → competitor SKU (exact GTIN, equivalent pack, or like-for-like). Persist match_confidence per row; require ≥0.90 for KVI CPI inputs.\n2. Pull competitor price observations from Wiser, Price2Spy, Skuuudle, DataWeave, Numerator, NielsenIQ. Filter to in-policy channel (in_store, web, app, marketplace) and freshness window.\n3. Compute weighted competitor price; divide own regular (or promo, if comparing on-promo windows) price.\n4. Surface the per-week CPI to category managers; alert on CPI shifts ≥3% vs trailing-4-week average.\n\nGood targets sit in a tight band per category: CPI 0.97-1.02 for KVI categories, more room (0.95-1.10) for premium/background. [REF:pp.kpi.competitive_price_index]",
+    "citations": [
+      "pp.kpi.competitive_price_index",
+      "pp.d.competitive_match",
+      "src.wiser",
+      "src.numerator_promo",
+      "src.nielseniq_discover"
+    ]
+  },
+  {
+    "matchSubstring": "eu omnibus",
+    "vertical": "Retail",
+    "response": "EU Directive 2019/2161 (the Omnibus Directive) requires that any 'sale' or price-reduction claim in the EU must display the lowest price the retailer actually charged in the prior 30 days. National transposition completed in 2022 across most member states.\n\nFor data engineering this means: every promo creative, web product page, and shelf-edge label must source a prior_30day_low value per SKU × store at the time of display. That's a query, not a column — so you materialize it.\n\nThe practical pipeline:\n1. Capture every effective-dated price event in price (source_system, price_type, amount, effective_from, effective_to).\n2. Materialize a daily view per SKU × store with prior_30day_low = MIN(amount) over the 30-day window.\n3. Expose it as a contract column on the price catalog feed consumed by e-com, signage, and ad systems.\n4. Audit promo creative against the catalog at publish — fail any promo where displayed-was-price > prior_30day_low.\n\nFines per misleading promo are non-trivial (up to 4% of EU turnover under the Omnibus regime). Most retailers treat this as a hard pre-publish gate rather than after-the-fact compliance.",
+    "citations": [
+      "pp.kpi.regular_price_compliance",
+      "glossary.regular_price",
+      "glossary.promo_price"
+    ]
+  },
+  {
+    "matchSubstring": "loss prevention",
+    "vertical": "Retail",
+    "response": "Retail Loss Prevention spans five interlocking workflows: POS exception monitoring, organized retail crime (ORC) investigation, return abuse / refund fraud, internal-theft (sweethearting + cash skim), and inventory shrink reconciliation.\n\nThe vendor stack you'll see in a Tier-1 retailer:\n• NCR Voyix LP Analytics and Oracle Retail XStore LP (XBR) — POS-side exception engines.\n• Profitect (Zebra) and Aptos Loss Prevention — prescriptive exception + shrink analytics.\n• Sensormatic Solutions (Johnson Controls) — EAS + ShrinkVision RFID; Tyco RFID and Detego Cloud for item-level inventory accuracy.\n• Auror — cross-retailer ORC platform with offender / vehicle linking and law-enforcement sharing.\n• Appriss Retail (formerly The Retail Equation) — return-fraud scoring at the counter.\n• ALTO Alliance — multi-retailer + law-enforcement information sharing standard.\n• Zebra Reflexis — task execution + LP audits; Indyme — smart lockable cases + audio deterrent; Honeywell Connected Retail and RetailNext — connected-store inventory and vision foot-traffic.\n\nThe headline KPIs are Shrink Rate %, Known Shrink %, POS Exception Rate, Refund Fraud Rate, Sweethearting Incidents/Week, External + Internal Theft Rates, ORC Incident Frequency, Loss Recovery $, and Alert False-Positive Rate. The hard data problem is PII redaction — incident reports routinely contain shopper names, employee SSN-stems, partial plates; tokenize those at the connector boundary and quarantine raw PII in encrypted case-management. [REF:lp.kpi.shrink_rate] [REF:lp.kpi.known_shrink_pct]",
+    "citations": [
+      "lp.kpi.shrink_rate",
+      "lp.kpi.known_shrink_pct",
+      "lp.kpi.pos_exception_rate",
+      "lp.kpi.refund_fraud_rate",
+      "lp.kpi.orc_incident_frequency",
+      "src.ncr_voyix_lp",
+      "src.oracle_xstore_lp",
+      "src.auror_orc",
+      "src.appriss_retail",
+      "src.sensormatic_lp"
+    ]
+  },
+  {
+    "matchSubstring": "shrink rate",
+    "vertical": "Retail",
+    "response": "Shrink Rate = shrink_dollars / net_sales. National benchmarks (NRF retail security survey, mid-2020s): ~1.6% for general merchandise, ~3-4% for apparel and beauty, ~2% for supermarkets when fresh categories are isolated. The number that actually moves the program is Known Shrink % — the share of shrink with a documented root cause closed in the case-management system. The leading-indicator move is converting unknown to known.\n\nShrink decomposes into:\n• External theft — shoplifting, ORC boost-and-fence (largest single share for general merchandise).\n• Internal theft — sweethearting, cash skim, void abuse, no-sale abuse.\n• Administrative error — receiving mistakes, RTV reconciliation gaps, markdown miscoding.\n• Vendor fraud — short-shipping, fictitious returns, ghost SKUs.\n• Damage — destroyed goods reason-coded to known shrink.\n\nThe reconciliation pattern: physical count at period close establishes total_shrink. Closed investigations (recovered, prosecuted, written-off) sum to known_shrink. The residual is unknown_shrink. Track the known/unknown split per store × department as the program scorecard. [REF:lp.kpi.shrink_rate] [REF:lp.kpi.known_shrink_pct]",
+    "citations": [
+      "lp.kpi.shrink_rate",
+      "lp.kpi.known_shrink_pct",
+      "lp.kpi.unknown_shrink_pct",
+      "lp.kpi.inventory_accuracy",
+      "glossary.shrink",
+      "glossary.craved"
+    ]
+  },
+  {
+    "matchSubstring": "pos exception",
+    "vertical": "Retail",
+    "response": "POS exception engines flag suspicious lane-level patterns — sweethearting, void-after-tender, no-sale opens, cash skim, refund-no-receipt, barcode swap, suspicious price overrides, discount abuse. The exception is a signal; the investigation is what builds a case.\n\nThe vendor lineup:\n• NCR Voyix LP Analytics — biggest deployed footprint at Tier-1 grocers/general merch.\n• Oracle Retail XStore LP (XBR) — bundled with XStore POS in Oracle-shop chains.\n• Profitect (Zebra) — prescriptive engine that ranks opportunities + exceptions.\n• Aptos Loss Prevention — packaged with Aptos ONE for the apparel/specialty crowd.\n• Sensormatic, Datalogic lane-awareness, Honeywell HCI, NCR Counterpoint — niche/SMB.\n\nEach vendor outputs scores on a different scale (0..100 vs 0..1 vs low/medium/high). The first integration job is normalizing to 0..1 with per-source calibration curves, then persisting both raw and normalized scores. The Alert False-Positive Rate KPI is your calibration scorecard — recompute quarterly against confirmed-incident outcomes.\n\nAttribution to an employee requires register-session login events (start_session, end_session) joined to register_id + timestamp. Without that join you'll wrongly accuse cashiers who never touched the register — overlapping sessions on shared logins are a top-3 false-positive source. [REF:lp.kpi.pos_exception_rate] [REF:lp.kpi.false_positive_rate]",
+    "citations": [
+      "lp.kpi.pos_exception_rate",
+      "lp.kpi.false_positive_rate",
+      "lp.kpi.sweethearting_incidents",
+      "glossary.pos_exception",
+      "glossary.sweethearting",
+      "glossary.void_abuse",
+      "src.ncr_voyix_lp",
+      "src.oracle_xstore_lp",
+      "src.profitect_zebra"
+    ]
+  },
+  {
+    "matchSubstring": "organized retail crime",
+    "vertical": "Retail",
+    "response": "ORC — Organized Retail Crime — describes coordinated boost-and-fence operations that hit high-CRAVED categories (cosmetics, electronics, fragrance, OTC, baby formula, designer apparel) across many stores in a single sweep and resell through online marketplaces or pawn networks. Three platforms own the ecosystem:\n\n• Auror — cross-retailer offender / vehicle / incident database with deterministic and probabilistic linking across chains. Retailers contribute incidents and consume linked offender feeds; integrations export auror_offender_id back to local incident records.\n• ALTO Alliance — industry standard for retailer-to-retailer + retailer-to-law-enforcement case packets. Cases are formatted to ALTO's schema before being shared, and an alto_packet_id is persisted on the suspect so any disclosure can be unshared on request.\n• Local CCTV + LPR — vehicle and biometric features are tokenized via locality-sensitive hashing (MinHash, SimHash) so two records can be probabilistically matched without storing raw attributes.\n\nPII compliance is the hard part. Naive replication of suspect names, dates of birth, and license plates across retailer chains violates GDPR Art. 9 and most state LP statutes. Best practice: share only deterministic hashes + categorical incident metadata, require contractual ALTO disclosure consent at the case level, and persist enough metadata to fully revoke a share. [REF:lp.kpi.orc_incident_frequency]",
+    "citations": [
+      "lp.kpi.orc_incident_frequency",
+      "glossary.orc",
+      "glossary.fence",
+      "glossary.boost",
+      "glossary.alto_alliance",
+      "src.auror_orc",
+      "src.alto_alliance"
+    ]
+  },
+  {
+    "matchSubstring": "refund fraud",
+    "vertical": "Retail",
+    "response": "Refund fraud comes in four common forms: no-receipt return of stolen goods, swapped-content return (rocks for electronics), refund-to-fresh-card scheme, and policy abuse / serial returner (wardrobing). The remediation playbook splits across the counter and the back office.\n\nAt the counter, Appriss Retail Verify (formerly The Retail Equation) scores every return attempt and recommends approve / verify / deny based on the customer's return history across the retailer (and Appriss' cross-retailer network for opted-in chains). Cashiers see the recommendation only — the score is not exposed.\n\nIn the back office:\n• Persist fraud_score rows in a separate table with row-level security; expose only the binary recommendation to non-LP marts. Appriss' DPA restricts use to LP purposes.\n• Score sources: Appriss Retail (primary), internal XGBoost (incremental signals), Auror offender signal (when present).\n• Watch the Return Abuse Rate KPI — flagged returns / total returns — and the Refund Fraud Rate KPI for confirmed fraud / total refunds.\n• Customer-level return restrictions live in the loyalty system, not the POS; the deny recommendation routes to a customer-service queue for the next visit. [REF:lp.kpi.refund_fraud_rate] [REF:lp.kpi.return_abuse_rate]",
+    "citations": [
+      "lp.kpi.refund_fraud_rate",
+      "lp.kpi.return_abuse_rate",
+      "glossary.refund_fraud",
+      "glossary.return_abuse",
+      "src.appriss_retail"
+    ]
+  },
+  {
+    "matchSubstring": "what is predictive maintenance",
+    "vertical": "Manufacturing",
+    "response": "Predictive Maintenance (PdM) is the discipline of predicting equipment failure ahead of time using sensor telemetry and machine learning, then triggering maintenance only when needed — replacing the older time-based or run-to-failure regimes. The 2026 stack:\n\n• Telemetry sources — OPC UA from PLCs (Siemens S7, Rockwell ControlLogix); MQTT/Sparkplug B from wireless retrofit sensors (Augury, SKF); historians (Aveva PI System, GE Proficy Historian) for years of process data.\n• Platforms — PTC ThingWorx, Siemens MindSphere, GE Digital APM, IBM Maximo APM, Honeywell Forge, Schneider EcoStruxure, AspenTech Mtell.\n• PdM-specialized SaaS — Augury (vibration + ultrasound on motors/pumps), Senseye (Siemens-owned), Uptake, SparkCognition, Aspen Mtell.\n• CMMS / EAM — IBM Maximo, SAP PM, Infor EAM consume the advisories and own work-order execution.\n\nThe headline KPIs are MTBF, MTTR, Asset Availability %, Predictive Precision & Recall, % Failures Predicted, RUL Prediction Error %, and % Production Loss Avoided. The hard problem is label sparsity — failures are rare, so unsupervised anomaly detection (autoencoder reconstruction error, isolation forest) carries the long tail, validated against supervised failure_event labels where they exist. [REF:pm.kpi.mtbf] [REF:pm.kpi.predictive_recall]",
+    "citations": [
+      "pm.kpi.mtbf",
+      "pm.kpi.mttr",
+      "pm.kpi.asset_availability",
+      "pm.kpi.predictive_recall",
+      "src.ptc_thingworx",
+      "src.siemens_mindsphere",
+      "src.aveva_pi",
+      "src.augury",
+      "glossary.rul",
+      "glossary.condition-based_maintenance_(cbm)"
+    ]
+  },
+  {
+    "matchSubstring": "remaining useful life",
+    "vertical": "Manufacturing",
+    "response": "Remaining Useful Life (RUL) is a model-estimated count of operating hours (or cycles, or distance) before an asset reaches an end-of-useful-life threshold. The reference benchmark is the NASA C-MAPSS turbofan dataset; AspenTech Mtell, Augury, and IBM Maximo APM all expose RUL as a first-class prediction type.\n\nThe modeling choices:\n• Survival analysis (Cox PH, DeepSurv) — best when right-censored data dominates (most assets haven't failed yet).\n• LSTM / Transformer on multivariate time-series — best when you have many similar units with run-to-failure histories.\n• Health-Index regression (per ISO 13374 'Health Assessment' block) — interpretable, with explicit P-F curve crossing logic.\n• Bayesian degradation models — give calibrated rul_confidence_lower/upper which the work-order planner actually uses.\n\nThe operational KPI is RUL Prediction Error % — mean(abs(rul_pred - rul_actual) / rul_actual). A well-tuned PdM program lands at 15-25% on critical assets and 25-40% on Class-C assets; below 15% usually means you're overfitting the training fleet's regime. RUL must be reported alongside a confidence interval — point estimates alone get ignored by planners. [REF:pm.kpi.rul_prediction_error]",
+    "citations": [
+      "pm.kpi.rul_prediction_error",
+      "pm.kpi.lead_time_to_failure",
+      "glossary.rul",
+      "glossary.p-f_curve"
+    ]
+  },
+  {
+    "matchSubstring": "mtbf vs mttr",
+    "vertical": "Manufacturing",
+    "response": "MTBF (Mean Time Between Failures) and MTTR (Mean Time To Repair) sit on opposite sides of the availability equation:\n\n   Asset Availability % = MTBF / (MTBF + MTTR)\n\nMTBF is the *reliability* lever — push it up by addressing root causes (better lubrication regime, sensor-triggered alignment checks, supplier quality on bearings). PdM directly attacks MTBF by catching failures during the P-F interval so they're intercepted as planned work, not unplanned downtime.\n\nMTTR is the *maintainability* lever — push it down with spare-parts stocking (against the predicted failure window), crew skill, SOP quality, and diagnostic acceleration (e.g. failure-mode classification feeding the right job plan template).\n\nHigh-reliability programs target MTBF in the 4,000-10,000 hours range for Class-A assets and MTTR under 4 hours. The ratio you actually want to track at the executive level is Planned vs Unplanned Maintenance % — that captures the upstream success of the PdM program in shifting work from MTTR (reactive) to MTBF-extending (predictive/preventive). [REF:pm.kpi.mtbf] [REF:pm.kpi.mttr] [REF:pm.kpi.asset_availability] [REF:pm.kpi.planned_vs_unplanned_pct]",
+    "citations": [
+      "pm.kpi.mtbf",
+      "pm.kpi.mttr",
+      "pm.kpi.asset_availability",
+      "pm.kpi.planned_vs_unplanned_pct",
+      "glossary.mtbf",
+      "glossary.mttr"
+    ]
+  },
+  {
+    "matchSubstring": "false positive",
+    "vertical": "Manufacturing",
+    "response": "PdM false positives are expensive — a spurious 'critical' alert on a Class-A line can trigger a needless shutdown costing tens of thousands of dollars per hour and erode operator trust permanently. Tighten the threshold and false negatives (missed failures) increase. This is the core precision-recall trade-off, with asymmetric costs.\n\nThe 2026 playbook:\n\n1. Calibrate thresholds per asset criticality (RCM A/B/C, SAE JA1011) and per failure-mode severity tier (S1/S2/S3 aligned with IEC 61508). One global threshold is the rookie mistake.\n2. Require human reliability-engineer review on first-time fault modes for an asset class before the model is allowed to auto-create work orders in Maximo/SAP PM.\n3. Track precision *and* the absolute false-positive rate as first-class KPIs — recall alone hides this.\n4. Use cost-weighted F-beta tuning where the cost of FN >> FP for critical assets and FP >> FN for low-criticality ones.\n5. Build a champion-challenger A/B at the asset level before fleet-wide promotion; track the delta in alarm count plus operator-acknowledged-false-positive rate.\n6. Feed acknowledged false positives back into retraining as hard negatives — this is the highest-leverage source of label signal in unsupervised PdM. [REF:pm.kpi.false_positive_rate] [REF:pm.kpi.predictive_precision]",
+    "citations": [
+      "pm.kpi.false_positive_rate",
+      "pm.kpi.predictive_precision",
+      "pm.kpi.predictive_recall",
+      "pm.d.alert_threshold",
+      "pm.d.advisory_publish",
+      "glossary.autoencoder_anomaly"
+    ]
+  },
+  {
+    "matchSubstring": "ot it convergence",
+    "vertical": "Manufacturing",
+    "response": "OT/IT convergence — bridging plant-floor control systems (PLC, SCADA, DCS) with enterprise data platforms (cloud lakehouse, dbt, BI) — is the single biggest delivery risk for a PdM rollout. The Purdue Model says L0 (sensors) and L1 (PLCs) must be isolated from L3-L4 (MES, ERP); IEC 62443 codifies how the bridging is done.\n\nThe practical pattern:\n\n1. OPC UA aggregating server in an OT DMZ — collects from Siemens S7 (PROFINET), Rockwell ControlLogix (EtherNet/IP), legacy Modbus drives, plus retrofit MQTT/Sparkplug B wireless. Speaks one north-bound dialect: OPC UA.\n2. Unidirectional data diode (Waterfall Security, Owl, Fend) where IT-rated security requires zero return path.\n3. Edge gateway (Aveva PI Adapter, GE Edge, Azure IoT Edge) that batches into Kafka/Kinesis with Sparkplug-B-style asset-aware payloads.\n4. ISA-95 hierarchical tag dictionary maintained as the canonical asset identifier. Vendor alias tables crosswalk to the canonical asset_id at ingest; un-mapped tags are quarantined.\n5. Edge-vs-cloud model split — small autoencoder at the edge for sub-100ms protective trips; richer LSTM/Transformer in the cloud for fleet-wide RUL and fault classification.\n\nAdvisories return as out-of-band CMMS work orders (Maximo OSLC, SAP PM IDoc), never as direct setpoints — the safety boundary is preserved.",
+    "citations": [
+      "glossary.opc_ua",
+      "glossary.scada",
+      "glossary.plc",
+      "glossary.historian",
+      "src.aveva_pi",
+      "src.siemens_s7_plc",
+      "src.rockwell_controllogix"
+    ]
+  },
+  {
+    "matchSubstring": "opc ua vs mqtt",
+    "vertical": "Manufacturing",
+    "response": "OPC UA and MQTT/Sparkplug B sit at different layers of the OT-IT stack — most PdM-grade plants run both, not one or the other.\n\nOPC UA (IEC 62541) is the typed, vendor-neutral industrial protocol. Strongly modeled information (Companion Specs like PA-DIM, Robotics, Machinery), PKI mutual-TLS auth, deterministic time-stamping, server-discovery via reverse-connect. Native on most modern PLCs (Siemens SIMATIC S7-1500, Rockwell ControlLogix via add-on, Beckhoff TwinCAT). The default OT-IT bridge protocol in greenfield: an OPC UA aggregating server in the DMZ collects from every PLC vendor and speaks one north-bound dialect.\n\nMQTT v5 (with Sparkplug B on top) is the lightweight pub/sub protocol. Bandwidth-efficient — single TCP socket, retained messages, QoS 0/1/2, Last-Will-and-Testament for connection state. Sparkplug B layers on asset-aware payloads (NBIRTH/DBIRTH/NDATA/DDATA), unified namespace, and store-and-forward semantics. The default for retrofit wireless sensors (Augury, SKF wireless), edge-to-cloud telemetry over cellular, and any case where bandwidth or battery matters.\n\nPractical pattern at a Tier-1 plant:\n• Wired control telemetry → OPC UA from PLCs → DMZ aggregator → historian (Aveva PI) → cloud lakehouse.\n• Retrofit wireless / battery sensors → Sparkplug B over MQTT → edge broker (HiveMQ, EMQ X) → Kafka → cloud.\n• Both feed the same ISA-95 hierarchical tag dictionary, with vendor-alias crosswalks resolving to a canonical asset_id at ingest. [REF:glossary.opc_ua] [REF:glossary.mqtt]",
+    "citations": [
+      "glossary.opc_ua",
+      "glossary.mqtt",
+      "glossary.historian",
+      "src.aveva_pi",
+      "src.augury",
+      "src.siemens_s7_plc"
+    ]
+  },
+  {
+    "matchSubstring": "time-series predictive maintenance",
+    "vertical": "Manufacturing",
+    "response": "Time-series modeling for PdM is hard for reasons that don't show up in textbook ML benchmarks. The real-world frictions:\n\n1. Label sparsity. A given asset class may see 1-5 failures per year. The negative class outweighs positives 100,000:1. Supervised classifiers need clever sampling (negative subsampling, time-windowed survival framing) or unsupervised back-ends (autoencoder reconstruction error, isolation forest, one-class SVM).\n2. Regime shift. Plants change setpoints, raw-material grades, ambient conditions. A model trained in summer mis-predicts in winter. Mitigation: condition-on-regime features (operating mode, ambient temp, throughput) and continuous data drift monitoring with retraining triggers.\n3. Sensor drift. Vibration accelerometers age, RTDs decalibrate, oil sensors clog. Model precision degrades slowly over months — the drift itself can look like an incipient failure signal. Mitigation: per-sensor stuck-at / flatline / range-violation DQ rules; weight features by quality_code at inference.\n4. Sampling-rate cliff. Vibration FFT at 25 kHz emits 2 GB/hour/sensor; a 5,000-channel plant at 1-second cadence emits ~430M points/day. Storage tiering policy (raw FFT 30 days, minute aggregates 7 years) trades model retraining flexibility for cost.\n5. Late and out-of-order data. Historian batches arrive hours-to-days late after WAN outages; features must accept retro-corrections without restating closed work orders. Use bi-temporal joins (valid_time vs transaction_time) at the feature-store boundary.\n6. Cross-asset transfer. A bearing model from one pump fleet doesn't carry directly to another. Survival analysis (Cox PH, DeepSurv) with covariates and physics-informed neural networks help; canonical failure_mode taxonomy is required for any cross-fleet aggregation.\n7. Cost-asymmetric thresholds. FN cost (a missed Class-A failure) >> FP cost (a needless alert) for critical assets, and the reverse for low-criticality assets. One global threshold is the rookie mistake. [REF:pm.kpi.rul_prediction_error] [REF:pm.kpi.false_positive_rate]",
+    "citations": [
+      "pm.kpi.rul_prediction_error",
+      "pm.kpi.false_positive_rate",
+      "pm.kpi.predictive_precision",
+      "glossary.autoencoder_anomaly",
+      "glossary.golden_window",
+      "glossary.spectral_analysis"
+    ]
+  },
+  {
+    "matchSubstring": "kpis matter for trade promotion management",
+    "vertical": "CPG",
+    "response": "A CPG trade-promotion org tracks fourteen KPIs that map straight to its ten recurring decisions:\n\n1. Trade Spend % — sum(trade_spend) ÷ sum(gross_sales). Industry benchmark 12-22%; the headline funding-discipline metric. [REF:tpm.kpi.trade_spend_pct]\n2. Promo ROI — (incremental_gross_profit − trade_spend) ÷ trade_spend. Target ≥1.0; below zero the promo destroyed margin. [REF:tpm.kpi.promo_roi]\n3. Deduction Rate — open_deductions ÷ invoiced_revenue. Healthy 2-4%; spikes flag broken settlement or unmatched promo claims. [REF:tpm.kpi.deduction_rate]\n4. Net Promotion Effectiveness — incremental_units ÷ promotional_units. The cleanest signal for true incrementality. [REF:tpm.kpi.net_promotion_effectiveness]\n5. Incremental Lift % — (promo_period_units − baseline_units) ÷ baseline_units. [REF:tpm.kpi.incremental_lift]\n6. Forward-Buy Inventory (weeks of supply) — the cap that prevents post-promo baseline drain. [REF:tpm.kpi.forward_buy_inventory_weeks]\n7. Display Compliance % — gates pay-for-performance funds. [REF:tpm.kpi.display_compliance_pct]\n8. Pay-for-Performance % — committed spend that paid out only on verified compliance. [REF:tpm.kpi.pay_for_performance_pct]\n9. Distribution Coverage (%ACV), On-Shelf Availability %, Perfect Store Score, Retailer Score-card (JBP), Trade Stock Build %, and Baseline Volume round out the dashboard. [REF:tpm.kpi.distribution_coverage] [REF:tpm.kpi.on_shelf_availability_pct] [REF:tpm.kpi.perfect_store_score] [REF:tpm.kpi.retailer_scorecard]\n\nThe decisions these feed: promo calendar lock, tactic mix (off-invoice vs scan-down vs bill-back vs MCB), discount depth, fund allocation across accounts, deduction dispute, forward-buy cap, display credit, kill/pull-forward, new-item slotting, and cannibalization guardrails.",
+    "citations": [
+      "tpm.kpi.trade_spend_pct",
+      "tpm.kpi.promo_roi",
+      "tpm.kpi.deduction_rate",
+      "tpm.kpi.net_promotion_effectiveness",
+      "tpm.kpi.incremental_lift",
+      "tpm.kpi.forward_buy_inventory_weeks",
+      "tpm.kpi.display_compliance_pct",
+      "tpm.kpi.pay_for_performance_pct",
+      "tpm.kpi.distribution_coverage",
+      "tpm.kpi.on_shelf_availability_pct",
+      "tpm.kpi.perfect_store_score",
+      "tpm.kpi.retailer_scorecard"
+    ]
+  },
+  {
+    "matchSubstring": "promo roi formula",
+    "vertical": "CPG",
+    "response": "Promo ROI in CPG trade promotion management is defined as:\n\n  Promo ROI = (incremental_gross_profit − trade_spend) ÷ trade_spend\n\nThree numbers, three pitfalls.\n\n• incremental_gross_profit — depends on the baseline model you trust. Circana Unify, NielsenIQ Connect, T-Pro Predictive, and an in-house GLM/ML will disagree by 5-30% on the no-promo counterfactual; a fair ROI persists all baselines side-by-side with model_name + model_version and locks one canonical policy per account × category with sign-off. [REF:tpm.kpi.baseline_volume]\n• trade_spend — must include off-invoice + scan-down + bill-back + MCB + slotting + display funds + pay-for-performance accruals. The reconciliation gap between planned (SAP TPM) and actual (SAP S/4 SD/FI deductions, credit memos, MCB cheques) is where ROI calculations quietly break.\n• Both numbers should be net of cannibalization and halo, evaluated at the brand-basket grain. A 2-for-$5 promo on a 12-pack that cannibalizes the 6-pack should not get credit for the 12-pack lift in isolation.\n\nTypical CPG target is Promo ROI ≥ 1.0; a 'hero' promotion runs 2.0+; a structural under-performer (forward-buy heavy with no pull-through) lands below zero. [REF:tpm.kpi.promo_roi]",
+    "citations": [
+      "tpm.kpi.promo_roi",
+      "tpm.kpi.baseline_volume",
+      "tpm.kpi.incremental_lift",
+      "tpm.d.discount_depth",
+      "tpm.d.tactic_mix"
+    ]
+  },
+  {
+    "matchSubstring": "detect deduction leakage",
+    "vertical": "CPG",
+    "response": "Deduction leakage — retailer chargebacks that quietly inflate trade rate because they were paid without being matched to a promotion — is the single largest controllable margin leak in CPG.\n\nDetection pattern:\n\n1. Match every deduction line item to a tactic_id. Walmart issues lump-sum deductions of $200-500k that cover 50-80 SKUs across 4-12 weeks; auto-matching uses a probabilistic matcher (BluePlanner Live Trade Management, Vistex Match Engine) with confidence scores. [REF:src.blueplanner] [REF:src.vistex_tpm]\n2. Track the unmatched residual. Any deduction with no tactic_id after 30 days lands in the 'unmapped trade' bucket — this is the leakage pool. Aim < 5% of total deductions.\n3. Aging rule. Open deductions > 60 days aging on validated tactics are dispute-eligible; > 120 days they fall off the dispute window and become permanent leakage.\n4. Validation evidence chain. For pay-for-performance deductions, the evidence is a display photo / scan-flag / audit log in a unified compliance event log keyed by (outlet_id, tactic_id, week_start). Missing evidence ⇒ withhold. [REF:tpm.kpi.pay_for_performance_pct]\n5. Score-card surfacing. Deduction Rate (open_deductions ÷ invoiced_revenue) at account × promo grain. Spikes above the 2-4% healthy band trigger an analyst-review queue. [REF:tpm.kpi.deduction_rate]\n\nThe operational unit owning this: Deductions Manager + Trade Spend Analyst, escalating to Finance Controller (Trade) for write-off authorization.",
+    "citations": [
+      "tpm.kpi.deduction_rate",
+      "tpm.kpi.pay_for_performance_pct",
+      "tpm.d.deduction_dispute",
+      "src.blueplanner",
+      "src.vistex_tpm"
+    ]
+  },
+  {
+    "matchSubstring": "scan-down vs off-invoice",
+    "vertical": "CPG",
+    "response": "Off-invoice and scan-down are two of the four canonical trade-promo settlement methods (alongside bill-back and MCB).\n\nOff-Invoice — the discount is applied as a per-case allowance directly on the manufacturer's invoice at ship time. Cash is the simplest treatment; no reconciliation is needed because the discount is netted on the invoice itself. Downsides: zero performance gate (you fund the discount whether the retailer displays/features or not), and it creates forward-buy exposure — retailers buy 10 weeks of supply during the promo window and drain shelves at full price afterwards. [REF:tpm.kpi.trade_stock_build_pct]\n\nScan-Down — the manufacturer credits the retailer for each promoted unit actually scanned at point-of-sale during the promo window. Reconciliation comes from EDI 852 / Circana / NielsenIQ scan feeds. Upside: ties spend to actual consumer movement, almost no forward-buy exposure. Downside: 30-90 day cash delay, scan-data scope mismatch (EDI 852 covers a subset of stores; Circana/NielsenIQ project at higher latency), and elevated dispute rate when retailer scan totals disagree with manufacturer auditor scan totals. [REF:tpm.kpi.deduction_rate]\n\nThe decision: prefer scan-down for hero SKUs and accounts where consumer pull-through is the question; use off-invoice for everyday-low-price commitments and accounts with clean compliance history; use bill-back when pay-for-performance gating is required; use MCB when a wholesaler is involved between you and the retailer. [REF:tpm.d.tactic_mix]",
+    "citations": [
+      "tpm.d.tactic_mix",
+      "tpm.kpi.trade_stock_build_pct",
+      "tpm.kpi.deduction_rate",
+      "tpm.kpi.pay_for_performance_pct"
+    ]
+  },
+  {
+    "matchSubstring": "forward-buy",
+    "vertical": "CPG",
+    "response": "Forward buy (also called trade loading or pre-buy) is the retailer's deliberate ordering of additional inventory during a promo window to lock in the discount and drain shelves at full price afterwards. It is the classic source of CPG bullwhip — inflated short-term shipments followed by depressed post-promo baseline.\n\nTwo KPIs guard against it:\n\n• Trade Stock Build % — (forward_buy_units − normal_purchase_units) ÷ normal_purchase_units. Captures the order-volume uplift attributable to forward-buy, not real consumer movement. [REF:tpm.kpi.trade_stock_build_pct]\n• Forward-Buy Inventory (weeks of supply) — forward_buy_units ÷ weekly_baseline_units. Set a hard cap (typically 4-6 weeks) per account per promo so the promotion does not drain too many weeks of baseline. [REF:tpm.kpi.forward_buy_inventory_weeks]\n\nThe downstream distortion that forward-buy creates in baseline forecasting is itself a data-quality problem: the next-period baseline model interprets the post-promo draw-down as decay and silently lowers future plan targets. The fix: tag inventory weeks downstream of a known promo as 'forward-buy adjusted', re-train baselines on a pre-promo window only, and surface trade_stock_build_pct as a guardrail on every plan. The decision that uses these signals is the Forward Buy Cap [REF:tpm.d.forward_buy_cap].",
+    "citations": [
+      "tpm.kpi.trade_stock_build_pct",
+      "tpm.kpi.forward_buy_inventory_weeks",
+      "tpm.d.forward_buy_cap",
+      "tpm.kpi.baseline_volume"
+    ]
+  },
+  {
+    "matchSubstring": "edi 852",
+    "vertical": "CPG",
+    "response": "EDI 852 (ASC X12 Product Activity Data) is the weekly POS movement and on-hand inventory feed retailers send manufacturers. It's the early-signal feed for in-flight promo monitoring — typically arrives 2-5 days after week-close, vs the 8-week latency on Circana / NielsenIQ syndicated panels.\n\nWhat it carries: SKU (GTIN-14), store/banner, week_start_date, units_sold, dollars_sold, on_hand_units, plus optional on_promo / feature / display / TPR flags. Cadence varies wildly — Walmart sends daily, Kroger weekly, regional grocers monthly, with frequent late files. The parser must reconcile partial weeks back-fill and tag every row with source_doc so downstream lift_observation knows whether to use 852 for in-flight or panel data for closeout. [REF:tpm.kpi.on_shelf_availability_pct]\n\nThe companion: EDI 867 (Product Transfer & Resale Report) reports sell-through to consumer — used to verify scan-down claims and reconcile sell-through. EDI 820 (Payment Order/Remittance) carries the deduction settlement lines that close the loop on funded spend. [REF:tpm.kpi.deduction_rate]\n\nIntegration architecture: AS2 (PKI auth) from the retailer's VAN to a SFTP landing zone, parsed by an X12 reader (typically Sterling B2B, IBM Sterling, or a Spark-on-Iceberg pipeline), normalized into trade_promotion_management.retailer_scan_data with source_doc tagged so downstream models can blend properly.",
+    "citations": [
+      "tpm.kpi.on_shelf_availability_pct",
+      "tpm.kpi.deduction_rate",
+      "src.retailer_edi_van"
+    ]
+  },
+  {
+    "matchSubstring": "customer loyalty and cdp",
+    "vertical": "Retail",
+    "response": "A modern retail Customer Loyalty + CDP stack stitches four jobs into one analytical fabric: identity resolution, segmentation, lifecycle orchestration, and loyalty program management.\n\nThe vendor stack you'll see in a Tier-1 retailer:\n• Identity-resolution CDPs — Salesforce Data Cloud (Genie), Adobe RT-CDP, Treasure Data, mParticle, Tealium AudienceStream, Twilio Segment, Amperity. Amperity is the gold standard for probabilistic stitching at retail scale; Salesforce/Adobe are dominant when the org already runs that suite.\n• Activation / orchestration — Klaviyo (owned-channel CRM), Braze (cross-channel + Liquid), Iterable, Cordial, BlueShift, Twilio Engage.\n• Warehouse-native variants — ActionIQ + reverse-ETL (Hightouch / Census) for orgs that want the warehouse to remain the source of truth.\n• Loyalty engines — Eagle Eye AIR (POS + online coupons), Annex Cloud, Comarch (telco + retail), LoyaltyLion + Smile.io for Shopify.\n\nHeadline KPIs: CLV, NPS, Repeat Purchase Rate, Active Member %, Reward Redemption Rate, Identity Match Rate (deterministic + probabilistic), Churn Rate, Member-Driven Revenue %. The hardest data problem is identity resolution — deterministic-only is precise but recalls only ~30% of anonymous web sessions; probabilistic raises recall but pollutes golden records below a tuned confidence threshold. [REF:cdp.kpi.clv] [REF:cdp.kpi.identity_match_rate_det]",
+    "citations": [
+      "cdp.kpi.clv",
+      "cdp.kpi.nps",
+      "cdp.kpi.loyalty_member_pct",
+      "cdp.kpi.identity_match_rate_det",
+      "cdp.kpi.member_driven_revenue_pct",
+      "src.salesforce_data_cloud",
+      "src.adobe_rtcdp",
+      "src.amperity"
+    ]
+  },
+  {
+    "matchSubstring": "identity resolution",
+    "vertical": "Retail",
+    "response": "Identity resolution is the operation that takes a flood of observed identifiers — hashed emails, hashed phones, loyalty IDs, device IDs, ad IDs (MAID), cookies, postal addresses, wallet passes — and resolves them to a single canonical customer_master record.\n\nTwo techniques, mostly run together:\n\n1. Deterministic — merge on a shared, high-confidence identifier (authenticated login event, loyalty_id scan at POS, hashed email match across two source systems). Precision near 1.0. Recall capped by the share of sessions that actually authenticate — typically <30% of anonymous web traffic ever signs in.\n\n2. Probabilistic — merge on inferred signals (IP, user agent, device fingerprint, behavioral pattern, postal proximity) above a tuned confidence threshold. Recall climbs into the 60-90% range, but every merge below threshold polluthes the golden record downstream.\n\nThe production pattern: hybrid. Deterministic edges always merge. Probabilistic edges merge only above ~0.85 confidence. Persist match_method and match_confidence per identity_link row so downstream BI can filter (e.g. CLV computed only from confidence ≥ 0.90 customers).\n\nVendor split: Amperity ships ML-stitch as their core product, Adobe RT-CDP and Salesforce Data Cloud bundle it, Tealium and Segment lean deterministic. The hardest org problem isn't picking a vendor — it's tuning the merge confidence threshold and surfacing low-confidence merges for human review every week. [REF:cdp.kpi.identity_match_rate_det] [REF:cdp.kpi.identity_match_rate_prob]",
+    "citations": [
+      "cdp.kpi.identity_match_rate_det",
+      "cdp.kpi.identity_match_rate_prob",
+      "cdp.d.identity_strategy",
+      "cdp.d.golden_record_conflict",
+      "glossary.identity_graph",
+      "glossary.golden_record",
+      "src.amperity",
+      "src.salesforce_data_cloud"
+    ]
+  },
+  {
+    "matchSubstring": "loyalty tier",
+    "vertical": "Retail",
+    "response": "Loyalty tier design is a margin-versus-aspiration tradeoff. Set thresholds too aggressive and the bulk of members stay at the bottom tier and disengage; set them too soft and the program degenerates into a universal discount without aspirational pull.\n\nThe core questions you answer at design time:\n• What's the threshold metric? Spend (Sephora's Beauty Insider model) or earned points (most airlines, most generic retail). Spend is simpler but invites discount-arbitrage; points let you weight categories.\n• Anniversary vs rolling 12-month? Anniversary is operationally cheaper; rolling drives smoother engagement and reduces seasonal pull-forward.\n• Tier benefits? Earn multipliers (1.25×, 1.5×, 2× per tier), free shipping, early access, exclusive products, partner perks, status-only benefits (concierge, lounge).\n• Tier-distribution target? Most retailers target ~70/20/8/2 (bronze/silver/gold/platinum) — top tier should feel selective.\n\nThe data side: simulate the proposed tier distribution against the last 24 months of customer-spend data before changing thresholds. A/B test mechanic changes on a held-out cohort. Track tier-progression rate (% advancing per period) and tier-downgrade rate as headline KPIs. Persist tier_anchor_date so anniversary-based windows are auditable. Reconcile the points_ledger to the GL nightly — points liability under ASC 606 sits on the balance sheet. [REF:cdp.kpi.loyalty_member_pct] [REF:cdp.kpi.member_driven_revenue_pct]",
+    "citations": [
+      "cdp.kpi.loyalty_member_pct",
+      "cdp.kpi.active_member_pct",
+      "cdp.kpi.member_driven_revenue_pct",
+      "cdp.kpi.reward_redemption_rate",
+      "cdp.d.loyalty_tier_design",
+      "cdp.d.earn_burn_ratio",
+      "glossary.loyalty_tier",
+      "glossary.points_ledger"
+    ]
+  },
+  {
+    "matchSubstring": "consent management",
+    "vertical": "Retail",
+    "response": "Consent management for a CDP is harder than the marketing layer makes it sound, because every record needs a defensible lawful basis and a way to propagate suppressions within hours.\n\nThe scaffolding:\n\n1. Persist consent_record as a legal book of record — append-only, IAB TCF v2.2 or GPP-encoded consent_string, purpose_codes JSON, jurisdiction (EU_GDPR / UK_GDPR / US_CCPA / US_CPRA / CA_PIPEDA / BR_LGPD), and consent_basis (consent / contract / legitimate_interest / legal_obligation per GDPR Art. 6).\n\n2. Make consent state a first-class join in every audience query. A segment build that ignores opt-out state is one regulator complaint away from a fine.\n\n3. On right-to-delete (GDPR Art. 17, CCPA §1798.105) — flag the customer_master status as 'right_to_be_forgotten', stop new event ingestion against the customer_id, and broadcast a suppression webhook to every downstream destination (Meta CAPI, Google audiences, Klaviyo, Braze, Iterable). The 30-day clock is hard, not soft.\n\n4. Operate brand-scoped CDPs within a holding company portfolio. Cross-brand sharing needs explicit, purpose-coded consent; brand-level opt-outs must be honored separately from group-level. Document the data-flow map for Art. 30 records of processing.\n\nVendor capability gap: most CDPs have consent storage; very few enforce consent state on every audience query at runtime. Build the enforcement layer yourself if needed.",
+    "citations": [
+      "cdp.d.consent_handling",
+      "cdp.d.data_sharing_brands",
+      "glossary.consent_record",
+      "glossary.opt-in_/_opt-out"
+    ]
+  },
+  {
+    "matchSubstring": "rfm segmentation",
+    "vertical": "Retail",
+    "response": "RFM (Recency-Frequency-Monetary) is the workhorse segmentation method for retail because it explains a large share of CLV variance with three columns and a few SQL window functions.\n\nThe canonical recipe:\n• Recency — days since last purchase, bucketed into quintiles (1=worst, 5=best). NTILE(5) OVER (ORDER BY last_purchase_ts DESC).\n• Frequency — number of orders in the trailing 12 months, quintile-bucketed.\n• Monetary — net spend in the trailing 12 months, quintile-bucketed.\n\nThe 125 RFM cells collapse into 9-11 nameable segments — Champions (5/5/5), Loyal Customers (4-5/4-5/3-5), Potential Loyalists (3-5/2-3/2-3), New Customers (5/1/1), At Risk (1-2/4-5/4-5), Cannot Lose (1-2/4-5/4-5 with high CLV history), Hibernating, Lost — each with a recommended lifecycle treatment.\n\nThe data-platform pieces: refresh nightly on a customer-grain table; track segment_membership entered_at + exited_at so move-rate is computable; alert on segment-distribution shifts that exceed historical noise. Used downstream as the segmentation_strategist's primary lens before predictive (lookalike, propensity) models are layered on. Most CDPs (Salesforce Data Cloud, Adobe RT-CDP, Treasure Data, Amperity, ActionIQ) ship RFM as a built-in feature. [REF:cdp.kpi.rfm_distribution_health] [REF:cdp.kpi.segment_move_rate]",
+    "citations": [
+      "cdp.kpi.rfm_distribution_health",
+      "cdp.kpi.segment_move_rate",
+      "cdp.kpi.clv",
+      "cdp.d.segment_design",
+      "glossary.rfm_(recency-frequency-monetary)"
+    ]
+  },
+  {
+    "matchSubstring": "revenue growth management",
+    "vertical": "CPG",
+    "response": "Revenue Growth Management (RGM) is the CPG commercial discipline that engineers net revenue across the gross-to-net waterfall — pulling four levers in concert: Price Pack Architecture (PPA), Mix, Promotion Strategy, and Trade Investment. It sits one level above Trade Promotion Management (which is tactical) and one level above Pricing & Promotions (which is retail-facing).\n\nThe RGM org typically owns:\n• PPA: the structured pack ladder (entry / mainstream / premium / value / super) and the per-unit gap between tiers. [REF:rgm.kpi.mix_index]\n• Mix Management: steering channel × pack × tier mix toward higher-margin packs via assortment, distribution, and trade allocation. [REF:rgm.kpi.pack_margin_mix_pct]\n• Promo Strategy: mechanic + depth + duration per account × pack × week, scored on Promo Effectiveness Index. [REF:rgm.kpi.promo_effectiveness_index]\n• Trade Investment Optimization: annual fund allocation across customers, brands, tiers — accrual vs lump-sum vs pay-for-performance. [REF:rgm.kpi.trade_spend_roi]\n• Net Revenue Management: closing the gross-to-net waterfall — list price, off-invoice, rebates, scan-down, bill-back, MCB, slotting, MDF — into a reconciled net revenue under IFRS 15.\n\nVendor stack: Vistex (settlement) + Pricefx (price optimization) + Model N (channel incentive) + PROS RGM (B2B guidance) + SAP CCM (condition contracts) + Anaplan PM (connected planning) + Periscope by McKinsey / BCG OS RGM toolkit (analytics consulting) + Zilliant / Vendavo (B2B price/margin) + Plytix PIM + Circana / NielsenIQ (mix measurement).\n\nThe orgs that run RGM well consistently outperform the category by 200-400 bps of net revenue growth — most of which comes from mix shift, not list price moves.",
+    "citations": [
+      "rgm.kpi.net_revenue_growth_pct",
+      "rgm.kpi.mix_index",
+      "rgm.kpi.price_realization",
+      "rgm.kpi.promo_effectiveness_index",
+      "src.vistex_revopt",
+      "src.pricefx_suite",
+      "src.modeln_revcloud"
+    ]
+  },
+  {
+    "matchSubstring": "price pack architecture",
+    "vertical": "CPG",
+    "response": "Price Pack Architecture (PPA) is the structured set of pack sizes, formats, and price points across a brand portfolio engineered to steer consumers up (mix-up) or down (defend against down-trading) within and across channels. The strategic centerpiece of CPG Revenue Growth Management.\n\nThe canonical ladder has five tiers:\n• entry — small, single-serve or take-home single (test-the-brand pack)\n• mainstream — the volume anchor (6-pack / 12-pack)\n• premium — higher-margin format (glass bottle, gift box, limited edition)\n• value — bigger pack at a sub-pro-rata per-unit (the 18-count value pack)\n• super — club channel format (24-, 36-, 48-count)\n\nThree decisions PPA encodes:\n1. Pack-tier gap — the per-unit price spacing between adjacent tiers. Too small and you cannibalize; too large and you create down-trade traps.\n2. Channel ladder — the per-unit price differential across club / mass / grocery / drug / convenience / ecom. Breaking the ladder (a club exclusive at a lower per-unit) creates consumer arbitrage that's expensive to repair. [REF:rgm.d.channel_ladder]\n3. Innovation pack-tier placement — a new SKU launches into a chosen tier; placing it wrong cannibalizes the existing mainstream or fails to extract premium pricing.\n\nThe KPI: Mix Index (premium share of volume) [REF:rgm.kpi.mix_index] and Pack Margin Mix % [REF:rgm.kpi.pack_margin_mix_pct]. The data model: pack table separate from product, with ppa_tier and ladder_rank as first-class columns.\n\nVendor support: Periscope by McKinsey RGM apps + BCG OS RGM toolkit lead in pack-ladder analytics; Pricefx PriceOptimizer and Vistex execute the resulting ladder; SAP CCM persists the condition contracts that derive list prices per tier.",
+    "citations": [
+      "rgm.kpi.mix_index",
+      "rgm.kpi.pack_margin_mix_pct",
+      "rgm.d.pack_architecture",
+      "rgm.d.channel_ladder",
+      "src.periscope_mckinsey",
+      "src.bcg_os_rgm"
+    ]
+  },
+  {
+    "matchSubstring": "gross-to-net waterfall",
+    "vertical": "CPG",
+    "response": "The gross-to-net (GTN) waterfall is the structured ladder of deductions a CPG manufacturer applies between gross sales (units × list price) and reported net revenue. Under IFRS 15, every line in the waterfall is a variable-consideration estimate that must be accrued at sale time and trued-up as it settles.\n\nCanonical lines, top-to-bottom:\n1. Gross Revenue — units × list price (the headline number sales loves to talk about)\n2. − Off-Invoice Allowance — promo discount applied at ship time\n3. − Scan-Down Redemption — credit per unit scanned at POS\n4. − Bill-Back — retailer-claimed performance funds\n5. − Manufacturer Chargeback (MCB) — credit to wholesaler / distributor passed through to retailer\n6. − Rebate Accrual — back-end conditional rebates (volume tiers, JBP)\n7. − Slotting Fee Amortization — up-front slotting paid for a new SKU, amortized over 12 months\n8. − Marketing Development Funds (MDF) — co-op marketing dollars committed to the account\n9. − Returns + Damages provisions\n= Net Revenue\n\nThree pain points the warehouse has to solve:\n• System-flow reconciliation — list price (SAP CCM), deal terms (Vistex / Pricefx), scan-down (EDI 820 remittance), MCB (Model N), slotting (Finance). Five+ system flows that must reconcile to a single per-account × per-pack × per-period net revenue. [REF:rgm.kpi.price_realization]\n• Bi-temporal binding — a deal approved May 15 binds to the list price effective at deal-creation; a shipment May 28 binds to ship-time price. If list changes May 25, the net revenue depends on which price the system bound to.\n• Accrual vs settlement gap — the period of 60-180 days between accrual booking and final settlement makes the waterfall a moving target that finance and commercial argue about every close.\n\nThe RGM dashboard surfaces this as Price Realization (net / gross) at the SKU × account × period grain. [REF:rgm.kpi.net_revenue_per_unit]",
+    "citations": [
+      "rgm.kpi.price_realization",
+      "rgm.kpi.net_revenue_per_unit",
+      "rgm.d.gross_to_net_accrual",
+      "src.sap_s4_rm_ccm",
+      "src.vistex_revopt",
+      "src.modeln_revcloud"
+    ]
+  },
+  {
+    "matchSubstring": "mix shift",
+    "vertical": "CPG",
+    "response": "Mix shift is the change in the share of premium vs mainstream vs value packs (or channels, brands, tiers) over a period. It's the dimension of net-revenue variance that's hardest to attribute cleanly because mix interacts with both volume and price.\n\nThe canonical variance decomposition is volume × price × mix:\n• Volume Variance = (actual_units − plan_units) × plan_net_price [REF:rgm.kpi.volume_variance]\n• Price Variance = (actual_net_price − plan_net_price) × actual_units [REF:rgm.kpi.price_variance]\n• Mix Variance = Σ((actual_share − plan_share) × (sku_net_price − portfolio_net_price) × total_units) [REF:rgm.kpi.mix_variance]\n\nThe math breaks in three ways:\n1. SKU crosses PPA tier mid-period — a re-pack moves a SKU from mainstream to premium; naive subtraction parks a residual in 'other' that's unintelligible to the CCO.\n2. New pack launches — Innovation Sales % over-credits if cannibalization isn't netted; under-credits if it folds cannibalization in too broadly.\n3. Channel ladder shifts — moving volume from grocery to club mechanically improves mix on paper but may destroy margin.\n\nThe canonical fix: compute mix variance at the segment_id grain (channel × tier × category); hold plan_share and actual_share as time-stamped policy; rebuild waterfall daily; surface residual as an explicit 'unattributed mix' bucket with drill-through to the offending SKUs.\n\nVendor stack: Periscope by McKinsey and BCG OS RGM toolkit are the dominant analytics vendors for mix-attribution work; Anaplan PM persists the plan_share policy; Circana Unify / NielsenIQ Connect provide the syndicated mix denominators at 4-8 week latency.",
+    "citations": [
+      "rgm.kpi.mix_index",
+      "rgm.kpi.mix_variance",
+      "rgm.kpi.volume_variance",
+      "rgm.kpi.price_variance",
+      "rgm.d.mix_steer",
+      "src.periscope_mckinsey",
+      "src.circana_rgm"
+    ]
+  },
+  {
+    "matchSubstring": "price realization",
+    "vertical": "CPG",
+    "response": "Price Realization is the share of published wholesale list price that actually lands in the manufacturer's books after the gross-to-net waterfall runs.\n\nFormula:\n  Price Realization = Σ(net_price × units) / Σ(list_price × units)\n\nA Price Realization of 0.78 means 22% of gross revenue was given back as trade lines (off-invoice + scan-down + bill-back + MCB + rebate accrual + slotting amortization + MDF + returns). The 22% is the 'GTN leakage' the RGM org seeks to compress without losing distribution. [REF:rgm.kpi.price_realization]\n\nThree drivers move it:\n1. Trade tactic mix — off-invoice and BOGO compress realization more than conditional rebates and bill-back (pay-for-performance gating).\n2. Channel mix — club channel has lower realization than grocery (deeper per-unit discounting to support super packs).\n3. List price changes — a list-price increase mechanically improves realization for shipments at unchanged trade terms; the retailer eventually negotiates back via larger off-invoice asks.\n\nThe RGM playbook moves Price Realization through:\n• Deal-floor enforcement (rgm.d.deal_floor) — reject deals below the per-pack floor at workflow approval.\n• Pay-for-performance shift — move trade dollars from off-invoice (1.0 leakage) to conditional rebates (~0.7 effective leakage).\n• Pack mix toward premium tiers — premium packs run higher realization because trade dollars are anchored to mainstream tactics.\n\nVendor surface: Vendavo Profit Analyzer is the industry-standard tool for price-waterfall visualization; Vistex Match Engine and Model N close the settlement loop that feeds the realization calculation back to the dashboard.",
+    "citations": [
+      "rgm.kpi.price_realization",
+      "rgm.kpi.net_revenue_per_unit",
+      "rgm.d.deal_floor",
+      "rgm.d.list_price_move",
+      "src.vendavo_profit",
+      "src.vistex_revopt"
+    ]
+  },
+  {
+    "matchSubstring": "innovation sales",
+    "vertical": "CPG",
+    "response": "Innovation Sales % measures the share of net revenue contributed by SKUs launched in the trailing 24 months. The headline pipeline-effectiveness KPI for the CCO.\n\nFormula:\n  Innovation Sales % = Σ(units_skus_launched_24m × net_price) / Σ(total_net_revenue)  [REF:rgm.kpi.innovation_sales_pct]\n\nIndustry benchmarks: a 'healthy' innovation pipeline in beverages / snacks / personal care runs 12-22% Innovation Sales %; under 8% the portfolio is stagnating; over 30% there's likely a counting issue.\n\nThe counting pitfall — three ways to misreport it:\n1. Cannibalization not netted — a value 18-count launches and pulls 60% of its volume from the mainstream 12-count. Reporting Innovation Sales gross of cannibalization over-credits the pipeline.\n2. Cannibalization basket too broad — folding in unrelated SKUs under-credits the pipeline. The fix: declare a cannibalization basket per innovation SKU at launch (default: same brand + adjacent pack tiers); compute Innovation Sales % net of basket cannibalization only.\n3. 24-month window inclusive vs exclusive — does a SKU launched exactly 730 days ago count? The standard is yes through end-of-month, then off. Persist launch_date and innovation_flag as separate columns on dim_product_rgm and re-derive nightly.\n\nThe decision Innovation Sales % feeds: greenlight / kill innovation SKUs based on forecast incremental net revenue, mix-up potential, and cannibalization tolerance. [REF:rgm.d.innovation_priority] The launch business case has to declare the cannibalization basket and tolerance up front, then close the loop in the first 12-week post-launch review.",
+    "citations": [
+      "rgm.kpi.innovation_sales_pct",
+      "rgm.d.innovation_priority",
+      "rgm.d.value_pack_intro",
+      "rgm.kpi.mix_index"
+    ]
+  },
+  {
+    "matchSubstring": "available to promise",
+    "vertical": "Retail",
+    "response": "Available-To-Promise (ATP) is the sellable inventory at a node after subtracting allocated, in-transit-out, and reserved-safety quantities. It is the number the checkout cart can confidently promise the customer in real time, and the central engineering tradeoff in distributed OMS.\n\nFormula at the position grain:\n  atp_units = on_hand_units − allocated_units − reserved_safety_units  [REF:oms.kpi.atp_accuracy]\n\nThe staleness budget is the sharp edge. Most retailers settle at 30-90 second cache TTL between a store on-hand mutation and the .com inventory cache — fine until a flash promo blows through 30s of demand at one store and the same SKU is over-promised across 100 web sessions. The mitigation pattern is a tiered ATP cache: per-node hot cache plus chain-wide aggregate, with safety reservations sized to the store's peak per-second sell rate, fed by an inventory event bus (Manhattan Active Inventory, Kafka CDC on the WMS) rather than polled snapshots. [REF:oms.d.atp_safety_stock]\n\nATP feeds the Order Promise Provider (OPP — Manhattan Active Promise, IBM Sterling Promise) which combines sourcing-rule simulation, ATP, carrier transit times, and store pick capacity to quote a delivery promise at checkout. [REF:oms.kpi.promise_vs_actual_gap]",
+    "citations": [
+      "oms.kpi.atp_accuracy",
+      "oms.kpi.inventory_visibility_unified_pct",
+      "oms.d.atp_safety_stock",
+      "oms.d.endless_aisle",
+      "src.manh_active_om",
+      "src.ibm_sterling_oms"
+    ]
+  },
+  {
+    "matchSubstring": "bopis lead time",
+    "vertical": "Retail",
+    "response": "BOPIS Lead Time (Order-to-Ready) is the elapsed minutes from order capture to the line being marked `ready_for_pickup` at the customer's chosen store. Distinct from On-Time Delivery — the SLA clock stops when the customer can collect, not when shipping arrives. [REF:oms.kpi.bopis_lead_time]\n\nFormula:\n  BOPIS Lead Time = avg(ready_for_pickup_ts − order_capture_ts)\n\nIndustry benchmarks (Manhattan / Salesforce OMS, apparel + general merch): 2-hour promise for ~70% of orders; 95th percentile under 4 hours; >24-hour tail is store-capacity breach or SKU not-found.\n\nThree levers move it:\n1. Sourcing-rule routing — bias BOPIS to stores with available pick capacity, not just the customer's nearest store; per-store throttling at the rule layer is the cleanest control. [REF:oms.d.store_capacity]\n2. Store-side pick workflow — handheld pick path optimisation; substitution UX when first-pick fails. First-Pick Fill Rate directly drives BOPIS Lead Time. [REF:oms.kpi.first_pick_fill_rate]\n3. Pickup-counter handoff — the in-store pickup scanner has to wire directly to the OMS (POS webhook). 5-15% of BOPIS orders go missing on the pickup-complete event in pre-integration deployments, leaving the line stuck in `ready_for_pickup` for days.\n\nVendor surface: Manhattan Active Omni, Salesforce OMS, Aptos ONE, and Kibo Order Management all expose store-capacity-aware BOPIS routing; Fluent Commerce's event-sourced model is particularly clean for the pickup-complete reconciliation problem.",
+    "citations": [
+      "oms.kpi.bopis_lead_time",
+      "oms.kpi.first_pick_fill_rate",
+      "oms.d.store_capacity",
+      "oms.d.sourcing_rule",
+      "src.manh_active_om",
+      "src.sf_oms"
+    ]
+  },
+  {
+    "matchSubstring": "ship from store",
+    "vertical": "Retail",
+    "response": "Ship-from-Store (SFS) fulfills a .com order out of a physical store's on-hand inventory rather than a DC. Trades higher per-pick labor cost (~$2-4 vs ~$0.40-1.20 at a high-velocity DC) for shorter zone-skip transit time and clearance pull on aging in-store stock.\n\nKPI to watch:\n  Ship-from-Store Mix % = store_sourced_lines / total_sourced_lines  [REF:oms.kpi.ship_from_store_mix]\n\nThe right target sits in a band — typically 20-35% for apparel / general merch where store-network density compresses last-mile, lower (5-15%) for hardlines / consumables where DC pick economics win. Pushing past the band starts cannibalizing in-store sell-through and trips store-associate labor productivity.\n\nThe sourcing decision (oms.d.sourcing_rule) scores candidate nodes against cost-to-serve + speed + capacity + clearance-pull weights — clearance_pull_weight is the dial that intentionally biases sourcing to stores carrying surplus aging inventory. Drain stranded inventory at the store before it becomes a markdown; the OMS rule layer is where merchandising and supply-chain economics actually meet. [REF:oms.kpi.cost_to_serve_per_channel]\n\nVendor surface: Manhattan Active Omni store fulfillment, IBM Sterling OMS store-fulfillment workflow, Salesforce OMS distributed sourcing, Aptos ONE endless-aisle + SFS, Fluent Commerce rule-based routing — all expose the rule DSL described in oms.d.sourcing_rule.",
+    "citations": [
+      "oms.kpi.ship_from_store_mix",
+      "oms.kpi.cost_to_serve_per_channel",
+      "oms.d.sourcing_rule",
+      "oms.d.dark_store_designation",
+      "src.manh_active_om",
+      "src.aptos_one"
+    ]
+  },
+  {
+    "matchSubstring": "distributed order management",
+    "vertical": "Retail",
+    "response": "Distributed Order Management (DOM) is the orchestration layer of an OMS that decides which node fulfills which order line. Inputs are inventory positions across nodes, sourcing rules, capacity, carrier costs, and customer promise; outputs are allocations and ship-from decisions.\n\nThe canonical DOM loop:\n1. Order captured → candidate nodes enumerated from ATP > 0 at each location for each line.\n2. Each candidate scored per the sourcing-rule DSL (Manhattan strategies / Sterling business rules / Fluent GraphQL rules / Salesforce OMS flows) using cost_weight, speed_weight, capacity_weight, and clearance_pull_weight on the winning rule_id.\n3. Allocation issued — order_line bound to location_id + rule_id, with estimated_cost_minor + estimated_ready_ts + estimated_delivery_ts captured.\n4. Fulfillment events (pick_started → pick_complete → pack → ship → delivered / pickup_complete) flow back through the event log; reallocation triggers if pick fails.\n\nThe central economic question DOM answers is the split-shipment tradeoff: a two-line order can be sourced from one DC for a single ship-cost or split across two stores for a faster promise. The cost-versus-promise decision is what makes or breaks per-order margin. The Order Split Rate KPI (orders with multiple shipments / multi-line orders) tracked against a per-banner target band is the right operational signal. [REF:oms.kpi.order_split_rate] [REF:oms.d.split_shipment]\n\nVendor surface: Manhattan Active Order Management, IBM Sterling OMS, Salesforce OMS, Fluent Commerce, Oracle ROMS, Kibo OMS, Aptos OMS, Deck Commerce — each implements DOM with vendor-specific rule DSLs that lose semantics on cross-vendor migration. A vendor-neutral rule registry plus a translation layer mitigates the drift.",
+    "citations": [
+      "oms.kpi.order_split_rate",
+      "oms.kpi.cost_to_serve_per_channel",
+      "oms.kpi.first_pick_fill_rate",
+      "oms.d.sourcing_rule",
+      "oms.d.split_shipment",
+      "src.manh_active_om",
+      "src.fluent_oms"
+    ]
+  },
+  {
+    "matchSubstring": "kpis does the head of omnichannel",
+    "vertical": "Retail",
+    "response": "The Head of Omnichannel tracks six headline KPIs every week:\n\n1. On-Time Delivery % — orders delivered by promise / orders delivered. The headline customer-trust signal; under 92% the executive review starts. [REF:oms.kpi.on_time_delivery]\n2. Promise vs Actual Gap — avg(actual_delivery_ts − promised_delivery_ts) in hours; the per-order leading indicator before OTD drops. [REF:oms.kpi.promise_vs_actual_gap]\n3. BOPIS Lead Time — avg(ready_for_pickup_ts − order_capture_ts) in minutes; tracks the store-side execution side of unified commerce. [REF:oms.kpi.bopis_lead_time]\n4. Ship-from-Store Mix % — store-sourced lines / total sourced lines; the per-banner economic tradeoff between fulfillment cost and last-mile speed. [REF:oms.kpi.ship_from_store_mix]\n5. ATP Accuracy — 1 − mean_abs_error(atp_promised, atp_actual_at_pick); the integrity of inventory promises across the cache tiers. [REF:oms.kpi.atp_accuracy]\n6. Cost-to-Serve per Channel — fulfillment_cost / orders by channel; the line that closes the loop between sourcing-rule weights and unit economics. [REF:oms.kpi.cost_to_serve_per_channel]\n\nThese feed the central operating decisions: sourcing-rule design (oms.d.sourcing_rule), ATP safety-stock policy (oms.d.atp_safety_stock), split-shipment policy (oms.d.split_shipment), promise-window calibration (oms.d.promise_window), store-capacity throttling (oms.d.store_capacity), and dark-store designation (oms.d.dark_store_designation).",
+    "citations": [
+      "oms.kpi.on_time_delivery",
+      "oms.kpi.promise_vs_actual_gap",
+      "oms.kpi.bopis_lead_time",
+      "oms.kpi.ship_from_store_mix",
+      "oms.kpi.atp_accuracy",
+      "oms.kpi.cost_to_serve_per_channel"
+    ]
+  },
+  {
+    "matchSubstring": "edi 940 vs 945",
+    "vertical": "Retail",
+    "response": "EDI 940 and EDI 945 are the ASC X12 transaction pair that brackets the warehouse leg of the omnichannel order lifecycle.\n\nEDI 940 — Warehouse Shipping Order. Retailer-to-WMS message instructing the warehouse to ship a customer order. Carries the ship-to address, carrier/service-level selection, special handling, and per-line SKU + quantity. The OMS emits one 940 per allocation handed to a 3PL or external WMS; for in-house Manhattan / Blue Yonder WMS the equivalent is typically a Kafka / JMS event rather than a file.\n\nEDI 945 — Warehouse Shipping Advice. WMS-to-retailer confirmation of what actually shipped — serials, weights, dims, tracking number, ship date. This is the message that closes the loop on the OMS allocation status: receipt of a clean 945 moves the order_line from `packed` to `shipped` and feeds Order Cycle Time + On-Time Delivery. [REF:oms.kpi.order_cycle_time] [REF:oms.kpi.on_time_delivery]\n\nTwo less-headline but real cousins in the family:\n• EDI 943 — Warehouse Stock Transfer Shipment Advice (inter-DC transfers leaving a node).\n• EDI 944 — Warehouse Stock Transfer Receipt Advice (inter-DC transfers received at a node).\n\nAll four travel over AS2 with PKI; the operational gotcha is partner-id mismatches on the ISA/GS envelope causing silent rejects at the trading-partner gateway. Wire EDI reject codes into the dq_rules layer; a missing 945 inside the carrier-promise window is a fulfillment incident, not a data issue.",
+    "citations": [
+      "oms.kpi.order_cycle_time",
+      "oms.kpi.on_time_delivery",
+      "conn.edi_940",
+      "conn.edi_945",
+      "conn.edi_943",
+      "conn.edi_944",
+      "src.manh_wms",
+      "src.blueyonder_wms"
+    ]
+  },
+  {
+    "matchSubstring": "what is direct store delivery",
+    "vertical": "CPG",
+    "response": "Direct Store Delivery (DSD) is the channel where a CPG manufacturer's own (or distributor's) trucks bypass the retailer's DC and drop product straight at the back door of each store — beer, snacks, soft drinks, baked goods, salty snacks, DSD dairy. It collapses three roles into one visit: order writing (presell), physical delivery, and shelf execution (planogram + price tag + rotation).\n\nThe operating spine is route accounting: a Master Route is a recurring sequence of stops served on a fixed service-day pattern (MWF). Each day produces a Daily Route — that day's executed instance after Roadnet/Descartes re-optimization. At each stop the driver records cases delivered, returns, spoils, and (in deliver-mode) prints an invoice from the handheld; the customer signs an EPOD and the route settles back at the branch that night against cash + check + EFT + charge-account.\n\nThe headline economics are unit-economic: Stops/Route (productivity), Cases/Stop (drop size), Cost/Stop, and Sales/Mile. Below a drop-size threshold a stop flips from deliver-mode to presell+next-day-delivery (or off the route entirely). Above CFR (Case Fill Rate) ~98% retailers stop charging deductions. EDI 894/895 carry the inter-org wire of delivery + signed acknowledgment. [REF:dsd.kpi.cases_per_stop] [REF:dsd.kpi.case_fill_rate]",
+    "citations": [
+      "dsd.kpi.stops_per_route",
+      "dsd.kpi.cases_per_stop",
+      "dsd.kpi.drop_size_units",
+      "dsd.kpi.case_fill_rate",
+      "dsd.kpi.cost_per_stop",
+      "src.sap_dsd",
+      "src.aldata_apollo",
+      "src.trimble_roadnet"
+    ]
+  },
+  {
+    "matchSubstring": "presell vs deliver",
+    "vertical": "CPG",
+    "response": "Presell and deliver are the two operating modes of a DSD route, and the choice is the single most-frequent route-design decision a CPG ops team makes.\n\nDeliver mode (a.k.a. tel-sell-and-deliver, or full-service) — the same driver writes the order at the stop AND delivers product off the truck. One visit, one driver, faster cash. Used where drop size is high enough that the truck-load economics work (large grocery, club, mass DSD beer / soda). Cost-per-stop is high; productivity (stops/day) is low; settlement happens that night.\n\nPresell mode — an Account Sales Rep visits the store one day, writes the order on the handheld, transmits to the branch overnight; a different driver delivers next-day off a bulk truck that's pre-built to a manifest. Two visits, two people, but the delivery driver becomes a courier — 30-50 stops/day instead of 15-20. Used where drop size is too small to justify a full-service deliver call (c-store, drug, small-format grocery).\n\nThe flip rule of thumb is drop-size: under ~25 cases/stop, presell+bulk-deliver beats deliver-mode on cost-per-case; over ~40 cases/stop, deliver-mode wins on cycle time and retailer relationship. Hybrid 'merchandiser' routes layer shelf execution on top in either mode. [REF:dsd.kpi.cases_per_stop] [REF:dsd.kpi.cost_per_stop] [REF:dsd.kpi.cost_per_case]",
+    "citations": [
+      "dsd.kpi.cases_per_stop",
+      "dsd.kpi.drop_size_units",
+      "dsd.kpi.cost_per_stop",
+      "dsd.kpi.cost_per_case",
+      "glossary.presell",
+      "glossary.deliver_mode",
+      "dsd.d.presell_vs_deliver"
+    ]
+  },
+  {
+    "matchSubstring": "kpis for direct store delivery",
+    "vertical": "CPG",
+    "response": "The Director of Route Operations runs DSD off about a dozen metrics, grouped into four families:\n\nRoute productivity\n1. Stops per Route — count of stops served per route-day; target-banded by route type (deliver 15-25, presell 35-55). [REF:dsd.kpi.stops_per_route]\n2. Cases per Stop — total cases delivered ÷ stops; the drop-size lever underneath every route-design decision. [REF:dsd.kpi.cases_per_stop]\n3. Drop Size (units) — same denominator, units instead of cases; flips the presell-vs-deliver math. [REF:dsd.kpi.drop_size_units]\n4. Driver Productivity (cases/hour) — total cases ÷ paid driver hours. [REF:dsd.kpi.driver_productivity]\n\nService\n5. On-Time Delivery % — stops served inside the retailer's appointment window. [REF:dsd.kpi.on_time_delivery_pct]\n6. Case Fill Rate (CFR) — cases delivered ÷ cases ordered; below 98% triggers retailer chargebacks. [REF:dsd.kpi.case_fill_rate]\n7. Route Adherence % — stops served in planned sequence. [REF:dsd.kpi.route_adherence_pct]\n\nShelf execution\n8. Perfect Store Score (DSD) — weighted blend of distribution, share-of-cooler, planogram, price compliance, promo, and freshness. [REF:dsd.kpi.perfect_store_score]\n9. Out-of-Stock % — share of audited stops with at least one OOS observation. [REF:dsd.kpi.out_of_stock_pct]\n\nEconomics & control\n10. Cost per Stop — fully-loaded route cost ÷ stops. [REF:dsd.kpi.cost_per_stop]\n11. Cost per Case Delivered — fully-loaded route cost ÷ cases. [REF:dsd.kpi.cost_per_case]\n12. Sales per Mile — net sales ÷ route miles; the route-design quality metric. [REF:dsd.kpi.sales_per_mile]\n13. Settlement Accuracy % — 1 − (settlement variance ÷ total settled). [REF:dsd.kpi.settlement_accuracy]\n14. EPOD Capture Rate — share of delivered stops with a signed proof. [REF:dsd.kpi.epod_capture_rate]\n15. Returns Rate (DSD) — returned units ÷ delivered units; spikes drag perfect-store. [REF:dsd.kpi.returns_rate]",
+    "citations": [
+      "dsd.kpi.stops_per_route",
+      "dsd.kpi.cases_per_stop",
+      "dsd.kpi.drop_size_units",
+      "dsd.kpi.driver_productivity",
+      "dsd.kpi.on_time_delivery_pct",
+      "dsd.kpi.case_fill_rate",
+      "dsd.kpi.route_adherence_pct",
+      "dsd.kpi.perfect_store_score",
+      "dsd.kpi.out_of_stock_pct",
+      "dsd.kpi.cost_per_stop",
+      "dsd.kpi.cost_per_case",
+      "dsd.kpi.sales_per_mile",
+      "dsd.kpi.settlement_accuracy",
+      "dsd.kpi.epod_capture_rate",
+      "dsd.kpi.returns_rate"
+    ]
+  },
+  {
+    "matchSubstring": "edi 894 vs 895",
+    "vertical": "CPG",
+    "response": "EDI 894 and EDI 895 are the ASC X12 transaction pair that wires the DSD delivery + signed receipt between a CPG manufacturer and a retailer — the inter-org backbone of every chain DSD account (Walmart, Kroger, Albertsons, Target, 7-Eleven, Sheetz, Circle K).\n\nEDI 894 — Delivery / Return Base Record. Manufacturer-to-retailer message sent at the stop (or end-of-day batched). Carries the GS1 GLN of the delivering location, route id, driver id, GTIN-14 + cases delivered + returned + short, unit and case price, promotional allowance, and the EPOD signature reference. This is the invoice in DSD-land — there is no separate 810 in the deliver-mode flow.\n\nEDI 895 — Delivery / Return Acknowledgement. Retailer-to-manufacturer response posted back from the receiver's WMS/POS system after the store-door receiver scans the load. Confirms what the retailer believes was received line-by-line; any delta becomes a deduction. The 895 is what the manufacturer's deductions team holds up next to the signed EPOD when disputing a back-charge.\n\nThe two messages reconcile inside the route-accounting platform (Aldata Apollo, SAP DSD, AFS DSD, Epicor DSD). A common operational gotcha: retailer DCs that net-receive consolidate multiple 895s into a single deduction, breaking the 894↔895↔EPOD trace; the fix is enforcing GS1 SSCC pallet ids on the 894 so the chain reconciles at pallet grain regardless of how the retailer aggregates. [REF:dsd.kpi.epod_capture_rate] [REF:dsd.kpi.settlement_accuracy]",
+    "citations": [
+      "dsd.kpi.epod_capture_rate",
+      "dsd.kpi.settlement_accuracy",
+      "dsd.kpi.case_fill_rate",
+      "conn.edi_894",
+      "conn.edi_895",
+      "glossary.epod",
+      "glossary.deduction_dispute"
+    ]
+  },
+  {
+    "matchSubstring": "perfect store score",
+    "vertical": "CPG",
+    "response": "Perfect Store is the CPG / DSD shelf-execution scorecard rolled up to a single per-visit index. In a DSD context (Coca-Cola KO ONE, PepsiCo POWER 5, AB-InBev BEES, Mondelez Perfect Store) it is the metric that gates pay-for-performance trade funds and driver/rep performance bonuses.\n\nThe composite is a weighted blend of six sub-scores, each captured by the rep at the audit visit on their Honeywell or Zebra handheld:\n\n1. Distribution — MSL (Must-Stock List) SKUs actually present.\n2. Share of Cooler / Share of Shelf — facings of own brand ÷ category facings.\n3. Planogram Compliance — facings, blocks, adjacencies vs contracted planogram (Apollo / JDA Space Planning).\n4. Price Compliance — observed shelf price tag = contracted price.\n5. Promo Compliance — promo POS material up, end-cap built, secondary display priced.\n6. Freshness / Code-Date — % of facings inside code-date.\n\nWeights are account-specific (Walmart's contracted weights ≠ Kroger's), held in dim_account.perfect_store_weights, and applied in fct_perfect_store_audits. Below ~85 the rep loses perfect-store credit on that stop; the score also feeds the cooler-replenish and trade-fund decisions. The hardest sub-score to keep clean is planogram — drift creeps in every reset cycle. [REF:dsd.kpi.perfect_store_score]",
+    "citations": [
+      "dsd.kpi.perfect_store_score",
+      "dsd.kpi.out_of_stock_pct",
+      "glossary.perfect_store_dsd",
+      "glossary.planogram_compliance",
+      "dsd.d.perfect_store_credit",
+      "dsd.d.cooler_replenish"
+    ]
+  },
+  {
+    "matchSubstring": "driver settlement",
+    "vertical": "CPG",
+    "response": "Driver settlement is the nightly close-out where a DSD driver reconciles the day's load against the day's deliveries + returns + spoils + collected cash/check/EFT/charge — and the cage signs off (or sends it back). It is the single most error-prone process in DSD and the one most regulators scrutinise.\n\nThe ledger is built in the route-accounting platform (Aldata Apollo, SAP DSD, AFS DSD, Epicor DSD):\n\n  Total Invoiced  =  Total Cash + Check + EFT + Charge Account\n                   + Returns Credit + Spoilage Credit + Variance\n\nVariance is the open balance the driver owes (or is owed). Settlement Accuracy % = 1 − (variance ÷ invoiced) and the target is > 99%. Sub-99 settlement nights typically trace to two patterns: (1) miskeyed returns at the stop — the driver entered cases when the retailer scanned units; (2) collected funds that never made it back to the bag — the cash-handling control point.\n\nThe controls are SOX-bracketed in any public CPG: dual-count at the cage, blind audit on a sample of routes, exception report on any variance > $20, and EPOD-backed dispute for any retailer-side deduction inside the invoice. [REF:dsd.kpi.settlement_accuracy]",
+    "citations": [
+      "dsd.kpi.settlement_accuracy",
+      "dsd.kpi.epod_capture_rate",
+      "dsd.d.driver_settlement",
+      "dsd.d.deduction_dispute",
+      "glossary.route_accounting",
+      "glossary.settlement",
+      "src.aldata_apollo",
+      "src.sap_dsd",
+      "src.afs_dsd"
+    ]
+  },
+  {
+    "matchSubstring": "five steps of the s&op cycle",
+    "vertical": "Manufacturing",
+    "response": "Oliver Wight's classic five-step S&OP cycle (now Integrated Business Planning) repeats every calendar month:\n\n1. Product Review — gate decisions on new product introductions, end-of-life, line extensions. The product portfolio is locked for the cycle.\n2. Demand Review — reconcile the statistical baseline forecast with sales-driven, marketing-driven, and finance-aligned views into one consensus number. [REF:sop.kpi.forecast_accuracy_mape]\n3. Supply Review — net the consensus demand against capacity, inventory, and lead-times; surface supply-demand gaps and any constraint violations. [REF:sop.kpi.capacity_utilization]\n4. Integrated Reconciliation — finance + commercial + supply close out the cross-functional gaps; a working capital and gap-to-budget statement is produced. [REF:sop.kpi.working_capital_impact]\n5. Management Business Review (MBR / Executive S&OP) — COO / CSCO signs off the consensus plan, interventions, and capex asks. [REF:sop.kpi.plan_adherence]\n\nIn SAP IBP, Kinaxis RapidResponse, o9, Blue Yonder, Oracle SCP, and Anaplan all five steps share one item-location-period data model so each gate inherits the signed-off state of the prior gate.",
+    "citations": [
+      "sop.kpi.forecast_accuracy_mape",
+      "sop.kpi.capacity_utilization",
+      "sop.kpi.working_capital_impact",
+      "sop.kpi.plan_adherence",
+      "glossary.s_op",
+      "glossary.ibp"
+    ]
+  },
+  {
+    "matchSubstring": "difference between mape and wape",
+    "vertical": "Manufacturing",
+    "response": "MAPE and WAPE both measure forecast accuracy as percentage error, but they differ in how they aggregate:\n\nMAPE — Mean Absolute Percentage Error = mean of abs(actual − forecast) / actual across rows. Treats every row equally regardless of volume. Breaks down when actual is near zero (division blows up). Use for like-for-like comparisons across well-trafficked SKUs.\n\nWAPE — Weighted Absolute Percentage Error = sum(abs(actual − forecast)) / sum(actual). Volume-weighted; large-volume items dominate the number. Robust to near-zero actuals. The preferred headline accuracy KPI in retail and CPG because it correctly down-weights the long tail.\n\nIn practice S&OP / IBP teams track both: WAPE as the corporate headline because it ties to dollars, MAPE per-SKU to surface forecast-quality outliers. [REF:sop.kpi.forecast_accuracy_mape] [REF:sop.kpi.forecast_accuracy_wape]",
+    "citations": [
+      "sop.kpi.forecast_accuracy_mape",
+      "sop.kpi.forecast_accuracy_wape",
+      "glossary.mape",
+      "glossary.wape"
+    ]
+  },
+  {
+    "matchSubstring": "kinaxis vs sap ibp",
+    "vertical": "Manufacturing",
+    "response": "Kinaxis RapidResponse (Maestro) and SAP IBP are the two most-deployed enterprise S&OP / IBP platforms. They differ in worldview:\n\nKinaxis RapidResponse — concurrent-planning architecture. Every plan change recalculates the network in seconds; scenarios are first-class and can be branched, merged, compared. Strong for high-mix discrete manufacturers (automotive, aerospace, semiconductor) where the value is in seeing the ripple. Scenario Cycle Time is the headline KPI. [REF:sop.kpi.scenario_cycle_time]\n\nSAP IBP — natively integrated with SAP S/4HANA ERP master data, time-series + order-based planning, deep MEIO and demand sensing modules. Strong for process manufacturers running on SAP backbone (CPG, life sciences, chemicals). Stronger out-of-the-box for finance-aligned IBP since the financial reconciliation already maps to S/4HANA controlling.\n\nBoth speak the same SCOR / Oliver Wight five-step vocabulary. The choice is usually: which ERP backbone are you on (Kinaxis is ERP-agnostic; IBP is SAP-aligned), and how scenario-heavy is your planning process.",
+    "citations": [
+      "sop.kpi.scenario_cycle_time",
+      "src.sap_ibp",
+      "src.kinaxis",
+      "glossary.ibp",
+      "glossary.what_if_scenario"
+    ]
+  },
+  {
+    "matchSubstring": "what is multi-echelon inventory optimization",
+    "vertical": "Manufacturing",
+    "response": "Multi-Echelon Inventory Optimization (MEIO) jointly sets safety stock across plant → DC → forward-DC → store tiers, recognising that pooling inventory at higher tiers reduces total network inventory for the same service level.\n\nThe core insight (Graves & Willems, 2008): if you set safety stock independently per tier, you over-stock at every tier because variances compound. MEIO solves the joint problem — for a target OTIF, what's the minimum-cost distribution of safety stock across all tiers?\n\nVendors: ToolsGroup SO99+, GAINSystems, Logility InventoryAI+, Kinaxis RapidResponse Inventory, SAP IBP Inventory, o9 inventory app. They differ on the optimization technique (analytic vs. simulation vs. probabilistic) and the demand model (deterministic with safety stock vs. stochastic with service-level constraint).\n\nThe headline outcome: 15-30% inventory reduction for the same service level in a typical multi-tier CPG / retail network. [REF:sop.kpi.inventory_turns] [REF:sop.kpi.working_capital_impact]",
+    "citations": [
+      "sop.kpi.inventory_turns",
+      "sop.kpi.working_capital_impact",
+      "sop.kpi.otif",
+      "glossary.meio"
+    ]
+  },
+  {
+    "matchSubstring": "how do we measure forecast bias",
+    "vertical": "Manufacturing",
+    "response": "Forecast Bias measures systematic over- or under-forecast. Computed as sum(forecast − actual) / sum(actual), expressed as a signed percentage:\n\n• Bias = 0% — unbiased forecast.\n• Bias > 0% — over-forecast, leading to excess inventory and write-downs.\n• Bias < 0% — under-forecast, leading to stockouts and lost service.\n\nThe target band is typically ±2% over a rolling 13-week window. Persistent bias is a planner-behaviour signal: sales pushes forecast up to ensure supply ('insurance forecasting'), so consensus runs hot; or marketing pushes up to fund promotion plans that don't materialise. The IBP Integrated Reconciliation step exists to detect and de-bias these contributions before they hit the supply plan. [REF:sop.kpi.forecast_bias]\n\nA companion metric — bias decomposed by item ABC class and by forecast_version — surfaces which contributors are biased and where. The standard report is bias-by-version stacked against MAPE.",
+    "citations": [
+      "sop.kpi.forecast_bias",
+      "sop.kpi.forecast_accuracy_mape",
+      "glossary.forecast_bias"
+    ]
+  },
+  {
+    "matchSubstring": "kpis does the vp of reverse logistics care",
+    "vertical": "Retail",
+    "response": "The VP of Reverse Logistics tracks seven core KPIs weekly:\n\n1. Return Rate % — returned units ÷ sold units. The headline of the whole function; ecom apparel runs 25-40%, electronics 8-15%. [REF:rrl.kpi.return_rate_pct]\n2. Refund Issue Time — days from RMA receipt to refund issued. Correlates with CSAT and chargeback rate. [REF:rrl.kpi.refund_issue_time]\n3. Recovery Value % — recovery proceeds ÷ original COGS of returned inventory. The net-economic outcome of the disposition tree. [REF:rrl.kpi.recovery_value_pct]\n4. Refurb Yield % — units coming back as A/B-grade ÷ units sent to refurb. Below threshold, refurb routing is uneconomic vs straight liquidation. [REF:rrl.kpi.refurb_yield_pct]\n5. Cost to Process Return — fully loaded reverse-leg cost per item. The threshold below which a returnless-refund decision flips positive. [REF:rrl.kpi.cost_to_process_return]\n6. Return Fraud Rate — fraud-flagged returns ÷ total returns. Drives policy tightening and Appriss/Newmine step-up gating. [REF:rrl.kpi.return_fraud_rate]\n7. Net Cost of Returns — refunds + processing cost − recovery proceeds. The board-level P&L line. [REF:rrl.kpi.net_cost_of_returns]\n\nThese feed three decisions: disposition route (restock / refurb / liquidate / donate / recycle / scrap / returnless), returnless threshold, and CRC routing.",
+    "citations": [
+      "rrl.kpi.return_rate_pct",
+      "rrl.kpi.refund_issue_time",
+      "rrl.kpi.recovery_value_pct",
+      "rrl.kpi.refurb_yield_pct",
+      "rrl.kpi.cost_to_process_return",
+      "rrl.kpi.return_fraud_rate",
+      "rrl.kpi.net_cost_of_returns"
+    ]
+  },
+  {
+    "matchSubstring": "returnless refund",
+    "vertical": "Retail",
+    "response": "A returnless refund (Amazon's 'keep it' refund) is a disposition where the customer is refunded but not asked to send the item back. The decision is purely economic — when forward shipping + inspection + restock + refurb cost exceeds the unit's recovery value, it's cheaper to issue the refund and let the customer keep the item.\n\nThe threshold typically lands between $15-$40 unit cost, depending on category. The KPI is Returnless Refund Rate — returnless refunds ÷ total refunds — tuned in a 5-15% band against return fraud rate. [REF:rrl.kpi.returnless_refund_rate]\n\nMechanically, the returnless decision lives in the returns engine (Optoro OptiTurn, SAP S/4 Advanced Returns, Loop) and references unit COGS + carrier rate card + historical disposition yield. The associated refund row carries refund_type = 'returnless'; the return_item never materializes because no physical reverse leg happens.\n\nFraud exposure is real — a small share of returnless-eligible customers learn the trigger and game it. Newmine and Appriss Retail score repeat returners against returnless eligibility before the engine releases the refund.",
+    "citations": [
+      "rrl.kpi.returnless_refund_rate",
+      "rrl.kpi.return_fraud_rate",
+      "rrl.kpi.cost_to_process_return",
+      "glossary.returnless_refund"
+    ]
+  },
+  {
+    "matchSubstring": "return rate down to the source-system field",
+    "vertical": "Retail",
+    "response": "Return Rate % lineage in five hops:\n\nStep 1 — KPI definition: Return Rate % = return_items_units / sold_units, computed at the BI layer. [REF:rrl.kpi.return_rate_pct]\nStep 2 — Mart fact: fct_returns_rrl carries return_item_id at the disposition grain; fct_returns_rrl + dim_date_rrl + dim_product_rrl deliver the numerator. fct_sales (from merchandising or omnichannel_oms) delivers sold_units.\nStep 3 — dbt intermediate: int_returns_reverse_logistics__hub_return_item + int_returns_reverse_logistics__link_item_rma reconcile each returned unit to its parent RMA.\nStep 4 — Staging: stg_returns_reverse_logistics__return_items materializes the source.returns_reverse_logistics.return_item table from the populated DuckDB.\nStep 5 — Source system: return_item rows originate in the returns portal (Loop / Narvar / Happy Returns webhook), in the OMS Returns module (Salesforce OMS Returns, Manhattan Active WMS Returns), or in the ERP returns engine (SAP S/4 Advanced Returns Management) via EDI 180 RMA.\n\nField-level: EDI 180 RMA → connector conn.edi_x12_180 → Kafka topic returns.rma.v1 → raw layer → stg_returns_reverse_logistics__return_authorizations.",
+    "citations": [
+      "rrl.kpi.return_rate_pct",
+      "src.optoro_optiturn",
+      "src.loop_returns",
+      "src.sap_s4_returns",
+      "conn.edi_x12_180"
+    ]
+  },
+  {
+    "matchSubstring": "BORIS",
+    "vertical": "Retail",
+    "response": "BORIS — Buy Online, Return In Store — is the omnichannel return method where a customer returns a .com order at a physical store of the same chain. Operationally it compresses the reverse leg (no carrier transit) and lifts attach-sale rate; surveyed BORIS visits convert to an incremental purchase ~25% of the time.\n\nDate-flow: the customer presents the order at the in-store returns counter (or self-service kiosk); the POS / OMS Returns module performs an order_lookup against the omnichannel golden record; the RMA is created with return_method = 'boris_store' and rma_status = 'received' in a single transaction; the refund is typically issued to original tender on the spot. The physical unit lands in the store's returns staging until the next backhaul to the CRC or an in-store restock decision.\n\nKPI impact: BORIS lifts Return Rate % visibility (more returns are captured to the chain rather than abandoned), compresses Refund Issue Time, and lifts Recovery Value % because store-pickable A-Grade units restock the local shelf without a CRC round-trip. [REF:rrl.kpi.refund_issue_time] [REF:rrl.kpi.recovery_value_pct]\n\nReference platforms: Manhattan Active WMS Returns, Salesforce OMS Returns, SAP S/4 Advanced Returns.",
+    "citations": [
+      "rrl.kpi.refund_issue_time",
+      "rrl.kpi.recovery_value_pct",
+      "glossary.boris"
+    ]
+  },
+  {
+    "matchSubstring": "disposition decision tree",
+    "vertical": "Retail",
+    "response": "The disposition decision tree determines what happens to each return_item once it lands at the CRC (Centralized Return Center). Most large retailers run a six-or-seven-way tree:\n\n1. **restock_A** — A-Grade unit, sellable as new. Goes back to the forward DC or a Optoro forward-stocked returns pool. Best recovery.\n2. **restock_open_box** — minor cosmetic but functional. Routed to an open-box channel (Best Buy Open Box, Amazon Warehouse).\n3. **refurb** — needs cleaning / testing / repackaging / firmware-flash. Routed to a CRC refurb cell or 3PL (Optoro, Newmine). [REF:rrl.kpi.refurb_yield_pct]\n4. **b_stock_liquidation** — unsellable-as-new, sold in bulk lots through B-Stock / Liquidation.com / BULQ. [REF:rrl.kpi.liquidation_yield_pct]\n5. **donation** — functional but unsellable, donated to Good360 / Delivering Good for tax-deductible value.\n6. **recycle** — sent to a certified recycler (driven by EPR regulation in EU and California).\n7. **scrap** — destroyed. The economic floor.\n\nThe tree is scored on Recovery Value % minus reverse-leg + processing cost. Returnless refund (refund issued without the item coming back) is the upstream branch that bypasses the tree entirely.",
+    "citations": [
+      "rrl.kpi.recovery_value_pct",
+      "rrl.kpi.refurb_yield_pct",
+      "rrl.kpi.liquidation_yield_pct",
+      "rrl.kpi.returnless_refund_rate"
+    ]
+  },
+  {
+    "matchSubstring": "kpis does the category manager care",
+    "vertical": "CPG",
+    "response": "The Category Manager tracks seven core KPIs every week, all read off the syndicated panel + EDI 852 feeds:\n\n1. Category Sales Growth % — period-over-period growth at the banner; headline outcome for the category business plan. [REF:cm.kpi.category_sales_growth_pct]\n2. Distribution Coverage (%ACV) — ACV-weighted share of stores carrying the SKU. 80%+ is national broad. [REF:cm.kpi.distribution_coverage_pct]\n3. Range Productivity — sales $ ÷ # listed SKUs. The breadth-vs-efficiency tradeoff at every range review. [REF:cm.kpi.range_productivity]\n4. Shelf Space Productivity — sales $ ÷ linear ft allocated. Drives reallocation across categories at fixture re-cuts. [REF:cm.kpi.shelf_space_productivity]\n5. Assortment Compliance % — stores carrying mandated SKUs ÷ stores audited; below 90% silently kills range-review uplift. [REF:cm.kpi.assortment_compliance_pct]\n6. Velocity Index — SKU units/store/week ÷ category average; >1.0 earns above-fair-share facings. [REF:cm.kpi.velocity_index]\n7. Innovation Slot % — SKUs launched <24 months ÷ total SKUs; target band differs sharply by category. [REF:cm.kpi.innovation_slot_pct]\n\nThese feed three flagship decisions: assortment optimization, planogram authoring, and the range review.",
+    "citations": [
+      "cm.kpi.category_sales_growth_pct",
+      "cm.kpi.distribution_coverage_pct",
+      "cm.kpi.range_productivity",
+      "cm.kpi.shelf_space_productivity",
+      "cm.kpi.assortment_compliance_pct",
+      "cm.kpi.velocity_index",
+      "cm.kpi.innovation_slot_pct"
+    ]
+  },
+  {
+    "matchSubstring": "role of category",
+    "vertical": "CPG",
+    "response": "Role of Category is the ECR-blueprint classification a retailer applies to every category — Destination, Routine, Occasional/Seasonal, or Convenience — that drives shelf-space allocation, pricing posture, promo intensity, and assortment depth.\n\n• **Destination** — categories the retailer wants shoppers to choose the banner *specifically* for. Deepest assortment, sharpest price, heaviest promo, most space. Typical banner has 5-10. (For Costco: bulk pantry; for Whole Foods: prepared foods.)\n• **Routine** — categories needed to make the trip basket complete. Competitive-parity assortment, normal margin, normal promo. The largest share of categories by count.\n• **Occasional/Seasonal** — visited intermittently (BBQ, back-to-school, holiday). Disproportionate basket and margin at peak; minimal space at trough. Range cycles seasonally.\n• **Convenience** — fill-in categories not driving trip choice. Narrow assortment, minimum space, no deep promo.\n\nThe role assignment is the foundational input to the category business plan; it gets reviewed annually at the joint manufacturer/retailer JBP. The wrong role assignment silently misallocates ~20% of category investment for the year. [REF:cm.kpi.category_share_of_wallet]",
+    "citations": [
+      "cm.kpi.category_share_of_wallet",
+      "cm.kpi.category_sales_growth_pct",
+      "cm.d.role_of_category",
+      "glossary.role_of_category"
+    ]
+  },
+  {
+    "matchSubstring": "blue yonder space planning",
+    "vertical": "CPG",
+    "response": "Blue Yonder Category Management (formerly JDA Space Planning, originally Intactix) is the dominant planogram-authoring platform in the world — >50% global market share among the top-100 retailers. The suite covers four modules:\n\n1. **Space Planning** — the planogram editor. SKU placement, facings, shelf/slot grain, block adjacencies, vertical/horizontal flow. Takes pack dimensions from the GS1 GDSN attribute pool and applies fair-share or productivity-weighted facing algorithms.\n2. **Floor Planning** — store-level fixture layout; categories arranged on the store floor with adjacency rules and traffic-flow constraints.\n3. **Assortment Optimization** — recommends SKU adds/drops/mandates under shelf-space and must-stock constraints, scored on net category sales impact.\n4. **Open Space Suite** — the Open Space Initiative version exposes APIs for embedded planogram serving.\n\nCompetitors: Symphony RetailAI Category Manager (CINDE AI), RELEX Solutions Space Planning, Quad Tag Galleria (visual planogram), SAP CAR/RPC. Industry trends: AI-driven autonomous planogram updates (Symphony CINDE, Blue Yonder's Cognitive POG), image-recognition shelf compliance (Trax, Salesforce CG Cloud, AFS) closing the loop between planogram-as-authored and planogram-as-executed. [REF:cm.kpi.shelf_space_productivity]",
+    "citations": [
+      "cm.kpi.shelf_space_productivity",
+      "cm.kpi.assortment_compliance_pct",
+      "src.blue_yonder_cm",
+      "src.symphony_retailai_cm",
+      "glossary.planogram"
+    ]
+  },
+  {
+    "matchSubstring": "syndicated data sources",
+    "vertical": "CPG",
+    "response": "The CPG / Retail category-management discipline runs on five canonical syndicated data sources:\n\n1. **Circana** (Information Resources Inc + NPD Group merged 2023) — Unify / Liquid Data / Total Category View. POS scan-track + Consumer Network panel (receipt-based). The Coke vs Pepsi default for U.S. food.\n2. **NielsenIQ Connect** + **Discover** + **Spectra** + **Homescan** — POS scan-track measurement, pricing/promo intelligence, consumer demand, household panel. The Unilever / P&G default for international + select U.S.\n3. **Numerator** — receipt-based purchase panel (InfoScout + Market Track lineage). Strongest for cross-banner basket affinity and walk-away analysis.\n4. **Kantar Worldpanel** — global FMCG household panel. Penetration, frequency, switching, basket affinity at household grain.\n5. **dunnhumby** — Customer Data Science (Tesco / Kroger 84.51° lineage). Loyalty-data-driven range and assortment science.\n\nPlus **GfK** (part of NielsenIQ since 2023) for durables and tech panel. These are licensed feeds — the manufacturer does not own the raw retailer data. Coverage varies sharply by retailer (Walmart and Amazon are notoriously sparse in syndicated coverage; Kroger covered via 84.51° rather than syndicated). The denominator definition (Total US Food vs Total US Multi-Outlet+) materially changes any share number — always confirm before quoting. [REF:cm.kpi.category_share_of_wallet]",
+    "citations": [
+      "cm.kpi.category_share_of_wallet",
+      "cm.kpi.category_sales_growth_pct",
+      "src.circana_unify_cm",
+      "src.niq_connect_cm",
+      "src.numerator_cm",
+      "src.kantar_worldpanel_cm",
+      "src.dunnhumby_cm",
+      "glossary.syndicated_data"
+    ]
+  },
+  {
+    "matchSubstring": "range review",
+    "vertical": "CPG",
+    "response": "A range review is the recurring (seasonal or annual) cycle in which a retailer and its category captain (or the broader manufacturer set) jointly review velocity, share, margin, and cannibalization to decide SKU adds, drops, mandates, repacks, and reclasses for the category. The output drives the next planogram cycle.\n\nThe canonical workflow:\n\n1. **Pre-read** — pull 52-week velocity, distribution, share, and margin for every listed SKU from syndicated POS (Circana / NielsenIQ) + retailer EDI 852.\n2. **Gold/Silver/Bronze tiering** — rank SKUs by composite productivity; bottom quintile (Bronze) becomes kill-candidate. [REF:cm.kpi.velocity_index]\n3. **Must-have walk-away check** — for every kill candidate, run household-panel walk-away (Kantar / Numerator) — would the shopper leave the banner if this SKU disappeared?\n4. **Innovation slot allocation** — how many of the Bronze kills get refilled by new launches vs reclaim of facings. [REF:cm.kpi.innovation_slot_pct]\n5. **Cannibalization check** — for every new listing, estimate share-source from existing range; net-incremental = new_units × (1 − cannibalization_rate). [REF:cm.kpi.cannibalization_rate]\n6. **Retailer presentation** — the captain presents the recommended assortment + planogram + forecast P&L. The buyer approves or amends.\n7. **In-market execution** — planogram resets cascade to stores; assortment compliance audits begin 4-6 weeks later. [REF:cm.kpi.assortment_compliance_pct]\n\nDecision time horizon: 3-6 months from pre-read to in-market. Reference platforms: Symphony Category Manager + CINDE, Blue Yonder Assortment Optimization, RELEX Assortment, dunnhumby Range Science.",
+    "citations": [
+      "cm.kpi.velocity_index",
+      "cm.kpi.innovation_slot_pct",
+      "cm.kpi.cannibalization_rate",
+      "cm.kpi.assortment_compliance_pct",
+      "cm.d.range_review",
+      "cm.d.assortment_optimization",
+      "glossary.range_review"
+    ]
+  },
+  {
+    "matchSubstring": "how do i calculate scope 3 emissions per spend dollar",
+    "vertical": "Manufacturing",
+    "response": "Scope 3 Category 1 (Purchased Goods & Services) and Category 2 (Capital Goods) emissions per dollar of spend is the headline procurement-sustainability KPI disclosed under CSRD ESRS E1 and CDP. The calculation is a hybrid hierarchy at the PO-line grain.\n\nFormula:\n  Scope 3 Intensity = Σ(po_line.scope3_kgco2e) / Σ(po_line.line_amount_base_usd)  [REF:psa.kpi.scope3_intensity]\n\nApply the best-available factor per line in this strict order — never sum across tiers for the same line:\n\n1. **Primary supplier data** — supplier discloses CO2e per unit shipped via CDP Supply Chain, EcoVadis Carbon Action, or direct Product Carbon Footprint (PCF). Apply line-by-line where supplier_id has an active disclosure for the reporting year. Covers <15% of suppliers by count but typically >50% of spend in mature programs.\n2. **Activity-based factor** — emissions_factor_kgco2e_per_unit × po_line.quantity. Uses ecoinvent / EXIOBASE / USEEIO activity factors keyed on UNSPSC commodity + country_iso2 + vintage_year. Requires UoM normalization (kg, liter, kWh, piece) — uncertainty_pct typically ±25-40%.\n3. **Spend-based factor** — emissions_factor_kgco2e_per_usd × line_amount_base_usd. EXIOBASE/USEEIO spend-based factors per UNSPSC commodity × country. Coarsest tier (uncertainty ±50-80%) but the only option for free-text lines and tail suppliers.\n\nFour gotchas to ship-proof the calc:\n• **Factor vintage** — EXIOBASE/USEEIO factors typically lag 2-3 years; track emissions_factor.vintage_year and disclose the gap to current-period spend in CSRD reporting.\n• **Corporate-family roll-up** — supplier discloses at parent_duns, transactions hit local DUNS subsidiaries; allocate parent emissions pro-rata to child spend.\n• **Capital goods boundary** — Category 2 covers depreciable capital, not consumables; gate by category_taxonomy.capex_or_opex.\n• **Double-count check** — never sum primary + activity + spend for the same line; the hierarchy is strict pick-one.\n\nVendor surface: Sievo Emissions Analytics, EcoVadis Carbon Action Module, Watershed for Procurement, Persefoni Carbon Hub, and IBM Envizi Supply Chain Intelligence all implement this hierarchy. CDP Supply Chain is the dominant primary-data feed (~30K suppliers globally as of 2026).",
+    "citations": [
+      "psa.kpi.scope3_intensity",
+      "psa.kpi.sustainable_spend_pct",
+      "psa.d.scope3_supplier_engagement",
+      "src.ecovadis_ratings",
+      "src.sievo_spend",
+      "src.cdp_supply_chain",
+      "glossary.ghg_protocol_scope_3"
+    ]
+  },
+  {
+    "matchSubstring": "kpis does the cpo care",
+    "vertical": "Manufacturing",
+    "response": "The Chief Procurement Officer tracks seven headline KPIs every month:\n\n1. Spend Under Management — sum(spend_with_active_contract_or_strategic_sourced) / sum(total_spend). Best-in-class >85% direct, >70% indirect; the maturity measure for the procurement function. [REF:psa.kpi.spend_under_mgmt]\n2. Savings Realized % — sum(savings_realized) / sum(savings_committed). Below 70% means contracted savings aren't sticking and contract-leakage controls need work. [REF:psa.kpi.savings_realized_pct]\n3. Maverick Spend % — sum(off_contract_spend) / sum(total_addressable_spend). Top decile sits at 2-5%; >15% means coverage controls are broken. [REF:psa.kpi.maverick_spend_pct]\n4. Supplier Risk Score (weighted) — composite of financial / geographic / cyber / compliance / sustainability per supplier; lower = riskier. [REF:psa.kpi.supplier_risk_score]\n5. Scope 3 Intensity (Cat 1+2) — kgCO2e per USD spent; the board-disclosed line under CSRD ESRS E1. [REF:psa.kpi.scope3_intensity]\n6. Touchless PO % — POs with zero human-approval steps. >70% on indirect tail is world-class. [REF:psa.kpi.touchless_po_pct]\n7. Sustainable Spend % — spend with EcoVadis Silver+ suppliers / total addressable spend. ESG commitment KPI; target 75-90% by 2030 against SBTi. [REF:psa.kpi.sustainable_spend_pct]\n\nThese feed eight headline decisions: supplier consolidation (psa.d.consolidate_suppliers), renegotiate-now (psa.d.negotiate_now), terminate-supplier (psa.d.terminate_supplier), payment-terms (psa.d.renegotiate_payment_terms), tail-spend strategy (psa.d.tail_spend_strategy), Scope 3 engagement (psa.d.scope3_supplier_engagement), maverick response (psa.d.maverick_spend_response), and contract renewal (psa.d.contract_renewal).",
+    "citations": [
+      "psa.kpi.spend_under_mgmt",
+      "psa.kpi.savings_realized_pct",
+      "psa.kpi.maverick_spend_pct",
+      "psa.kpi.supplier_risk_score",
+      "psa.kpi.scope3_intensity",
+      "psa.kpi.touchless_po_pct",
+      "psa.kpi.sustainable_spend_pct"
+    ]
+  },
+  {
+    "matchSubstring": "what is maverick spend",
+    "vertical": "Manufacturing",
+    "response": "Maverick spend is procurement transacted outside negotiated contracts for a category the procurement org has covered — buyer goes around the contract, pays list price, and forfeits the negotiated terms (rebates, payment terms, sustainability clauses).\n\nFormula:\n  Maverick Spend % = sum(off_contract_spend) / sum(total_addressable_spend)  [REF:psa.kpi.maverick_spend_pct]\n\nDetection at ingest — the maverick_flag on po_line is materialized by joining (supplier_id, category_code, transaction_date) to active contract scope. If no covering contract exists for the supplier-category-date triple, flag the line.\n\nThree common patterns:\n1. P-card breach — buyer uses corporate purchasing card for an item that has a catalog contract. Mitigated by tightening P-card merchant-category-code (MCC) restrictions.\n2. Free-text PO — buyer enters a free-text PO line for an item that punches out to a contracted catalog. ML categorization at ingest catches the most common cases.\n3. Marketplace bypass — buyer transacts via Amazon Business for office supplies that have an active Staples contract. Either consolidate the marketplace under contracted-supplier coverage or close the bypass.\n\nResponse playbook (psa.d.maverick_spend_response): tier 1 — block the PO submission outright (zero-tolerance covered categories); tier 2 — route to category-manager approval with justification field; tier 3 — absorb the transaction but convert to a future PO with the contracted supplier; tier 4 — track and dashboard, no block.\n\nVendor surface: SAP Ariba Buying Policy + Catalog Compliance, Coupa Buying Channel Rules, Ivalua Catalog Management — all expose the rule DSL needed for the four-tier response.",
+    "citations": [
+      "psa.kpi.maverick_spend_pct",
+      "psa.kpi.contract_compliance_pct",
+      "psa.kpi.tail_spend_pct",
+      "psa.d.maverick_spend_response",
+      "psa.d.tail_spend_strategy",
+      "glossary.maverick_spend"
+    ]
+  },
+  {
+    "matchSubstring": "three-way match",
+    "vertical": "Manufacturing",
+    "response": "Three-way match is the AP control that auto-clears a supplier invoice only when three documents agree on quantity, unit price, and amount within configured tolerance bands:\n\n1. Purchase Order — the contract-of-the-transaction; what was agreed to buy at what price.\n2. Goods Receipt — confirmation from the receiving plant that the goods physically arrived at the agreed quantity.\n3. Supplier Invoice — the AP-side document the supplier sends asking for payment.\n\nWhen all three reconcile within tolerance (typically $50 / 2% per line), the invoice auto-flows to payment. That's the headline AP automation case — captured in the invoice_match_rate KPI. [REF:psa.kpi.invoice_match_rate]\n\nIn practice, 10-25% of invoices fail the match — the AP exception queue. Three primary failure legs:\n• PO-Invoice price variance — supplier billed a different price than the PO; usually a contract-price refresh that hasn't propagated.\n• PO-Receipt quantity variance — over-receipt or under-receipt vs PO; partial shipments break the match unless tolerance allows split.\n• Missing receipt — invoice arrived before the goods receipt was posted; common on services where receipts are weak.\n\nTwo-way match (PO + invoice, no receipt) is the relaxation used for services, subscription invoices, and low-value catalog spend where goods-receipt would cost more than the control gains. The tolerance threshold decision (psa.d.invoice_match_threshold) is where finance and AP set the dial — typically auto-pay <$2,500 with 2-way; require 3-way above that.\n\nVendor surface: SAP S/4HANA AP Invoice Match, Oracle Cloud ERP Payables, Basware AP Automation, Tradeshift Pay, and Coupa Invoice all implement configurable tolerance bands per category + supplier. Exception-queue routing with provenance (which leg failed) is the operational lift on AP cost.",
+    "citations": [
+      "psa.kpi.invoice_match_rate",
+      "psa.kpi.touchless_po_pct",
+      "psa.kpi.ap_aging_over_60",
+      "psa.d.invoice_match_threshold",
+      "glossary.three_way_match",
+      "glossary.two_way_match",
+      "glossary.touchless_invoice"
+    ]
+  },
+  {
+    "matchSubstring": "tail spend strategy",
+    "vertical": "Manufacturing",
+    "response": "Tail spend is the bottom-80% of suppliers by spend — typically ~5% of total spend but the source of most supplier-master workload, most maverick spend, and the worst sustainable-procurement coverage. The CPO target is to compress it without exploding sourcing labor.\n\nMetric:\n  Tail Spend % = sum(spend_in_bottom_80pct_suppliers) / sum(total_spend)  [REF:psa.kpi.tail_spend_pct]\n\nFour playbook moves (psa.d.tail_spend_strategy):\n\n1. Catalog + Punchout Consolidation — corral 60-70% of indirect tail spend onto a handful of catalog/punchout suppliers (Staples, Amazon Business, Grainger, Office Depot, Fisher Scientific). The buying_channel_mix KPI tracks the shift. [REF:psa.kpi.buying_channel_mix]\n2. P-Card Programs — push low-value (<$2,500) high-frequency transactions onto purchasing cards with category-restricted MCCs. Trades AP workload for card fees (1.5-2%) but compresses cycle time to seconds.\n3. Marketplace (Amazon Business, Mercateo Unite) — route the genuine long tail to a marketplace channel with pre-negotiated terms across thousands of small suppliers; the marketplace becomes supplier-of-record for spend cube purposes.\n4. Auto-PO with Rules — for predictable repeat tail (e.g. recurring services, monthly subscriptions), set rule-based auto-PO with the contracted supplier; zero requisition required.\n\nThe headline KPI movement: well-run tail-spend programs compress tail from 8% to 3% of spend over 18-24 months while concentrating supplier count from 5,000 to 1,500.\n\nVendor surface: SAP Ariba Spot Buy, Coupa Marketplace, Tradeshift Buy, Amazon Business Punchout, and Mercateo Unite — all expose pre-negotiated catalog-style buying without per-supplier contract overhead.",
+    "citations": [
+      "psa.kpi.tail_spend_pct",
+      "psa.kpi.buying_channel_mix",
+      "psa.kpi.touchless_po_pct",
+      "psa.d.tail_spend_strategy",
+      "psa.d.consolidate_suppliers",
+      "glossary.tail_spend",
+      "glossary.p_card"
+    ]
+  },
+  {
+    "matchSubstring": "supplier risk score",
+    "vertical": "Manufacturing",
+    "response": "Supplier Risk Score is a 0..100 weighted composite combining five dimensions per supplier — lower scores meaning higher risk. It's the headline criticality KPI tracked by the Supplier Risk Manager and the trigger for termination, dual-sourcing, and watchlist decisions.\n\nFormula:\n  supplier_risk_score = weighted(financial, geographic, cyber, compliance, sustainability)\n  [REF:psa.kpi.supplier_risk_score]\n\nThe five dimensions, each normalised to 0..100:\n1. Financial — D&B Paydex (payment behavior) + Failure Score percentile; a dropping Paydex is the leading indicator of distress, often 6-18 months ahead of bankruptcy.\n2. Geographic — Resilinc EventWatchAI + Sphera SCRM real-time event exposure (fire, flood, port closure, geopolitical incident); weighted higher for single-source critical suppliers.\n3. Cyber — BitSight or RiskRecon composite (250..900 scale, normalized); board-level concern after major OT/IT supplier breaches.\n4. Compliance — OFAC / UN / EU sanctions exposure plus internal questionnaire results (Modern Slavery Act, anti-bribery, conflict minerals).\n5. Sustainability — EcoVadis composite + CDP climate score; flags Net-Zero risk + CSRD reporting exposure.\n\nThe central engineering challenge is correlation across sources: each vendor uses a different supplier identifier, score scale, and refresh cadence. Mitigation — normalize every source to 0..100 first, align on D&B DUNS as canonical join key with name+country fuzzy fallback, then alert on score delta rather than absolute level. A 15-point Paydex drop matters more than the absolute number.\n\nThe response decision (psa.d.terminate_supplier) — terminate if composite < 30 and a dual-source is available; watchlist + corrective-action-plan if 30-50; monitor if 50-70; no action if >70. Category criticality weight modifies the threshold — single-source critical suppliers get a higher floor.",
+    "citations": [
+      "psa.kpi.supplier_risk_score",
+      "psa.kpi.critical_supplier_concentration",
+      "psa.d.terminate_supplier",
+      "psa.d.diversify_geography",
+      "src.resilinc_eventwatch",
+      "src.dnb_directplus",
+      "src.bitsight_ratings",
+      "src.ecovadis_ratings"
+    ]
+  },
+  {
+    "matchSubstring": "ariba vs coupa",
+    "vertical": "Manufacturing",
+    "response": "SAP Ariba and Coupa are the two dominant Source-to-Pay platforms, with Jaggaer, Ivalua, GEP, and Zycus rounding out the named-vendor field. They differ in product-architecture worldview:\n\nSAP Ariba — the incumbent. Ariba Network (5M+ suppliers globally), Sourcing, Contracts, SLP (Supplier Lifecycle & Performance), and Buying & Invoicing. Deepest integration with SAP S/4HANA ERP backbones — natively reads MM, FI, and CO master data. The default at enterprises running SAP-stack ERP. Weak spots — UI ergonomics, slower release cadence, and per-supplier transaction fees on the Network.\n\nCoupa Business Spend Management Platform — the challenger, born cloud-first. Procure / Sourcing / Contracts / Risk Assess / Travel & Expense in one platform; Coupa Pay handles supplier payments. Strong AI-driven anomaly detection (Coupa Power Apps). The default at enterprises seeking ERP-agnostic S2P with strong T&E integration. Weak spots — narrower supplier network than Ariba, weaker direct-materials depth.\n\nThe choice usually comes down to: ERP backbone (Ariba is SAP-aligned; Coupa is ERP-agnostic), supplier-network density (Ariba leads), AP automation depth (Coupa Pay vs Ariba Buying & Invoicing — neck and neck), and total-spend-managed scope (Coupa wins on T&E integration).\n\nDeeper specialist alternatives — Jaggaer ONE (academia + government strength), Ivalua (direct materials + manufacturing strength), GEP SMART (consulting-led implementations), and Zycus (AI-led negotiation via Merlin) — all surface the same UNSPSC + DUNS-anchored data model the spend cube needs.",
+    "citations": [
+      "src.sap_ariba",
+      "src.coupa_bsm",
+      "src.jaggaer_one",
+      "src.ivalua_s2p",
+      "src.gep_smart",
+      "src.zycus_s2p",
+      "glossary.source_to_pay"
+    ]
   }
 ]

@@ -33,7 +33,9 @@ import sys
 import time
 from pathlib import Path
 
-import duckdb
+# duckdb is intentionally a lazy import inside ``load_into_duckdb`` so that
+# Postgres-only deployments (e.g. the portable Postgres bundle) do not need
+# to install duckdb at all.
 
 SUBDOMAINS = [
     # Original 7 anchors.
@@ -55,6 +57,21 @@ SUBDOMAINS = [
     "real_world_evidence",
     "settlement_clearing",
     "programmatic_advertising",
+    # 18th deep-tier anchor (AP2 / OpenAI Apps SDK / MCP).
+    "agentic_commerce",
+    # 12 newest anchors -- retail/CPG/operations.
+    "pricing_and_promotions",
+    "omnichannel_oms",
+    "customer_loyalty_cdp",
+    "loss_prevention",
+    "returns_reverse_logistics",
+    "trade_promotion_management",
+    "revenue_growth_management",
+    "direct_store_delivery",
+    "category_management",
+    "sop_supply_chain_planning",
+    "predictive_maintenance",
+    "procurement_spend_analytics",
 ]
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -67,7 +84,17 @@ def run_generators(seed: int) -> dict[str, dict]:
     results: dict[str, dict] = {}
     sys.path.insert(0, str(SYNTH_ROOT))
     for sub in SUBDOMAINS:
-        module = importlib.import_module(f"{sub}.generate")
+        # Slim bundles (e.g. AC-only) prune subdomain packages from the
+        # repo. Skip any whose generator module is absent rather than
+        # failing the whole run.
+        if not (SYNTH_ROOT / sub).is_dir():
+            print(f"[{sub}] not present in this bundle -- skipping.")
+            continue
+        try:
+            module = importlib.import_module(f"{sub}.generate")
+        except ModuleNotFoundError:
+            print(f"[{sub}] generator module missing -- skipping.")
+            continue
         t0 = time.time()
         tables = module.generate(seed=seed)
         elapsed = time.time() - t0
@@ -84,6 +111,8 @@ def load_into_duckdb() -> None:
     detour exists because some bind-mount filesystems (Windows virtiofs in
     the CI sandbox) reject unlink even though they accept truncate+write.
     """
+    import duckdb  # local import — only needed for the duckdb target
+
     scratch = Path(os.environ.get("TMPDIR", "/tmp")) / "domain-explorer-build.duckdb"
     if scratch.exists():
         scratch.unlink()

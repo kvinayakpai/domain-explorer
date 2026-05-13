@@ -1,0 +1,69 @@
+version: 2
+
+sources:
+  - name: procurement_spend_analytics
+    description: |
+      Synthetic Procurement & Spend Analytics source schema produced by
+      synthetic-data/procurement_spend_analytics/generate.py. Mirrors what a
+      Fortune-500 manufacturer with SAP Ariba, Coupa, Jaggaer, Ivalua,
+      GEP SMART, Oracle Procurement Cloud, Workday Strategic Sourcing,
+      Tradeshift, Basware, Zycus, plus EcoVadis / CDP / SBTi (sustainability),
+      Resilinc / Sphera / D&B / BitSight (risk), and Sievo / Spendkey
+      (spend analytics) lands after S2P + ERP CDC.
+    schema: procurement_spend_analytics
+    tables:
+      - name: category_taxonomy
+        description: UNSPSC-anchored canonical category hierarchy (Segment/Family/Class/Commodity).
+        columns:
+          - name: category_code
+            tests: [unique, not_null]
+      - name: supplier
+        description: Supplier master keyed by supplier_id; D&B DUNS + LEI as canonical join keys.
+        columns:
+          - name: supplier_id
+            tests: [unique, not_null]
+      - name: contract
+        description: Master / framework / SOW agreements with negotiated terms.
+        columns:
+          - name: contract_id
+            tests: [unique, not_null]
+      - name: purchase_order
+        description: Approved PO headers issued to suppliers.
+        columns:
+          - name: po_id
+            tests: [unique, not_null]
+      - name: po_line
+        description: PO line items — the natural-grain spend cube fact.
+        columns:
+          - name: po_line_id
+            tests: [unique, not_null]
+      - name: receipt
+        description: Goods / services receipts anchoring three-way match.
+        columns:
+          - name: receipt_id
+            tests: [unique, not_null]
+      - name: invoice
+        description: AP invoices raised by suppliers; Peppol BIS 3.0 / EDI 810 envelopes.
+        columns:
+          - name: invoice_id
+            tests: [unique, not_null]
+      - name: supplier_risk_assessment
+        description: Supplier risk snapshots from Resilinc, D&B, BitSight, EcoVadis, internal QA.
+        columns:
+          - name: assessment_id
+            tests: [unique, not_null]
+      - name: emissions_factor
+        description: Reference GHG emissions factors (EXIOBASE / USEEIO / ecoinvent / primary).
+        columns:
+          - name: emissions_factor_id
+            tests: [unique, not_null]
+      - name: sustainability_attribute
+        description: Supplier-disclosed sustainability metrics (CDP, EcoVadis, SBTi, primary).
+        columns:
+          - name: sustainability_attr_id
+            tests: [unique, not_null]
+      - name: savings_event
+        description: Committed-vs-realized savings ledger; hard / soft / avoidance.
+        columns:
+          - name: savings_event_id
+            tests: [unique, not_null]

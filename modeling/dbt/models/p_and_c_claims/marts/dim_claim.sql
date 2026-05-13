@@ -29,8 +29,8 @@ select
         when stg.report_lag_days <= 30                 then 'within_month'
         else 'late'
     end                                                 as report_lag_band,
-    cast(strftime(stg.fnol_ts, '%Y%m%d') as integer)    as fnol_date_key,
-    cast(strftime(stg.loss_date, '%Y%m%d') as integer)  as loss_date_key,
+    cast({{ format_date('stg.fnol_ts', '%Y%m%d') }} as integer)    as fnol_date_key,
+    cast({{ format_date('stg.loss_date', '%Y%m%d') }} as integer)  as loss_date_key,
     s.fraud_score,
     case
         when s.fraud_score is null   then 'unknown'

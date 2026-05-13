@@ -13,7 +13,7 @@ select
     s.kyc_status,
     s.risk_segment,
     s.signup_date,
-    cast(date_diff('day', s.signup_date, current_date) / 365.25 as integer)
+    cast({{ dbt_utils.datediff('s.signup_date', 'current_date', 'day') }} / 365.25 as integer)
                               as tenure_years,
     h.load_date               as dim_loaded_at
 from hub h

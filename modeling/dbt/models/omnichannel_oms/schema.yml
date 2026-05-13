@@ -1,0 +1,220 @@
+version: 2
+
+models:
+  # ---------- Staging ----------
+  - name: stg_omnichannel_oms__customers
+    description: One row per unified customer (golden record stitched across .com, store loyalty, and call-center IDs).
+    columns:
+      - name: customer_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [active, merged, suppressed]
+
+  - name: stg_omnichannel_oms__locations
+    description: Stores, DCs, dark stores, drop-ship, and lockers — every node that can hold inventory or fulfill an order.
+    columns:
+      - name: location_id
+        tests: [unique, not_null]
+      - name: location_type
+        tests:
+          - accepted_values:
+              values: [store, dc, dark_store, drop_ship, partner, locker]
+
+  - name: stg_omnichannel_oms__products
+    description: SKU master mirrored from RMS, GTIN-14 keyed.
+    columns:
+      - name: product_id
+        tests: [unique, not_null]
+
+  - name: stg_omnichannel_oms__inventory_positions
+    description: Effective-dated quantity at a location × product, the atomic input to ATP.
+    columns:
+      - name: position_id
+        tests: [unique, not_null]
+      - name: location_id
+        tests:
+          - not_null
+          - relationships: { to: ref('stg_omnichannel_oms__locations'), field: location_id }
+      - name: product_id
+        tests:
+          - not_null
+          - relationships: { to: ref('stg_omnichannel_oms__products'), field: product_id }
+
+  - name: stg_omnichannel_oms__sourcing_rules
+    description: Rule fragments used by the DOM broker.
+    columns:
+      - name: rule_id
+        tests: [unique, not_null]
+
+  - name: stg_omnichannel_oms__orders
+    description: Order header captured across channels.
+    columns:
+      - name: order_id
+        tests: [unique, not_null]
+      - name: capture_channel
+        tests:
+          - accepted_values:
+              values: [web, app, store_pos, kiosk, call_center, marketplace, agent]
+      - name: order_status
+        tests:
+          - accepted_values:
+              values: [captured, sourced, in_fulfillment, partial_shipped, shipped, delivered, picked_up, cancelled, returned]
+
+  - name: stg_omnichannel_oms__order_lines
+    description: SKU on an order — fulfillment grain.
+    columns:
+      - name: order_line_id
+        tests: [unique, not_null]
+      - name: order_id
+        tests:
+          - relationships: { to: ref('stg_omnichannel_oms__orders'), field: order_id }
+      - name: fulfillment_method
+        tests:
+          - accepted_values:
+              values: [ship_to_home, bopis, sfs, curbside, delivery, drop_ship, same_day]
+
+  - name: stg_omnichannel_oms__allocations
+    description: Allocation = order_line ↔ fulfillment node binding from the DOM broker.
+    columns:
+      - name: allocation_id
+        tests: [unique, not_null]
+      - name: order_line_id
+        tests:
+          - relationships: { to: ref('stg_omnichannel_oms__order_lines'), field: order_line_id }
+      - name: status
+        tests:
+          - accepted_values:
+              values: [issued, accepted, rejected, reallocated, completed]
+
+  - name: stg_omnichannel_oms__fulfillment_events
+    description: Event-sourced lifecycle of allocations (Fluent Commerce model).
+    columns:
+      - name: event_id
+        tests: [unique, not_null]
+      - name: event_type
+        tests:
+          - accepted_values:
+              values: [pick_started, pick_complete, substitution, short_pick, pack, label, ship, in_transit, out_for_delivery, delivered, pickup_ready, pickup_complete, cancel, reallocate, return_initiated, return_received, refund_issued]
+
+  - name: stg_omnichannel_oms__shipments
+    description: Physical parcels handed to a carrier; one-to-one with EDI 945.
+    columns:
+      - name: shipment_id
+        tests: [unique, not_null]
+      - name: carrier
+        tests:
+          - accepted_values:
+              values: [fedex, ups, usps, dhl, store_courier, ontrac, lasership, same_day]
+
+  - name: stg_omnichannel_oms__returns
+    description: Customer return / RMA covering one or more order lines.
+    columns:
+      - name: rma_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [initiated, in_transit, received, inspected, refunded, cancelled]
+
+  # ---------- Marts ----------
+  - name: dim_date_oms
+    description: Date dimension scoped to the omnichannel_oms window. Suffix avoids collision with other anchors' dim_date.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+
+  - name: dim_customer_oms
+    description: Customer dimension with golden-record + loyalty flag. Suffix avoids collision with other anchors' dim_customer.
+    columns:
+      - name: customer_sk
+        tests: [unique, not_null]
+      - name: customer_id
+        tests: [unique, not_null]
+
+  - name: dim_location
+    description: Conformed location dimension across stores, DCs, dark stores, drop-ship, lockers.
+    columns:
+      - name: location_sk
+        tests: [unique, not_null]
+      - name: location_id
+        tests: [unique, not_null]
+
+  - name: dim_product_oms
+    description: Product dimension for OMS. Suffix avoids collision with merchandising/pricing dim_product.
+    columns:
+      - name: product_sk
+        tests: [unique, not_null]
+      - name: product_id
+        tests: [unique, not_null]
+
+  - name: dim_sourcing_rule
+    description: Sourcing rule dimension carrying cost / speed / capacity / clearance weights.
+    columns:
+      - name: rule_sk
+        tests: [unique, not_null]
+      - name: rule_id
+        tests: [unique, not_null]
+
+  - name: dim_carrier
+    description: Carrier dimension with default service level.
+    columns:
+      - name: carrier_sk
+        tests: [unique, not_null]
+      - name: carrier
+        tests: [unique, not_null]
+
+  - name: fct_orders_oms
+    description: Fact — one row per order header. Joins to dim_customer_oms, dim_location, dim_date_oms.
+    columns:
+      - name: order_id
+        tests: [unique, not_null]
+      - name: customer_sk
+        tests:
+          - relationships: { to: ref('dim_customer_oms'), field: customer_sk }
+
+  - name: fct_order_line_oms
+    description: Fact — one row per order_line.
+    columns:
+      - name: order_line_id
+        tests: [unique, not_null]
+
+  - name: fct_allocations
+    description: Fact — one row per DOM allocation decision.
+    columns:
+      - name: allocation_id
+        tests: [unique, not_null]
+      - name: location_sk
+        tests:
+          - relationships: { to: ref('dim_location'), field: location_sk }
+      - name: rule_sk
+        tests:
+          - relationships: { to: ref('dim_sourcing_rule'), field: rule_sk }
+
+  - name: fct_fulfillment_events
+    description: Fact — one row per lifecycle event in an allocation's history (event-sourced).
+    columns:
+      - name: event_id
+        tests: [unique, not_null]
+
+  - name: fct_shipments_oms
+    description: Fact — one row per shipped parcel.
+    columns:
+      - name: shipment_id
+        tests: [unique, not_null]
+      - name: carrier_sk
+        tests:
+          - relationships: { to: ref('dim_carrier'), field: carrier_sk }
+
+  - name: fct_inventory_position_snapshot
+    description: Snapshot of inventory position at the location × product × day grain.
+    columns:
+      - name: snapshot_id
+        tests: [unique, not_null]
+
+  - name: fct_returns_oms
+    description: Fact — one row per RMA.
+    columns:
+      - name: rma_id
+        tests: [unique, not_null]

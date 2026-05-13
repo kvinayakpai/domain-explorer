@@ -53,7 +53,7 @@ select
     d.property_id,
     md5(d.property_id)                                        as property_key,
     d.stay_date,
-    cast(strftime(d.stay_date, '%Y%m%d') as integer)          as stay_date_key,
+    cast({{ format_date('d.stay_date', '%Y%m%d') }} as integer)          as stay_date_key,
     d.available_rooms,
     d.sold_rooms,
     d.out_of_order_rooms,

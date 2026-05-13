@@ -1,0 +1,510 @@
+id: direct_store_delivery
+name: Direct Store Delivery
+vertical: CPG
+oneLiner: Plan, sell, deliver, settle, and audit goods that bypass retailer DCs and move from CPG manufacturer trucks straight to the store shelf — route accounting, perfect-store execution, presell vs deliver mode, and electronic proof of delivery for >$200B of US grocery, beverage, snack, and bakery DSD volume.
+
+# Authoritative sources (as of mid-2026):
+#   SAP DSD (S/4HANA Direct Store Delivery)
+#     https://help.sap.com/docs/SAP_S4HANA_CLOUD/direct-store-delivery
+#     Route, Visit Plan, Visit, Tour, Settlement, EPOD, Returns.
+#   Aldata Apollo (now part of SymphonyAI Retail/CPG) — DSD route accounting
+#     https://www.symphonyretailai.com — Apollo Route Accounting, Settlement.
+#   Trimble Roadnet Anywhere (formerly UPS/Roadnet)
+#     https://transportation.trimble.com/products/roadnet-anywhere
+#     Daily route optimization, dynamic re-route, FleetLoader, MobileCast.
+#   Trimble PeopleNet (vehicle telematics + ELD)
+#     https://transportation.trimble.com/products/peoplenet
+#     ELD/HOS per FMCSA 49 CFR §395, ConnectedDriver app, vehicle health.
+#   Epicor DSD (formerly Apprise/Activant) + Epicor Eagle (independent grocers POS)
+#     https://www.epicor.com/en/industries/distribution/direct-store-delivery
+#     Mobile sales force, settlement, returns, presell.
+#   Salient CMx (Salient Management Company, AFS Technologies portfolio)
+#     https://www.salient.com — DSD profitability cubes, route P&L.
+#   AFS Technologies (now part of Salient/AFS) — DSD + Retail Execution
+#     https://www.afsi.com — AFS DSD, AFS Retail Execution, AFS Distributor.
+#   ToolsGroup (Service Optimizer 99 + JustEnough Forecasting)
+#     https://www.toolsgroup.com — DSD demand forecasting, truck-load planning.
+#   Descartes Systems (Route Planner OnDemand, Mobile, Reservations)
+#     https://www.descartes.com — Tier-1 route optimization & EPOD.
+#   Workwave Route Manager (now part of IFS)
+#     https://www.workwave.com — DSD-flavored field service routing.
+#   Manhattan Active Routing & Resource Management
+#     https://www.manh.com/products/active-supply-chain-planning/active-routing
+#     Last-mile + DSD fleet routing, dock scheduling.
+#   Honeywell + Zebra rugged mobile devices (CN80, CT45, MC9300, TC78)
+#     https://sps.honeywell.com / https://www.zebra.com — driver/sales handhelds.
+#   Pepsi/Coca-Cola/Anheuser-Busch internal DSD systems (Pepsi POWER 5, Coca-Cola
+#     KO ONE, AB-InBev BEES) — frame what large CPG bottlers operate at scale.
+#   GS1 — GTIN-14 (case), GTIN-12 (each), GLN (store/route), SSCC (pallet)
+#     https://www.gs1.org
+#   ASC X12 EDI:
+#     EDI 894 — Delivery/Return Base Record (manufacturer ↔ retailer DSD invoice)
+#     EDI 895 — Delivery/Return Acknowledgement (signed receipt at store door)
+#     EDI 940 — Warehouse Shipping Order (truck loading, backstock pull)
+#     EDI 945 — Warehouse Shipping Advice (load confirmation back to TPM/ERP)
+#   FMCSA 49 CFR Part 395 — Hours of Service / ELD compliance.
+#   IFTA — International Fuel Tax Agreement (route reporting per jurisdiction).
+
+personas:
+  - { name: VP Field Sales, title: VP, Field Sales (DSD), level: VP }
+  - { name: Route Operations Manager, title: Director, Route Operations, level: Director }
+  - { name: Delivery Driver Manager, title: Manager, Delivery Drivers, level: Manager }
+  - { name: Account Sales Rep, title: DSD Account Sales Representative, level: IC }
+  - { name: Settlement Manager, title: Manager, Driver Settlement & Cash Reconciliation, level: Manager }
+  - { name: Perfect Store Lead, title: Director, Perfect Store & Retail Execution, level: Director }
+  - { name: Route Planner, title: Senior Route Planner, level: IC }
+  - { name: DSD Finance Controller, title: Controller, DSD Operations Finance, level: VP }
+
+decisions:
+  - { id: dsd.d.route_design, statement: "Re-cut master routes for the next quarter — which stops belong on which route given drive-time, tonnage, perfect-store class, and driver tenure?" }
+  - { id: dsd.d.daily_dispatch, statement: "For tomorrow's dispatch, lock the stop sequence, load each truck, and publish to the driver handheld — re-optimize given last-night's order book and known closures." }
+  - { id: dsd.d.presell_vs_deliver, statement: "Convert a deliver-route stop to a presell+next-day-delivery model (or back) given drop size, dwell time, and back-door congestion." }
+  - { id: dsd.d.dynamic_reroute, statement: "Mid-day, a route is 90 minutes behind — reassign the tail of the route, reschedule, or pay overtime?" }
+  - { id: dsd.d.driver_settlement, statement: "Approve the driver's daily settlement (cash + check + EFT + returns + spoils) or send back to the cage for rework." }
+  - { id: dsd.d.deduction_dispute, statement: "Retailer back-charges a $4k case-shortage on a 12-stop bulk delivery — pay, dispute with EPOD signature evidence, or reclassify against a different store." }
+  - { id: dsd.d.perfect_store_credit, statement: "Withhold or credit perfect-store performance pay to the driver/rep based on cooler set, planogram compliance, and price-tag audit." }
+  - { id: dsd.d.return_authorization, statement: "Authorize a same-stop swap of stale/damaged product against the route's daily return allowance." }
+  - { id: dsd.d.fleet_size, statement: "Add or retire a truck on a branch — does the marginal route meet contribution-margin floor at projected drop sizes?" }
+  - { id: dsd.d.cooler_replenish, statement: "Approve a cooler re-set + restock during the visit (off-cycle), or schedule a dedicated re-set crew next week." }
+  - { id: dsd.d.frequency_change, statement: "Move a stop from 3x/week to 2x/week service given declining drop size and rising cost-per-stop." }
+
+kpis:
+  - id: dsd.kpi.stops_per_route
+    name: Stops per Route
+    formula: count(distinct stop_id) / count(distinct route_day_id)
+    unit: stops/day
+    direction: target_band
+    decisionsSupported: [dsd.d.route_design, dsd.d.daily_dispatch, dsd.d.frequency_change]
+  - id: dsd.kpi.cases_per_stop
+    name: Cases per Stop
+    formula: sum(cases_delivered) / count(distinct stop_id)
+    unit: cases
+    direction: higher_is_better
+    decisionsSupported: [dsd.d.presell_vs_deliver, dsd.d.frequency_change]
+  - id: dsd.kpi.drop_size_units
+    name: Drop Size (units)
+    formula: sum(units_delivered) / count(distinct stop_id)
+    unit: units
+    direction: higher_is_better
+    decisionsSupported: [dsd.d.presell_vs_deliver, dsd.d.fleet_size]
+  - id: dsd.kpi.on_time_delivery_pct
+    name: On-Time Delivery %
+    formula: stops_delivered_in_window / stops_scheduled
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [dsd.d.daily_dispatch, dsd.d.dynamic_reroute]
+  - id: dsd.kpi.perfect_store_score
+    name: Perfect Store Score (DSD)
+    formula: weighted_avg(distribution, share_of_cooler, planogram_compliance, price_compliance, promo_compliance, freshness)
+    unit: index
+    direction: higher_is_better
+    decisionsSupported: [dsd.d.perfect_store_credit, dsd.d.cooler_replenish]
+  - id: dsd.kpi.case_fill_rate
+    name: Case Fill Rate (CFR)
+    formula: cases_delivered / cases_ordered
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [dsd.d.daily_dispatch, dsd.d.deduction_dispute]
+  - id: dsd.kpi.cost_per_stop
+    name: Cost per Stop
+    formula: (driver_wage + truck_cost + fuel_cost + overhead) / count(distinct stop_id)
+    unit: USD
+    direction: lower_is_better
+    decisionsSupported: [dsd.d.route_design, dsd.d.fleet_size, dsd.d.frequency_change]
+  - id: dsd.kpi.cost_per_case
+    name: Cost per Case Delivered
+    formula: total_route_cost / cases_delivered
+    unit: USD
+    direction: lower_is_better
+    decisionsSupported: [dsd.d.fleet_size, dsd.d.presell_vs_deliver]
+  - id: dsd.kpi.settlement_accuracy
+    name: Settlement Accuracy %
+    formula: 1 - (sum(settlement_variance_amount) / sum(settlement_total_amount))
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [dsd.d.driver_settlement]
+  - id: dsd.kpi.returns_rate
+    name: Returns Rate (DSD)
+    formula: sum(returned_units) / sum(delivered_units)
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [dsd.d.return_authorization, dsd.d.cooler_replenish]
+  - id: dsd.kpi.out_of_stock_pct
+    name: Out-of-Stock % (Shelf)
+    formula: stops_with_oos_observation / stops_audited
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [dsd.d.cooler_replenish, dsd.d.perfect_store_credit]
+  - id: dsd.kpi.route_adherence_pct
+    name: Route Adherence %
+    formula: stops_visited_in_planned_sequence / stops_planned
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [dsd.d.daily_dispatch, dsd.d.dynamic_reroute]
+  - id: dsd.kpi.sales_per_mile
+    name: Sales per Mile
+    formula: sum(net_sales_dollars) / sum(route_miles)
+    unit: USD/mile
+    direction: higher_is_better
+    decisionsSupported: [dsd.d.route_design, dsd.d.fleet_size]
+  - id: dsd.kpi.driver_productivity
+    name: Driver Productivity (cases/hour)
+    formula: sum(cases_delivered) / sum(driver_paid_hours)
+    unit: cases/hour
+    direction: higher_is_better
+    decisionsSupported: [dsd.d.route_design, dsd.d.daily_dispatch]
+  - id: dsd.kpi.epod_capture_rate
+    name: EPOD Signature Capture Rate
+    formula: stops_with_signed_epod / stops_delivered
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [dsd.d.deduction_dispute, dsd.d.driver_settlement]
+
+dataModel:
+  entities:
+    - name: route
+      description: Master route — a recurring sequence of stops served by a single (or rotating) driver. SAP DSD calls this a "Tour Plan"; Roadnet calls it a "Master Route".
+      keys: [route_id]
+      attributes:
+        - { name: route_id, type: varchar(32), isPrimaryKey: true }
+        - { name: branch_id, type: varchar(32), description: "Originating depot / distribution branch" }
+        - { name: route_code, type: varchar(16), description: "Operations code (e.g., ATL-072)" }
+        - { name: route_type, type: varchar(16), description: "deliver|presell|merchandiser|combination|service" }
+        - { name: service_days, type: varchar(16), description: "MTWHFSU pattern (e.g., MWF)" }
+        - { name: planned_stops, type: smallint }
+        - { name: planned_miles, type: "decimal(8,2)" }
+        - { name: planned_duration_min, type: integer }
+        - { name: vehicle_class, type: varchar(16), description: "bobtail|side-bay|tractor-trailer|step-van|sprinter" }
+        - { name: status, type: varchar(16) }
+        - { name: created_at, type: timestamp }
+        - { name: effective_from, type: date }
+        - { name: effective_to, type: date }
+
+    - name: driver
+      description: DSD driver / driver-sales rep. Carries CDL details and ELD identifier per FMCSA 49 CFR §395.
+      keys: [driver_id]
+      attributes:
+        - { name: driver_id, type: varchar(32), isPrimaryKey: true }
+        - { name: branch_id, type: varchar(32) }
+        - { name: employee_number, type: varchar(32) }
+        - { name: full_name, type: varchar(255) }
+        - { name: cdl_class, type: varchar(4), description: "A|B|C" }
+        - { name: cdl_expiry, type: date }
+        - { name: hire_date, type: date }
+        - { name: tenure_years, type: "decimal(5,2)" }
+        - { name: eld_device_id, type: varchar(64), description: "FMCSA-registered ELD identifier" }
+        - { name: home_terminal, type: varchar(32) }
+        - { name: pay_class, type: varchar(16), description: "hourly|commission|hybrid" }
+        - { name: status, type: varchar(16) }
+
+    - name: vehicle
+      description: Truck or van that carries DSD product. PeopleNet ELD and telematics live here.
+      keys: [vehicle_id]
+      attributes:
+        - { name: vehicle_id, type: varchar(32), isPrimaryKey: true }
+        - { name: branch_id, type: varchar(32) }
+        - { name: asset_tag, type: varchar(32) }
+        - { name: vin, type: varchar(17), description: "ISO 3779 VIN" }
+        - { name: make, type: varchar(32) }
+        - { name: model, type: varchar(32) }
+        - { name: year, type: smallint }
+        - { name: vehicle_class, type: varchar(16), description: "bobtail|side-bay|tractor-trailer|step-van|sprinter" }
+        - { name: gvwr_lbs, type: integer }
+        - { name: payload_lbs, type: integer }
+        - { name: bay_count, type: smallint }
+        - { name: refrigerated, type: boolean }
+        - { name: telematics_provider, type: varchar(32), description: "trimble_peoplenet|samsara|geotab|verizon_connect" }
+        - { name: ifta_jurisdictions, type: text, description: "JSON list of state/province codes for IFTA" }
+        - { name: status, type: varchar(16) }
+
+    - name: stop
+      description: A scheduled stop on a route-day — one customer outlet visited by one driver in one route execution. Grain = (route_id, route_day, sequence).
+      keys: [stop_id]
+      attributes:
+        - { name: stop_id, type: varchar(40), isPrimaryKey: true }
+        - { name: route_id, type: varchar(32), isForeignKey: true, references: route.route_id }
+        - { name: route_day, type: date }
+        - { name: outlet_id, type: varchar(32), description: "Customer outlet (joins to the trade-promotion outlet master)" }
+        - { name: gln, type: varchar(13), description: "GS1 GLN of the store" }
+        - { name: planned_sequence, type: smallint }
+        - { name: actual_sequence, type: smallint }
+        - { name: planned_arrival, type: timestamp }
+        - { name: actual_arrival, type: timestamp }
+        - { name: planned_departure, type: timestamp }
+        - { name: actual_departure, type: timestamp }
+        - { name: dwell_minutes, type: integer }
+        - { name: status, type: varchar(16), description: "scheduled|in_route|on_site|completed|skipped|reattempt" }
+        - { name: skip_reason, type: varchar(64) }
+        - { name: lat, type: "decimal(9,6)" }
+        - { name: lng, type: "decimal(9,6)" }
+        - { name: presell_flag, type: boolean, description: "Stop served via presell+deliver model" }
+
+    - name: dsd_order
+      description: An order written or delivered at a stop. Presell orders are written today for tomorrow; deliver orders are written and delivered in the same visit.
+      keys: [order_id]
+      attributes:
+        - { name: order_id, type: varchar(40), isPrimaryKey: true }
+        - { name: stop_id, type: varchar(40), isForeignKey: true, references: stop.stop_id }
+        - { name: outlet_id, type: varchar(32) }
+        - { name: order_type, type: varchar(16), description: "presell|deliver|return|swap|service" }
+        - { name: order_date, type: date }
+        - { name: requested_delivery_date, type: date }
+        - { name: account_id, type: varchar(32) }
+        - { name: salesman_id, type: varchar(32), description: "Account Sales Rep (presell) or driver (deliver)" }
+        - { name: total_cases, type: integer }
+        - { name: total_units, type: integer }
+        - { name: gross_amount_cents, type: bigint }
+        - { name: discount_amount_cents, type: bigint }
+        - { name: net_amount_cents, type: bigint }
+        - { name: tax_amount_cents, type: bigint }
+        - { name: payment_terms, type: varchar(16), description: "cod|net7|net14|net30|charge_account" }
+        - { name: status, type: varchar(16), description: "draft|approved|in_transit|delivered|invoiced|cancelled" }
+        - { name: created_at, type: timestamp }
+
+    - name: dsd_order_line
+      description: One SKU line on a DSD order. Includes promo-tactic linkage and per-unit pricing for invoice and settlement.
+      keys: [order_line_id]
+      attributes:
+        - { name: order_line_id, type: varchar(40), isPrimaryKey: true }
+        - { name: order_id, type: varchar(40), isForeignKey: true, references: dsd_order.order_id }
+        - { name: sku_id, type: varchar(32) }
+        - { name: gtin, type: varchar(14) }
+        - { name: ordered_units, type: integer }
+        - { name: ordered_cases, type: integer }
+        - { name: delivered_units, type: integer }
+        - { name: delivered_cases, type: integer }
+        - { name: returned_units, type: integer }
+        - { name: short_units, type: integer, description: "Ordered minus delivered minus returned (shortfall)" }
+        - { name: unit_price_cents, type: bigint }
+        - { name: extended_amount_cents, type: bigint }
+        - { name: promo_tactic_id, type: varchar(32), description: "Joins to trade_promotion_management.promo_tactic" }
+        - { name: lot_number, type: varchar(32) }
+        - { name: expiry_date, type: date }
+        - { name: route_load_position, type: varchar(16), description: "bay+slot reference for FleetLoader/MobileCast" }
+
+    - name: settlement
+      description: Daily cash + check + EFT + returns reconciliation between the driver and the cage. End-of-day "tour close" in SAP DSD; "route settlement" in Aldata Apollo.
+      keys: [settlement_id]
+      attributes:
+        - { name: settlement_id, type: varchar(40), isPrimaryKey: true }
+        - { name: route_id, type: varchar(32), isForeignKey: true, references: route.route_id }
+        - { name: driver_id, type: varchar(32), isForeignKey: true, references: driver.driver_id }
+        - { name: vehicle_id, type: varchar(32), isForeignKey: true, references: vehicle.vehicle_id }
+        - { name: settlement_date, type: date }
+        - { name: total_invoiced_cents, type: bigint }
+        - { name: total_collected_cash_cents, type: bigint }
+        - { name: total_collected_check_cents, type: bigint }
+        - { name: total_collected_eft_cents, type: bigint }
+        - { name: total_charge_account_cents, type: bigint }
+        - { name: returns_credit_cents, type: bigint }
+        - { name: spoilage_credit_cents, type: bigint }
+        - { name: variance_cents, type: bigint, description: "Expected minus actual cash; positive = over, negative = short" }
+        - { name: variance_reason, type: varchar(64) }
+        - { name: status, type: varchar(16), description: "open|reconciled|disputed|adjusted|closed" }
+        - { name: closed_at, type: timestamp }
+        - { name: approved_by, type: varchar(64) }
+
+    - name: epod_event
+      description: Electronic Proof of Delivery — signature capture, photo, geo-stamp at the store door. EDI 895 is the inter-org wire; the on-device record lives here.
+      keys: [epod_id]
+      attributes:
+        - { name: epod_id, type: varchar(40), isPrimaryKey: true }
+        - { name: stop_id, type: varchar(40), isForeignKey: true, references: stop.stop_id }
+        - { name: order_id, type: varchar(40), isForeignKey: true, references: dsd_order.order_id }
+        - { name: signed_at, type: timestamp }
+        - { name: signed_by, type: varchar(255), description: "Receiver name printed on the handheld" }
+        - { name: signature_image_uri, type: text }
+        - { name: photo_uri, type: text, description: "Photo of pallet at door / cooler set" }
+        - { name: geo_lat, type: "decimal(9,6)" }
+        - { name: geo_lng, type: "decimal(9,6)" }
+        - { name: device_id, type: varchar(64), description: "Honeywell CN80 / Zebra TC78 device ID" }
+        - { name: edi_895_doc_id, type: varchar(64), description: "Outbound EDI 895 reference" }
+
+    - name: perfect_store_audit
+      description: Driver-rep or merchandiser audit of in-store execution — distribution, share of cooler, planogram, price tag, promo, freshness. Drives Perfect Store Score.
+      keys: [audit_id]
+      attributes:
+        - { name: audit_id, type: varchar(40), isPrimaryKey: true }
+        - { name: stop_id, type: varchar(40), isForeignKey: true, references: stop.stop_id }
+        - { name: outlet_id, type: varchar(32) }
+        - { name: audit_date, type: date }
+        - { name: auditor_id, type: varchar(32), description: "Driver, account rep, or merchandiser id" }
+        - { name: distribution_score, type: "decimal(5,2)" }
+        - { name: share_of_cooler_pct, type: "decimal(5,2)" }
+        - { name: planogram_compliance_pct, type: "decimal(5,2)" }
+        - { name: price_compliance_pct, type: "decimal(5,2)" }
+        - { name: promo_compliance_pct, type: "decimal(5,2)" }
+        - { name: freshness_score, type: "decimal(5,2)", description: "Days-on-shelf vs. expiry" }
+        - { name: oos_count, type: smallint, description: "Number of authorized SKUs found out of stock" }
+        - { name: perfect_store_score, type: "decimal(5,2)" }
+        - { name: photo_uri, type: text }
+        - { name: notes, type: text }
+
+    - name: route_telemetry
+      description: Per-minute (or richer) telemetry from PeopleNet/Samsara/Geotab — GPS, speed, fuel, harsh-braking events. Drives ELD/HOS, IFTA, and dynamic re-route signals.
+      keys: [telemetry_id]
+      attributes:
+        - { name: telemetry_id, type: varchar(48), isPrimaryKey: true }
+        - { name: vehicle_id, type: varchar(32), isForeignKey: true, references: vehicle.vehicle_id }
+        - { name: driver_id, type: varchar(32), isForeignKey: true, references: driver.driver_id }
+        - { name: observed_at, type: timestamp }
+        - { name: lat, type: "decimal(9,6)" }
+        - { name: lng, type: "decimal(9,6)" }
+        - { name: speed_mph, type: "decimal(5,2)" }
+        - { name: heading_deg, type: smallint }
+        - { name: odometer_miles, type: "decimal(9,2)" }
+        - { name: fuel_pct, type: "decimal(5,2)" }
+        - { name: ignition_on, type: boolean }
+        - { name: hos_status, type: varchar(8), description: "off_duty|sleeper|on_duty|driving" }
+        - { name: harsh_event_type, type: varchar(16), description: "harsh_brake|harsh_accel|hard_corner|over_speed" }
+
+    - name: deduction
+      description: Retailer-issued chargeback against a DSD invoice — short, damaged, expired, or pricing claim. Joins back to the originating order line for evidence.
+      keys: [deduction_id]
+      attributes:
+        - { name: deduction_id, type: varchar(40), isPrimaryKey: true }
+        - { name: account_id, type: varchar(32) }
+        - { name: order_id, type: varchar(40), description: "Originating DSD invoice (links to dsd_order.order_id)" }
+        - { name: stop_id, type: varchar(40) }
+        - { name: claim_number, type: varchar(64) }
+        - { name: deduction_type, type: varchar(32), description: "shortage|damages|expired|pricing|stale|promo|swell|other" }
+        - { name: amount_cents, type: bigint }
+        - { name: open_amount_cents, type: bigint }
+        - { name: opened_date, type: date }
+        - { name: aging_days, type: integer }
+        - { name: status, type: varchar(16), description: "open|matched|disputed|paid|written_off|chargeback_lost" }
+        - { name: dispute_reason, type: varchar(64) }
+        - { name: epod_evidence_uri, type: text, description: "Pointer to EPOD record used as evidence" }
+        - { name: resolution_date, type: date }
+
+  relationships:
+    - { from: stop, to: route, kind: many_to_one }
+    - { from: dsd_order, to: stop, kind: many_to_one }
+    - { from: dsd_order_line, to: dsd_order, kind: many_to_one }
+    - { from: settlement, to: route, kind: many_to_one }
+    - { from: settlement, to: driver, kind: many_to_one }
+    - { from: settlement, to: vehicle, kind: many_to_one }
+    - { from: epod_event, to: stop, kind: many_to_one }
+    - { from: epod_event, to: dsd_order, kind: many_to_one }
+    - { from: perfect_store_audit, to: stop, kind: many_to_one }
+    - { from: route_telemetry, to: vehicle, kind: many_to_one }
+    - { from: route_telemetry, to: driver, kind: many_to_one }
+    - { from: deduction, to: dsd_order, kind: many_to_one }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/direct_store_delivery_3nf.sql
+  vault: modeling/ddl/direct_store_delivery_vault.sql
+  dimensional: modeling/ddl/direct_store_delivery_dim.sql
+
+sourceSystems:
+  - { vendor: SAP, product: SAP DSD (S/4HANA Direct Store Delivery), category: DSD Platform }
+  - { vendor: SymphonyAI Retail/CPG (Aldata), product: Aldata Apollo Route Accounting, category: Route Accounting / Settlement }
+  - { vendor: Trimble, product: Roadnet Anywhere (FleetLoader, MobileCast), category: Route Optimization & Mobile Dispatch }
+  - { vendor: Trimble, product: Trimble PeopleNet (ELD + Telematics), category: Vehicle Telematics / ELD }
+  - { vendor: Epicor, product: Epicor DSD (Apprise/Activant), category: DSD ERP / Mobile Sales Force }
+  - { vendor: Epicor, product: Epicor Eagle, category: Independent Grocer POS }
+  - { vendor: Salient (AFS), product: Salient CMx (DSD profitability cubes), category: DSD Analytics / P&L }
+  - { vendor: AFS Technologies (Salient), product: AFS DSD + Retail Execution + Distributor, category: DSD Platform / Retail Execution }
+  - { vendor: ToolsGroup, product: ToolsGroup SO99+ / JustEnough, category: Demand Forecasting / Truck-Load Planning }
+  - { vendor: Descartes Systems Group, product: Descartes Route Planner OnDemand + Mobile, category: Route Optimization / EPOD }
+  - { vendor: WorkWave (IFS), product: WorkWave Route Manager, category: Field Service Routing }
+  - { vendor: Manhattan Associates, product: Manhattan Active Routing & Resource Management, category: Routing / Dock Scheduling }
+  - { vendor: SAP, product: SAP S/4HANA ERP — SD/FI, category: ERP — Order/Invoice/Settlement }
+  - { vendor: Honeywell, product: Honeywell CN80 / CT45 rugged handhelds, category: Driver/Sales Mobile Device }
+  - { vendor: Zebra Technologies, product: Zebra MC9300 / TC78 rugged handhelds, category: Driver/Sales Mobile Device }
+  - { vendor: VAN (Value-Added Network), product: Retailer EDI 894/895/940/945 feeds, category: EDI }
+
+connectors:
+  - { type: SAP RFC/BAPI, protocol: RFC, auth: SAP user, typicalSources: [SAP DSD, SAP S/4HANA] }
+  - { type: SAP IDoc, protocol: RFC/file, auth: SAP user, typicalSources: [SAP DSD] }
+  - { type: REST/JSON, protocol: HTTPS, auth: OAuth2, typicalSources: [Roadnet Anywhere, Descartes, WorkWave, Manhattan Active Routing, Salient CMx] }
+  - { type: AS2 EDI X12 (894/895/940/945), protocol: AS2, auth: PKI, typicalSources: [Walmart Retail Link, Kroger 84.51, Albertsons trading partners] }
+  - { type: Trimble PeopleNet ConnectedDriver API, protocol: HTTPS REST, auth: OAuth2, typicalSources: [Trimble PeopleNet] }
+  - { type: PeopleNet/Samsara telemetry stream, protocol: MQTT/HTTPS, auth: TLS + cred, typicalSources: [Trimble PeopleNet, Samsara, Geotab] }
+  - { type: Aldata Apollo settlement export, protocol: SFTP, auth: SSH key, typicalSources: [Aldata Apollo] }
+  - { type: Honeywell/Zebra device sync (Mobility Edge / Wavelink), protocol: HTTPS, auth: device cert, typicalSources: [Honeywell CN80, Zebra TC78] }
+  - { type: ToolsGroup SO99+ batch + REST, protocol: HTTPS / SFTP, auth: OAuth2 + SSH key, typicalSources: [ToolsGroup] }
+  - { type: Descartes Route Planner REST, protocol: HTTPS REST, auth: OAuth2 + tenant key, typicalSources: [Descartes] }
+  - { type: ELD log streams (FMCSA-registered), protocol: HTTPS, auth: device-bound JWT, typicalSources: [Trimble PeopleNet, Samsara, Geotab] }
+  - { type: Webhook (settlement / EPOD events), protocol: HTTPS, auth: HMAC, typicalSources: [Aldata Apollo, Descartes, SAP DSD] }
+
+ingestionChallenges:
+  - Route telemetry from PeopleNet/Samsara/Geotab arrives at sub-second cadence per truck — a 500-truck fleet can emit 30M+ telemetry rows per day; landing zone must downsample for analytics while preserving raw for ELD audit.
+  - EPOD signatures and store-door photos are binary blobs (200KB-2MB each); the metadata row lands in seconds via REST/MQTT but the blob hop (S3/Azure Blob) lags by minutes — joins must accept "metadata-arrived-but-blob-pending" state.
+  - Driver-handheld sync windows are bursty — hundreds of devices uploading at end-of-shift create a spike that compresses 8 hours of route activity into a 30-minute window. The ingest must tolerate out-of-order events from devices that lost connectivity mid-route.
+  - Settlement files arrive at end-of-route-day but the matching invoice records often land hours later from SAP S/4 SD — the reconciliation pipeline must accept late-binding adjustments without re-stating closed days.
+  - EDI 894/895 from retailers carries varying GTIN coverage and frequent DUNS/GLN mismatches; parser must reconcile against an outlet master that itself drifts.
+  - Telematics provider clock skew vs handheld clock vs ERP timestamp can disagree by tens of seconds; canonical event time must be derived (typically the ELD HOS timestamp wins).
+  - Returns and swaps captured on the handheld can be reversed mid-day if the driver corrects an entry — change-data-capture must capture the full trail, not just the final state.
+
+integrationChallenges:
+  - name: Plan vs actual reconciliation across SAP DSD and Roadnet
+    description: SAP DSD owns the master tour plan and the financial settlement. Roadnet Anywhere owns the daily optimized sequence and the live re-route. The two diverge multiple times per day as Roadnet re-sequences for traffic — without a continuous reconciliation, settlement charges fuel/miles against the wrong stops and breaks cost-per-stop rollups.
+    mitigation: Persist both plan_route_sequence and actual_route_sequence keyed by (route_id, route_day, stop_id); compute drift metrics nightly (sequence_change_count, mile_overage_pct); push the canonical actual back to SAP DSD for settlement.
+  - name: EPOD evidence linkage to retailer deduction
+    description: Walmart issues a $4k case-shortage chargeback 30 days after delivery. Without an EPOD signature + photo + GLN-stamped delivery, the manufacturer has no evidence to dispute. Inter-system join from EDI 820 deduction → original EDI 894 invoice → on-device EPOD record breaks at any of three places.
+    mitigation: Make epod_event a first-class table keyed by stop_id and order_id; backfill the edi_895_doc_id field at EPOD capture; carry the EPOD URI through to the deduction record so the deductions analyst clicks once for evidence.
+  - name: Driver settlement variance attribution
+    description: The driver's daily cash + check + EFT settlement runs short by $87. Was it under-collection at a stop, an unrecorded return, a mis-keyed price, or theft? Settlement variance is high-stakes (HR + finance) and the data flows are fragmented across handheld, route accounting, and POS at independent grocers running Epicor Eagle.
+    mitigation: Tag every settlement variance line with (stop_id, order_line_id, expected_amount, actual_amount, source_system); build a settlement-variance dashboard with drill-down to the offending order line; require driver acknowledgement on the handheld for any variance > $25.
+  - name: Presell vs deliver mode hand-off
+    description: Many CPGs run a hybrid model — an account sales rep presells on Tuesday for a Wednesday delivery truck. The presell order in Salesforce CG Cloud / SAP CRM must reach Roadnet's route-load by Tuesday night, with adjustments for stock availability at the branch. A dropped hand-off ships the wrong product.
+    mitigation: Define a single presell-to-deliver event contract (order_id, requested_delivery_date, branch_id, lines[]); make the route-load the system of record once cut; reject in-flight presell edits past the cut-off with a documented exception path.
+  - name: Mobile sales force device sync gaps
+    description: Honeywell/Zebra handhelds occasionally lose connectivity in dense store cellars or back rooms. Orders, EPODs, returns, and audits get queued on-device. When devices re-sync, conflicting state can land out-of-order — a stop marked "completed" then "skipped" then "completed" again.
+    mitigation: Use last-write-wins on a vector-clock ordered field (device_local_seq + observed_at); persist all conflicting versions in an audit_log table; alert ops if reconciliation produces a paradox (e.g., EPOD timestamp before stop arrival).
+  - name: Perfect-store credit pay-for-performance gating
+    description: Driver/rep performance pay is tied to perfect_store_score, which is computed from photo audits + planogram compliance + freshness. Photo audits land 2-7 days late from AFS or merchandiser apps. Paying performance bonuses on a stale score over-pays; waiting for the audit delays pay and demotivates.
+    mitigation: Compute a provisional perfect_store_score on the day-of (driver self-audit + handheld snapshot); reconcile to the audited score weekly; pay the lower of the two with a back-true-up at month-end if the audit lifts the score.
+  - name: ELD/HOS compliance vs route plan
+    description: A planned 11-hour route plan is legal under FMCSA 49 CFR §395 only if the driver started fresh with full HOS. Legacy planners don't know real-time HOS state from the ELD; an over-planned route forces an HOS violation or a mid-route swap.
+    mitigation: Stream HOS state from PeopleNet/Samsara into the planner's pre-dispatch check; reject dispatch if (planned_drive_minutes > available_drive_minutes); alert the dispatcher when a driver crosses the 10-hour drive limit mid-route.
+  - name: IFTA fuel-tax jurisdictional split
+    description: A truck crossing 4 states in a route-day generates miles and fuel purchases under IFTA. Telematics reports GPS positions; fuel cards (WEX, Comdata) report purchases. Joining at jurisdiction grain for IFTA filing requires precise polyline-to-state intersection and signed-off mile splits.
+    mitigation: Use the Trimble or HERE state-line shapefile to bucket telemetry GPS points into jurisdictions; reconcile with fuel-card transactions at the state grain; produce IFTA reports with an explicit unmatched-bucket so finance can audit.
+  - name: Returns + swaps + spoils accounting
+    description: A driver pulls 24 cases of expired SKU off the shelf and replaces with fresh. The transaction can be a "swap" (no cash) or a "return + sale" (creates a credit + new invoice). Different DSD platforms model this differently; downstream COGS and shrinkage allocation depend on which model fired.
+    mitigation: Standardize on a single returns_event type with a `swap_flag` and explicit (returned_units, replaced_units, credit_amount_cents) triple; carry `swap_flag` through to settlement and COGS pipelines so each model can pick its accounting view.
+  - name: Cooler/planogram compliance evidence
+    description: Display compliance pay (cooler set, end-cap honored, share of shelf) requires photo + planogram match. Vendors AFS, Numerator, and merchandiser apps each ingest photos with different metadata (location, store_number, planogram_version). Joining at outlet × week × tactic is fragile.
+    mitigation: Funnel all photo evidence into a unified compliance_event table (outlet_id, audit_date, evidence_uri, source); deterministic resolution rules (audit > photo > self-report); pay-for-performance gating reads the unified table only.
+
+glossaryTerms:
+  - DSD (Direct Store Delivery)
+  - Route Accounting
+  - Master Route
+  - Daily Route
+  - Stop
+  - Drop Size
+  - Presell
+  - Deliver
+  - Tour Plan
+  - EPOD (Electronic Proof of Delivery)
+  - Driver Settlement
+  - Variance Settlement
+  - Perfect Store Score (DSD)
+  - Planogram Compliance
+  - On-Shelf Availability (OSA)
+  - Out-of-Stock (OOS)
+  - Case Fill Rate (CFR)
+  - Service Level (DSD)
+  - Dynamic Routing
+  - HOS (Hours of Service, FMCSA 49 CFR §395)
+  - ELD (Electronic Logging Device)
+  - IFTA (International Fuel Tax Agreement)
+  - SSCC (Serial Shipping Container Code)
+  - Swap (DSD)
+  - Stale / Spoils
+  - Bay-Slot Loading
+
+standards:
+  - { id: edi_894, name: "ASC X12 EDI 894 — Delivery/Return Base Record", version: "v4010+", url: "https://www.x12.org/products/transaction-sets" }
+  - { id: edi_895, name: "ASC X12 EDI 895 — Delivery/Return Acknowledgement", version: "v4010+", url: "https://www.x12.org/products/transaction-sets" }
+  - { id: edi_940, name: "ASC X12 EDI 940 — Warehouse Shipping Order", version: "v4010+", url: "https://www.x12.org/products/transaction-sets" }
+  - { id: edi_945, name: "ASC X12 EDI 945 — Warehouse Shipping Advice", version: "v4010+", url: "https://www.x12.org/products/transaction-sets" }
+  - { id: gs1_gtin, name: "GS1 GTIN (Global Trade Item Number)", version: "GTIN-14 case / GTIN-12 each", url: "https://www.gs1.org/standards/id-keys/gtin" }
+  - { id: gs1_gln, name: "GS1 GLN (Global Location Number)", version: "GLN", url: "https://www.gs1.org/standards/id-keys/gln" }
+  - { id: gs1_sscc, name: "GS1 SSCC (Serial Shipping Container Code)", version: "SSCC-18", url: "https://www.gs1.org/standards/id-keys/sscc" }
+  - { id: fmcsa_395, name: "FMCSA 49 CFR Part 395 — Hours of Service / ELD Mandate", version: "2017 ELD final rule", url: "https://www.fmcsa.dot.gov/regulations/title49/part/395" }
+  - { id: ifta, name: "International Fuel Tax Agreement", version: "2026 articles", url: "https://www.iftach.org" }
+  - { id: iso_8601, name: "ISO 8601 — Date and time format (route windows)", version: "2019", url: "https://www.iso.org/iso-8601-date-and-time-format.html" }

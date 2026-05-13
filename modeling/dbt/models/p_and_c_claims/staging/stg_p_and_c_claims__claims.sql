@@ -15,6 +15,6 @@ select
     case
         when cast(fnol_ts as timestamp) is not null
          and cast(loss_date as timestamp) is not null
-            then date_diff('day', cast(loss_date as timestamp), cast(fnol_ts as timestamp))
+            then {{ dbt_utils.datediff('cast(loss_date as timestamp)', 'cast(fnol_ts as timestamp)', 'day') }}
     end                                as report_lag_days
 from {{ source('p_and_c_claims', 'claims') }}

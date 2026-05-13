@@ -1,0 +1,204 @@
+version: 2
+
+models:
+  # ---------- Staging ----------
+  - name: stg_pricing_and_promotions__product
+    description: Lightly typed view over the product master.
+    columns:
+      - name: product_id
+        tests: [unique, not_null]
+      - name: kvi_class
+        tests:
+          - accepted_values:
+              values: [KVI, KVC, background, traffic, premium]
+      - name: lifecycle_stage
+        tests:
+          - accepted_values:
+              values: [intro, grow, core, decline, clearance]
+
+  - name: stg_pricing_and_promotions__store
+    description: Store master with banner + zone + format.
+    columns:
+      - name: store_id
+        tests: [unique, not_null]
+      - name: format
+        tests:
+          - accepted_values:
+              values: [hypermarket, supermarket, convenience, specialty, ecom]
+
+  - name: stg_pricing_and_promotions__price_zone
+    description: Price-zone reference.
+    columns:
+      - name: price_zone_id
+        tests: [unique, not_null]
+      - name: pricing_strategy
+        tests:
+          - accepted_values:
+              values: [EDLP, hi-lo, hybrid]
+
+  - name: stg_pricing_and_promotions__price
+    description: Effective-dated price events (regular / promo / markdown / clearance / cost).
+    columns:
+      - name: price_id
+        tests: [unique, not_null]
+      - name: product_id
+        tests:
+          - not_null
+          - relationships: { to: ref('stg_pricing_and_promotions__product'), field: product_id }
+      - name: store_id
+        tests:
+          - not_null
+          - relationships: { to: ref('stg_pricing_and_promotions__store'), field: store_id }
+      - name: price_type
+        tests:
+          - accepted_values:
+              values: [regular, promo, markdown, clearance, cost]
+
+  - name: stg_pricing_and_promotions__promo
+    description: Promo header.
+    columns:
+      - name: promo_id
+        tests: [unique, not_null]
+      - name: mechanic
+        tests:
+          - accepted_values:
+              values: [pct_off, dollar_off, bogo, multibuy, tpr, loyalty, coupon]
+      - name: funding_source
+        tests:
+          - accepted_values:
+              values: [retailer, vendor, jbp, coop]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [planned, active, completed, cancelled]
+
+  - name: stg_pricing_and_promotions__promo_line
+    description: SKU-level promo participation.
+    columns:
+      - name: promo_line_id
+        tests: [unique, not_null]
+      - name: promo_id
+        tests:
+          - not_null
+          - relationships: { to: ref('stg_pricing_and_promotions__promo'), field: promo_id }
+
+  - name: stg_pricing_and_promotions__markdown
+    description: Markdown events with reason code + optimizer attribution.
+    columns:
+      - name: markdown_id
+        tests: [unique, not_null]
+      - name: reason_code
+        tests:
+          - accepted_values:
+              values: [seasonal, excess_inventory, damage, defective, clearance, competitor]
+      - name: optimizer
+        tests:
+          - accepted_values:
+              values: [Revionics, BlueYonder, PROS, Oracle_RPCS, manual]
+
+  - name: stg_pricing_and_promotions__competitive_price
+    description: Competitor price observations (Wiser, Numerator, NielsenIQ, manual).
+    columns:
+      - name: competitive_price_id
+        tests: [unique, not_null]
+      - name: channel
+        tests:
+          - accepted_values:
+              values: [in_store, web, app, marketplace]
+      - name: match_type
+        tests:
+          - accepted_values:
+              values: [exact_gtin, equivalent, like_for_like]
+
+  - name: stg_pricing_and_promotions__sales_fact
+    description: POS receipts at SKU x store x day grain.
+    columns:
+      - name: sales_id
+        tests: [unique, not_null]
+
+  - name: stg_pricing_and_promotions__elasticity_estimate
+    description: Per-cluster own- and cross-price elasticity estimates.
+    columns:
+      - name: estimate_id
+        tests: [unique, not_null]
+
+  # ---------- Marts ----------
+  - name: dim_date_pricing
+    description: Conformed date dimension scoped to the pricing_and_promotions anchor. Suffix avoids collision with other anchors' dim_date.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+
+  - name: dim_product_pricing
+    description: Product dimension for pricing analytics. Suffix avoids collision with merchandising dim_product.
+    columns:
+      - name: product_sk
+        tests: [unique, not_null]
+      - name: product_id
+        tests: [unique, not_null]
+
+  - name: dim_store_pricing
+    description: Store dimension with pre-joined price-zone metadata. Suffix avoids collision with merchandising dim_store.
+    columns:
+      - name: store_sk
+        tests: [unique, not_null]
+      - name: store_id
+        tests: [unique, not_null]
+
+  - name: dim_promo
+    description: Promo header dimension.
+    columns:
+      - name: promo_sk
+        tests: [unique, not_null]
+      - name: promo_id
+        tests: [unique, not_null]
+
+  - name: dim_price_event_type
+    description: Reference dim for the price-event taxonomy (regular / promo / markdown / clearance / cost).
+    columns:
+      - name: price_event_type_sk
+        tests: [unique, not_null]
+      - name: price_type
+        tests: [unique, not_null]
+
+  - name: fct_price_events
+    description: Fact — one row per price snapshot. Joins to dim_product_pricing, dim_store_pricing, dim_price_event_type.
+    columns:
+      - name: price_event_id
+        tests: [unique, not_null]
+      - name: product_sk
+        tests:
+          - relationships: { to: ref('dim_product_pricing'), field: product_sk }
+      - name: store_sk
+        tests:
+          - relationships: { to: ref('dim_store_pricing'), field: store_sk }
+      - name: price_event_type_sk
+        tests:
+          - relationships: { to: ref('dim_price_event_type'), field: price_event_type_sk }
+
+  - name: fct_promo_performance
+    description: Fact — promo performance at the promo_line grain. Named to avoid colliding with any generic fct_promotions.
+    columns:
+      - name: promo_line_id
+        tests: [unique, not_null]
+      - name: promo_sk
+        tests:
+          - relationships: { to: ref('dim_promo'), field: promo_sk }
+
+  - name: fct_markdowns_pricing
+    description: Fact — markdown events with regret-factor proxy. Naming `_pricing` reserves room for merchandising's markdown fact.
+    columns:
+      - name: markdown_id
+        tests: [unique, not_null]
+      - name: product_sk
+        tests:
+          - relationships: { to: ref('dim_product_pricing'), field: product_sk }
+
+  - name: fct_competitive_observations
+    description: Fact — competitor price observations with pre-computed CPI vs own regular price.
+    columns:
+      - name: competitive_obs_id
+        tests: [unique, not_null]
+      - name: product_sk
+        tests:
+          - relationships: { to: ref('dim_product_pricing'), field: product_sk }

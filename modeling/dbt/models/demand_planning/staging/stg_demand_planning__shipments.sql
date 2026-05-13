@@ -14,6 +14,6 @@ select
     case
         when cast(delivered_at as timestamp) is not null
          and cast(shipped_at   as timestamp) is not null
-            then date_diff('hour', cast(shipped_at as timestamp), cast(delivered_at as timestamp))
+            then {{ dbt_utils.datediff('cast(shipped_at as timestamp)', 'cast(delivered_at as timestamp)', 'hour') }}
     end                                 as transit_hours
 from {{ source('demand_planning', 'shipments') }}

@@ -17,6 +17,6 @@ select
     upper(country)                        as country_code,
     case
         when settlement_ts is not null
-            then date_diff('hour', auth_ts, settlement_ts)
+            then {{ dbt_utils.datediff('auth_ts', 'settlement_ts', 'hour') }}
     end                                   as settlement_latency_hours
 from {{ source('payments', 'payments') }}

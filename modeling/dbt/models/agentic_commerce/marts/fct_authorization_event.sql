@@ -9,7 +9,7 @@ with g as (select * from {{ ref('stg_agentic_commerce__authorization_grants') }}
 select
     g.grant_id || '-issued' as grant_event_id,
     g.grant_id,
-    cast(strftime(g.issued_at, '%Y%m%d') as integer) as date_key,
+    cast({{ format_date('g.issued_at', '%Y%m%d') }} as integer) as date_key,
     a.agent_sk,
     p.principal_sk,
     s.scope_sk,
@@ -27,7 +27,7 @@ union all
 select
     g.grant_id || '-revoked' as grant_event_id,
     g.grant_id,
-    cast(strftime(g.revoked_at, '%Y%m%d') as integer) as date_key,
+    cast({{ format_date('g.revoked_at', '%Y%m%d') }} as integer) as date_key,
     a.agent_sk,
     p.principal_sk,
     s.scope_sk,

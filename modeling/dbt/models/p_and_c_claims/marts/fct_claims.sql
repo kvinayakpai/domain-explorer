@@ -43,7 +43,7 @@ select
     l_cp.h_policy_hk              as policy_key,
     md5(sc.adjuster_id)           as adjuster_key,
     sc.adjuster_id,
-    cast(strftime(s.load_ts, '%Y%m%d') as integer) as fnol_date_key,
+    cast({{ format_date('s.load_ts', '%Y%m%d') }} as integer) as fnol_date_key,
     s.fnol_ts,
     s.loss_date,
     s.report_lag_days,

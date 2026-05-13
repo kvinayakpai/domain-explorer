@@ -1,0 +1,73 @@
+version: 2
+
+sources:
+  - name: loss_prevention
+    description: |
+      Synthetic Loss Prevention source schema produced by
+      synthetic-data/loss_prevention/generate.py and loaded into the populated
+      DuckDB. Mirrors what a Tier-1 retailer landing zone would carry after
+      ingesting NCR Voyix LP, Oracle XBR, Sensormatic ShrinkVision, Auror,
+      Appriss Retail Verify, Profitect (Zebra), Aptos LP, Tyco RFID / Detego,
+      ALTO Alliance share, Honeywell Connected Retail, RetailNext, and
+      Datalogic scan telemetry.
+
+      PII columns are pre-tokenized (employee_ref_hash, suspect_ref_hash,
+      customer_ref_hash, known_vehicle_ref_hash). Raw PII never enters this
+      schema by policy.
+    schema: loss_prevention
+    tables:
+      - name: store
+        description: Selling location with EAS / RFID + LP staffing flags.
+        columns:
+          - name: store_id
+            tests: [unique, not_null]
+      - name: employee
+        description: Associate with POS access. PII tokenized.
+        columns:
+          - name: employee_id
+            tests: [unique, not_null]
+      - name: item
+        description: SKU master with CRAVED score + EAS / RFID flags.
+        columns:
+          - name: item_id
+            tests: [unique, not_null]
+      - name: pos_transaction
+        description: POS receipt header. Joined to exceptions.
+        columns:
+          - name: transaction_id
+            tests: [unique, not_null]
+      - name: pos_exception
+        description: One POS exception (NCR Voyix LP / Oracle XBR / Profitect / Aptos LP / Sensormatic / Datalogic / NCR Counterpoint / Honeywell).
+        columns:
+          - name: exception_id
+            tests: [unique, not_null]
+      - name: suspect
+        description: Person of interest. PII tokenized; Auror + ALTO link ids.
+        columns:
+          - name: suspect_id
+            tests: [unique, not_null]
+      - name: incident
+        description: Discrete loss/theft event.
+        columns:
+          - name: incident_id
+            tests: [unique, not_null]
+      - name: investigation
+        description: LP investigation case bound to an incident.
+        columns:
+          - name: investigation_id
+            tests: [unique, not_null]
+      - name: recovery
+        description: Recovered cash / merchandise / civil-demand / restitution.
+        columns:
+          - name: recovery_id
+            tests: [unique, not_null]
+      - name: fraud_score
+        description: Appriss Retail / internal model refund-fraud score per transaction.
+        columns:
+          - name: fraud_score_id
+            tests: [unique, not_null]
+      - name: shrink_snapshot
+        description: Monthly shrink ledger per store × department.
+        columns:
+          - name: snapshot_id
+            tests: [unique, not_null]

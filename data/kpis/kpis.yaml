@@ -70,3 +70,181 @@ kpis:
   - { id: ac.kpi.cross_agent_trust_score, name: Cross-Agent Trust Score, formula: median(kya_trust_score), unit: index, direction: higher_is_better, vertical: CrossCutting }
   - { id: ac.kpi.refund_rate_agent, name: Refund Rate on Agent Purchases, formula: agent_refunds / agent_purchases, unit: "%", direction: lower_is_better, vertical: CrossCutting }
   - { id: ac.kpi.catalog_mcp_discoverability, name: Catalog Discoverability via MCP, formula: products_listed_via_mcp / products_listed_total, unit: "%", direction: higher_is_better, vertical: CrossCutting }
+
+  # Manufacturing — Predictive Maintenance
+  - { id: pm.kpi.mtbf, name: Mean Time Between Failures (MTBF), formula: sum(operating_hours_between_failures) / count(failure_events), unit: hours, direction: higher_is_better, vertical: Manufacturing }
+  - { id: pm.kpi.mttr, name: Mean Time To Repair (MTTR), formula: sum(repair_minutes) / count(repair_events), unit: minutes, direction: lower_is_better, vertical: Manufacturing }
+  - { id: pm.kpi.asset_availability, name: Asset Availability %, formula: (scheduled_runtime - unplanned_downtime) / scheduled_runtime, unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: pm.kpi.predictive_precision, name: Predictive Accuracy — Precision, formula: tp / (tp + fp), unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: pm.kpi.predictive_recall, name: Predictive Accuracy — Recall (% Failures Predicted), formula: tp / (tp + fn), unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: pm.kpi.lead_time_to_failure, name: Lead Time to Failure (P-F interval realized), formula: avg(failure_ts - prediction_ts) where alert_was_correct, unit: hours, direction: higher_is_better, vertical: Manufacturing }
+  - { id: pm.kpi.planned_vs_unplanned_pct, name: Planned vs Unplanned Maintenance %, formula: planned_wo_count / (planned_wo_count + unplanned_wo_count), unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: pm.kpi.maint_cost_per_operating_hour, name: Maintenance Cost per Operating Hour, formula: sum(maintenance_cost) / sum(operating_hours), unit: USD/hour, direction: lower_is_better, vertical: Manufacturing }
+  - { id: pm.kpi.spare_stockout_rate, name: Spare-Part Stockout Rate, formula: stockout_events / parts_demand_events, unit: "%", direction: lower_is_better, vertical: Manufacturing }
+  - { id: pm.kpi.false_positive_rate, name: False-Positive Rate, formula: fp / (fp + tn), unit: "%", direction: lower_is_better, vertical: Manufacturing }
+  - { id: pm.kpi.rul_prediction_error, name: RUL Prediction Error %, formula: mean(abs(rul_pred - rul_actual) / rul_actual), unit: "%", direction: lower_is_better, vertical: Manufacturing }
+  - { id: pm.kpi.pct_failures_predicted, name: "% of Failures Predicted", formula: predicted_failure_events / total_failure_events, unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: pm.kpi.production_loss_avoided_pct, name: "% Production Loss Avoided", formula: avoided_loss / (avoided_loss + actual_loss), unit: "%", direction: higher_is_better, vertical: Manufacturing }
+
+  # Manufacturing — S&OP / IBP
+  - { id: sop.kpi.forecast_accuracy_mape, name: Forecast Accuracy (MAPE), formula: 1 - (sum(abs(actual - forecast)) / sum(actual)), unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: sop.kpi.forecast_accuracy_wape, name: Forecast Accuracy (WAPE), formula: 1 - (sum(abs(actual - forecast)) / sum(actual)), unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: sop.kpi.forecast_bias, name: Forecast Bias, formula: sum(forecast - actual) / sum(actual), unit: "%", direction: target_band, vertical: Manufacturing }
+  - { id: sop.kpi.otif, name: On-Time In-Full (OTIF), formula: orders_otif / total_orders, unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: sop.kpi.fill_rate, name: Order Fill Rate, formula: lines_filled_complete / lines_ordered, unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: sop.kpi.inventory_turns, name: Inventory Turns, formula: cogs_annualized / avg_inventory_value, unit: turns/yr, direction: higher_is_better, vertical: Manufacturing }
+  - { id: sop.kpi.doh, name: Days on Hand (DOH), formula: avg_inventory_units / avg_daily_demand_units, unit: days, direction: target_band, vertical: Manufacturing }
+  - { id: sop.kpi.plan_adherence, name: Plan Adherence %, formula: sum(min(actual_units, plan_units)) / sum(plan_units), unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: sop.kpi.capacity_utilization, name: Capacity Utilization %, formula: planned_load_hours / available_capacity_hours, unit: "%", direction: target_band, vertical: Manufacturing }
+  - { id: sop.kpi.demand_sensing_lead_time, name: Demand Sensing Lead Time, formula: avg(plan_publish_ts - signal_observed_ts), unit: hours, direction: lower_is_better, vertical: Manufacturing }
+  - { id: sop.kpi.scenario_cycle_time, name: Scenario Cycle Time, formula: avg(scenario_published_ts - scenario_requested_ts), unit: minutes, direction: lower_is_better, vertical: Manufacturing }
+  - { id: sop.kpi.working_capital_impact, name: Working Capital Impact ($), formula: avg_inventory_value + avg_receivables - avg_payables, unit: USD, direction: lower_is_better, vertical: Manufacturing }
+  - { id: sop.kpi.stockout_rate, name: Stockout Rate, formula: stockout_item_location_days / total_item_location_days, unit: "%", direction: lower_is_better, vertical: Manufacturing }
+  - { id: sop.kpi.excess_inventory_pct, name: Excess Inventory %, formula: excess_inventory_value / total_inventory_value, unit: "%", direction: lower_is_better, vertical: Manufacturing }
+  - { id: sop.kpi.demand_volatility, name: Demand Volatility (CoV), formula: stddev(weekly_demand) / mean(weekly_demand), unit: ratio, direction: target_band, vertical: Manufacturing }
+
+  # Retail — Pricing & Promotions
+  - { id: pp.kpi.gross_margin_pct, name: Gross Margin %, formula: (net_sales - cogs) / net_sales, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: pp.kpi.markdown_pct, name: Markdown %, formula: sum(markdown_dollars) / sum(gross_sales_dollars), unit: "%", direction: lower_is_better, vertical: Retail }
+  - { id: pp.kpi.promo_lift_pct, name: Promo Lift %, formula: (promo_units - baseline_units) / baseline_units, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: pp.kpi.sell_through_rate, name: Sell-Through Rate, formula: units_sold / units_received, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: pp.kpi.price_elasticity, name: Price Elasticity, formula: pct_change_units_sold / pct_change_price, unit: ratio, direction: target_band, vertical: Retail }
+  - { id: pp.kpi.regular_price_compliance, name: Regular Price Compliance, formula: priced_at_planned / total_price_observations, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: pp.kpi.competitive_price_index, name: Competitive Price Index (KVI), formula: own_price_kvi / weighted_compset_price_kvi, unit: index, direction: target_band, vertical: Retail }
+  - { id: pp.kpi.promo_roi, name: Promo ROI, formula: (incremental_margin - promo_funding_cost) / promo_funding_cost, unit: ratio, direction: higher_is_better, vertical: Retail }
+  - { id: pp.kpi.cannibalization_rate, name: Cannibalization Rate, formula: lost_baseline_units_in_halo_skus / promo_unit_lift, unit: "%", direction: lower_is_better, vertical: Retail }
+  - { id: pp.kpi.forward_buy_inventory_pct, name: Forward-Buy Inventory %, formula: post_promo_excess_inventory_units / promo_baseline_units, unit: "%", direction: lower_is_better, vertical: Retail }
+  - { id: pp.kpi.trade_spend_effectiveness, name: Trade Spend Effectiveness, formula: incremental_gross_profit / trade_dollars_spent, unit: ratio, direction: higher_is_better, vertical: Retail }
+  - { id: pp.kpi.price_pack_mix_optimization, name: Price-Pack Mix Optimization Score, formula: weighted(margin_mix_delta) / portfolio_revenue, unit: index, direction: higher_is_better, vertical: Retail }
+  - { id: pp.kpi.regret_factor, name: Regret Factor, formula: counterfactual_optimal_margin - realized_margin, unit: USD, direction: lower_is_better, vertical: Retail }
+  - { id: pp.kpi.markdown_recovery_rate, name: Markdown Recovery Rate, formula: net_revenue_post_markdown / original_ticketed_value, unit: "%", direction: higher_is_better, vertical: Retail }
+
+  # Retail — Loss Prevention
+  - { id: lp.kpi.shrink_rate, name: Shrink Rate %, formula: shrink_dollars / net_sales, unit: "%", direction: lower_is_better, vertical: Retail }
+  - { id: lp.kpi.known_shrink_pct, name: Known Shrink %, formula: known_shrink_dollars / total_shrink_dollars, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: lp.kpi.unknown_shrink_pct, name: Unknown Shrink %, formula: unknown_shrink_dollars / total_shrink_dollars, unit: "%", direction: lower_is_better, vertical: Retail }
+  - { id: lp.kpi.inventory_accuracy, name: Inventory Accuracy %, formula: 1 - sum(abs(system_on_hand - counted_on_hand)) / sum(counted_on_hand), unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: lp.kpi.pos_exception_rate, name: POS Exception Rate, formula: pos_exceptions / pos_transactions, unit: "%", direction: target_band, vertical: Retail }
+  - { id: lp.kpi.refund_fraud_rate, name: Refund Fraud Rate, formula: fraudulent_refunds / total_refunds, unit: "%", direction: lower_is_better, vertical: Retail }
+  - { id: lp.kpi.sweethearting_incidents, name: Sweethearting Incidents / Week, formula: sum(sweethearting_incidents) / weeks, unit: count, direction: lower_is_better, vertical: Retail }
+  - { id: lp.kpi.loss_recovery_dollars, name: Loss Recovery $, formula: sum(recovery_dollars), unit: USD, direction: higher_is_better, vertical: Retail }
+  - { id: lp.kpi.external_theft_rate, name: External Theft Rate, formula: external_theft_incidents / store_traffic, unit: "per 1k visits", direction: lower_is_better, vertical: Retail }
+  - { id: lp.kpi.internal_theft_rate, name: Internal Theft Rate, formula: internal_theft_incidents / employee_count, unit: "per 100 FTE", direction: lower_is_better, vertical: Retail }
+  - { id: lp.kpi.orc_incident_frequency, name: ORC Incident Frequency, formula: orc_incidents / store_count / month, unit: "per store per month", direction: lower_is_better, vertical: Retail }
+  - { id: lp.kpi.investigation_closure_rate, name: Investigation Closure Rate, formula: investigations_closed / investigations_opened, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: lp.kpi.false_positive_rate, name: Alert False-Positive Rate, formula: closed_unfounded / alerts_raised, unit: "%", direction: lower_is_better, vertical: Retail }
+  - { id: lp.kpi.return_abuse_rate, name: Return Abuse Rate, formula: abused_returns / total_returns, unit: "%", direction: lower_is_better, vertical: Retail }
+
+  # CrossCutting — Trade Promotion Management (CPG)
+  - { id: tpm.kpi.trade_spend_pct, name: Trade Spend %, formula: sum(trade_spend) / sum(gross_sales), unit: "%", direction: target_band, vertical: CrossCutting }
+  - { id: tpm.kpi.promo_roi, name: Promo ROI, formula: (incremental_gross_profit - trade_spend) / trade_spend, unit: ratio, direction: higher_is_better, vertical: CrossCutting }
+  - { id: tpm.kpi.deduction_rate, name: Deduction Rate, formula: sum(open_deductions) / sum(invoiced_revenue), unit: "%", direction: lower_is_better, vertical: CrossCutting }
+  - { id: tpm.kpi.net_promotion_effectiveness, name: Net Promotion Effectiveness, formula: incremental_units / promotional_units, unit: "%", direction: higher_is_better, vertical: CrossCutting }
+  - { id: tpm.kpi.trade_stock_build_pct, name: Trade Stock Build %, formula: (forward_buy_units - normal_purchase_units) / normal_purchase_units, unit: "%", direction: target_band, vertical: CrossCutting }
+  - { id: tpm.kpi.incremental_lift, name: Incremental Lift, formula: (promo_period_units - baseline_units) / baseline_units, unit: "%", direction: higher_is_better, vertical: CrossCutting }
+  - { id: tpm.kpi.baseline_volume, name: Baseline Volume, formula: sum(non_promo_units * weeks), unit: cases, direction: target_band, vertical: CrossCutting }
+  - { id: tpm.kpi.forward_buy_inventory_weeks, name: Forward-Buy Inventory (weeks of supply), formula: forward_buy_units / weekly_baseline_units, unit: weeks, direction: target_band, vertical: CrossCutting }
+  - { id: tpm.kpi.display_compliance_pct, name: Display Compliance %, formula: stores_with_compliant_display / stores_promised_display, unit: "%", direction: higher_is_better, vertical: CrossCutting }
+  - { id: tpm.kpi.distribution_coverage, name: Distribution Coverage (%ACV), formula: sum(acv_with_sku) / total_acv, unit: "%", direction: higher_is_better, vertical: CrossCutting }
+  - { id: tpm.kpi.on_shelf_availability_pct, name: On-Shelf Availability %, formula: stores_in_stock / stores_audited, unit: "%", direction: higher_is_better, vertical: CrossCutting }
+  - { id: tpm.kpi.perfect_store_score, name: Perfect Store Score, formula: weighted_avg(distribution, share_of_shelf, planogram_compliance, price_compliance, promo_compliance), unit: index, direction: higher_is_better, vertical: CrossCutting }
+  - { id: tpm.kpi.retailer_scorecard, name: Retailer Score-card (JBP), formula: weighted(otif, fill_rate, deduction_rate, growth_pct, promo_compliance), unit: index, direction: higher_is_better, vertical: CrossCutting }
+  - { id: tpm.kpi.pay_for_performance_pct, name: Pay-for-Performance %, formula: sum(performance_qualified_spend) / sum(committed_spend), unit: "%", direction: higher_is_better, vertical: CrossCutting }
+
+  # CPG — Revenue Growth Management (CPG anchor)
+  - { id: rgm.kpi.net_revenue_per_unit, name: Net Revenue per Unit, formula: sum(net_revenue) / sum(units_sold), unit: USD/unit, direction: higher_is_better, vertical: CPG }
+  - { id: rgm.kpi.price_realization, name: Price Realization (List-to-Net %), formula: sum(net_price * units) / sum(list_price * units), unit: "%", direction: higher_is_better, vertical: CPG }
+  - { id: rgm.kpi.mix_index, name: Mix Index, formula: sum(units_premium_mainstream) / sum(units_value_tier), unit: index, direction: higher_is_better, vertical: CPG }
+  - { id: rgm.kpi.pack_margin_mix_pct, name: Pack Margin Mix %, formula: sum(margin_premium_pack) / sum(margin_total_portfolio), unit: "%", direction: higher_is_better, vertical: CPG }
+  - { id: rgm.kpi.promo_effectiveness_index, name: Promo Effectiveness Index, formula: incremental_net_revenue / trade_spend, unit: ratio, direction: higher_is_better, vertical: CPG }
+  - { id: rgm.kpi.trade_spend_roi, name: Trade Spend ROI, formula: (incremental_gross_profit - trade_spend) / trade_spend, unit: ratio, direction: higher_is_better, vertical: CPG }
+  - { id: rgm.kpi.volume_variance, name: Volume Variance, formula: (actual_units - plan_units) * plan_price_per_unit, unit: USD, direction: higher_is_better, vertical: CPG }
+  - { id: rgm.kpi.price_variance, name: Price Variance, formula: (actual_price - plan_price) * actual_units, unit: USD, direction: higher_is_better, vertical: CPG }
+  - { id: rgm.kpi.mix_variance, name: Mix Variance, formula: sum((actual_share - plan_share) * plan_price * total_units), unit: USD, direction: higher_is_better, vertical: CPG }
+  - { id: rgm.kpi.forward_buy_cost_pct, name: Forward-Buy Cost %, formula: sum(margin_erosion_forward_buy) / sum(trade_spend), unit: "%", direction: lower_is_better, vertical: CPG }
+  - { id: rgm.kpi.net_revenue_growth_pct, name: Net Revenue Growth %, formula: (net_revenue_period - net_revenue_prior) / net_revenue_prior, unit: "%", direction: higher_is_better, vertical: CPG }
+  - { id: rgm.kpi.channel_profitability, name: Channel Profitability, formula: sum(net_revenue_channel) - sum(trade_spend_channel) - sum(cogs_channel), unit: USD, direction: higher_is_better, vertical: CPG }
+  - { id: rgm.kpi.customer_account_profitability, name: Customer/Account Profitability, formula: sum(net_revenue_account) - sum(trade_spend_account) - sum(allocated_costs_account), unit: USD, direction: higher_is_better, vertical: CPG }
+  - { id: rgm.kpi.innovation_sales_pct, name: Innovation Sales %, formula: sum(net_revenue_skus_launched_lt_24mo) / sum(net_revenue_total), unit: "%", direction: higher_is_better, vertical: CPG }
+
+  # Retail — Customer Loyalty & CDP
+  - { id: cdp.kpi.clv, name: Customer Lifetime Value (CLV), formula: sum(discounted_future_margin) per customer over horizon, unit: USD, direction: higher_is_better, vertical: Retail }
+  - { id: cdp.kpi.nps, name: Net Promoter Score (NPS), formula: pct_promoters_9_10 - pct_detractors_0_6, unit: index, direction: higher_is_better, vertical: Retail }
+  - { id: cdp.kpi.repeat_purchase_rate, name: Repeat Purchase Rate, formula: customers_with_2plus_orders / customers_with_1plus_orders, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: cdp.kpi.loyalty_member_pct, name: Loyalty Member %, formula: enrolled_customers / total_customers, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: cdp.kpi.active_member_pct, name: Active Member %, formula: members_with_activity_90d / enrolled_members, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: cdp.kpi.reward_redemption_rate, name: Reward Redemption Rate, formula: points_redeemed / points_earned, unit: "%", direction: target_band, vertical: Retail }
+  - { id: cdp.kpi.identity_match_rate_det, name: Deterministic Identity Match Rate, formula: customers_with_deterministic_match / total_customers, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: cdp.kpi.identity_match_rate_prob, name: Probabilistic Identity Match Rate, formula: customers_with_probabilistic_match / total_customers, unit: "%", direction: target_band, vertical: Retail }
+  - { id: cdp.kpi.segment_move_rate, name: Segment Move Rate, formula: customers_moving_segment_in_period / total_customers, unit: "%", direction: target_band, vertical: Retail }
+  - { id: cdp.kpi.winback_rate, name: Win-back Rate, formula: reactivated_customers / targeted_lapsed_customers, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: cdp.kpi.churn_rate, name: Customer Churn Rate, formula: customers_inactive_180d / customers_active_at_period_start, unit: "%", direction: lower_is_better, vertical: Retail }
+  - { id: cdp.kpi.rfm_distribution_health, name: RFM Score Distribution Health, formula: customers_high_rfm_cells / total_customers, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: cdp.kpi.personalization_lift, name: Personalization Lift, formula: (personalized_conv - control_conv) / control_conv, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: cdp.kpi.member_driven_revenue_pct, name: Member-Driven Revenue %, formula: revenue_attributed_to_members / total_revenue, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: cdp.kpi.cost_to_acquire_member, name: Cost to Acquire Member (CAC-Member), formula: member_acquisition_spend / new_enrolled_members, unit: USD, direction: lower_is_better, vertical: Retail }
+
+  # Retail — Omnichannel Order Management
+  - { id: oms.kpi.order_cycle_time, name: Order Cycle Time, formula: avg(shipped_ts - order_capture_ts), unit: hours, direction: lower_is_better, vertical: Retail }
+  - { id: oms.kpi.pick_accuracy, name: Pick Accuracy, formula: lines_picked_correctly / total_lines_picked, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: oms.kpi.bopis_lead_time, name: BOPIS Lead Time (Order-to-Ready), formula: avg(ready_for_pickup_ts - order_capture_ts), unit: minutes, direction: lower_is_better, vertical: Retail }
+  - { id: oms.kpi.ship_from_store_mix, name: Ship-from-Store Mix %, formula: store_sourced_lines / total_sourced_lines, unit: "%", direction: target_band, vertical: Retail }
+  - { id: oms.kpi.atp_accuracy, name: ATP Accuracy, formula: 1 - mean_abs_error(atp_promised, atp_actual_at_pick), unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: oms.kpi.inventory_visibility_unified_pct, name: Inventory Visibility (% Unified), formula: skus_with_unified_position / total_skus, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: oms.kpi.order_split_rate, name: Order Split Rate, formula: orders_with_multiple_shipments / total_multi_line_orders, unit: "%", direction: target_band, vertical: Retail }
+  - { id: oms.kpi.cost_to_serve_per_channel, name: Cost-to-Serve per Channel, formula: sum(fulfillment_cost) / count(orders) by channel, unit: USD, direction: lower_is_better, vertical: Retail }
+  - { id: oms.kpi.on_time_delivery, name: On-Time Delivery %, formula: orders_delivered_by_promise / orders_delivered, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: oms.kpi.promise_vs_actual_gap, name: Promise vs Actual Gap, formula: avg(actual_delivery_ts - promised_delivery_ts), unit: hours, direction: lower_is_better, vertical: Retail }
+  - { id: oms.kpi.cancellation_rate, name: Cancellation Rate, formula: cancelled_lines / accepted_lines, unit: "%", direction: lower_is_better, vertical: Retail }
+  - { id: oms.kpi.substitution_rate, name: Substitution Rate, formula: substituted_lines / cancelled_lines, unit: "%", direction: target_band, vertical: Retail }
+  - { id: oms.kpi.return_cycle_time, name: Return Cycle Time, formula: avg(refund_issued_ts - return_initiated_ts), unit: days, direction: lower_is_better, vertical: Retail }
+  - { id: oms.kpi.first_pick_fill_rate, name: First-Pick Fill Rate, formula: lines_filled_first_attempt / lines_picked, unit: "%", direction: higher_is_better, vertical: Retail }
+
+  # Retail — Returns & Reverse Logistics
+  - { id: rrl.kpi.return_rate_pct, name: Return Rate %, formula: return_items_units / sold_units, unit: "%", direction: lower_is_better, vertical: Retail }
+  - { id: rrl.kpi.refund_issue_time, name: Refund Issue Time (Days to Refund), formula: avg(refund_issued_ts - rma_received_ts), unit: days, direction: lower_is_better, vertical: Retail }
+  - { id: rrl.kpi.restocking_fee_capture_pct, name: Restocking Fee Capture %, formula: restocking_fees_collected / restocking_fees_eligible, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: rrl.kpi.recovery_value_pct, name: Recovery Value %, formula: recovery_proceeds / original_cogs_returned, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: rrl.kpi.refurb_yield_pct, name: Refurb Yield %, formula: units_refurbed_grade_A_or_B / units_attempted_refurb, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: rrl.kpi.liquidation_yield_pct, name: Liquidation Yield %, formula: lot_proceeds / lot_cost_basis, unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: rrl.kpi.returnless_refund_rate, name: Returnless Refund Rate, formula: returnless_refunds / total_refunds, unit: "%", direction: target_band, vertical: Retail }
+  - { id: rrl.kpi.return_fraud_rate, name: Return Fraud Rate, formula: fraud_flagged_returns / total_returns, unit: "%", direction: lower_is_better, vertical: Retail }
+  - { id: rrl.kpi.cost_to_process_return, name: Cost to Process Return, formula: sum(reverse_logistics_cost) / count(return_items), unit: USD, direction: lower_is_better, vertical: Retail }
+  - { id: rrl.kpi.days_to_disposition, name: Days to Disposition, formula: avg(disposition_ts - rma_received_ts), unit: days, direction: lower_is_better, vertical: Retail }
+  - { id: rrl.kpi.cross_border_return_rate, name: Cross-Border Return Rate, formula: cross_border_return_units / cross_border_sold_units, unit: "%", direction: lower_is_better, vertical: Retail }
+  - { id: rrl.kpi.repeat_returners_pct, name: Repeat Returners %, formula: customers_with_3plus_returns_in_window / customers_with_1plus_returns_in_window, unit: "%", direction: lower_is_better, vertical: Retail }
+  - { id: rrl.kpi.net_cost_of_returns, name: Net Cost of Returns, formula: (refunds_issued + reverse_logistics_cost) - recovery_proceeds, unit: USD, direction: lower_is_better, vertical: Retail }
+  - { id: rrl.kpi.return_carbon_kg_co2e, name: Return Carbon Footprint (kg CO2e), formula: sum(reverse_leg_distance_km * emission_factor_kg_per_km), unit: kg CO2e, direction: lower_is_better, vertical: Retail }
+
+  # CPG / Retail — Category Management
+  - { id: cm.kpi.category_sales_growth_pct, name: Category Sales Growth %, formula: (category_sales_t - category_sales_t_minus_1) / category_sales_t_minus_1, unit: "%", direction: higher_is_better, vertical: CPG }
+  - { id: cm.kpi.distribution_coverage_pct, name: Distribution Coverage (%ACV), formula: sum(acv_with_sku) / total_acv, unit: "%", direction: higher_is_better, vertical: CPG }
+  - { id: cm.kpi.range_productivity, name: Range Productivity (sales per SKU), formula: sum(category_sales) / count(distinct_skus_listed), unit: USD, direction: higher_is_better, vertical: CPG }
+  - { id: cm.kpi.shelf_space_productivity, name: Shelf Space Productivity ($/linear ft), formula: sum(category_sales) / sum(linear_feet_allocated), unit: USD_per_linear_ft, direction: higher_is_better, vertical: CPG }
+  - { id: cm.kpi.out_of_stock_rate, name: Out-of-Stock Rate % (CM), formula: skus_oos_at_audit / skus_audited, unit: "%", direction: lower_is_better, vertical: CPG }
+  - { id: cm.kpi.assortment_compliance_pct, name: Assortment Compliance %, formula: stores_carrying_mandated_skus / stores_audited, unit: "%", direction: higher_is_better, vertical: CPG }
+  - { id: cm.kpi.halo_effect, name: Halo Effect, formula: sum(adjacent_sku_sales_change) / sum(focal_sku_sales_change), unit: ratio, direction: higher_is_better, vertical: CPG }
+  - { id: cm.kpi.cannibalization_rate, name: Cannibalization Rate (CM), formula: cannibalized_units / new_listing_units, unit: "%", direction: lower_is_better, vertical: CPG }
+  - { id: cm.kpi.category_share_of_wallet, name: Category Share of Wallet, formula: sum(category_spend_at_banner) / sum(total_category_spend_in_market), unit: "%", direction: higher_is_better, vertical: CPG }
+  - { id: cm.kpi.velocity_index, name: Velocity Index (vs Category Avg), formula: sku_units_per_store_per_week / category_avg_units_per_store_per_week, unit: index, direction: higher_is_better, vertical: CPG }
+  - { id: cm.kpi.average_item_velocity, name: Average Item Velocity (units/store/week), formula: sum(units_sold) / (count(distinct_stores) * count(distinct_weeks)), unit: units_per_store_per_week, direction: higher_is_better, vertical: CPG }
+  - { id: cm.kpi.days_of_supply, name: Days of Supply (Shelf), formula: on_hand_units / daily_velocity_units, unit: days, direction: target_band, vertical: CPG }
+  - { id: cm.kpi.innovation_slot_pct, name: Innovation Slot %, formula: sku_count_launched_24m / sku_count_total, unit: "%", direction: target_band, vertical: CPG }
+  - { id: cm.kpi.private_label_share, name: Private Label Share, formula: sum(private_label_sales) / sum(category_sales), unit: "%", direction: target_band, vertical: CPG }
+
+  # Manufacturing — Procurement & Spend Analytics (anchor)
+  - { id: psa.kpi.spend_under_mgmt, name: Spend Under Management, formula: sum(spend_with_active_contract_or_strategic_sourced) / sum(total_spend), unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: psa.kpi.savings_realized_pct, name: Savings Realized %, formula: sum(savings_realized) / sum(savings_committed), unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: psa.kpi.maverick_spend_pct, name: Maverick Spend %, formula: sum(off_contract_spend) / sum(total_addressable_spend), unit: "%", direction: lower_is_better, vertical: Manufacturing }
+  - { id: psa.kpi.contract_compliance_pct, name: Contract Compliance %, formula: sum(spend_on_contracted_terms) / sum(spend_with_active_contract), unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: psa.kpi.supplier_risk_score, name: Supplier Risk Score (weighted composite), formula: weighted(financial, geographic, cyber, compliance, sustainability) per supplier, unit: index, direction: lower_is_better, vertical: Manufacturing }
+  - { id: psa.kpi.supplier_diversity_pct, name: Supplier Diversity %, formula: sum(spend_with_diverse_suppliers) / sum(total_addressable_spend), unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: psa.kpi.scope3_intensity, name: Scope 3 Emissions per $ (Cat 1+2), formula: sum(supplier_scope3_kgco2e) / sum(spend_usd), unit: kgCO2e/USD, direction: lower_is_better, vertical: Manufacturing }
+  - { id: psa.kpi.touchless_po_pct, name: Touchless PO %, formula: count(po_no_human_intervention) / count(total_po), unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: psa.kpi.po_cycle_time, name: PO Cycle Time (requisition -> PO issued), formula: avg(po_issued_ts - req_submitted_ts), unit: hours, direction: lower_is_better, vertical: Manufacturing }
+  - { id: psa.kpi.ap_aging_over_60, name: AP Aging > 60 days %, formula: sum(open_ap_amount where age_days > 60) / sum(open_ap_amount), unit: "%", direction: lower_is_better, vertical: Manufacturing }
+  - { id: psa.kpi.invoice_match_rate, name: Three-Way Invoice Match Rate, formula: count(invoices_matched_3way) / count(invoices_total), unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: psa.kpi.sustainable_spend_pct, name: Sustainable Spend %, formula: sum(spend_with_ecovadis_silver_or_better) / sum(total_addressable_spend), unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: psa.kpi.critical_supplier_concentration, name: Critical Supplier Concentration (top-1 share), formula: max(supplier_spend) / sum(category_spend) for critical_categories, unit: "%", direction: lower_is_better, vertical: Manufacturing }
+  - { id: psa.kpi.buying_channel_mix, name: Buying Channel Mix (catalog/punchout/free-text), formula: count(po_lines by channel) / count(po_lines_total), unit: "%", direction: target_band, vertical: Manufacturing }
+  - { id: psa.kpi.tail_spend_pct, name: Tail Spend %, formula: sum(spend_in_bottom_80pct_suppliers) / sum(total_spend), unit: "%", direction: lower_is_better, vertical: Manufacturing }

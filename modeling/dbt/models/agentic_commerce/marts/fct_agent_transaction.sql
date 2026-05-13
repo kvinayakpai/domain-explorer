@@ -8,7 +8,7 @@ with t as (select * from {{ ref('stg_agentic_commerce__agent_transactions') }}),
 
 select
     t.agent_txn_id,
-    cast(strftime(t.authorized_at, '%Y%m%d') as integer) as date_key,
+    cast({{ format_date('t.authorized_at', '%Y%m%d') }} as integer) as date_key,
     a.agent_sk,
     p.principal_sk,
     m.merchant_sk,

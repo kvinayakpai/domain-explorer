@@ -28,7 +28,7 @@ select
         else 'wide'
     end                                                   as pi_band,
     f.generated_at,
-    cast(strftime(f.generated_at, '%Y%m%d') as integer)   as generated_date_key,
+    cast({{ format_date('f.generated_at', '%Y%m%d') }} as integer)   as generated_date_key,
     cast(f.generated_at as date)                          as generated_date
 from f
 left join hub_i i on i.item_bk     = f.item_id

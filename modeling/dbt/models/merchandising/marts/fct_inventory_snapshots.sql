@@ -21,7 +21,7 @@ select
             then (i.on_hand - i.safety_stock)::double / i.safety_stock
     end                                           as cover_above_safety,
     i.as_of,
-    cast(strftime(i.as_of, '%Y%m%d') as integer)  as as_of_date_key
+    cast({{ format_date('i.as_of', '%Y%m%d') }} as integer)  as as_of_date_key
 from i
 left join hub_p p  on p.product_bk = i.sku
 left join hub_s st on st.store_bk  = i.store_id

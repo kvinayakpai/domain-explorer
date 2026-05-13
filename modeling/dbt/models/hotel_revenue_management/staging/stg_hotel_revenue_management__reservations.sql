@@ -17,6 +17,6 @@ select
     cast(status         as varchar)   as reservation_status,
     case
         when cast(arrival_date as date) is not null and cast(booked_at as timestamp) is not null
-            then date_diff('day', cast(booked_at as timestamp)::date, cast(arrival_date as date))
+            then {{ dbt_utils.datediff('cast(booked_at as timestamp)::date', 'cast(arrival_date as date)', 'day') }}
     end                               as lead_time_days
 from {{ source('hotel_revenue_management', 'reservations') }}

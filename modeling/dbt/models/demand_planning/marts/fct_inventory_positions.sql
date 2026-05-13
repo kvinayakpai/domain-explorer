@@ -17,7 +17,7 @@ select
     i.reserved,
     i.available_position,
     i.as_of,
-    cast(strftime(i.as_of, '%Y%m%d') as integer)      as as_of_date_key
+    cast({{ format_date('i.as_of', '%Y%m%d') }} as integer)      as as_of_date_key
 from i
 left join hub_i hi on hi.item_bk     = i.item_id
 left join hub_l hl on hl.location_bk = i.location_id

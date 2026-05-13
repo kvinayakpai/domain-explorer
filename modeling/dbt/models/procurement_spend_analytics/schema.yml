@@ -1,0 +1,184 @@
+version: 2
+
+models:
+  # ---------- Staging ----------
+  - name: stg_procurement_spend_analytics__category_taxonomy
+    description: UNSPSC v26 commodity catalog.
+    columns:
+      - name: category_code
+        tests: [unique, not_null]
+      - name: direct_or_indirect
+        tests:
+          - accepted_values:
+              values: [direct, indirect]
+      - name: capex_or_opex
+        tests:
+          - accepted_values:
+              values: [capex, opex]
+
+  - name: stg_procurement_spend_analytics__supplier
+    description: Supplier master.
+    columns:
+      - name: supplier_id
+        tests: [unique, not_null]
+      - name: ecovadis_medal
+        tests:
+          - accepted_values:
+              values: [none, bronze, silver, gold, platinum]
+
+  - name: stg_procurement_spend_analytics__contract
+    description: Master / framework / SOW agreements.
+    columns:
+      - name: contract_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [draft, active, expired, terminated, renewed]
+
+  - name: stg_procurement_spend_analytics__purchase_order
+    description: PO headers.
+    columns:
+      - name: po_id
+        tests: [unique, not_null]
+      - name: buying_channel
+        tests:
+          - accepted_values:
+              values: [catalog, punchout, free_text, marketplace, pcard, auto]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [draft, approved, sent, partially_received, received, invoiced, closed, cancelled]
+
+  - name: stg_procurement_spend_analytics__po_line
+    description: PO line items — spend-cube grain.
+    columns:
+      - name: po_line_id
+        tests: [unique, not_null]
+      - name: po_id
+        tests:
+          - not_null
+          - relationships: { to: ref('stg_procurement_spend_analytics__purchase_order'), field: po_id }
+
+  - name: stg_procurement_spend_analytics__receipt
+    description: Goods/services receipts.
+    columns:
+      - name: receipt_id
+        tests: [unique, not_null]
+
+  - name: stg_procurement_spend_analytics__invoice
+    description: AP invoices.
+    columns:
+      - name: invoice_id
+        tests: [unique, not_null]
+      - name: match_type
+        tests:
+          - accepted_values:
+              values: [two_way, three_way, exception, none]
+
+  - name: stg_procurement_spend_analytics__supplier_risk_assessment
+    description: Supplier risk snapshots.
+    columns:
+      - name: assessment_id
+        tests: [unique, not_null]
+      - name: tier
+        tests:
+          - accepted_values:
+              values: [low, medium, high, critical]
+
+  - name: stg_procurement_spend_analytics__emissions_factor
+    description: Reference GHG emissions factors.
+    columns:
+      - name: emissions_factor_id
+        tests: [unique, not_null]
+
+  - name: stg_procurement_spend_analytics__sustainability_attribute
+    description: Supplier-disclosed sustainability metrics.
+    columns:
+      - name: sustainability_attr_id
+        tests: [unique, not_null]
+
+  - name: stg_procurement_spend_analytics__savings_event
+    description: Committed-vs-realized savings ledger.
+    columns:
+      - name: savings_event_id
+        tests: [unique, not_null]
+      - name: savings_kind
+        tests:
+          - accepted_values:
+              values: [hard, soft, avoidance]
+
+  # ---------- Marts ----------
+  - name: dim_date_psa
+    description: Date dimension scoped to procurement_spend_analytics. Suffix `_psa` avoids collision.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+
+  - name: dim_currency
+    description: ISO 4217 currency dimension with FX-to-USD.
+    columns:
+      - name: currency_sk
+        tests: [unique, not_null]
+      - name: currency_code
+        tests: [unique, not_null]
+
+  - name: dim_supplier
+    description: Supplier dimension. D&B DUNS + LEI as natural attributes.
+    columns:
+      - name: supplier_sk
+        tests: [unique, not_null]
+      - name: supplier_id
+        tests: [unique, not_null]
+
+  - name: dim_category_taxonomy
+    description: UNSPSC commodity dimension for spend cubing.
+    columns:
+      - name: category_sk
+        tests: [unique, not_null]
+      - name: category_code
+        tests: [unique, not_null]
+
+  - name: dim_contract
+    description: Contract dimension; flags sustainability/KPI clauses.
+    columns:
+      - name: contract_sk
+        tests: [unique, not_null]
+      - name: contract_id
+        tests: [unique, not_null]
+
+  - name: fct_purchase_orders
+    description: Header-grain PO fact — spend, cycle time, touchless%, maverick.
+    columns:
+      - name: po_id
+        tests: [unique, not_null]
+      - name: supplier_sk
+        tests:
+          - relationships: { to: ref('dim_supplier'), field: supplier_sk }
+
+  - name: fct_invoices_psa
+    description: AP invoice fact — match-rate, aging, early-pay-discount. Suffix `_psa` avoids collision with fct_invoices elsewhere.
+    columns:
+      - name: invoice_id
+        tests: [unique, not_null]
+      - name: supplier_sk
+        tests:
+          - relationships: { to: ref('dim_supplier'), field: supplier_sk }
+
+  - name: fct_supplier_risk
+    description: Supplier risk trend fact; delta_vs_prior surfaces score spikes.
+    columns:
+      - name: assessment_id
+        tests: [unique, not_null]
+      - name: supplier_sk
+        tests:
+          - relationships: { to: ref('dim_supplier'), field: supplier_sk }
+
+  - name: fct_emissions_attribution
+    description: PO-line grain Scope 3 Cat 1+2 attribution fact.
+    columns:
+      - name: po_line_id
+        tests: [unique, not_null]
+      - name: supplier_sk
+        tests:
+          - relationships: { to: ref('dim_supplier'), field: supplier_sk }

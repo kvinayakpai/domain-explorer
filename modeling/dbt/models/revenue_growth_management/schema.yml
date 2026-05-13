@@ -1,0 +1,188 @@
+version: 2
+
+models:
+  # ---------- Staging ----------
+  - name: stg_revenue_growth_management__accounts
+    description: Retailer / customer headquarter (channel + tier).
+    columns:
+      - name: account_id
+        tests: [unique, not_null]
+      - name: channel
+        tests:
+          - accepted_values:
+              values: [grocery, mass, club, drug, convenience, dollar, ecom, food_service]
+      - name: channel_tier
+        tests:
+          - accepted_values:
+              values: [premium, mainstream, value]
+
+  - name: stg_revenue_growth_management__products
+    description: Manufacturer brand × sub-brand × variant.
+    columns:
+      - name: sku_id
+        tests: [unique, not_null]
+      - name: lifecycle_stage
+        tests:
+          - accepted_values:
+              values: [intro, grow, core, decline, discontinued]
+
+  - name: stg_revenue_growth_management__packs
+    description: PPA ladder entity.
+    columns:
+      - name: pack_id
+        tests: [unique, not_null]
+      - name: sku_id
+        tests:
+          - relationships: { to: ref('stg_revenue_growth_management__products'), field: sku_id }
+      - name: ppa_tier
+        tests:
+          - accepted_values:
+              values: [entry, mainstream, premium, value, super]
+
+  - name: stg_revenue_growth_management__price_lists
+    description: List price + SRP per pack × account × effective window.
+    columns:
+      - name: price_list_id
+        tests: [unique, not_null]
+      - name: account_id
+        tests:
+          - relationships: { to: ref('stg_revenue_growth_management__accounts'), field: account_id }
+      - name: pack_id
+        tests:
+          - relationships: { to: ref('stg_revenue_growth_management__packs'), field: pack_id }
+
+  - name: stg_revenue_growth_management__price_events
+    description: Atomic list-price change events.
+    columns:
+      - name: price_event_id
+        tests: [unique, not_null]
+      - name: event_type
+        tests:
+          - accepted_values:
+              values: [list_increase, list_decrease, srp_change, cost_change, currency_revaluation]
+
+  - name: stg_revenue_growth_management__promo_plans
+    description: Strategic promo plan header.
+    columns:
+      - name: promo_plan_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [draft, approved, in_market, closed, cancelled]
+
+  - name: stg_revenue_growth_management__deals
+    description: Tactical deal under a promo plan.
+    columns:
+      - name: deal_id
+        tests: [unique, not_null]
+      - name: tactic_type
+        tests:
+          - accepted_values:
+              values: [off_invoice, scan_down, bill_back, mcb, tpr, feature, display, multibuy, bogo, coupon, loyalty, edlp]
+      - name: settlement_method
+        tests:
+          - accepted_values:
+              values: [off_invoice, deduction, check, emc, edi820]
+
+  - name: stg_revenue_growth_management__baselines
+    description: Counterfactual baseline net revenue + units.
+    columns:
+      - name: baseline_id
+        tests: [unique, not_null]
+      - name: model_name
+        tests:
+          - accepted_values:
+              values: [circana_unify, niq_baseline, periscope_glm, inhouse_ml, pricefx_optimizer]
+
+  - name: stg_revenue_growth_management__mix_segments
+    description: Channel × tier × category segment.
+    columns:
+      - name: segment_id
+        tests: [unique, not_null]
+
+  - name: stg_revenue_growth_management__sales_transactions
+    description: Invoiced shipment fact — gross-to-net line.
+    columns:
+      - name: transaction_id
+        tests: [unique, not_null]
+
+  # ---------- Marts ----------
+  - name: dim_date_rgm
+    description: Date dimension scoped to the RGM window. Suffix `_rgm` avoids collision with other anchors.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+
+  - name: dim_account_rgm
+    description: Account dimension (suffix `_rgm` to avoid collision with TPM/merchandising dim_account).
+    columns:
+      - name: account_sk
+        tests: [unique, not_null]
+      - name: account_id
+        tests: [unique, not_null]
+
+  - name: dim_product_rgm
+    description: Product dimension (suffix `_rgm` to avoid collision with merchandising/pricing dim_product).
+    columns:
+      - name: product_sk
+        tests: [unique, not_null]
+      - name: sku_id
+        tests: [unique, not_null]
+
+  - name: dim_pack
+    description: PPA ladder dimension.
+    columns:
+      - name: pack_sk
+        tests: [unique, not_null]
+      - name: pack_id
+        tests: [unique, not_null]
+
+  - name: dim_price_list
+    description: Price list dimension keyed by price_list_id.
+    columns:
+      - name: price_list_sk
+        tests: [unique, not_null]
+      - name: price_list_id
+        tests: [unique, not_null]
+
+  - name: dim_mix_segment
+    description: Channel × tier × category segment dimension.
+    columns:
+      - name: segment_sk
+        tests: [unique, not_null]
+      - name: segment_id
+        tests: [unique, not_null]
+
+  - name: fct_price_events_rgm
+    description: Price-change events fact. Suffix `_rgm` to avoid collision with pricing_and_promotions.fct_price_events.
+    columns:
+      - name: price_event_id
+        tests: [unique, not_null]
+      - name: account_sk
+        tests:
+          - relationships: { to: ref('dim_account_rgm'), field: account_sk }
+      - name: pack_sk
+        tests:
+          - relationships: { to: ref('dim_pack'), field: pack_sk }
+
+  - name: fct_deals
+    description: Deals fact with incremental units / revenue / ROI.
+    columns:
+      - name: deal_id
+        tests: [unique, not_null]
+      - name: account_sk
+        tests:
+          - relationships: { to: ref('dim_account_rgm'), field: account_sk }
+
+  - name: fct_net_revenue
+    description: Gross-to-net waterfall fact per sales transaction.
+    columns:
+      - name: transaction_id
+        tests: [unique, not_null]
+
+  - name: fct_mix_analysis
+    description: Mix variance decomposition per segment × period.
+    columns:
+      - name: mix_row_id
+        tests: [unique, not_null]

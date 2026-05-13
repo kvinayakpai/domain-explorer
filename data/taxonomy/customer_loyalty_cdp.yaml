@@ -1,0 +1,483 @@
+id: customer_loyalty_cdp
+name: Customer Loyalty & CDP
+vertical: Retail
+oneLiner: Identity resolution, real-time segmentation, lifecycle journeys, and loyalty program management — unifying first-party data into golden customer records, then activating across web, app, email, push, SMS, and in-store points + rewards.
+
+# Authoritative sources (mid-2026):
+#   Salesforce Data Cloud (formerly Customer Data Platform / Genie)
+#     https://www.salesforce.com/products/data-cloud/ — Customer 360 identity graph + activation.
+#   Adobe Real-Time CDP (RT-CDP) — built on Adobe Experience Platform XDM
+#     https://business.adobe.com/products/real-time-customer-data-platform — XDM schemas + edge segmentation.
+#   Treasure Data CDP — long-running enterprise CDP (Arm, Inc.)
+#     https://www.treasuredata.com — identity resolution, audience, journey orchestration.
+#   mParticle — server-side data infrastructure CDP (acquired by Rokt 2025)
+#     https://www.mparticle.com — event ingestion + identity API + audience builder.
+#   Tealium AudienceStream
+#     https://tealium.com/products/audiencestream-cdp/ — visitor stitching + real-time audiences.
+#   Twilio Segment — Connections + Profiles + Engage
+#     https://segment.com — track/identify/group spec; Personas identity graph.
+#   Twilio Engage — multi-channel orchestration (formerly Segment Engage).
+#   BlueShift — predictive CDP with native journey/email channels.
+#     https://www.blueshift.com — AI-recommended audiences + omni-channel triggers.
+#   Klaviyo (KLVY) — owned-channel marketing automation + CDP (email/SMS/push).
+#     https://www.klaviyo.com — flows, predictive analytics (CLV, churn risk).
+#   Braze — cross-channel customer engagement (push, in-app, email, content cards).
+#     https://www.braze.com — Liquid templating + Canvas journey builder.
+#   Iterable — growth-stage cross-channel engagement platform.
+#     https://iterable.com — Catalog, Journeys, AI Optimization.
+#   ActionIQ — composable CDP for the enterprise (warehouse-native variant).
+#     https://www.actioniq.com — SmartHub, in-warehouse audiences (Snowflake/BigQuery/Redshift).
+#   Amperity — identity-resolution-first CDP for Tier-1 retailers (Patagonia, Alaska Air).
+#     https://amperity.com — Stitch ML-based identity graph + golden record.
+#   Epsilon PeopleCloud (Publicis Groupe) — closed-loop people-based marketing.
+#     https://www.epsilon.com/peoplecloud — CORE ID identity graph, partnered with Conversant.
+#   Cordial — message-orchestration platform.
+#     https://cordial.com — cross-channel messaging built on a contact-centric data model.
+#   Loyalty engines (separate vendor category):
+#     Eagle Eye Loyalty (AIR) — coupons + earn/redeem at POS and online.
+#       https://www.eagleeye.com
+#     Annex Cloud — Tier-1 retailer loyalty (Lego, Bed Bath & Beyond).
+#       https://www.annexcloud.com
+#     Comarch — telecoms + retail loyalty platform.
+#       https://www.comarch.com/trade-and-services/loyalty-marketing
+#     LoyaltyLion — Shopify-native loyalty for mid-market e-commerce.
+#       https://loyaltylion.com
+#     Smile.io — SMB Shopify rewards (points/referrals/VIP).
+#       https://smile.io
+#   Standards:
+#     IAB TCF v2.2 (Transparency & Consent Framework) for consent strings.
+#     IAB GPP (Global Privacy Platform) covering CCPA/CPRA, GDPR, USP signal.
+#     EU GDPR (Reg. 2016/679); CCPA / CPRA (Cal. Civ. Code §1798.100 et seq.).
+#     OAuth 2.1; OpenID Connect for SSO and CIAM.
+#     JWE (RFC 7516) for PII payload encryption at rest and in transit.
+#     SHA-256 / Argon2id for hashed identifier tokens (email_sha256, phone_sha256).
+#     RFC 5322 (email syntax), E.164 (phone), GS1 GLN for store-side keys.
+#     Schema.org Person + Adobe XDM Profile for cross-vendor profile contracts.
+
+personas:
+  - { name: Head of CRM, title: VP, Head of CRM & Customer Marketing, level: VP }
+  - { name: CDP Architect, title: Principal Architect, Customer Data Platform, level: IC }
+  - { name: Loyalty Program Director, title: Senior Director, Loyalty Program Strategy, level: Director }
+  - { name: Customer Insights Manager, title: Manager, Customer Insights & Analytics, level: Manager }
+  - { name: Segmentation Strategist, title: Senior Manager, Segmentation & Audience Strategy, level: Manager }
+  - { name: Lifecycle Marketing Lead, title: Director, Lifecycle & Retention Marketing, level: Director }
+  - { name: Identity Resolution Lead, title: Staff Engineer, Identity Resolution, level: IC }
+
+decisions:
+  - { id: cdp.d.identity_strategy, statement: "Choose the identity-resolution blend — deterministic-only (high precision, low recall), deterministic + probabilistic (higher recall, lower precision), or probabilistic-only — and the confidence threshold above which records merge into a golden profile." }
+  - { id: cdp.d.segment_design, statement: "Approve a new behavioural / RFM / predictive segment — its inclusion logic, refresh cadence (real-time vs daily vs weekly), and downstream activation channels." }
+  - { id: cdp.d.lifecycle_journey, statement: "Design a lifecycle journey (welcome, post-purchase, replenishment, win-back, churn-rescue) — channels, send-time, suppression rules, and exit conditions." }
+  - { id: cdp.d.loyalty_tier_design, statement: "Set the loyalty program tier structure — thresholds (spend or points), benefits per tier, expiry policy, and whether tiers are anniversary-based or rolling 12-month." }
+  - { id: cdp.d.earn_burn_ratio, statement: "Tune the points earn rate (points per $1) and redemption value (cents per point) to hit target program economics and liability." }
+  - { id: cdp.d.consent_handling, statement: "Honour or escalate a customer's consent / preference change — process opt-outs, right-to-delete, data-portability requests under GDPR / CCPA / CPRA timelines." }
+  - { id: cdp.d.golden_record_conflict, statement: "Resolve conflicting attributes in the golden record (two emails, two addresses, two names) — pick most-recent, highest-trust source, or hold for human review." }
+  - { id: cdp.d.activation_destination, statement: "Decide which destinations a segment activates to — paid media (Meta/Google audiences), owned channels (Klaviyo/Braze/Iterable), in-store (POS personalization), or wait-listed." }
+  - { id: cdp.d.churn_intervention, statement: "Trigger a churn-prevention treatment when predicted churn probability exceeds threshold — offer depth, channel, cost ceiling." }
+  - { id: cdp.d.data_sharing_brands, statement: "Permit cross-brand data sharing within a holding company portfolio — what attributes can flow, what consent basis, what residency constraints." }
+
+kpis:
+  - id: cdp.kpi.clv
+    name: Customer Lifetime Value (CLV)
+    formula: sum(discounted_future_margin) per customer, modeled over a defined horizon
+    unit: USD
+    direction: higher_is_better
+    decisionsSupported: [cdp.d.lifecycle_journey, cdp.d.churn_intervention, cdp.d.loyalty_tier_design]
+  - id: cdp.kpi.nps
+    name: Net Promoter Score (NPS)
+    formula: (% promoters (score 9-10)) - (% detractors (score 0-6))
+    unit: index
+    direction: higher_is_better
+    decisionsSupported: [cdp.d.lifecycle_journey, cdp.d.loyalty_tier_design]
+  - id: cdp.kpi.repeat_purchase_rate
+    name: Repeat Purchase Rate
+    formula: customers_with_2plus_orders_in_window / customers_with_1plus_orders_in_window
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [cdp.d.lifecycle_journey, cdp.d.loyalty_tier_design]
+  - id: cdp.kpi.loyalty_member_pct
+    name: Loyalty Member %
+    formula: enrolled_customers / total_customers
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [cdp.d.loyalty_tier_design, cdp.d.lifecycle_journey]
+  - id: cdp.kpi.active_member_pct
+    name: Active Member %
+    formula: members_with_activity_90d / enrolled_members
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [cdp.d.lifecycle_journey, cdp.d.churn_intervention]
+  - id: cdp.kpi.reward_redemption_rate
+    name: Reward Redemption Rate
+    formula: points_redeemed / points_earned (trailing 12 months)
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [cdp.d.earn_burn_ratio]
+  - id: cdp.kpi.identity_match_rate_det
+    name: Deterministic Identity Match Rate
+    formula: customers_with_deterministic_match / total_customers
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [cdp.d.identity_strategy]
+  - id: cdp.kpi.identity_match_rate_prob
+    name: Probabilistic Identity Match Rate
+    formula: customers_with_probabilistic_match_at_threshold / total_customers
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [cdp.d.identity_strategy]
+  - id: cdp.kpi.segment_move_rate
+    name: Segment Move Rate
+    formula: customers_moving_segment_in_period / total_customers
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [cdp.d.segment_design, cdp.d.lifecycle_journey]
+  - id: cdp.kpi.winback_rate
+    name: Win-back Rate
+    formula: reactivated_customers / targeted_lapsed_customers
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [cdp.d.lifecycle_journey, cdp.d.churn_intervention]
+  - id: cdp.kpi.churn_rate
+    name: Customer Churn Rate
+    formula: customers_inactive_180d / customers_active_at_start_of_period
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [cdp.d.churn_intervention, cdp.d.lifecycle_journey]
+  - id: cdp.kpi.rfm_distribution_health
+    name: RFM Score Distribution Health
+    formula: share_of_customers_in_high_rfm_cells (R>=4 AND F>=4 AND M>=4)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [cdp.d.segment_design]
+  - id: cdp.kpi.personalization_lift
+    name: Personalization Lift
+    formula: (personalized_treatment_conversion - control_conversion) / control_conversion
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [cdp.d.lifecycle_journey, cdp.d.activation_destination]
+  - id: cdp.kpi.member_driven_revenue_pct
+    name: Member-Driven Revenue %
+    formula: sum(revenue_attributed_to_loyalty_members) / sum(total_revenue)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [cdp.d.loyalty_tier_design, cdp.d.activation_destination]
+  - id: cdp.kpi.cost_to_acquire_member
+    name: Cost to Acquire Member (CAC-Member)
+    formula: sum(member_acquisition_spend) / count(new_enrolled_members)
+    unit: USD
+    direction: lower_is_better
+    decisionsSupported: [cdp.d.loyalty_tier_design]
+
+dataModel:
+  entities:
+    - name: customer_master
+      description: Golden customer record — one row per resolved customer after deterministic + probabilistic identity stitching. The unit of personalization downstream.
+      keys: [customer_id]
+      attributes:
+        - { name: customer_id, type: varchar(32), isPrimaryKey: true }
+        - { name: first_name_token, type: varchar(64), description: "Tokenized given name (RFC 5322 normalized then hashed if PII-sensitive zone)" }
+        - { name: last_name_token, type: varchar(64) }
+        - { name: email_sha256, type: varchar(64), description: "SHA-256 lower-cased trimmed email — interoperable with Meta CAPI / Google EUID" }
+        - { name: phone_sha256, type: varchar(64), description: "SHA-256 of E.164 phone" }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: postal_code, type: varchar(16) }
+        - { name: golden_record_source, type: varchar(32), description: "amperity|salesforce_dc|adobe_rtcdp|treasure_data|in_house" }
+        - { name: confidence_score, type: "decimal(5,4)", description: "0..1 confidence of the resolved record from identity engine" }
+        - { name: resolution_method, type: varchar(16), description: "deterministic|probabilistic|hybrid|manual_merge" }
+        - { name: lifecycle_stage, type: varchar(16), description: "prospect|new|active|lapsed|churned|reactivated|vip" }
+        - { name: rfm_recency, type: smallint, description: "RFM Recency score 1-5" }
+        - { name: rfm_frequency, type: smallint, description: "RFM Frequency score 1-5" }
+        - { name: rfm_monetary, type: smallint, description: "RFM Monetary score 1-5" }
+        - { name: predicted_clv, type: "decimal(12,2)" }
+        - { name: predicted_churn_prob, type: "decimal(5,4)" }
+        - { name: first_seen_at, type: timestamp }
+        - { name: last_seen_at, type: timestamp }
+        - { name: created_at, type: timestamp }
+        - { name: updated_at, type: timestamp }
+        - { name: status, type: varchar(16), description: "active|deleted|suppressed|right_to_be_forgotten" }
+
+    - name: identity_link
+      description: Many-to-one mapping from one observed identifier (email, phone, device_id, loyalty_id, ad_id) to a customer_master. The identity graph edge set.
+      keys: [identity_id]
+      attributes:
+        - { name: identity_id, type: varchar(64), isPrimaryKey: true }
+        - { name: customer_id, type: varchar(32), isForeignKey: true, references: customer_master.customer_id }
+        - { name: identifier_type, type: varchar(24), description: "email_sha256|phone_sha256|loyalty_id|device_id|maid|fbp|ga_client_id|cookie_id|postal_addr|wallet_pass" }
+        - { name: identifier_value_hash, type: varchar(64), description: "SHA-256 hashed; raw never stored in CDP analytical zone" }
+        - { name: match_method, type: varchar(16), description: "deterministic|probabilistic|merged|manual" }
+        - { name: match_confidence, type: "decimal(5,4)" }
+        - { name: source_system, type: varchar(32), description: "salesforce_dc|adobe_rtcdp|amperity|segment|mparticle|tealium|treasure_data|klaviyo|braze|iterable|epsilon" }
+        - { name: first_observed_at, type: timestamp }
+        - { name: last_observed_at, type: timestamp }
+        - { name: is_active, type: boolean }
+
+    - name: event
+      description: Behavioral event — page view, product view, add to cart, purchase, email open/click, push delivered/opened, SMS sent, store visit. The raw fuel of segmentation and journeys. Mirrors Segment / Adobe XDM ExperienceEvent grain.
+      keys: [event_id]
+      attributes:
+        - { name: event_id, type: varchar(64), isPrimaryKey: true }
+        - { name: customer_id, type: varchar(32), isForeignKey: true, references: customer_master.customer_id }
+        - { name: anonymous_id, type: varchar(64), description: "Pre-identification anonymous device/cookie ID — Segment anonymousId, Adobe ECID" }
+        - { name: event_type, type: varchar(32), description: "page_view|product_view|search|add_to_cart|purchase|email_send|email_open|email_click|push_send|push_open|sms_send|store_visit|app_open|review_submit|return" }
+        - { name: channel, type: varchar(16), description: "web|app|email|push|sms|in_store|call_center|chat" }
+        - { name: source_system, type: varchar(32) }
+        - { name: campaign_id, type: varchar(32) }
+        - { name: journey_id, type: varchar(32) }
+        - { name: product_id, type: varchar(32) }
+        - { name: order_id, type: varchar(32) }
+        - { name: amount_minor, type: bigint, description: "ISO 4217 minor units (cents) where applicable" }
+        - { name: currency, type: varchar(3) }
+        - { name: event_ts, type: timestamp }
+        - { name: ingest_ts, type: timestamp }
+        - { name: properties_json, type: text, description: "Compact JSON of event-specific attributes" }
+
+    - name: segment
+      description: Definition of a segment / audience — RFM cell, behavioural cohort, predictive bucket, or rules-based slice. One row per defined segment; membership rows live in segment_membership.
+      keys: [segment_id]
+      attributes:
+        - { name: segment_id, type: varchar(32), isPrimaryKey: true }
+        - { name: segment_name, type: varchar(128) }
+        - { name: segment_kind, type: varchar(24), description: "rfm|behavioural|predictive|rules|lookalike|suppression" }
+        - { name: definition_dsl, type: text, description: "JSON DSL / SQL of the inclusion rule" }
+        - { name: refresh_cadence, type: varchar(16), description: "realtime|hourly|daily|weekly" }
+        - { name: owning_team, type: varchar(64) }
+        - { name: activated_destinations, type: text, description: "JSON list of destination channels — meta_audiences|google_audiences|klaviyo|braze|iterable|in_store|paid_search" }
+        - { name: created_at, type: timestamp }
+        - { name: updated_at, type: timestamp }
+        - { name: status, type: varchar(16), description: "draft|active|paused|deprecated" }
+
+    - name: segment_membership
+      description: A customer's presence in a segment within a time window. Append-only — allows the move-rate KPI to be computed without losing history.
+      keys: [membership_id]
+      attributes:
+        - { name: membership_id, type: varchar(64), isPrimaryKey: true }
+        - { name: customer_id, type: varchar(32), isForeignKey: true, references: customer_master.customer_id }
+        - { name: segment_id, type: varchar(32), isForeignKey: true, references: segment.segment_id }
+        - { name: entered_at, type: timestamp }
+        - { name: exited_at, type: timestamp, description: "Null if currently a member" }
+        - { name: entry_reason, type: varchar(64), description: "rfm_recalc|behavioural_trigger|predictive_score_xover|manual" }
+        - { name: source_system, type: varchar(32) }
+        - { name: is_current, type: boolean }
+
+    - name: loyalty_account
+      description: Loyalty program enrollment for a customer. One customer can have at most one account per program; multi-program holders have many.
+      keys: [loyalty_account_id]
+      attributes:
+        - { name: loyalty_account_id, type: varchar(32), isPrimaryKey: true }
+        - { name: customer_id, type: varchar(32), isForeignKey: true, references: customer_master.customer_id }
+        - { name: program_code, type: varchar(32), description: "Brand-specific program identifier" }
+        - { name: tier_code, type: varchar(16), description: "bronze|silver|gold|platinum|black|founder — program-specific" }
+        - { name: tier_progress_points, type: integer, description: "Points or spend accumulated toward next tier" }
+        - { name: tier_anchor_date, type: date, description: "Anchor for the tier evaluation window — anniversary or fiscal" }
+        - { name: enrolled_at, type: timestamp }
+        - { name: enrollment_channel, type: varchar(16), description: "web|app|in_store|partner|call_center" }
+        - { name: lifetime_points_earned, type: bigint }
+        - { name: lifetime_points_redeemed, type: bigint }
+        - { name: current_points_balance, type: bigint }
+        - { name: status, type: varchar(16), description: "active|paused|expired|closed|fraud_hold" }
+        - { name: opt_in_marketing, type: boolean }
+        - { name: last_engagement_at, type: timestamp }
+
+    - name: points_ledger
+      description: Append-only points ledger — every credit (earn) and debit (redeem / expire / adjust) for a loyalty_account. The book of record for points liability under ASC 606.
+      keys: [ledger_id]
+      attributes:
+        - { name: ledger_id, type: varchar(64), isPrimaryKey: true }
+        - { name: loyalty_account_id, type: varchar(32), isForeignKey: true, references: loyalty_account.loyalty_account_id }
+        - { name: txn_type, type: varchar(16), description: "earn|redeem|expire|adjust|transfer_in|transfer_out|bonus|reversal" }
+        - { name: source_event_id, type: varchar(64), description: "References event.event_id (purchase) or redemption.redemption_id" }
+        - { name: order_id, type: varchar(32) }
+        - { name: points_delta, type: bigint, description: "Signed integer — positive for earn, negative for redeem/expire" }
+        - { name: cash_equivalent_minor, type: bigint, description: "ASC 606 deferred-revenue valuation at txn time" }
+        - { name: campaign_code, type: varchar(32) }
+        - { name: txn_ts, type: timestamp }
+        - { name: posted_ts, type: timestamp, description: "Batch-posting can lag txn_ts for partner-generated points" }
+        - { name: expiry_ts, type: timestamp }
+        - { name: status, type: varchar(16), description: "posted|pending|reversed|expired" }
+
+    - name: reward
+      description: Reward catalog item — a redeemable benefit (gift card, discount, free product, partner perk). One row per SKU-equivalent of redeemability.
+      keys: [reward_id]
+      attributes:
+        - { name: reward_id, type: varchar(32), isPrimaryKey: true }
+        - { name: reward_name, type: varchar(255) }
+        - { name: reward_type, type: varchar(24), description: "gift_card|product_voucher|discount_percent|discount_amount|partner_experience|charitable_donation|sweepstakes_entry" }
+        - { name: points_cost, type: integer }
+        - { name: cash_equivalent_minor, type: bigint }
+        - { name: stock_remaining, type: integer, description: "Null for unlimited (digital discount); finite for physical / partnered inventory" }
+        - { name: vendor, type: varchar(64), description: "If redeemed against a partner brand — e.g. Visa Prepaid, Starbucks gift, Patagonia voucher" }
+        - { name: valid_from, type: timestamp }
+        - { name: valid_to, type: timestamp }
+        - { name: status, type: varchar(16), description: "active|paused|sold_out|retired" }
+
+    - name: redemption
+      description: A reward redemption — a customer trades points for a reward. Drives the redemption rate KPI and the points_ledger debit row.
+      keys: [redemption_id]
+      attributes:
+        - { name: redemption_id, type: varchar(32), isPrimaryKey: true }
+        - { name: loyalty_account_id, type: varchar(32), isForeignKey: true, references: loyalty_account.loyalty_account_id }
+        - { name: reward_id, type: varchar(32), isForeignKey: true, references: reward.reward_id }
+        - { name: points_spent, type: integer }
+        - { name: cash_equivalent_minor, type: bigint }
+        - { name: channel, type: varchar(16), description: "web|app|in_store|call_center|partner" }
+        - { name: order_id, type: varchar(32) }
+        - { name: requested_at, type: timestamp }
+        - { name: fulfilled_at, type: timestamp }
+        - { name: status, type: varchar(16), description: "pending|fulfilled|cancelled|reversed|fraud_review" }
+
+    - name: preference_center
+      description: Channel + content preferences a customer has expressed — opted-in for email weekly digest, opted out of SMS, paused push for 30 days. Authoritative for send-eligibility checks.
+      keys: [preference_id]
+      attributes:
+        - { name: preference_id, type: varchar(64), isPrimaryKey: true }
+        - { name: customer_id, type: varchar(32), isForeignKey: true, references: customer_master.customer_id }
+        - { name: channel, type: varchar(16), description: "email|sms|push|direct_mail|in_app|paid_media" }
+        - { name: topic, type: varchar(32), description: "newsletter|promotions|order_updates|loyalty_updates|new_product|partner_offers" }
+        - { name: state, type: varchar(16), description: "opted_in|opted_out|paused|never_set" }
+        - { name: source_system, type: varchar(32) }
+        - { name: changed_at, type: timestamp }
+        - { name: effective_until, type: timestamp, description: "Used by pause/snooze controls" }
+
+    - name: consent_record
+      description: Append-only consent log under GDPR Art. 6/7 and CCPA/CPRA — every recorded consent grant, withdrawal, right-to-delete, data-portability event. The legal book of record.
+      keys: [consent_id]
+      attributes:
+        - { name: consent_id, type: varchar(64), isPrimaryKey: true }
+        - { name: customer_id, type: varchar(32), isForeignKey: true, references: customer_master.customer_id }
+        - { name: jurisdiction, type: varchar(16), description: "EU_GDPR|UK_GDPR|US_CCPA|US_CPRA|CA_PIPEDA|BR_LGPD|other" }
+        - { name: consent_basis, type: varchar(24), description: "consent|contract|legitimate_interest|legal_obligation|vital_interest|public_task" }
+        - { name: consent_string, type: text, description: "IAB TCF v2.2 or GPP encoded string" }
+        - { name: purpose_codes, type: text, description: "JSON array — purpose ids consented" }
+        - { name: action, type: varchar(24), description: "granted|withdrawn|updated|right_to_delete|right_to_portability|complaint" }
+        - { name: source_system, type: varchar(32) }
+        - { name: event_ts, type: timestamp }
+        - { name: ip_token, type: varchar(64), description: "Tokenized IP for evidence retention; raw IP not persisted" }
+        - { name: user_agent_token, type: varchar(64) }
+
+  relationships:
+    - { from: identity_link, to: customer_master, kind: many_to_one }
+    - { from: event, to: customer_master, kind: many_to_one }
+    - { from: segment_membership, to: customer_master, kind: many_to_one }
+    - { from: segment_membership, to: segment, kind: many_to_one }
+    - { from: loyalty_account, to: customer_master, kind: many_to_one }
+    - { from: points_ledger, to: loyalty_account, kind: many_to_one }
+    - { from: redemption, to: loyalty_account, kind: many_to_one }
+    - { from: redemption, to: reward, kind: many_to_one }
+    - { from: preference_center, to: customer_master, kind: many_to_one }
+    - { from: consent_record, to: customer_master, kind: many_to_one }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/customer_loyalty_cdp_3nf.sql
+  vault: modeling/ddl/customer_loyalty_cdp_vault.sql
+  dimensional: modeling/ddl/customer_loyalty_cdp_dim.sql
+
+sourceSystems:
+  - { vendor: Salesforce, product: Salesforce Data Cloud (Genie / Customer 360), category: CDP / Identity Graph }
+  - { vendor: Adobe, product: Adobe Real-Time CDP (RT-CDP), category: CDP }
+  - { vendor: Treasure Data (Arm), product: Treasure Data CDP, category: CDP }
+  - { vendor: mParticle (Rokt), product: mParticle Customer Data Platform, category: CDP }
+  - { vendor: Tealium, product: Tealium AudienceStream, category: CDP }
+  - { vendor: Twilio Segment, product: Segment Connections + Personas + Engage, category: CDP / Activation }
+  - { vendor: Twilio, product: Twilio Engage, category: Activation / Orchestration }
+  - { vendor: BlueShift, product: BlueShift Predictive CDP, category: Predictive CDP }
+  - { vendor: Klaviyo, product: Klaviyo, category: Owned-Channel CRM (Email/SMS/Push) }
+  - { vendor: Braze, product: Braze, category: Cross-Channel Engagement }
+  - { vendor: Iterable, product: Iterable, category: Cross-Channel Engagement }
+  - { vendor: ActionIQ, product: ActionIQ Composable CDP, category: Warehouse-Native CDP }
+  - { vendor: Amperity, product: Amperity Customer Data Platform, category: Identity Resolution CDP }
+  - { vendor: Epsilon (Publicis), product: Epsilon PeopleCloud, category: People-Based Marketing }
+  - { vendor: Cordial, product: Cordial Cross-Channel Messaging, category: Messaging Orchestration }
+  - { vendor: Eagle Eye Solutions, product: Eagle Eye AIR Loyalty, category: Loyalty Engine }
+  - { vendor: Annex Cloud, product: Annex Cloud Loyalty Experience, category: Loyalty Engine }
+  - { vendor: Comarch, product: Comarch Loyalty Management, category: Loyalty Engine }
+  - { vendor: LoyaltyLion, product: LoyaltyLion (Shopify), category: Loyalty Engine }
+  - { vendor: Smile.io, product: Smile.io Rewards, category: Loyalty Engine }
+
+connectors:
+  - { type: Salesforce Data Cloud Ingestion API, protocol: HTTPS JSON, auth: OAuth2 + JWT }
+  - { type: Adobe Experience Platform Streaming Ingestion API, protocol: HTTPS JSON, auth: OAuth2 + JWT }
+  - { type: Adobe Experience Platform Batch Ingestion API, protocol: HTTPS JSON, auth: OAuth2 + JWT }
+  - { type: Treasure Data REST + Embedded SDK, protocol: HTTPS, auth: API key }
+  - { type: mParticle Events API + Audience API, protocol: HTTPS JSON, auth: API key + secret HMAC }
+  - { type: Tealium Collect / EventStream, protocol: HTTPS, auth: Bearer token }
+  - { type: Segment HTTP Tracking API (track/identify/group), protocol: HTTPS, auth: Write key }
+  - { type: Klaviyo REST API + List APIs, protocol: HTTPS JSON, auth: API key }
+  - { type: Braze REST + Currents export, protocol: HTTPS JSON / S3, auth: API key }
+  - { type: Iterable REST API + Webhooks, protocol: HTTPS JSON, auth: API key }
+  - { type: Amperity Outbound Feed (Stitched Profile / Tendril), protocol: SFTP / S3, auth: SSH key }
+  - { type: Eagle Eye AIR Loyalty API, protocol: HTTPS JSON, auth: API key + HMAC }
+  - { type: Annex Cloud Loyalty Webhook, protocol: HTTPS, auth: HMAC }
+  - { type: IAB TCF v2.2 / GPP consent string passthrough, protocol: HTTPS, auth: Header }
+  - { type: Reverse-ETL audience sync (Hightouch / Census), protocol: HTTPS / Snowflake reader, auth: OAuth2 }
+  - { type: POS loyalty enrollment event stream, protocol: Kafka, auth: SASL/SCRAM }
+
+ingestionChallenges:
+  - High-cardinality event firehose — a Tier-1 retailer ingests 100M+ events/day across web, app, email, push, SMS, and POS. Identity resolution must run in <100ms at the edge for the activation path while batch reconciliation back-fills probabilistic stitches overnight.
+  - Late-arriving identifiers — a customer browses anonymously for weeks, then converts and authenticates. The CDP must back-stitch the prior anonymous_id activity to the new customer_id without rewriting downstream marts.
+  - Cross-device, cross-channel stitching — the same person on mobile-app, desktop-web, and a friend's iPad creates three anonymous IDs. Deterministic stitching needs a shared identifier (login, hashed email); probabilistic blending requires labeled training pairs.
+  - PII vs hashed-PII zoning — many destinations (Meta CAPI, Google EUID, TikTok Events) accept only hashed email/phone; the CDP must maintain both zones and never leak raw PII to the analytical store.
+  - Source-system schema drift — Klaviyo renames a property, Salesforce adds a custom field, the e-com platform changes a column. CDP schema management (Adobe XDM, Segment Protocols) is itself a project.
+  - Loyalty points liability accounting under ASC 606 — points ledger must support deferred-revenue valuation, point-expiry sweeps, and reversals; finance reconciles to the GL nightly.
+
+integrationChallenges:
+  - name: Identity resolution — probabilistic vs deterministic
+    description: Deterministic stitching (hashed email match) is high-precision but low-recall — fewer than 30% of anonymous web sessions ever sign in. Probabilistic stitching (IP + UA + device + behavioral) raises recall but introduces false merges that propagate downstream as polluted golden records.
+    mitigation: Adopt a hybrid identity model — deterministic edges always merge; probabilistic edges merge only above a tuned confidence threshold (typically 0.85+). Score every merge; surface the lowest-confidence golden records weekly for human review; persist a confidence column so downstream BI can filter on it.
+  - name: Consent management across jurisdictions (CCPA / GDPR / CPRA / LGPD)
+    description: Every record needs a defensible consent basis. GDPR Art. 6 enumerates six lawful bases; CCPA + CPRA add do-not-sell + sensitive-info opt-outs. Right-to-be-forgotten requests must propagate to every downstream destination within 30 days (GDPR Art. 17).
+    mitigation: Persist consent_record as the legal book of record with IAB TCF v2.2 / GPP encoded strings; treat consent state as a join key in every audience query; subscribe destinations to a consent-change webhook so suppressions flow within hours, not weeks; document data-residency and lawful basis per purpose code.
+  - name: Real-time CDP vs batch reconciliation
+    description: Real-time decisioning (cart abandonment, in-session offer, send-time triggers) needs identity in <100ms; batch reconciliation (overnight ML score refresh, segment back-fill) operates over the same data. Running them against one engine creates contention; running them against two engines creates drift.
+    mitigation: Two-tier architecture — a fast path (Tealium, Segment, mParticle, Adobe Edge) does deterministic stitch + real-time activation; a slow path (Snowflake / Databricks + Amperity / Salesforce Data Cloud) does probabilistic stitch + ML enrichment; reconcile on a 4h cadence; publish a confidence delta KPI to track drift.
+  - name: Cross-channel attribution
+    description: A customer sees a Meta ad, opens a Klaviyo email, gets a push notification, and walks into a store. Single-touch attribution erases most of the chain; multi-touch needs every touch to land in the CDP with consistent customer_id and timestamps.
+    mitigation: Ingest channel touches as event rows on the same grain (customer_id + event_ts + event_type); compute multi-touch attribution at the warehouse layer (time-decay, ML uplift) rather than relying on each channel's self-reported credit; publish the canonical attribution table to all reporters.
+  - name: Data sharing across brands in a holding company
+    description: Many retailers operate a portfolio of brands (Gap-Old Navy-Banana Republic, LVMH portfolio, Inditex portfolio). Sharing customer data across brands creates GDPR purpose-limitation risk and CCPA disclosure obligations, but blocking sharing kills cross-brand CLV.
+    mitigation: Operate brand-scoped CDPs with explicit cross-brand data-sharing agreements per consent purpose; honor brand-level opt-outs separately from group-level; surface in the preference center; document data-flow maps for regulators (Art. 30 records of processing).
+  - name: Golden-record conflict resolution
+    description: Two source systems disagree on a customer's last name, email, or address. Picking one silently introduces errors; holding all variants pollutes downstream personalization. Survivorship rules are policy decisions, not technical defaults.
+    mitigation: Define survivorship rules per attribute (most-recent, highest-trust source, longest-non-null, weighted vote); record the chosen value AND the alternatives in customer_master_satellite for audit; route low-confidence conflicts to a manual-review queue with SLAs.
+  - name: Loyalty fraud and points liability
+    description: Stolen account credentials let fraudsters drain loyalty points; mis-issued promotional points inflate program liability under ASC 606. Both undermine program trust and accounting integrity.
+    mitigation: Detect anomalous earn patterns (geo-spread, velocity, redemption immediately after high-value earn); freeze accounts on score breach (status=fraud_hold); reconcile points_ledger nightly to GL; require human approval for adjust transactions over a threshold.
+  - name: Tier-design tradeoff — aspirational vs achievable
+    description: Tiers too aggressive — most customers stay at the bottom and disengage. Tiers too soft — the program becomes a universal discount with no aspirational pull. Setting thresholds is part data, part brand strategy.
+    mitigation: Simulate tier distributions on historical purchase data before changing thresholds; A/B test tier mechanics on a held-out cohort; track tier-progression rate and tier-downgrade rate as headline KPIs.
+  - name: Activation destination explosion
+    description: Modern CDPs send audiences to 30+ destinations (Meta, Google, TikTok, Pinterest, Snap, LinkedIn, Klaviyo, Braze, Iterable, Salesforce Marketing Cloud, paid search, paid social, in-store, call center). Each destination has its own schema, refresh cadence, and consent expectations.
+    mitigation: Standardize on a destination contract (hashed-PII envelope + consent metadata); rate-limit per-destination API quotas; expose a single observability dashboard for destination delivery freshness and acceptance ratio.
+
+glossaryTerms:
+  - CDP (Customer Data Platform)
+  - CRM (Customer Relationship Management)
+  - Identity Graph
+  - Deterministic Match
+  - Probabilistic Match
+  - Golden Record
+  - RFM (Recency-Frequency-Monetary)
+  - CLV (Customer Lifetime Value)
+  - NPS (Net Promoter Score)
+  - Segment / Audience
+  - Consent Record
+  - Opt-in / Opt-out
+  - Lifecycle Stage
+  - Hashed Identifier (PII-safe)
+  - Deduplication / Survivorship
+  - Persona
+  - Loyalty Tier
+  - Points Ledger
+  - Reward Redemption
+  - Reverse-ETL
+
+standards:
+  - { id: iab_tcf_22, name: IAB TCF v2.2 (Transparency & Consent Framework), version: "v2.2 (2024)", url: "https://iabeurope.eu/tcf/" }
+  - { id: iab_gpp, name: IAB Global Privacy Platform (GPP), version: "GPP v1.1", url: "https://iabtechlab.com/gpp/" }
+  - { id: gdpr, name: EU GDPR (Regulation 2016/679), version: "2018 in force", url: "https://eur-lex.europa.eu/eli/reg/2016/679/oj" }
+  - { id: ccpa_cpra, name: California CCPA + CPRA, version: "CCPA 2020; CPRA 2023 amendments", url: "https://oag.ca.gov/privacy/ccpa" }
+  - { id: oauth_21, name: OAuth 2.1 (draft-ietf-oauth-v2-1), version: "draft", url: "https://datatracker.ietf.org/doc/draft-ietf-oauth-v2-1/" }
+  - { id: oidc, name: OpenID Connect Core 1.0, version: "1.0 final", url: "https://openid.net/specs/openid-connect-core-1_0.html" }
+  - { id: jwe, name: JWE (RFC 7516) JSON Web Encryption, version: "RFC 7516", url: "https://datatracker.ietf.org/doc/rfc7516/" }
+  - { id: rfc_5322, name: RFC 5322 — Internet Message Format (email), version: "RFC 5322", url: "https://datatracker.ietf.org/doc/rfc5322/" }
+  - { id: e164, name: ITU E.164 (international phone numbering), version: "E.164 (2010)", url: "https://www.itu.int/rec/T-REC-E.164/" }
+  - { id: adobe_xdm, name: Adobe XDM (Experience Data Model), version: "XDM 2024", url: "https://github.com/adobe/xdm" }
+  - { id: asc_606, name: FASB ASC 606 (Revenue from Contracts with Customers), version: "ASU 2014-09", url: "https://www.fasb.org/" }

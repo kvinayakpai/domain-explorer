@@ -1,0 +1,489 @@
+id: category_management
+name: Category Management
+vertical: CPG
+oneLiner: Joint manufacturer-retailer process to manage categories as strategic business units — assortment, planogramming, shelf-space allocation, role-of-category, and range review — anchored on syndicated POS + panel data and GS1 product master.
+
+# Authoritative sources (as of mid-2026):
+#   Blue Yonder Category Management (formerly JDA Space Planning / Intactix)
+#     https://blueyonder.com/solutions/category-management — Space Planning,
+#     Floor Planning, Assortment Optimization, Open Space Suite. Industry-
+#     leading planogram authoring tool with >50% global market share.
+#   Symphony RetailAI CINDE + Category Management
+#     https://www.symphonyretailai.com — Category Manager, AI-powered
+#     assortment, autonomous planogram updates, range review automation.
+#   Circana (IRI + NPD merged 2023) — syndicated POS + panel
+#     https://www.circana.com — Liquid Data, Unify, Total Category View,
+#     Consumer Network panel, Receipt panel. The current name; do not
+#     reference IRI or NPD Group as standalone companies.
+#   NielsenIQ Connect / Discover / Spectra
+#     https://nielseniq.com — syndicated retail measurement, household panel
+#     (Homescan), Discover (pricing/promo intel), Spectra (consumer demand).
+#   Numerator
+#     https://www.numerator.com — Receipt-based purchase panel and category
+#     measurement; merger of InfoScout + Market Track (Numerator since 2018).
+#   Kantar Worldpanel
+#     https://www.kantarworldpanel.com — global household panel for FMCG
+#     category share, penetration, and shopper behavior.
+#   dunnhumby
+#     https://www.dunnhumby.com — Customer Data Science; Tesco / Kroger
+#     loyalty-data-driven category and assortment science.
+#   NielsenIQ Discover
+#     https://nielseniq.com/global/en/solutions/discover/ — pricing and
+#     promo intelligence; commonly the price/promo cut alongside Connect.
+#   RELEX Solutions — Assortment + Space + Floor Planning
+#     https://www.relexsolutions.com — unified planning suite with
+#     assortment, space, floor planning, and AI demand-driven optimization.
+#   GfK (now part of NielsenIQ since 2023)
+#     https://www.gfk.com — durables and tech panel; FMCG share data in
+#     select markets.
+#   Quad Tag Galleria — planogram software
+#     https://www.quad.com/services/tag-creative-marketing-services — visual
+#     planogram + retail design platform (formerly Periscope, Quad Graphics).
+#   Galileo Pricing — pricing & promo within category strategy
+#     https://galileopricing.com — pricing/promo analytics that feed
+#     category range reviews.
+#   Retailer EDI feeds (X12)
+#     EDI 852 — Product Activity Data (POS movement, on-hand inventory)
+#     EDI 867 — Product Transfer & Resale Report (sell-through)
+#     EDI 832 — Price/Sales Catalog (list pricing into the assortment matrix)
+#     EDI 879 — Price Information (item-level pricing)
+#   GS1 — GTIN / GLN / GDSN for product + location identification
+#     https://www.gs1.org — including GS1 Attribute Standards used as the
+#     category attribute hierarchy backbone.
+#   Sales Force Effectiveness (SFE) tools — AFS Customer Connect, Salesforce
+#     Consumer Goods Cloud — feed planogram-compliance audit photos and
+#     range-review distribution evidence.
+
+personas:
+  - { name: Category Manager, title: Category Manager, level: Manager }
+  - { name: Space Planner, title: Senior Space Planner, level: IC }
+  - { name: Category Director, title: Director, Category Strategy, level: Director }
+  - { name: Buyer, title: Senior Buyer, level: Manager }
+  - { name: Insights Manager, title: Manager, Category Insights, level: Manager }
+  - { name: Range Strategist, title: Director, Range & Assortment Strategy, level: Director }
+  - { name: Shopper Insights Lead, title: Director, Shopper & Consumer Insights, level: Director }
+  - { name: Vendor Account Manager, title: National Account Manager (CatMan), level: Manager }
+
+decisions:
+  - { id: cm.d.assortment_optimization, statement: "For the upcoming range review, optimise the assortment per cluster — which SKUs to list, which to delist, which to mandate — under shelf-space and must-stock constraints." }
+  - { id: cm.d.planogram_authoring, statement: "Author the planogram for the category — facings per SKU, block adjacencies, vertical/horizontal flow — given range, sales velocity, and pack dimensions." }
+  - { id: cm.d.shelf_space_allocation, statement: "Allocate linear shelf feet across categories (top-level) and across brands within a category given Productivity ($/linear ft) and Fair-Share rules." }
+  - { id: cm.d.range_review, statement: "Run the seasonal/annual range review — recommend SKU adds, drops, and substitutions to the retailer for approval; quantify net category sales impact." }
+  - { id: cm.d.role_of_category, statement: "Assign a category role (Destination / Routine / Occasional-Seasonal / Convenience) per banner; the role drives space, pricing, promo, and assortment-depth policy." }
+  - { id: cm.d.must_have_skus, statement: "Identify must-have SKUs (per banner and per cluster) using shopper-loss-of-trip risk; non-listing these is a hard stop for the assortment optimiser." }
+  - { id: cm.d.delist_decision, statement: "On every range review, decide whether to delist an SKU — pure velocity-based delist destroys halo on the brand; pure margin-based delist destroys category share." }
+  - { id: cm.d.private_label_balance, statement: "Set the private-label / national-brand mix for the category by store cluster — too much PL risks category penetration, too little risks margin." }
+  - { id: cm.d.innovation_slotting, statement: "Allocate the limited innovation slots in the next planogram — which new SKU launches earn shelf space vs which incumbents get cut to make room." }
+  - { id: cm.d.cluster_definition, statement: "Define store clusters for assortment differentiation — demographic / shopper / volume / format axes; the wrong cluster definition silently locks bad assortment for a year." }
+
+kpis:
+  - id: cm.kpi.category_sales_growth_pct
+    name: Category Sales Growth %
+    formula: (category_sales_t - category_sales_t_minus_1) / category_sales_t_minus_1
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [cm.d.assortment_optimization, cm.d.role_of_category, cm.d.range_review]
+  - id: cm.kpi.distribution_coverage_pct
+    name: Distribution Coverage (%ACV)
+    formula: sum(acv_with_sku) / total_acv
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [cm.d.assortment_optimization, cm.d.must_have_skus, cm.d.range_review]
+  - id: cm.kpi.range_productivity
+    name: Range Productivity (sales per SKU)
+    formula: sum(category_sales) / count(distinct_skus_listed)
+    unit: USD
+    direction: higher_is_better
+    decisionsSupported: [cm.d.assortment_optimization, cm.d.delist_decision]
+  - id: cm.kpi.shelf_space_productivity
+    name: Shelf Space Productivity ($/linear ft)
+    formula: sum(category_sales) / sum(linear_feet_allocated)
+    unit: USD_per_linear_ft
+    direction: higher_is_better
+    decisionsSupported: [cm.d.shelf_space_allocation, cm.d.planogram_authoring]
+  - id: cm.kpi.out_of_stock_rate
+    name: Out-of-Stock Rate %
+    formula: skus_oos_at_audit / skus_audited
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [cm.d.planogram_authoring, cm.d.shelf_space_allocation]
+  - id: cm.kpi.assortment_compliance_pct
+    name: Assortment Compliance %
+    formula: stores_carrying_mandated_skus / stores_audited
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [cm.d.assortment_optimization, cm.d.range_review]
+  - id: cm.kpi.halo_effect
+    name: Halo Effect
+    formula: sum(adjacent_sku_sales_change) / sum(focal_sku_sales_change)
+    unit: ratio
+    direction: higher_is_better
+    decisionsSupported: [cm.d.planogram_authoring, cm.d.assortment_optimization]
+  - id: cm.kpi.cannibalization_rate
+    name: Cannibalization Rate
+    formula: cannibalized_units / new_listing_units
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [cm.d.assortment_optimization, cm.d.innovation_slotting]
+  - id: cm.kpi.category_share_of_wallet
+    name: Category Share of Wallet
+    formula: sum(category_spend_at_banner) / sum(total_category_spend_in_market)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [cm.d.role_of_category, cm.d.cluster_definition]
+  - id: cm.kpi.velocity_index
+    name: Velocity Index (vs Category Avg)
+    formula: sku_units_per_store_per_week / category_avg_units_per_store_per_week
+    unit: index
+    direction: higher_is_better
+    decisionsSupported: [cm.d.delist_decision, cm.d.must_have_skus]
+  - id: cm.kpi.average_item_velocity
+    name: Average Item Velocity (units/store/week)
+    formula: sum(units_sold) / (count(distinct_stores) * count(distinct_weeks))
+    unit: units_per_store_per_week
+    direction: higher_is_better
+    decisionsSupported: [cm.d.assortment_optimization, cm.d.shelf_space_allocation]
+  - id: cm.kpi.days_of_supply
+    name: Days of Supply
+    formula: on_hand_units / daily_velocity_units
+    unit: days
+    direction: target_band
+    decisionsSupported: [cm.d.planogram_authoring, cm.d.shelf_space_allocation]
+  - id: cm.kpi.innovation_slot_pct
+    name: Innovation Slot %
+    formula: sku_count_launched_24m / sku_count_total
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [cm.d.innovation_slotting, cm.d.range_review]
+  - id: cm.kpi.private_label_share
+    name: Private Label Share
+    formula: sum(private_label_sales) / sum(category_sales)
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [cm.d.private_label_balance, cm.d.role_of_category]
+
+dataModel:
+  entities:
+    - name: category
+      description: Top-level / sub / segment category hierarchy node — the unit of category-management strategy. Carries role-of-category assignment (Destination/Routine/Occasional/Convenience) and the linear-foot allocation policy.
+      keys: [category_id]
+      attributes:
+        - { name: category_id, type: varchar(32), isPrimaryKey: true }
+        - { name: category_name, type: varchar(128) }
+        - { name: parent_category_id, type: varchar(32), description: "Self-referencing roll-up: subcat -> cat -> dept -> total store" }
+        - { name: category_level, type: varchar(16), description: "total_store|department|category|subcategory|segment" }
+        - { name: category_role, type: varchar(16), description: "destination|routine|occasional_seasonal|convenience" }
+        - { name: linear_ft_target, type: "decimal(10,2)", description: "Planned linear feet target per average banner store" }
+        - { name: gpc_brick, type: varchar(16), description: "GS1 GPC (Global Product Classification) brick code" }
+        - { name: status, type: varchar(16) }
+        - { name: created_at, type: timestamp }
+
+    - name: sku
+      description: Manufacturer SKU as it appears in category-management scope. Keyed by GTIN-14; carries category hierarchy assignment, pack dimensions used by the space planner, and lifecycle stage.
+      keys: [sku_id]
+      attributes:
+        - { name: sku_id, type: varchar(32), isPrimaryKey: true }
+        - { name: gtin, type: varchar(14), description: "GS1 GTIN-14" }
+        - { name: brand, type: varchar(64) }
+        - { name: sub_brand, type: varchar(64) }
+        - { name: manufacturer, type: varchar(128) }
+        - { name: category_id, type: varchar(32), isForeignKey: true, references: category.category_id }
+        - { name: pack_size, type: varchar(32) }
+        - { name: case_pack_qty, type: smallint }
+        - { name: width_cm, type: "decimal(8,2)", description: "Facing dimensions (Blue Yonder Space Planning input)" }
+        - { name: height_cm, type: "decimal(8,2)" }
+        - { name: depth_cm, type: "decimal(8,2)" }
+        - { name: weight_g, type: integer }
+        - { name: list_price_cents, type: bigint }
+        - { name: srp_cents, type: bigint }
+        - { name: cost_of_goods_cents, type: bigint }
+        - { name: private_label_flag, type: boolean }
+        - { name: launch_date, type: date }
+        - { name: lifecycle_stage, type: varchar(16), description: "intro|grow|core|decline|discontinued" }
+        - { name: status, type: varchar(16) }
+
+    - name: sku_attribute
+      description: Attribute hierarchy values per SKU — flavor, pack format, occasion, dietary, claim. Used by the assortment optimizer to compute consumer decision tree and substitution risk.
+      keys: [sku_id, attribute_name]
+      attributes:
+        - { name: sku_id, type: varchar(32), isPrimaryKey: true, isForeignKey: true, references: sku.sku_id }
+        - { name: attribute_name, type: varchar(64), isPrimaryKey: true, description: "flavor|pack_format|occasion|dietary|claim|origin|...; aligned to GS1 Attribute Standard names" }
+        - { name: attribute_value, type: varchar(128) }
+        - { name: attribute_level, type: smallint, description: "Depth in consumer decision tree (1=top)" }
+        - { name: source_system, type: varchar(32), description: "Plytix|gdsn|inhouse|...; lineage of attribute" }
+
+    - name: store
+      description: Retailer store outlet within scope of category-management decisions. Carries cluster assignment, format, and banner.
+      keys: [store_id]
+      attributes:
+        - { name: store_id, type: varchar(32), isPrimaryKey: true }
+        - { name: banner, type: varchar(64), description: "Walmart|Kroger|Target|..." }
+        - { name: store_number, type: varchar(16) }
+        - { name: gln, type: varchar(13), description: "GS1 GLN" }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: state_region, type: varchar(8) }
+        - { name: postal_code, type: varchar(16) }
+        - { name: format, type: varchar(32), description: "supercenter|grocery|club|express|c-store" }
+        - { name: cluster_id, type: varchar(32), description: "Assortment cluster (demographic / shopper / volume)" }
+        - { name: shopper_segment, type: varchar(32) }
+        - { name: total_linear_ft, type: "decimal(10,2)", description: "Total linear feet available at this store across categories" }
+        - { name: status, type: varchar(16) }
+
+    - name: planogram
+      description: A single planogram — the authoritative shelf layout for a category × store-cluster × effective window. Mirrors Blue Yonder Space Planning planogram or Symphony Category Manager output.
+      keys: [planogram_id]
+      attributes:
+        - { name: planogram_id, type: varchar(32), isPrimaryKey: true }
+        - { name: category_id, type: varchar(32), isForeignKey: true, references: category.category_id }
+        - { name: cluster_id, type: varchar(32), description: "Store cluster this planogram is authored for" }
+        - { name: version, type: varchar(16), description: "Semantic versioning v2.4.1 etc." }
+        - { name: effective_from, type: date }
+        - { name: effective_to, type: date }
+        - { name: total_linear_ft, type: "decimal(10,2)" }
+        - { name: total_facings, type: integer }
+        - { name: total_sku_count, type: integer }
+        - { name: authoring_system, type: varchar(32), description: "blueyonder_space|symphony_catman|relex|quad_tag|inhouse" }
+        - { name: created_by, type: varchar(64) }
+        - { name: created_at, type: timestamp }
+        - { name: approved_at, type: timestamp }
+        - { name: status, type: varchar(16), description: "draft|approved|in_market|superseded|killed" }
+
+    - name: planogram_position
+      description: One position on a planogram — SKU × shelf × slot grain. Carries facings, dimensions, and adjacency. The grain of compliance audits.
+      keys: [position_id]
+      attributes:
+        - { name: position_id, type: varchar(40), isPrimaryKey: true }
+        - { name: planogram_id, type: varchar(32), isForeignKey: true, references: planogram.planogram_id }
+        - { name: sku_id, type: varchar(32), isForeignKey: true, references: sku.sku_id }
+        - { name: shelf_number, type: smallint, description: "1 = bottom; counts up" }
+        - { name: position_index, type: smallint, description: "Left-to-right position within the shelf" }
+        - { name: facings, type: smallint, description: "Number of facings across" }
+        - { name: facing_depth, type: smallint, description: "Number of units deep on shelf" }
+        - { name: linear_ft_allocated, type: "decimal(6,3)" }
+        - { name: block_id, type: varchar(32), description: "Brand/sub-category block for adjacency rules" }
+        - { name: adjacency_left_sku, type: varchar(32) }
+        - { name: adjacency_right_sku, type: varchar(32) }
+        - { name: is_mandated, type: boolean, description: "Must-stock per assortment policy" }
+        - { name: is_innovation_slot, type: boolean }
+
+    - name: distribution_record
+      description: Per store × SKU × week distribution-status fact. Sourced from EDI 852 + syndicated panels (Circana / NielsenIQ). The basis for %ACV distribution coverage and assortment compliance.
+      keys: [distribution_record_id]
+      attributes:
+        - { name: distribution_record_id, type: varchar(40), isPrimaryKey: true }
+        - { name: store_id, type: varchar(32), isForeignKey: true, references: store.store_id }
+        - { name: sku_id, type: varchar(32), isForeignKey: true, references: sku.sku_id }
+        - { name: week_start_date, type: date }
+        - { name: is_listed, type: boolean, description: "Authorised in the assortment matrix" }
+        - { name: is_on_shelf, type: boolean, description: "Physically present on-shelf at audit" }
+        - { name: acv_weight, type: "decimal(8,4)", description: "%ACV weight of this store within the category market" }
+        - { name: mandated_flag, type: boolean }
+        - { name: compliant_flag, type: boolean, description: "is_listed AND is_on_shelf AND planogram-position-matched" }
+        - { name: source_doc, type: varchar(16), description: "EDI_852|circana|niq|numerator|kantar|first_party" }
+        - { name: ingested_at, type: timestamp }
+
+    - name: syndicated_measurement
+      description: Weekly syndicated POS / panel measurement at category × geography × SKU × week. Sourced from Circana Unify, NielsenIQ Connect, Numerator, Kantar Worldpanel. The truth source for category share, velocity, and pack-share metrics.
+      keys: [measurement_id]
+      attributes:
+        - { name: measurement_id, type: varchar(40), isPrimaryKey: true }
+        - { name: sku_id, type: varchar(32), isForeignKey: true, references: sku.sku_id }
+        - { name: store_id, type: varchar(32), isForeignKey: true, references: store.store_id }
+        - { name: category_id, type: varchar(32), isForeignKey: true, references: category.category_id }
+        - { name: gtin, type: varchar(14) }
+        - { name: week_start_date, type: date }
+        - { name: geography, type: varchar(32), description: "TotalUS|TotalUS_Food|Walmart|Kroger|...|panel_geography" }
+        - { name: units_sold, type: bigint }
+        - { name: dollars_sold_cents, type: bigint }
+        - { name: avg_retail_price_cents, type: bigint }
+        - { name: market_share_pct, type: "decimal(7,4)" }
+        - { name: penetration_pct, type: "decimal(7,4)", description: "Panel-only: share of households purchasing in period" }
+        - { name: buy_rate_units, type: "decimal(10,2)", description: "Panel-only: avg units per buyer" }
+        - { name: any_promo_flag, type: boolean }
+        - { name: source, type: varchar(32), description: "circana|niq|numerator|kantar|gfk|first_party" }
+        - { name: panel_id, type: varchar(16), description: "Circana_Receipt|NIQ_Homescan|Kantar_Worldpanel|null_for_pos_track" }
+        - { name: projection_factor, type: "decimal(8,4)", description: "Panel projection multiplier to category total" }
+        - { name: ingested_at, type: timestamp }
+
+    - name: range_review
+      description: A range-review cycle for a category × banner × season — the deliberation event that produces SKU add/drop decisions. Mirrors retailer line-review process (Walmart Modular Reviews, Kroger Category Planning).
+      keys: [range_review_id]
+      attributes:
+        - { name: range_review_id, type: varchar(32), isPrimaryKey: true }
+        - { name: category_id, type: varchar(32), isForeignKey: true, references: category.category_id }
+        - { name: banner, type: varchar(64) }
+        - { name: cycle_name, type: varchar(128), description: "e.g. Spring 2026 Modular Review" }
+        - { name: scheduled_date, type: date }
+        - { name: decision_date, type: date }
+        - { name: in_market_date, type: date }
+        - { name: sku_count_before, type: integer }
+        - { name: sku_count_after, type: integer }
+        - { name: sku_adds, type: integer }
+        - { name: sku_drops, type: integer }
+        - { name: forecast_category_sales_delta_cents, type: bigint }
+        - { name: forecast_margin_delta_cents, type: bigint }
+        - { name: status, type: varchar(16), description: "scheduled|in_planning|presented|approved|in_market|cancelled" }
+        - { name: led_by, type: varchar(64), description: "Category Captain / manufacturer who led the review" }
+        - { name: created_at, type: timestamp }
+
+    - name: range_review_decision
+      description: One SKU-level outcome from a range review — add / drop / mandate / cluster-only. The unit of assortment change.
+      keys: [decision_id]
+      attributes:
+        - { name: decision_id, type: varchar(40), isPrimaryKey: true }
+        - { name: range_review_id, type: varchar(32), isForeignKey: true, references: range_review.range_review_id }
+        - { name: sku_id, type: varchar(32), isForeignKey: true, references: sku.sku_id }
+        - { name: decision_type, type: varchar(16), description: "add|drop|keep|mandate|cluster_restrict|reclass|repack" }
+        - { name: cluster_scope, type: varchar(32), description: "ALL|cluster_id list" }
+        - { name: rationale, type: varchar(64), description: "must_have|low_velocity|halo|cannibalization|innovation|private_label_swap" }
+        - { name: confidence, type: "decimal(4,3)", description: "Decision confidence 0..1 from the optimizer" }
+        - { name: decision_authority, type: varchar(32), description: "category_captain|retailer_buyer|joint" }
+        - { name: decided_at, type: timestamp }
+
+    - name: planogram_compliance_audit
+      description: Store-level audit observation of planogram compliance. Sourced from AFS Customer Connect rep visits, Salesforce CG Cloud audits, and Numerator photo-crowd panel.
+      keys: [audit_id]
+      attributes:
+        - { name: audit_id, type: varchar(40), isPrimaryKey: true }
+        - { name: store_id, type: varchar(32), isForeignKey: true, references: store.store_id }
+        - { name: planogram_id, type: varchar(32), isForeignKey: true, references: planogram.planogram_id }
+        - { name: audit_date, type: date }
+        - { name: positions_audited, type: integer }
+        - { name: positions_compliant, type: integer }
+        - { name: missing_facings, type: integer }
+        - { name: out_of_stock_count, type: integer }
+        - { name: misplaced_sku_count, type: integer }
+        - { name: extra_sku_count, type: integer, description: "SKUs found on shelf but not on the planogram" }
+        - { name: compliance_score, type: "decimal(5,2)", description: "0..100 weighted score" }
+        - { name: source, type: varchar(32), description: "afs|sfdc_cg|numerator|niq_audit|inhouse" }
+        - { name: photo_evidence_uri, type: text }
+
+  relationships:
+    - { from: sku, to: category, kind: many_to_one }
+    - { from: sku_attribute, to: sku, kind: many_to_one }
+    - { from: planogram, to: category, kind: many_to_one }
+    - { from: planogram_position, to: planogram, kind: many_to_one }
+    - { from: planogram_position, to: sku, kind: many_to_one }
+    - { from: distribution_record, to: store, kind: many_to_one }
+    - { from: distribution_record, to: sku, kind: many_to_one }
+    - { from: syndicated_measurement, to: sku, kind: many_to_one }
+    - { from: syndicated_measurement, to: store, kind: many_to_one }
+    - { from: syndicated_measurement, to: category, kind: many_to_one }
+    - { from: range_review, to: category, kind: many_to_one }
+    - { from: range_review_decision, to: range_review, kind: many_to_one }
+    - { from: range_review_decision, to: sku, kind: many_to_one }
+    - { from: planogram_compliance_audit, to: store, kind: many_to_one }
+    - { from: planogram_compliance_audit, to: planogram, kind: many_to_one }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/category_management_3nf.sql
+  vault: modeling/ddl/category_management_vault.sql
+  dimensional: modeling/ddl/category_management_dim.sql
+
+sourceSystems:
+  - { vendor: Blue Yonder, product: Blue Yonder Category Management (formerly JDA Space Planning / Intactix), category: Space Planning / Planogram Authoring }
+  - { vendor: Symphony RetailAI, product: Symphony CINDE + Category Manager, category: AI Category Management & Assortment }
+  - { vendor: Circana (IRI + NPD merged 2023), product: Circana Unify / Liquid Data / Total Category View, category: Syndicated POS & Panel }
+  - { vendor: NielsenIQ, product: NielsenIQ Connect / Discover / Spectra / Homescan, category: Syndicated POS Measurement + Household Panel }
+  - { vendor: Numerator, product: Numerator Receipt Panel + Category Measurement, category: Receipt-Based Panel }
+  - { vendor: Kantar Worldpanel, product: Kantar Worldpanel (global household panel), category: Global Household Panel }
+  - { vendor: dunnhumby, product: dunnhumby Customer Data Science (Tesco/Kroger), category: Loyalty-Data Category Science }
+  - { vendor: RELEX Solutions, product: RELEX Assortment + Space + Floor Planning, category: Unified Assortment & Space Planning }
+  - { vendor: GfK (NielsenIQ), product: GfK Tech + Durables Panel, category: Durables & Tech Panel }
+  - { vendor: Quad / Tag Galleria, product: Quad Tag Galleria Planogram Suite, category: Visual Planogram & Retail Design }
+  - { vendor: Galileo Pricing, product: Galileo Pricing & Promo for Category, category: Pricing/Promo Inputs to Category }
+  - { vendor: SAP, product: SAP S/4HANA ERP (article master, sales orders, COGS), category: ERP — Item Master / Cost / Order }
+  - { vendor: VAN (Value-Added Network), product: Retailer EDI 852/867/832/879 feeds, category: EDI }
+  - { vendor: GS1, product: GS1 GDSN (Global Data Sync Network) + GPC + Attribute Standard, category: Product Master / Attribute Standard }
+  - { vendor: Salesforce / Accenture, product: Salesforce Consumer Goods Cloud (audit + planogram compliance), category: Sales Force Effectiveness (SFE) }
+
+connectors:
+  - { type: Blue Yonder Space Planning REST, protocol: HTTPS JSON, auth: OAuth2 + tenant key, typicalSources: [Blue Yonder Category Management] }
+  - { type: Blue Yonder Space file export (CSV/XML), protocol: SFTP, auth: SSH key, typicalSources: [Blue Yonder Space Planning] }
+  - { type: Symphony CINDE REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Symphony RetailAI] }
+  - { type: Circana Liquid Data API, protocol: HTTPS REST, auth: OAuth2 + API key, typicalSources: [Circana] }
+  - { type: NielsenIQ Connect REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [NielsenIQ Connect / Discover] }
+  - { type: NielsenIQ Homescan SFTP, protocol: SFTP, auth: SSH key, typicalSources: [NielsenIQ Homescan] }
+  - { type: Numerator Insights API, protocol: HTTPS REST, auth: API key, typicalSources: [Numerator] }
+  - { type: Kantar Worldpanel SFTP, protocol: SFTP, auth: SSH key, typicalSources: [Kantar Worldpanel] }
+  - { type: dunnhumby Shop API, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [dunnhumby] }
+  - { type: RELEX REST API, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [RELEX Solutions] }
+  - { type: GS1 GDSN GR XML, protocol: AS2/SFTP, auth: PKI, typicalSources: [GS1 Data Pools — 1WorldSync, SA2 Worldsync] }
+  - { type: AS2 EDI X12 (852/867/832/879), protocol: AS2, auth: PKI, typicalSources: [Walmart Retail Link, Kroger 84.51, Target Partners Online] }
+  - { type: Quad Tag Galleria export, protocol: SFTP/REST, auth: API key, typicalSources: [Quad Tag Galleria] }
+  - { type: Salesforce CG Cloud Bulk + CDC, protocol: HTTPS, auth: OAuth2 + JWT, typicalSources: [Salesforce Consumer Goods Cloud — planogram audits] }
+  - { type: SAP IDoc (MATMAS/ARTMAS, ORDERS), protocol: RFC/file, auth: SAP user, typicalSources: [SAP S/4HANA — article master] }
+
+ingestionChallenges:
+  - Syndicated panels (Circana, NielsenIQ, Numerator, Kantar) project to different geographies (TotalUS, TotalUS-Food, banner-specific, panel-only) at different cadences; union-vs-projection rules must be enforced per metric so velocity and share are not double-counted.
+  - GTIN-to-internal-SKU mapping is brittle — pack repacks, promo bonus packs, and seasonal variants spawn new GTINs that the master data team back-dates by weeks, leaving syndicated rows orphaned in staging and breaking %ACV distribution coverage dashboards.
+  - Planogram authoring tools (Blue Yonder, Symphony, RELEX, Quad) emit binary or proprietary XML files (PSA/POG/PLN) that must be parsed for position-level facings, dimensions, and adjacencies — text extraction is fragile and version-dependent.
+  - Audit-photo evidence (AFS Customer Connect, Numerator photo crowd, Salesforce CG Cloud) lands days after the audit visit, sometimes weeks; compliance KPIs must be late-binding and re-publish when photo audits land.
+  - Attribute hierarchy drift — flavor / pack format / claim attributes change definition over time as marketing introduces new sub-segments; the consumer-decision-tree axis must be versioned, not just the SKU.
+  - EDI 852 store coverage is uneven (Walmart daily, Kroger weekly, regional grocers monthly or never); the assortment-compliance fact must blend EDI for in-flight monitoring with Circana / NielsenIQ panels for closeout.
+
+integrationChallenges:
+  - name: Reconciling planogram authoring to scan reality
+    description: A category captain authors a planogram in Blue Yonder Space Planning with 84 SKUs across 11 shelves; the retailer's scan data shows 92 SKUs ringing in that store, 4 of which are not on the planogram and 12 mandated SKUs missing. Reconciling planogram-as-authored to shelf-as-scanned requires position-level joins that frequently fall back to fuzzy GTIN matching.
+    mitigation: Persist planogram_position with explicit GTIN bindings; build a daily reconciliation job that compares scan-data SKU set to planogram SKU set per store; surface the "on-shelf, not on planogram" and "on planogram, not on shelf" buckets as audit-grade DQ checks.
+  - name: Syndicated panel projection vs scan census mismatch
+    description: Circana Unify and NielsenIQ Connect project from panel households to total category at 8-12 week latency; retailer EDI 852 is store-census at 2-5 day latency but covers only the participating banner. A category sales growth number computed against panel data and one computed against EDI 852 will disagree by 5-20%, and the dashboard hides which it used.
+    mitigation: Tag every syndicated_measurement row with source + projection_factor + panel_id; downstream category share metrics always declare source policy (panel for closeout, EDI for in-flight); expose the panel-EDI delta as a guardrail metric, not a hidden field.
+  - name: Pack-master volatility — GTIN repacks and bonus packs
+    description: A 12-pack with 20%-extra-free is a new GTIN that the master data team back-dates by weeks; the new GTIN's syndicated rows sit unjoined to the pack-tier hierarchy, disappear from velocity dashboards, and resurface as "unknown SKU" anomalies in range-review prep.
+    mitigation: Run a daily orphan-row report on syndicated_measurement.sku_id IS NULL; stand up a master-data SLA on GS1 GDSN ingest; treat back-dated GTINs as a tracked gtin_repack_event class with explicit fall-through rules and a 4-week grace window.
+  - name: Cluster definition is silent infrastructure
+    description: Store clusters drive assortment differentiation — premium / mainstream / value, or Hispanic-skew / pet-owner-heavy / urban — but cluster membership is set once a year and then forgotten. By month nine of a planogram cycle, the cluster definition is stale, demographic data has drifted, and the assortment is locked to the wrong axis.
+    mitigation: Implement bi-temporal cluster assignment (effective_from, recorded_at); attach the cluster definition signature to every assortment decision so range-review impact can be re-evaluated when the cluster is refreshed; alert when cluster centroid drifts >X% from definition.
+  - name: Adjacency rules vs space optimizer conflict
+    description: The space optimizer (Blue Yonder, RELEX) wants to compress facings to maximise $/linear-ft productivity; the category captain demands brand-block adjacency for halo; the retailer demands a private-label position next to every national-brand leader. Optimizer-generated planograms reject the human-policy constraints unless the constraints are explicit.
+    mitigation: Encode adjacency policies as hard / soft constraints on the planogram_position model; require the optimizer run to declare which constraints were hard-bound vs relaxed; persist the relaxation report so the merchant can audit trade-offs.
+  - name: Range-review decision lineage
+    description: A SKU drop decision in a range review must be defensible months later when the manufacturer's KAM disputes it — what shopper data, what velocity, what halo, what private-label balance argued for the drop. Without a decision-lineage record, the conversation devolves into politics.
+    mitigation: Persist range_review_decision with rationale + confidence + the snapshot of velocity/halo/cannibalization that informed it; treat the decision row as a content-addressable audit artifact; surface in a Buyer Conversation pack alongside every disputed delist.
+  - name: Must-have SKU intersection across banners
+    description: Walmart's must-have list and Kroger's must-have list differ; a manufacturer's pan-banner assortment matrix has to satisfy both with a single SKU set per category × cluster. The intersection logic — "must-stock at >70% of either banner's must-haves" — is non-trivial and easy to get wrong, with eight-figure consequences.
+    mitigation: Maintain a per-banner must_have_skus list per range review; compute the union/intersection in a dedicated mart with policy-tagged thresholds; surface the disagreement matrix as a buyer-facing diff before range-review presentation.
+  - name: Innovation slot vs incumbent cannibalization
+    description: Launching a new flavor takes a slot that has to come from somewhere — usually from a slower-velocity incumbent in the same brand. The cannibalization math is rarely declared up front, so post-launch the innovation looks accretive when it is actually mostly migrating volume from the brand's other SKUs.
+    mitigation: Define a cannibalization basket per innovation SKU at launch (default: same brand + adjacent attribute tree); compute Innovation Sales % net of basket cannibalization; require the launch business case to declare basket and tolerance up-front; revisit at first range review.
+  - name: Category captain vs validator manufacturer alignment
+    description: One manufacturer holds the captain seat in a category (e.g. Coke in CSDs); a competing validator manufacturer (e.g. Pepsi) reviews and challenges captain recommendations. Both work off the same Circana / NielsenIQ data but with different incentive structures, and the retailer ultimately decides. Data must be presented with vendor-neutral attribution and audit trail.
+    mitigation: Persist captain vs validator role on every range-review record; expose the same syndicated_measurement view to both; record contested recommendations and decision rationale to keep the process auditable.
+
+glossaryTerms:
+  - Planogram
+  - Range
+  - Assortment
+  - Role of Category
+  - Destination Category
+  - Routine Category
+  - Occasional/Seasonal Category
+  - Convenience Category
+  - Attribute Hierarchy
+  - Market Share
+  - MFR Share (Manufacturer Share)
+  - Fair Share
+  - Must-Have SKU
+  - Kill SKU
+  - Gold / Silver / Bronze (Velocity Tiering)
+  - Syndicated Data
+  - Scan-Track
+  - Panel
+  - Household Panel
+  - EDI 852 (Product Activity Data)
+  - Total Store
+  - Category Captain
+  - %ACV Distribution
+
+standards:
+  - { id: gs1_gtin, name: "GS1 GTIN (Global Trade Item Number)", version: "GTIN-14 (GS1 GenSpec 2024)", url: "https://www.gs1.org/standards/id-keys/gtin" }
+  - { id: gs1_gln, name: "GS1 GLN (Global Location Number)", version: "GLN", url: "https://www.gs1.org/standards/id-keys/gln" }
+  - { id: gs1_gdsn, name: "GS1 GDSN (Global Data Synchronisation Network)", version: "3.1", url: "https://www.gs1.org/services/gdsn" }
+  - { id: gs1_gpc, name: "GS1 GPC (Global Product Classification)", version: "2024", url: "https://www.gs1.org/standards/gpc" }
+  - { id: gs1_attribute, name: "GS1 Attribute Standard (Category attribute hierarchy)", version: "2024", url: "https://www.gs1.org/standards/attribute" }
+  - { id: edi_852, name: "ASC X12 EDI 852 — Product Activity Data", version: "v4010+", url: "https://www.x12.org/products/transaction-sets" }
+  - { id: edi_867, name: "ASC X12 EDI 867 — Product Transfer & Resale Report", version: "v4010+", url: "https://www.x12.org/products/transaction-sets" }
+  - { id: edi_832, name: "ASC X12 EDI 832 — Price/Sales Catalog", version: "v4010+", url: "https://www.x12.org/products/transaction-sets" }
+  - { id: edi_879, name: "ASC X12 EDI 879 — Price Information", version: "v4010+", url: "https://www.x12.org/products/transaction-sets" }
+  - { id: iso_8601, name: "ISO 8601 — Date and time format", version: "2019", url: "https://www.iso.org/iso-8601-date-and-time-format.html" }

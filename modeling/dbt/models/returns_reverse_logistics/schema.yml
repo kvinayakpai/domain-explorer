@@ -1,0 +1,203 @@
+version: 2
+
+models:
+  # ---------- Staging ----------
+  - name: stg_returns_reverse_logistics__customers
+    description: Customer view. PII-tokenized.
+    columns:
+      - name: customer_id
+        tests: [unique, not_null]
+      - name: loyalty_tier
+        tests:
+          - accepted_values:
+              values: [none, bronze, silver, gold, platinum]
+
+  - name: stg_returns_reverse_logistics__sales_orders
+    description: Original outbound sales order. Joined back to RMA on order_id.
+    columns:
+      - name: order_id
+        tests: [unique, not_null]
+      - name: customer_id
+        tests:
+          - relationships: { to: ref('stg_returns_reverse_logistics__customers'), field: customer_id }
+
+  - name: stg_returns_reverse_logistics__reason_codes
+    description: Normalized return-reason catalog.
+    columns:
+      - name: reason_code_id
+        tests: [unique, not_null]
+      - name: reason_category
+        tests:
+          - accepted_values:
+              values: [fit, quality, wrong_item, damaged, changed_mind, late, gift, wardrobing, fraud_suspected, other]
+
+  - name: stg_returns_reverse_logistics__dispositions
+    description: Disposition lane catalog.
+    columns:
+      - name: disposition_id
+        tests: [unique, not_null]
+      - name: disposition_code
+        tests:
+          - accepted_values:
+              values: [restock_A, restock_open_box, refurb, b_stock_liquidation, donation, recycle, scrap, returnless]
+
+  - name: stg_returns_reverse_logistics__return_authorizations
+    description: RMA — maps to EDI 180.
+    columns:
+      - name: rma_id
+        tests: [unique, not_null]
+      - name: order_id
+        tests:
+          - not_null
+          - relationships: { to: ref('stg_returns_reverse_logistics__sales_orders'), field: order_id }
+      - name: customer_id
+        tests:
+          - relationships: { to: ref('stg_returns_reverse_logistics__customers'), field: customer_id }
+      - name: return_method
+        tests:
+          - accepted_values:
+              values: [mail, boris_store, happy_returns_bar, doddle_qr, carrier_pickup, locker, returnless]
+      - name: rma_status
+        tests:
+          - accepted_values:
+              values: [issued, in_transit, received, cancelled, expired]
+
+  - name: stg_returns_reverse_logistics__return_items
+    description: One returned unit per row. Grain of disposition / refurb / recovery.
+    columns:
+      - name: return_item_id
+        tests: [unique, not_null]
+      - name: rma_id
+        tests:
+          - relationships: { to: ref('stg_returns_reverse_logistics__return_authorizations'), field: rma_id }
+
+  - name: stg_returns_reverse_logistics__refunds
+    description: Refund event.
+    columns:
+      - name: refund_id
+        tests: [unique, not_null]
+      - name: refund_type
+        tests:
+          - accepted_values:
+              values: [original_tender, store_credit, exchange, gift_card, returnless]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [pending, issued, failed, reversed]
+
+  - name: stg_returns_reverse_logistics__refurb_outcomes
+    description: Refurb / CRC outcome per return_item.
+    columns:
+      - name: refurb_outcome_id
+        tests: [unique, not_null]
+      - name: outcome
+        tests:
+          - accepted_values:
+              values: [refurbed_A, refurbed_B, refurbed_open_box, scrapped, sent_to_liquidation, returned_to_vendor]
+
+  - name: stg_returns_reverse_logistics__liquidation_lots
+    description: Multi-item liquidation lot.
+    columns:
+      - name: lot_id
+        tests: [unique, not_null]
+      - name: marketplace
+        tests:
+          - accepted_values:
+              values: [B-Stock, Liquidation_com, BULQ, Direct_Liquidation, eBay_B-Stock, Optoro_OptiTurn]
+
+  - name: stg_returns_reverse_logistics__liquidation_lot_items
+    description: Bridge — many return_items into one lot.
+    columns:
+      - name: lot_item_id
+        tests: [unique, not_null]
+
+  - name: stg_returns_reverse_logistics__fraud_signals
+    description: Per-return / per-customer fraud signal.
+    columns:
+      - name: fraud_signal_id
+        tests: [unique, not_null]
+      - name: recommendation
+        tests:
+          - accepted_values:
+              values: [approve, verify, deny, stepup_required]
+
+  - name: stg_returns_reverse_logistics__carrier_labels
+    description: Reverse-leg shipping label.
+    columns:
+      - name: label_id
+        tests: [unique, not_null]
+
+  # ---------- Marts ----------
+  - name: dim_date_rrl
+    description: Conformed date dimension. Suffix avoids collision with other anchors' dim_date.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+
+  - name: dim_customer_rrl
+    description: Customer dimension (chronic-returner attributes carried). Suffix avoids collision with dim_customer.
+    columns:
+      - name: customer_sk
+        tests: [unique, not_null]
+      - name: customer_id
+        tests: [unique, not_null]
+
+  - name: dim_product_rrl
+    description: Product dimension scoped to returned SKUs. Suffix avoids collision with merch / pricing dims.
+    columns:
+      - name: product_sk
+        tests: [unique, not_null]
+      - name: sku_id
+        tests: [unique, not_null]
+
+  - name: dim_reason_code
+    description: Reason-code dimension.
+    columns:
+      - name: reason_code_sk
+        tests: [unique, not_null]
+      - name: reason_code_id
+        tests: [unique, not_null]
+
+  - name: dim_disposition
+    description: Disposition-lane dimension.
+    columns:
+      - name: disposition_sk
+        tests: [unique, not_null]
+      - name: disposition_id
+        tests: [unique, not_null]
+
+  - name: fct_returns_rrl
+    description: Fact — one row per return_item (the disposition grain). Joins to dim_customer_rrl, dim_product_rrl, dim_reason_code, dim_disposition.
+    columns:
+      - name: return_item_id
+        tests: [unique, not_null]
+      - name: customer_sk
+        tests:
+          - relationships: { to: ref('dim_customer_rrl'), field: customer_sk }
+      - name: disposition_sk
+        tests:
+          - relationships: { to: ref('dim_disposition'), field: disposition_sk }
+      - name: reason_code_sk
+        tests:
+          - relationships: { to: ref('dim_reason_code'), field: reason_code_sk }
+
+  - name: fct_refunds_rrl
+    description: Fact — one row per refund event.
+    columns:
+      - name: refund_id
+        tests: [unique, not_null]
+      - name: customer_sk
+        tests:
+          - relationships: { to: ref('dim_customer_rrl'), field: customer_sk }
+
+  - name: fct_refurb_outcomes
+    description: Fact — one row per refurb attempt (CRC).
+    columns:
+      - name: refurb_outcome_id
+        tests: [unique, not_null]
+
+  - name: fct_liquidation_lots
+    description: Fact — one row per sold liquidation lot.
+    columns:
+      - name: lot_id
+        tests: [unique, not_null]

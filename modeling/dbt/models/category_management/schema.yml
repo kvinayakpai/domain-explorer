@@ -1,0 +1,199 @@
+version: 2
+
+models:
+  # ---------- Staging ----------
+  - name: stg_category_management__categories
+    description: Category hierarchy node — total_store / department / category / subcategory / segment.
+    columns:
+      - name: category_id
+        tests: [unique, not_null]
+      - name: category_role
+        tests:
+          - accepted_values:
+              values: [destination, routine, occasional_seasonal, convenience]
+
+  - name: stg_category_management__skus
+    description: Manufacturer SKU within category-management scope (GS1 GTIN-14).
+    columns:
+      - name: sku_id
+        tests: [unique, not_null]
+      - name: lifecycle_stage
+        tests:
+          - accepted_values:
+              values: [intro, grow, core, decline, discontinued]
+
+  - name: stg_category_management__sku_attributes
+    description: Attribute hierarchy values per SKU.
+    columns:
+      - name: sku_id
+        tests:
+          - not_null
+          - relationships: { to: ref('stg_category_management__skus'), field: sku_id }
+
+  - name: stg_category_management__stores
+    description: Retailer store outlet.
+    columns:
+      - name: store_id
+        tests: [unique, not_null]
+      - name: format
+        tests:
+          - accepted_values:
+              values: [supercenter, grocery, club, express, c_store]
+
+  - name: stg_category_management__planograms
+    description: Authoritative planogram for a category × cluster × window.
+    columns:
+      - name: planogram_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [draft, approved, in_market, superseded, killed]
+
+  - name: stg_category_management__planogram_positions
+    description: One SKU position on a planogram.
+    columns:
+      - name: position_id
+        tests: [unique, not_null]
+      - name: planogram_id
+        tests:
+          - relationships: { to: ref('stg_category_management__planograms'), field: planogram_id }
+      - name: sku_id
+        tests:
+          - relationships: { to: ref('stg_category_management__skus'), field: sku_id }
+
+  - name: stg_category_management__distribution_records
+    description: Per store × SKU × week distribution-status fact (EDI 852 + panels).
+    columns:
+      - name: distribution_record_id
+        tests: [unique, not_null]
+      - name: source_doc
+        tests:
+          - accepted_values:
+              values: [EDI_852, circana, niq, numerator, kantar, first_party]
+
+  - name: stg_category_management__syndicated_measurements
+    description: Syndicated POS / panel measurement (Circana / NielsenIQ / Numerator / Kantar).
+    columns:
+      - name: measurement_id
+        tests: [unique, not_null]
+      - name: source
+        tests:
+          - accepted_values:
+              values: [circana_unify, niq_connect, numerator, kantar_worldpanel, first_party]
+
+  - name: stg_category_management__range_reviews
+    description: A range-review cycle for a category × banner × season.
+    columns:
+      - name: range_review_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [scheduled, in_planning, presented, approved, in_market, cancelled]
+
+  - name: stg_category_management__range_review_decisions
+    description: One SKU-level outcome from a range review.
+    columns:
+      - name: decision_id
+        tests: [unique, not_null]
+      - name: decision_type
+        tests:
+          - accepted_values:
+              values: [add, drop, keep, mandate, cluster_restrict, reclass, repack]
+
+  - name: stg_category_management__compliance_audits
+    description: Store-level audit observation of planogram compliance.
+    columns:
+      - name: audit_id
+        tests: [unique, not_null]
+      - name: source
+        tests:
+          - accepted_values:
+              values: [afs, sfdc_cg, numerator, niq_audit, inhouse]
+
+  # ---------- Marts ----------
+  - name: dim_date_cm
+    description: Date dimension scoped to the category_management window. Suffix _cm avoids collision with other anchors' dim_date.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+
+  - name: dim_category
+    description: Category hierarchy dimension carrying role-of-category and linear-foot target.
+    columns:
+      - name: category_sk
+        tests: [unique, not_null]
+      - name: category_id
+        tests: [unique, not_null]
+
+  - name: dim_product_cm
+    description: Product (SKU) dimension — _cm suffix avoids collision with TPM/RGM dim_product.
+    columns:
+      - name: product_sk
+        tests: [unique, not_null]
+      - name: sku_id
+        tests: [unique, not_null]
+
+  - name: dim_store_cm
+    description: Store dimension — _cm suffix avoids collision with merchandising/loss_prevention dim_store.
+    columns:
+      - name: store_sk
+        tests: [unique, not_null]
+      - name: store_id
+        tests: [unique, not_null]
+
+  - name: dim_planogram
+    description: Planogram dimension — version, effective window, authoring system, status.
+    columns:
+      - name: planogram_sk
+        tests: [unique, not_null]
+      - name: planogram_id
+        tests: [unique, not_null]
+
+  - name: dim_range_review
+    description: Range Review dimension — cycle, banner, decision date, status.
+    columns:
+      - name: range_review_sk
+        tests: [unique, not_null]
+      - name: range_review_id
+        tests: [unique, not_null]
+
+  - name: fct_syndicated_measurements
+    description: Fact — one row per syndicated POS / panel measurement at SKU × store × week × source grain.
+    columns:
+      - name: measurement_id
+        tests: [unique, not_null]
+      - name: product_sk
+        tests:
+          - relationships: { to: ref('dim_product_cm'), field: product_sk }
+
+  - name: fct_distribution
+    description: Fact — per store × SKU × week distribution-status; drives %ACV distribution coverage.
+    columns:
+      - name: distribution_record_id
+        tests: [unique, not_null]
+      - name: product_sk
+        tests:
+          - relationships: { to: ref('dim_product_cm'), field: product_sk }
+      - name: store_sk
+        tests:
+          - relationships: { to: ref('dim_store_cm'), field: store_sk }
+
+  - name: fct_planogram_compliance
+    description: Fact — one row per planogram-compliance audit observation.
+    columns:
+      - name: audit_id
+        tests: [unique, not_null]
+      - name: planogram_sk
+        tests:
+          - relationships: { to: ref('dim_planogram'), field: planogram_sk }
+
+  - name: fct_range_reviews
+    description: Fact — range-review cycle outcomes (SKU adds / drops / net delta and forecast P&L).
+    columns:
+      - name: range_review_id
+        tests: [unique, not_null]
+      - name: range_review_sk
+        tests:
+          - relationships: { to: ref('dim_range_review'), field: range_review_sk }

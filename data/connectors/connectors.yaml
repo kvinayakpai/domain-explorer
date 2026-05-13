@@ -36,3 +36,185 @@ connectors:
   - { id: conn.crossmint_checkout, type: Crossmint headless checkout, protocol: HTTPS, auth: HMAC + agent header, typicalSources: [Crossmint], latency: realtime, modes: [push, pull] }
   - { id: conn.oauth_rar, type: OAuth 2.1 + RFC 9396 RAR, protocol: HTTPS, auth: PKCE + DPoP + RAR, typicalSources: [Auth0 RAR, Visa AP2 authz], latency: realtime, modes: [pull, push] }
   - { id: conn.operator_jwt, type: Operator JWT attestation header, protocol: HTTPS, auth: signed JWT (ES256), typicalSources: [Anthropic, OpenAI, Google, Amazon agent operators], latency: realtime, modes: [push] }
+
+  # Predictive Maintenance connectors
+  - { id: conn.thingworx_rest, type: ThingWorx REST, protocol: HTTPS JSON, auth: AppKey / OAuth2, typicalSources: [PTC ThingWorx], latency: realtime, modes: [pull, push] }
+  - { id: conn.mindsphere_api, type: MindSphere IoT TimeSeries API, protocol: HTTPS JSON, auth: OAuth2 (technical user), typicalSources: [Siemens MindSphere], latency: realtime, modes: [pull, push] }
+  - { id: conn.pi_web_api, type: PI Web API, protocol: HTTPS JSON, auth: Kerberos / OIDC, typicalSources: [Aveva PI System, OSIsoft PI], latency: near-realtime, modes: [pull] }
+  - { id: conn.maximo_oslc, type: Maximo OSLC REST, protocol: HTTPS JSON (OSLC), auth: OAuth2 / Basic, typicalSources: [IBM Maximo APM, IBM Maximo EAM], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.augury_rest, type: Augury Machine Health REST, protocol: HTTPS, auth: API key, typicalSources: [Augury], latency: realtime, modes: [pull, push] }
+  - { id: conn.modbus_tcp, type: Modbus TCP, protocol: TCP, auth: none (network-isolated), typicalSources: [Rockwell drives, legacy PLCs], latency: realtime, modes: [pull] }
+  - { id: conn.profinet, type: PROFINET, protocol: Ethernet IRT, auth: none (network-isolated), typicalSources: [Siemens S7 PLCs], latency: realtime, modes: [stream] }
+  - { id: conn.ethernet_ip, type: EtherNet/IP (CIP), protocol: TCP/UDP, auth: CIP Security, typicalSources: [Rockwell ControlLogix], latency: realtime, modes: [stream] }
+
+  # Pricing & Promotions connectors
+  - { id: conn.revionics_rest, type: Revionics REST API, protocol: HTTPS JSON, auth: OAuth2 + API key, typicalSources: [Revionics Lifecycle Pricing], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.pros_rest, type: PROS Pricing REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [PROS Pricing], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.blueyonder_luminate, type: Blue Yonder Luminate API, protocol: HTTPS JSON, auth: OAuth2 + tenant key, typicalSources: [Blue Yonder Pricing & Promotion, Blue Yonder Markdown], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.eagleeye_air, type: Eagle Eye AIR API, protocol: HTTPS JSON, auth: API key + HMAC, typicalSources: [Eagle Eye AIR], latency: realtime, modes: [push, pull] }
+  - { id: conn.inmar_promo_api, type: Inmar Digital Promotions API, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Inmar Digital Promotions], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.nielseniq_sftp, type: NielsenIQ Discover SFTP feed, protocol: SFTP, auth: SSH key, typicalSources: [NielsenIQ Discover], latency: batch, modes: [file] }
+  - { id: conn.numerator_api, type: Numerator API, protocol: HTTPS JSON, auth: API key, typicalSources: [Numerator Promotions Intelligence], latency: near-realtime, modes: [pull] }
+  - { id: conn.wiser_api, type: Wiser scraper API, protocol: HTTPS JSON, auth: API key, typicalSources: [Wiser Solutions], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.edi_832, type: EDI 832 Price/Sales Catalog, protocol: AS2, auth: PKI, typicalSources: [Trading partners, vendor catalog feeds], latency: batch, modes: [file] }
+  - { id: conn.edi_879, type: EDI 879 Price Change, protocol: AS2, auth: PKI, typicalSources: [Trading partners], latency: batch, modes: [file] }
+  - { id: conn.edi_880_881, type: EDI 880/881 Grocery Promo Announcement, protocol: AS2, auth: PKI, typicalSources: [Grocery trading partners], latency: batch, modes: [file] }
+  - { id: conn.sap_cond_a, type: SAP IDoc COND_A price condition, protocol: RFC/file, auth: SAP user, typicalSources: [SAP for Retail, SAP CAR], latency: near-realtime, modes: [push, file] }
+  - { id: conn.oracle_rpcs_rest, type: Oracle RPCS REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Oracle Retail Pricing Cloud Service], latency: near-realtime, modes: [pull, push] }
+
+  # Trade Promotion Management connectors
+  - { id: conn.edi_x12_852, type: ASC X12 EDI 852 Product Activity Data, protocol: AS2, auth: PKI, typicalSources: [Walmart Retail Link, Kroger 84.51, Target Partners Online, regional grocers], latency: batch, modes: [file] }
+  - { id: conn.edi_x12_867, type: ASC X12 EDI 867 Product Transfer & Resale, protocol: AS2, auth: PKI, typicalSources: [Retail trading partners], latency: batch, modes: [file] }
+  - { id: conn.edi_x12_820, type: ASC X12 EDI 820 Payment Order/Remittance, protocol: AS2, auth: PKI, typicalSources: [Retail trading partners (deduction settlement)], latency: batch, modes: [file] }
+  - { id: conn.circana_liquid, type: Circana Liquid Data API, protocol: HTTPS JSON, auth: OAuth2 + API key, typicalSources: [Circana Unify], latency: near-realtime, modes: [pull] }
+  - { id: conn.niq_connect_api, type: NielsenIQ Connect REST API, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [NielsenIQ Connect / Connect+ Retail], latency: near-realtime, modes: [pull] }
+  - { id: conn.salesforce_bulk, type: Salesforce Bulk API + CDC, protocol: HTTPS, auth: OAuth2 + JWT, typicalSources: [Salesforce CG Cloud, Salesforce Sales Cloud], latency: realtime, modes: [pull, push, stream] }
+  - { id: conn.exceedra_rest, type: Exceedra TPx REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Exceedra TPx], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.blueplanner_rest, type: BluePlanner Live Trade Management REST, protocol: HTTPS JSON, auth: OAuth2 + tenant key, typicalSources: [BluePlanner], latency: realtime, modes: [pull, push] }
+  - { id: conn.anaplan_rest, type: Anaplan REST + Bulk, protocol: HTTPS JSON, auth: OAuth2 + cert, typicalSources: [Anaplan TPM], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.vistex_rest, type: Vistex Solutions REST/SOAP, protocol: HTTPS, auth: OAuth2 / WS-Security, typicalSources: [Vistex Solutions for Trade Promotion], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.afs_rest, type: AFS Customer Connect REST, protocol: HTTPS JSON, auth: OAuth2 + API key, typicalSources: [AFS Retail Execution + TPM], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.tpro_rest, type: T-Pro Predictive REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [T-Pro TPx], latency: near-realtime, modes: [pull] }
+  - { id: conn.blueyonder_esl_telemetry, type: BlueYonder ESL telemetry stream, protocol: MQTT/HTTPS, auth: TLS + cred, typicalSources: [BlueYonder Electronic Shelf Labels], latency: realtime, modes: [stream, push] }
+
+  # Customer Loyalty & CDP connectors
+  - { id: conn.sf_data_cloud_ingest, type: Salesforce Data Cloud Ingestion API, protocol: HTTPS JSON, auth: OAuth2 + JWT, typicalSources: [Salesforce Data Cloud], latency: realtime, modes: [pull, push, stream] }
+  - { id: conn.adobe_streaming_ingest, type: Adobe Experience Platform Streaming Ingestion API, protocol: HTTPS JSON, auth: OAuth2 + JWT, typicalSources: [Adobe RT-CDP, Adobe Experience Platform], latency: realtime, modes: [push] }
+  - { id: conn.adobe_batch_ingest, type: Adobe Experience Platform Batch Ingestion API, protocol: HTTPS JSON, auth: OAuth2 + JWT, typicalSources: [Adobe RT-CDP, Adobe Experience Platform], latency: batch, modes: [push, file] }
+  - { id: conn.treasure_data_rest, type: Treasure Data REST API + Embedded SDK, protocol: HTTPS JSON, auth: API key, typicalSources: [Treasure Data CDP], latency: realtime, modes: [pull, push] }
+  - { id: conn.mparticle_events, type: mParticle Events API, protocol: HTTPS JSON, auth: API key + secret HMAC, typicalSources: [mParticle], latency: realtime, modes: [push] }
+  - { id: conn.mparticle_audience, type: mParticle Audience API, protocol: HTTPS JSON, auth: API key + secret HMAC, typicalSources: [mParticle], latency: realtime, modes: [pull, push] }
+  - { id: conn.tealium_collect, type: Tealium Collect / EventStream, protocol: HTTPS JSON, auth: Bearer token, typicalSources: [Tealium AudienceStream], latency: realtime, modes: [push] }
+  - { id: conn.segment_track, type: Segment HTTP Tracking API (track/identify/group), protocol: HTTPS JSON, auth: Write key, typicalSources: [Twilio Segment], latency: realtime, modes: [push] }
+  - { id: conn.klaviyo_rest, type: Klaviyo REST + List APIs, protocol: HTTPS JSON, auth: API key, typicalSources: [Klaviyo], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.braze_rest, type: Braze REST API, protocol: HTTPS JSON, auth: API key, typicalSources: [Braze], latency: realtime, modes: [pull, push] }
+  - { id: conn.braze_currents, type: Braze Currents export (S3/Snowflake/Redshift), protocol: S3 / Snowflake share, auth: IAM / Snowflake share, typicalSources: [Braze], latency: near-realtime, modes: [file, stream] }
+  - { id: conn.iterable_rest, type: Iterable REST + Webhooks, protocol: HTTPS JSON, auth: API key, typicalSources: [Iterable], latency: realtime, modes: [pull, push] }
+  - { id: conn.amperity_outbound, type: Amperity Outbound Feed (Stitched Profile / Tendril), protocol: SFTP / S3, auth: SSH key, typicalSources: [Amperity], latency: batch, modes: [file] }
+  - { id: conn.iab_tcf_passthrough, type: IAB TCF v2.2 / GPP consent passthrough header, protocol: HTTPS, auth: Header, typicalSources: [Consent management platforms (OneTrust, Sourcepoint, TrustArc)], latency: realtime, modes: [push] }
+  - { id: conn.reverse_etl_audience, type: Reverse-ETL audience sync (Hightouch / Census), protocol: HTTPS / Snowflake reader, auth: OAuth2, typicalSources: [Snowflake / BigQuery warehouse], latency: near-realtime, modes: [push] }
+  - { id: conn.pos_loyalty_stream, type: POS loyalty enrollment event stream, protocol: Kafka, auth: SASL/SCRAM, typicalSources: [NCR Voyix POS, Toshiba TCx, Square POS], latency: realtime, modes: [stream] }
+
+  # Revenue Growth Management connectors
+  - { id: conn.pricefx_rest, type: Pricefx REST API, protocol: HTTPS JSON, auth: OAuth2 + tenant key, typicalSources: [Pricefx Price Optimization & Management Suite], latency: realtime, modes: [pull, push] }
+  - { id: conn.modeln_rest, type: Model N REST API, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Model N Revenue Management Cloud], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.periscope_rest, type: Periscope by McKinsey API, protocol: HTTPS JSON, auth: OAuth2 + tenant key, typicalSources: [Periscope Performance Lens / RGM apps], latency: near-realtime, modes: [pull] }
+  - { id: conn.bcg_os_rest, type: BCG OS REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [BCG OS RGM Toolkit], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.zilliant_rest, type: Zilliant REST API, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Zilliant Price IQ / Sales IQ / Deal Manager], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.vendavo_rest, type: Vendavo REST API, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Vendavo Profit Analyzer / Deal Manager], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.plytix_rest, type: Plytix PIM REST, protocol: HTTPS JSON, auth: API key, typicalSources: [Plytix PIM], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.sap_ccm_idoc, type: SAP CCM IDoc COND_A04 / RFC, protocol: RFC/file, auth: SAP user, typicalSources: [SAP S/4HANA Revenue Management + CCM], latency: near-realtime, modes: [push, file] }
+  - { id: conn.sap_invoic02, type: SAP SD IDoc INVOIC02 / ORDERS05, protocol: RFC/file, auth: SAP user, typicalSources: [SAP S/4HANA SD/FI (RGM)], latency: near-realtime, modes: [push, file] }
+
+  # Omnichannel Order Management connectors
+  - { id: conn.manh_active_om_rest, type: Manhattan Active OM REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Manhattan Active Order Management], latency: realtime, modes: [pull, push] }
+  - { id: conn.sterling_oms_rest, type: IBM Sterling OMS REST + JMS, protocol: HTTPS JSON / JMS, auth: OAuth2 / Mutual TLS, typicalSources: [IBM Sterling Order Management], latency: realtime, modes: [pull, push, stream] }
+  - { id: conn.sf_platform_events, type: Salesforce Platform Events (CometD), protocol: CometD over HTTPS, auth: OAuth2, typicalSources: [Salesforce Order Management, Salesforce CG Cloud], latency: realtime, modes: [stream] }
+  - { id: conn.shopify_admin_graphql, type: Shopify Admin GraphQL, protocol: HTTPS GraphQL, auth: OAuth2, typicalSources: [Shopify Order Management, Shopify Fulfillment Network], latency: realtime, modes: [pull, push] }
+  - { id: conn.oracle_roms_rest, type: Oracle ROMS REST + IXM, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Oracle Retail Order Management Cloud Service], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.kibo_oms_rest, type: Kibo OMS REST, protocol: HTTPS JSON, auth: OAuth2 + tenant key, typicalSources: [Kibo Order Management], latency: realtime, modes: [pull, push] }
+  - { id: conn.fluent_graphql, type: Fluent Commerce GraphQL + Webhook, protocol: HTTPS GraphQL, auth: OAuth2 + signed events, typicalSources: [Fluent Order Management], latency: realtime, modes: [pull, push, stream] }
+  - { id: conn.edi_846, type: EDI 846 Inventory Inquiry/Advice, protocol: AS2, auth: PKI, typicalSources: [Trading partners, vendor inventory feeds], latency: batch, modes: [file] }
+  - { id: conn.edi_940, type: EDI 940 Warehouse Shipping Order, protocol: AS2, auth: PKI, typicalSources: [Retailer-to-WMS instructions], latency: batch, modes: [file] }
+  - { id: conn.edi_943, type: EDI 943 Warehouse Stock Transfer Shipment Advice, protocol: AS2, auth: PKI, typicalSources: [Inter-DC transfers], latency: batch, modes: [file] }
+  - { id: conn.edi_944, type: EDI 944 Warehouse Stock Transfer Receipt Advice, protocol: AS2, auth: PKI, typicalSources: [Inter-DC transfers], latency: batch, modes: [file] }
+  - { id: conn.edi_945, type: EDI 945 Warehouse Shipping Advice, protocol: AS2, auth: PKI, typicalSources: [Manhattan WMS, Blue Yonder WMS, 3PLs], latency: batch, modes: [file] }
+  - { id: conn.edi_856, type: EDI 856 Advance Ship Notice (ASN), protocol: AS2, auth: PKI, typicalSources: [Retailer-to-trading-partner], latency: batch, modes: [file] }
+  - { id: conn.carrier_rest, type: Carrier REST API (FedEx/UPS/USPS/DHL), protocol: HTTPS JSON, auth: API key + OAuth2, typicalSources: [FedEx Web Services, UPS Developer Kit, USPS Web Tools, DHL XML PI], latency: realtime, modes: [pull, push] }
+
+  # Loss Prevention connectors
+  - { id: conn.zebra_reflexis_rest, type: Zebra Reflexis REST, protocol: HTTPS JSON, auth: OAuth2 + tenant key, typicalSources: [Zebra Reflexis / Workforce Connect], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.sensormatic_shrinkvision, type: Sensormatic ShrinkVision API, protocol: HTTPS JSON, auth: API key + HMAC, typicalSources: [Sensormatic Solutions], latency: realtime, modes: [push, pull] }
+  - { id: conn.ncr_voyix_lp_rest, type: NCR Voyix LP REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [NCR Voyix Loss Prevention Analytics], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.oracle_xstore_lp_rest, type: Oracle XStore LP REST (XBR), protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Oracle Retail XStore Loss Prevention], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.auror_rest, type: Auror REST + Webhook, protocol: HTTPS JSON, auth: OAuth2 + signed webhook, typicalSources: [Auror ORC Platform], latency: realtime, modes: [pull, push] }
+  - { id: conn.appriss_retail_api, type: Appriss Retail Verify API, protocol: HTTPS JSON, auth: API key + mTLS, typicalSources: [Appriss Retail Verify], latency: realtime, modes: [pull] }
+  - { id: conn.profitect_rest, type: Profitect (Zebra) REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Profitect Prescriptive Analytics], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.aptos_lp_rest, type: Aptos LP REST + SFTP, protocol: HTTPS + SFTP, auth: OAuth2 / SSH key, typicalSources: [Aptos Loss Prevention], latency: near-realtime, modes: [pull, file] }
+  - { id: conn.tyco_rfid_stream, type: Tyco RFID event stream, protocol: MQTT / Kafka, auth: TLS + cred, typicalSources: [Tyco RFID, Sensormatic ShrinkVision RFID], latency: realtime, modes: [stream] }
+  - { id: conn.alto_case_packet, type: ALTO Alliance case packet (JSON), protocol: HTTPS JSON, auth: OAuth2 + retailer cert, typicalSources: [ALTO Alliance Information Sharing], latency: near-realtime, modes: [push, pull] }
+  - { id: conn.detego_rest, type: Detego Cloud REST, protocol: HTTPS JSON, auth: API key, typicalSources: [Detego Cloud], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.indyme_webhook, type: Indyme device webhook, protocol: HTTPS, auth: HMAC, typicalSources: [Indyme Smart Response / FreedomCase], latency: realtime, modes: [push] }
+  - { id: conn.pos_lp_stream, type: POS exception stream (Toshiba TCx / NCR Voyix / Oracle XStore / NCR Counterpoint), protocol: Kafka, auth: SASL/SCRAM, typicalSources: [NCR Voyix POS, Toshiba TCx, Oracle XStore POS, NCR Counterpoint], latency: realtime, modes: [stream] }
+  - { id: conn.retailnext_rest, type: RetailNext Aurora REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [RetailNext Aurora], latency: near-realtime, modes: [pull] }
+  - { id: conn.datalogic_scanner_mqtt, type: Datalogic scanner telemetry, protocol: MQTT, auth: TLS + cred, typicalSources: [Datalogic Magellan / Joya scanners], latency: realtime, modes: [stream] }
+  - { id: conn.honeywell_hci_rest, type: Honeywell HCI REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Honeywell Connected Retail], latency: near-realtime, modes: [pull, push] }
+
+  # Direct Store Delivery connectors
+  - { id: conn.aldata_apollo_sftp, type: Aldata Apollo settlement export (SFTP + REST), protocol: SFTP / HTTPS, auth: SSH key + OAuth2, typicalSources: [Aldata Apollo Route Accounting], latency: batch, modes: [file, pull] }
+  - { id: conn.trimble_roadnet_rest, type: Trimble Roadnet Anywhere REST, protocol: HTTPS JSON, auth: OAuth2 + tenant key, typicalSources: [Trimble Roadnet Anywhere], latency: realtime, modes: [pull, push] }
+  - { id: conn.peoplenet_rest, type: Trimble PeopleNet ConnectedDriver REST, protocol: HTTPS JSON, auth: OAuth2 + ELD-bound JWT, typicalSources: [Trimble PeopleNet], latency: realtime, modes: [pull, push] }
+  - { id: conn.telematics_stream, type: Fleet telematics MQTT/HTTPS stream, protocol: MQTT / HTTPS, auth: TLS + device cert, typicalSources: [Trimble PeopleNet, Samsara, Geotab, Verizon Connect], latency: realtime, modes: [stream] }
+  - { id: conn.epicor_dsd_rest, type: Epicor DSD REST + SFTP, protocol: HTTPS JSON / SFTP, auth: OAuth2 + SSH key, typicalSources: [Epicor DSD, Epicor Eagle], latency: near-realtime, modes: [pull, push, file] }
+  - { id: conn.salient_cmx_rest, type: Salient CMx REST + cube export, protocol: HTTPS JSON / SFTP, auth: OAuth2 / SSH key, typicalSources: [Salient CMx], latency: batch, modes: [pull, file] }
+  - { id: conn.toolsgroup_rest, type: ToolsGroup SO99+ REST + batch, protocol: HTTPS JSON / SFTP, auth: OAuth2 + SSH key, typicalSources: [ToolsGroup SO99+, JustEnough], latency: near-realtime, modes: [pull, push, file] }
+  - { id: conn.descartes_routeplanner_rest, type: Descartes Route Planner REST + Webhook, protocol: HTTPS JSON, auth: OAuth2 + tenant key, typicalSources: [Descartes Route Planner OnDemand], latency: realtime, modes: [pull, push] }
+  - { id: conn.workwave_rest, type: WorkWave Route Manager REST + Webhook, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [WorkWave Route Manager], latency: realtime, modes: [pull, push] }
+  - { id: conn.manh_active_routing_rest, type: Manhattan Active Routing REST + CDC, protocol: HTTPS JSON / Kafka, auth: OAuth2 + SASL/SCRAM, typicalSources: [Manhattan Active Routing & Resource Management], latency: realtime, modes: [pull, push, stream] }
+  - { id: conn.handheld_sync, type: Honeywell/Zebra rugged-handheld sync (Mobility Edge / Wavelink), protocol: HTTPS, auth: device cert + JWT, typicalSources: [Honeywell CN80/CT45, Zebra MC9300/TC78], latency: near-realtime, modes: [push, pull] }
+  - { id: conn.edi_x12_894, type: ASC X12 EDI 894 Delivery/Return Base Record, protocol: AS2, auth: PKI, typicalSources: [Walmart Retail Link, Kroger 84.51, Albertsons trading partners], latency: batch, modes: [file] }
+  - { id: conn.edi_x12_895, type: ASC X12 EDI 895 Delivery/Return Acknowledgement, protocol: AS2, auth: PKI, typicalSources: [Retail trading partners (DSD acknowledgement)], latency: batch, modes: [file] }
+  - { id: conn.edi_x12_940, type: ASC X12 EDI 940 Warehouse Shipping Order, protocol: AS2, auth: PKI, typicalSources: [Manufacturer-to-WMS instructions for DSD truck loading], latency: batch, modes: [file] }
+  - { id: conn.edi_x12_945, type: ASC X12 EDI 945 Warehouse Shipping Advice, protocol: AS2, auth: PKI, typicalSources: [WMS-to-TPM/ERP load confirmation for DSD], latency: batch, modes: [file] }
+
+  # S&OP / IBP connectors
+  - { id: conn.sap_ibp_odata, type: SAP IBP OData / RFC, protocol: HTTPS OData + RFC, auth: OAuth2 / SAP user, typicalSources: [SAP IBP], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.kinaxis_rapidresponse_rest, type: Kinaxis RapidResponse REST, protocol: HTTPS JSON, auth: OAuth2 + scenario context, typicalSources: [Kinaxis RapidResponse / Maestro], latency: realtime, modes: [pull, push] }
+  - { id: conn.o9_connect, type: o9 Connect REST, protocol: HTTPS JSON, auth: OAuth2 + tenant key, typicalSources: [o9 Solutions Digital Brain], latency: realtime, modes: [pull, push] }
+  - { id: conn.blueyonder_luminate_planning, type: Blue Yonder Luminate Planning API, protocol: HTTPS JSON, auth: OAuth2 + tenant key, typicalSources: [Blue Yonder Supply Chain Planning], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.oracle_scp_rest, type: Oracle SCM Cloud REST (SCP), protocol: HTTPS JSON, auth: OAuth2 + JWT assertion, typicalSources: [Oracle Supply Chain Planning Cloud], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.anaplan_api_v2, type: Anaplan API v2, protocol: HTTPS JSON, auth: OAuth2 + CA-cert, typicalSources: [Anaplan Connected Planning], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.logility_rest, type: Logility Digital Supply Chain REST, protocol: HTTPS JSON, auth: API key + tenant header, typicalSources: [Logility DemandAI+ / InventoryAI+], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.toolsgroup_so99_rest, type: ToolsGroup SO99+ REST, protocol: HTTPS JSON, auth: API key, typicalSources: [ToolsGroup SO99+ / Service Optimizer], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.gainsystems_rest, type: GAINSystems GAINS REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [GAINSystems], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.demand_solutions_rest, type: Demand Solutions DSX REST, protocol: HTTPS JSON, auth: API key, typicalSources: [Demand Solutions DSX], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.john_galt_atlas_rest, type: John Galt Atlas REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [John Galt Atlas Planning Platform], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.edi_852_sop, type: EDI 852 Product Activity (S&OP ingest), protocol: AS2, auth: PKI, typicalSources: [Retail trading partners (sell-through into S&OP)], latency: batch, modes: [file] }
+  - { id: conn.edi_830, type: EDI 830 Planning Schedule with Release Capability, protocol: AS2, auth: PKI, typicalSources: [OEM customers], latency: batch, modes: [file] }
+  - { id: conn.edi_862, type: EDI 862 Shipping Schedule, protocol: AS2, auth: PKI, typicalSources: [OEM customers], latency: batch, modes: [file] }
+  - { id: conn.niq_circana_sftp, type: NielsenIQ / Circana syndicated feed (SFTP), protocol: SFTP, auth: SSH key, typicalSources: [NielsenIQ Discover, Circana Liquid Data], latency: batch, modes: [file] }
+
+  # Returns & Reverse Logistics connectors
+  - { id: conn.edi_x12_180, type: ASC X12 EDI 180 Return Merchandise Authorization, protocol: AS2, auth: PKI, typicalSources: [SAP S/4 Returns, Manhattan Active WMS Returns, retailer-supplier RMA exchange], latency: batch, modes: [file] }
+  - { id: conn.optoro_rest, type: Optoro OptiTurn REST, protocol: HTTPS JSON, auth: OAuth2 + tenant key, typicalSources: [Optoro OptiTurn], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.loop_rest, type: Loop Returns REST + Webhook, protocol: HTTPS JSON, auth: API key + signed webhook, typicalSources: [Loop Returns (Shopify)], latency: realtime, modes: [pull, push] }
+  - { id: conn.happy_returns_rest, type: Happy Returns REST + Webhook, protocol: HTTPS JSON, auth: OAuth2 + signed webhook, typicalSources: [Happy Returns (PayPal)], latency: realtime, modes: [pull, push] }
+  - { id: conn.narvar_rest, type: Narvar Returns REST + Webhook, protocol: HTTPS JSON, auth: OAuth2 + HMAC, typicalSources: [Narvar Return & Exchange], latency: realtime, modes: [pull, push] }
+  - { id: conn.rebound_rest, type: ReBound Returns REST + SFTP, protocol: HTTPS JSON / SFTP, auth: OAuth2 / SSH key, typicalSources: [ReBound Returns Platform], latency: near-realtime, modes: [pull, push, file] }
+  - { id: conn.zigzag_rest, type: ZigZag Global REST + Webhook, protocol: HTTPS JSON, auth: API key, typicalSources: [ZigZag Returns Platform], latency: realtime, modes: [pull, push] }
+  - { id: conn.doddle_rest, type: Doddle REST + Webhook, protocol: HTTPS JSON, auth: OAuth2 + HMAC, typicalSources: [Doddle Returns Drop-Off], latency: realtime, modes: [pull, push] }
+  - { id: conn.newmine_rest, type: Newmine REST + SFTP, protocol: HTTPS JSON / SFTP, auth: OAuth2 / SSH key, typicalSources: [Newmine Chief Returns Officer + Fraud Detect], latency: near-realtime, modes: [pull, push, file] }
+  - { id: conn.bstock_rest, type: B-Stock Supply REST + lot manifest SFTP, protocol: HTTPS JSON / SFTP, auth: OAuth2 / SSH key, typicalSources: [B-Stock Solutions], latency: batch, modes: [pull, push, file] }
+  - { id: conn.fedex_rest, type: FedEx Web Services REST, protocol: HTTPS JSON, auth: API key + OAuth2, typicalSources: [FedEx Returns Manager], latency: realtime, modes: [pull, push] }
+  - { id: conn.ups_rest, type: UPS Developer Kit REST, protocol: HTTPS JSON, auth: OAuth2 + access key, typicalSources: [UPS Returns], latency: realtime, modes: [pull, push] }
+  - { id: conn.usps_rest, type: USPS Web Tools / Label Broker REST, protocol: HTTPS JSON, auth: API key, typicalSources: [USPS Returns / Label Broker], latency: realtime, modes: [pull, push] }
+
+  # Category Management connectors
+  - { id: conn.gdsn_as2, type: GS1 GDSN data-pool AS2 (CIN/CIH/RCI XML), protocol: AS2, auth: PKI, typicalSources: [1WorldSync, Syndigo, GS1 GDSN data pools], latency: batch, modes: [file, push] }
+  - { id: conn.kantar_rest, type: Kantar Worldpanel REST + SFTP, protocol: HTTPS JSON / SFTP, auth: OAuth2 / SSH key, typicalSources: [Kantar Worldpanel], latency: batch, modes: [pull, file] }
+  - { id: conn.as2, type: AS2 (Applicability Statement 2) generic, protocol: HTTPS + S/MIME, auth: PKI signed/encrypted, typicalSources: [EDI trading partners (852/867/832/879)], latency: batch, modes: [file, push] }
+
+  # Procurement & Spend Analytics connectors (Manufacturing anchor — added 2026-Q2)
+  - { id: conn.ariba_cig, type: SAP Ariba CIG (Cloud Integration Gateway) + Ariba Network API, protocol: HTTPS / cXML / OData, auth: OAuth2 + Ariba realm, typicalSources: [SAP Ariba], latency: near-realtime, modes: [pull, push, file] }
+  - { id: conn.coupa_rest, type: Coupa REST API, protocol: HTTPS JSON, auth: OAuth2 + bearer, typicalSources: [Coupa BSM], latency: realtime, modes: [pull, push] }
+  - { id: conn.jaggaer_rest, type: Jaggaer ONE REST API, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Jaggaer ONE], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.ivalua_rest, type: Ivalua REST API, protocol: HTTPS JSON, auth: OAuth2 + tenant key, typicalSources: [Ivalua S2P], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.gep_rest, type: GEP SMART REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [GEP SMART, GEP NEXXE], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.workday_rest, type: Workday Strategic Sourcing REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Workday Strategic Sourcing (Scout)], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.cxml_punchout, type: cXML PunchOut + cXML PO/POAck, protocol: HTTPS XML, auth: cXML shared secret, typicalSources: [SAP Ariba, Coupa, Ivalua, GEP — supplier catalog punchout], latency: realtime, modes: [pull, push] }
+  - { id: conn.peppol_as4, type: Open Peppol BIS Billing 3.0 (AS4 messaging), protocol: AS4 (ebMS3), auth: PKI mutual TLS, typicalSources: [Tradeshift, Basware, Peppol access points], latency: near-realtime, modes: [push, file] }
+  - { id: conn.edi_x12_850, type: ASC X12 EDI 850 Purchase Order, protocol: AS2, auth: PKI, typicalSources: [Buyer-supplier EDI PO exchange], latency: batch, modes: [file] }
+  - { id: conn.edi_x12_855, type: ASC X12 EDI 855 Purchase Order Acknowledgment, protocol: AS2, auth: PKI, typicalSources: [Supplier PO ack], latency: batch, modes: [file] }
+  - { id: conn.edi_x12_810, type: ASC X12 EDI 810 Invoice, protocol: AS2, auth: PKI, typicalSources: [Supplier invoicing (PO-backed)], latency: batch, modes: [file] }
+  - { id: conn.edi_x12_820, type: ASC X12 EDI 820 Payment Order / Remittance Advice, protocol: AS2, auth: PKI, typicalSources: [Buyer-bank-supplier remittance], latency: batch, modes: [file] }
+  - { id: conn.edi_x12_832, type: ASC X12 EDI 832 Price/Sales Catalog, protocol: AS2, auth: PKI, typicalSources: [Supplier price catalog refresh], latency: batch, modes: [file] }
+  - { id: conn.tradeshift_rest, type: Tradeshift Network REST API, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Tradeshift Pay/Network], latency: realtime, modes: [pull, push] }
+  - { id: conn.basware_rest, type: Basware Network REST + SFTP e-invoice ingest, protocol: HTTPS JSON / SFTP, auth: OAuth2 / SSH key, typicalSources: [Basware AP Automation], latency: near-realtime, modes: [pull, push, file] }
+  - { id: conn.zycus_rest, type: Zycus iSupplier / iContract / iSource REST, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Zycus S2P], latency: near-realtime, modes: [pull, push] }
+  - { id: conn.ecovadis_rest, type: EcoVadis Ratings API, protocol: HTTPS JSON, auth: API key, typicalSources: [EcoVadis], latency: batch, modes: [pull] }
+  - { id: conn.sievo_connector, type: Sievo Spend Analytics ingest connector (REST + SFTP), protocol: HTTPS JSON / SFTP, auth: OAuth2 / SSH key, typicalSources: [Sievo], latency: batch, modes: [pull, push, file] }
+  - { id: conn.resilinc_rest, type: Resilinc EventWatch API, protocol: HTTPS JSON, auth: OAuth2, typicalSources: [Resilinc], latency: realtime, modes: [pull, push] }
+  - { id: conn.dnb_directplus_rest, type: D&B Direct+ API, protocol: HTTPS JSON, auth: OAuth2 + product key, typicalSources: [Dun & Bradstreet Direct+], latency: near-realtime, modes: [pull] }
+  - { id: conn.bitsight_rest, type: BitSight Ratings API, protocol: HTTPS JSON, auth: API key, typicalSources: [BitSight Security Ratings], latency: batch, modes: [pull] }
+  - { id: conn.cdp_sftp, type: CDP Supply Chain export (SFTP + API), protocol: SFTP / HTTPS, auth: SSH key / OAuth2, typicalSources: [CDP Supply Chain Disclosure], latency: batch, modes: [pull, file] }
+  - { id: conn.oagis_bod, type: OAGIS Business Object Document (BOD — ProcessPurchaseOrder, AcknowledgePurchaseOrder), protocol: HTTPS XML / JMS, auth: WS-Security / PKI, typicalSources: [OAGIS-conformant suppliers and ERPs], latency: near-realtime, modes: [push, pull] }

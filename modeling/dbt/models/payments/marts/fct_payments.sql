@@ -15,7 +15,7 @@ with sat as (select * from {{ ref('int_payments__sat_payment') }}),
 select
     h.h_payment_hk              as payment_key,
     h.payment_bk                as payment_id,
-    cast(strftime(s.load_ts, '%Y%m%d') as integer) as auth_date_key,
+    cast({{ format_date('s.load_ts', '%Y%m%d') }} as integer) as auth_date_key,
     s.load_ts                   as auth_ts,
     s.settlement_ts,
     s.settlement_latency_hours,

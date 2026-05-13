@@ -1,0 +1,73 @@
+version: 2
+
+sources:
+  - name: pricing_and_promotions
+    description: |
+      Synthetic Pricing & Promotions source schema produced by
+      synthetic-data/pricing_and_promotions/generate.py and loaded into the
+      populated DuckDB. Mirrors what a retailer landing zone would carry after
+      ingesting Revionics + PROS + Blue Yonder + Oracle RPCS pricing events,
+      Eagle Eye / Inmar promo engines, Wiser/Numerator/NielsenIQ competitive
+      feeds, and POS sales (NCR Voyix / Toshiba TCx).
+    schema: pricing_and_promotions
+    tables:
+      - name: product
+        description: SKU master. GTIN-keyed with KVI classification.
+        columns:
+          - name: product_id
+            tests: [unique, not_null]
+      - name: store
+        description: Selling location; rolls up to price zone.
+        columns:
+          - name: store_id
+            tests: [unique, not_null]
+      - name: price_zone
+        description: Group of stores under one regular-price policy.
+        columns:
+          - name: price_zone_id
+            tests: [unique, not_null]
+      - name: price
+        description: Time-effective regular / promo / markdown / clearance price event.
+        columns:
+          - name: price_id
+            tests: [unique, not_null]
+          - name: product_id
+            tests: [not_null]
+          - name: store_id
+            tests: [not_null]
+      - name: promo
+        description: Promotional campaign header (mechanic + window + funding).
+        columns:
+          - name: promo_id
+            tests: [unique, not_null]
+      - name: promo_line
+        description: SKU-level promo participation with planned vs actual lift.
+        columns:
+          - name: promo_line_id
+            tests: [unique, not_null]
+          - name: promo_id
+            tests: [not_null]
+      - name: markdown
+        description: Lifecycle markdown event (reason-coded, optimizer-attributed).
+        columns:
+          - name: markdown_id
+            tests: [unique, not_null]
+          - name: product_id
+            tests: [not_null]
+      - name: competitive_price
+        description: Externally observed competitor price snapshot.
+        columns:
+          - name: competitive_price_id
+            tests: [unique, not_null]
+          - name: product_id
+            tests: [not_null]
+      - name: sales_fact
+        description: POS receipts at SKU x store x day grain.
+        columns:
+          - name: sales_id
+            tests: [unique, not_null]
+      - name: elasticity_estimate
+        description: Per-cluster own- and cross-price elasticity estimates.
+        columns:
+          - name: estimate_id
+            tests: [unique, not_null]

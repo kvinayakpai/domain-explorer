@@ -1,0 +1,226 @@
+version: 2
+
+models:
+  # ---------- Staging ----------
+  - name: stg_direct_store_delivery__account
+    description: One row per DSD account.
+    columns:
+      - name: account_id
+        tests: [unique, not_null]
+
+  - name: stg_direct_store_delivery__outlet
+    description: Store-level outlet served by DSD routes.
+    columns:
+      - name: outlet_id
+        tests: [unique, not_null]
+      - name: account_id
+        tests:
+          - not_null
+          - relationships: { to: ref('stg_direct_store_delivery__account'), field: account_id }
+
+  - name: stg_direct_store_delivery__product
+    description: DSD SKU master with refrigerated / perishable flags.
+    columns:
+      - name: sku_id
+        tests: [unique, not_null]
+
+  - name: stg_direct_store_delivery__route
+    description: Master route — recurring sequence of stops.
+    columns:
+      - name: route_id
+        tests: [unique, not_null]
+      - name: route_type
+        tests:
+          - accepted_values:
+              values: [deliver, presell, merchandiser, combination, service]
+
+  - name: stg_direct_store_delivery__driver
+    description: DSD driver / driver-sales rep.
+    columns:
+      - name: driver_id
+        tests: [unique, not_null]
+      - name: cdl_class
+        tests:
+          - accepted_values:
+              values: [A, B, C]
+
+  - name: stg_direct_store_delivery__vehicle
+    description: Truck / van assigned to DSD service.
+    columns:
+      - name: vehicle_id
+        tests: [unique, not_null]
+
+  - name: stg_direct_store_delivery__stop
+    description: One stop on a route-day.
+    columns:
+      - name: stop_id
+        tests: [unique, not_null]
+      - name: route_id
+        tests:
+          - relationships: { to: ref('stg_direct_store_delivery__route'), field: route_id }
+      - name: status
+        tests:
+          - accepted_values:
+              values: [scheduled, in_route, on_site, completed, skipped, reattempt]
+
+  - name: stg_direct_store_delivery__dsd_order
+    description: An order written or delivered at a stop.
+    columns:
+      - name: order_id
+        tests: [unique, not_null]
+      - name: stop_id
+        tests:
+          - relationships: { to: ref('stg_direct_store_delivery__stop'), field: stop_id }
+
+  - name: stg_direct_store_delivery__dsd_order_line
+    description: One SKU line on a DSD order.
+    columns:
+      - name: order_line_id
+        tests: [unique, not_null]
+      - name: order_id
+        tests:
+          - relationships: { to: ref('stg_direct_store_delivery__dsd_order'), field: order_id }
+
+  - name: stg_direct_store_delivery__settlement
+    description: Daily driver settlement — cash + check + EFT + returns reconciliation.
+    columns:
+      - name: settlement_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [open, reconciled, disputed, adjusted, closed]
+
+  - name: stg_direct_store_delivery__epod_event
+    description: EPOD signature / photo / geo at the door.
+    columns:
+      - name: epod_id
+        tests: [unique, not_null]
+
+  - name: stg_direct_store_delivery__perfect_store_audit
+    description: Perfect-store audit per stop / outlet.
+    columns:
+      - name: audit_id
+        tests: [unique, not_null]
+
+  - name: stg_direct_store_delivery__route_telemetry
+    description: PeopleNet/Samsara/Geotab telemetry stream (downsampled to daily-grain feed for the demo).
+    columns:
+      - name: telemetry_id
+        tests: [unique, not_null]
+      - name: hos_status
+        tests:
+          - accepted_values:
+              values: [off_duty, sleeper, on_duty, driving]
+
+  - name: stg_direct_store_delivery__deduction
+    description: Retailer chargeback against a DSD invoice.
+    columns:
+      - name: deduction_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [open, matched, disputed, paid, written_off, chargeback_lost]
+
+  # ---------- Marts ----------
+  - name: dim_date_dsd
+    description: Date dimension scoped to the DSD window. Suffix avoids collision with other anchors' dim_date.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+
+  - name: dim_product_dsd
+    description: Product dimension for DSD (suffixed; merchandising / TPM publish their own dim_product variants).
+    columns:
+      - name: product_sk
+        tests: [unique, not_null]
+      - name: sku_id
+        tests: [unique, not_null]
+
+  - name: dim_route
+    description: Route dimension (Type-2 ready).
+    columns:
+      - name: route_sk
+        tests: [unique, not_null]
+      - name: route_id
+        tests: [unique, not_null]
+
+  - name: dim_driver
+    description: Driver / driver-sales rep dimension (Type-2 ready).
+    columns:
+      - name: driver_sk
+        tests: [unique, not_null]
+      - name: driver_id
+        tests: [unique, not_null]
+
+  - name: dim_vehicle
+    description: Vehicle / truck dimension.
+    columns:
+      - name: vehicle_sk
+        tests: [unique, not_null]
+      - name: vehicle_id
+        tests: [unique, not_null]
+
+  - name: dim_stop
+    description: Stop dimension keyed on (route_id, route_day, sequence) via stop_id surrogate.
+    columns:
+      - name: stop_sk
+        tests: [unique, not_null]
+      - name: stop_id
+        tests: [unique, not_null]
+
+  - name: dim_outlet_dsd
+    description: Outlet dimension for DSD (suffixed; TPM publishes customer_outlet under a different naming).
+    columns:
+      - name: outlet_sk
+        tests: [unique, not_null]
+      - name: outlet_id
+        tests: [unique, not_null]
+
+  - name: dim_account_dsd
+    description: Account dimension for DSD (suffixed; TPM publishes dim_account_tpm).
+    columns:
+      - name: account_sk
+        tests: [unique, not_null]
+      - name: account_id
+        tests: [unique, not_null]
+
+  - name: fct_orders_dsd
+    description: Fact — one row per DSD order line.
+    columns:
+      - name: order_line_id
+        tests: [unique, not_null]
+      - name: route_sk
+        tests:
+          - relationships: { to: ref('dim_route'), field: route_sk }
+      - name: product_sk
+        tests:
+          - relationships: { to: ref('dim_product_dsd'), field: product_sk }
+
+  - name: fct_stops_dsd
+    description: Fact — one row per stop with on-time / sequence-drift / cases-delivered.
+    columns:
+      - name: stop_id
+        tests: [unique, not_null]
+      - name: route_sk
+        tests:
+          - relationships: { to: ref('dim_route'), field: route_sk }
+
+  - name: fct_settlements_dsd
+    description: Fact — one row per (route_id, settlement_date). Settlement Accuracy + cost rollups.
+    columns:
+      - name: settlement_id
+        tests: [unique, not_null]
+      - name: driver_sk
+        tests:
+          - relationships: { to: ref('dim_driver'), field: driver_sk }
+
+  - name: fct_perfect_store_audits
+    description: Fact — one row per Perfect Store audit at a stop.
+    columns:
+      - name: audit_id
+        tests: [unique, not_null]
+      - name: outlet_sk
+        tests:
+          - relationships: { to: ref('dim_outlet_dsd'), field: outlet_sk }

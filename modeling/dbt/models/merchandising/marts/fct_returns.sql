@@ -16,10 +16,10 @@ select
     r.amount                                        as returned_amount,
     r.reason,
     r.returned_at,
-    cast(strftime(r.returned_at, '%Y%m%d') as integer) as returned_date_key,
+    cast({{ format_date('r.returned_at', '%Y%m%d') }} as integer) as returned_date_key,
     case
         when s.ts is not null
-            then date_diff('day', s.ts, r.returned_at)
+            then {{ dbt_utils.datediff('s.ts', 'r.returned_at', 'day') }}
     end                                             as days_since_sale
 from r
 left join s     on s.sale_line_id = r.sale_line_id

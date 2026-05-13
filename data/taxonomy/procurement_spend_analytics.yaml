@@ -1,0 +1,579 @@
+id: procurement_spend_analytics
+name: Procurement & Spend Analytics
+vertical: Manufacturing
+oneLiner: Source-to-pay (S2P), spend cube analytics, supplier risk and ESG scoring, contract compliance, and Scope 3 emissions attribution across direct and indirect procurement categories in a multi-ERP, multi-currency manufacturing enterprise.
+
+# Authoritative sources (as of mid-2026):
+#   UNSPSC — United Nations Standard Products and Services Code (v26.x)
+#     https://www.unspsc.org — canonical category taxonomy for spend cubing.
+#   ISO 20400 — Sustainable procurement guidance (2017).
+#     https://www.iso.org/standard/63026.html — establishes the obligations on
+#     procurement for environmental / social / governance integration.
+#   GHG Protocol — Corporate Value Chain (Scope 3) Standard (WRI/WBCSD).
+#     https://ghgprotocol.org — defines the 15 Scope 3 categories;
+#     procurement owns Category 1 (Purchased Goods & Services) and
+#     Category 2 (Capital Goods).
+#   ISO 14064-1 — GHG quantification and reporting at the organization level.
+#     https://www.iso.org/standard/66453.html
+#   CSRD / ESRS — EU Corporate Sustainability Reporting Directive (2024 phase-in).
+#     ESRS E1 (Climate) — disclosure of Scope 1/2/3 emissions by category.
+#   CDP — Supply Chain disclosure (formerly Carbon Disclosure Project).
+#     https://www.cdp.net — supplier-level GHG and water-risk surveys.
+#   EU Corporate Sustainability Due Diligence Directive (CSDDD, 2024).
+#   SBTi — Science-Based Targets initiative, Net-Zero Standard for Corporates.
+#   Open Peppol BIS Billing 3.0 — pan-European e-invoicing.
+#     https://docs.peppol.eu/poacc/billing/3.0/
+#   EDI X12 850 (Purchase Order), 855 (PO Ack), 856 (ASN), 810 (Invoice),
+#   820 (Remittance Advice), 832 (Price Catalog).
+#   ISO 20022 (rails for payment of invoices — credit transfer pacs.008).
+#   Dun & Bradstreet DUNS — universal supplier identifier (9-digit).
+#   LEI — Legal Entity Identifier (ISO 17442) for cross-border supplier KYC.
+#   NAICS / SIC codes — for supplier classification in NA reporting.
+#   ECCN / ITAR / EAR — export-controlled item flags carried on supplier master.
+#
+# Vendors:
+#   SAP Ariba — Ariba Network, Sourcing, Contracts, SLP (Supplier Lifecycle &
+#     Performance), Spend Analysis, Buying & Invoicing. https://www.ariba.com
+#   Coupa Business Spend Management Platform — Procure, Sourcing, Contracts,
+#     Risk Assess (third-party risk), Travel & Expense. https://www.coupa.com
+#   Jaggaer ONE — sourcing, contracts, supplier management, advanced sourcing
+#     optimization. https://www.jaggaer.com
+#   Ivalua Source-to-Pay — sourcing, contracts, supplier 360, AP automation.
+#     https://www.ivalua.com
+#   GEP SMART (and GEP NEXXE for supply-chain). https://www.gepworldwide.com
+#   Oracle Fusion Cloud Procurement, Oracle Sourcing, Oracle Contracts.
+#     https://www.oracle.com/scm/procurement/
+#   Workday Strategic Sourcing (formerly Scout RFP).
+#     https://www.workday.com/en-us/products/strategic-sourcing/overview.html
+#   Tradeshift — supplier network and e-invoicing.
+#     https://tradeshift.com
+#   Basware — AP automation, e-invoicing receipt.
+#     https://www.basware.com
+#   Zycus — source-to-pay, AI-led negotiation.
+#     https://www.zycus.com
+#   EcoVadis — supplier sustainability ratings (E/S/G + Ethics + Sustainable
+#     Procurement scorecards). https://ecovadis.com
+#   Sievo — pure-play spend analytics and emissions attribution.
+#     https://sievo.com
+#   Spendkey — managed spend-analytics.
+#     https://www.spendkey.com
+#   Resilinc — supplier risk monitoring (multi-tier, geopolitical).
+#     https://www.resilinc.com
+#   Riskmethods (now Sphera SCRM) — supply chain risk.
+#     https://sphera.com
+#   Everstream Analytics — supplier risk.
+#   Dun & Bradstreet — D-U-N-S, Paydex, financial-distress signals.
+#     https://www.dnb.com
+#   RiskRecon (Mastercard) and BitSight — supplier cyber-rating.
+#   CDP Supply Chain, MSCI ESG, S&P Global Sustainable1 — sustainability data.
+#   ERP: SAP S/4HANA MM/FI, Oracle Cloud ERP, Microsoft Dynamics 365 F&O,
+#     Infor CloudSuite, Workday Financials.
+
+personas:
+  - { name: Chief Procurement Officer, title: Chief Procurement Officer, level: C-suite }
+  - { name: Category Manager (Indirect), title: Category Manager, Indirect Spend, level: Manager }
+  - { name: Category Manager (Direct), title: Category Manager, Direct Materials, level: Manager }
+  - { name: Sourcing Director, title: Director, Strategic Sourcing, level: Director }
+  - { name: Sustainability Procurement Lead, title: Senior Director, Sustainable Procurement & Scope 3, level: Director }
+  - { name: Spend Analyst, title: Senior Spend Analyst, level: IC }
+  - { name: Supplier Risk Manager, title: Director, Supplier Risk & Resilience, level: Director }
+  - { name: Contract Manager, title: Senior Contract Manager, level: IC }
+  - { name: AP Operations Lead, title: Senior Manager, Accounts Payable Operations, level: Manager }
+
+decisions:
+  - { id: psa.d.consolidate_suppliers, statement: "For a category with N qualified suppliers, should we consolidate spend onto the top K — and which suppliers get culled given price, risk, ESG, and diversity considerations?" }
+  - { id: psa.d.negotiate_now, statement: "Trigger a renegotiation now (spike in commodity index, supplier paydex drop, contract approaching tail) or wait until the next contracted price-review window?" }
+  - { id: psa.d.terminate_supplier, statement: "Terminate a supplier (single-source risk, repeated quality NCs, EcoVadis below threshold, sanctions exposure) or place on watchlist with a corrective action plan?" }
+  - { id: psa.d.renegotiate_payment_terms, statement: "Push payment terms from Net-30 to Net-60 on a supplier (working-capital win) versus accept early-pay discount (Net-10 1.5%) — model the WACC trade-off." }
+  - { id: psa.d.tail_spend_strategy, statement: "How do we tackle the tail (bottom 80% of suppliers, 5% of spend)? Catalog/punchout consolidation, P-card, marketplace (Amazon Business), or auto-PO via rules?" }
+  - { id: psa.d.scope3_supplier_engagement, statement: "Which suppliers do we engage for primary Scope 3 data (CDP Supply Chain survey, SBTi commitment) versus accept industry-average emissions factors?" }
+  - { id: psa.d.maverick_spend_response, statement: "When a buyer transacts off-contract (maverick spend), do we block, route to manager approval, or absorb and convert to a future PO?" }
+  - { id: psa.d.contract_renewal, statement: "Auto-renew, renegotiate, RFP, or terminate at contract expiry given realized savings, compliance, and risk performance?" }
+  - { id: psa.d.diversify_geography, statement: "Dual-source or near-shore a critical supplier currently concentrated in a single geopolitically exposed region (Resilinc red-flag)?" }
+  - { id: psa.d.invoice_match_threshold, statement: "Where should the 3-way-match tolerance sit for low-value invoices — auto-pay <$2,500 with 2-way match versus require receipt?" }
+
+kpis:
+  - id: psa.kpi.spend_under_mgmt
+    name: Total Spend Under Management
+    formula: sum(spend_with_active_contract_or_strategic_sourced) / sum(total_spend)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [psa.d.consolidate_suppliers, psa.d.tail_spend_strategy]
+  - id: psa.kpi.savings_realized_pct
+    name: Savings Realized %
+    formula: sum(savings_realized) / sum(savings_committed)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [psa.d.negotiate_now, psa.d.contract_renewal]
+  - id: psa.kpi.maverick_spend_pct
+    name: Maverick Spend %
+    formula: sum(off_contract_spend) / sum(total_addressable_spend)
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [psa.d.maverick_spend_response, psa.d.tail_spend_strategy]
+  - id: psa.kpi.contract_compliance_pct
+    name: Contract Compliance %
+    formula: sum(spend_on_contracted_terms) / sum(spend_with_active_contract)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [psa.d.maverick_spend_response, psa.d.contract_renewal]
+  - id: psa.kpi.supplier_risk_score
+    name: Supplier Risk Score (weighted)
+    formula: weighted(financial, geographic, cyber, compliance, sustainability) per supplier
+    unit: index
+    direction: lower_is_better
+    decisionsSupported: [psa.d.terminate_supplier, psa.d.diversify_geography]
+  - id: psa.kpi.supplier_diversity_pct
+    name: Supplier Diversity %
+    formula: sum(spend_with_diverse_suppliers) / sum(total_addressable_spend)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [psa.d.consolidate_suppliers]
+  - id: psa.kpi.scope3_intensity
+    name: Scope 3 Emissions kg CO2e per $ spent (Category 1+2)
+    formula: sum(supplier_scope3_kgco2e) / sum(spend_usd)
+    unit: kgCO2e/USD
+    direction: lower_is_better
+    decisionsSupported: [psa.d.scope3_supplier_engagement, psa.d.consolidate_suppliers]
+  - id: psa.kpi.touchless_po_pct
+    name: Touchless PO %
+    formula: count(po_no_human_intervention) / count(total_po)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [psa.d.tail_spend_strategy]
+  - id: psa.kpi.po_cycle_time
+    name: PO Cycle Time (requisition → PO issued)
+    formula: avg(po_issued_ts - req_submitted_ts)
+    unit: hours
+    direction: lower_is_better
+    decisionsSupported: [psa.d.tail_spend_strategy]
+  - id: psa.kpi.ap_aging_over_60
+    name: AP Aging > 60 days %
+    formula: sum(open_ap_amount where age_days > 60) / sum(open_ap_amount)
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [psa.d.invoice_match_threshold]
+  - id: psa.kpi.invoice_match_rate
+    name: Three-Way Invoice Match Rate
+    formula: count(invoices_matched_3way) / count(invoices_total)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [psa.d.invoice_match_threshold]
+  - id: psa.kpi.sustainable_spend_pct
+    name: Sustainable Spend %
+    formula: sum(spend_with_ecovadis_silver_or_better) / sum(total_addressable_spend)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [psa.d.scope3_supplier_engagement, psa.d.consolidate_suppliers]
+  - id: psa.kpi.critical_supplier_concentration
+    name: Critical Supplier Concentration (top-1 share)
+    formula: max(supplier_spend) / sum(category_spend) for category in critical_categories
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [psa.d.diversify_geography, psa.d.terminate_supplier]
+  - id: psa.kpi.buying_channel_mix
+    name: Buying Channel Mix — Catalog / Punchout / Free-text %
+    formula: count(po_lines by channel) / count(po_lines_total)
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [psa.d.tail_spend_strategy]
+  - id: psa.kpi.tail_spend_pct
+    name: Tail Spend %
+    formula: sum(spend_in_bottom_80pct_suppliers) / sum(total_spend)
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [psa.d.tail_spend_strategy, psa.d.consolidate_suppliers]
+
+dataModel:
+  entities:
+    - name: supplier
+      description: Vendor / supplier master record. Canonical key joins on D&B DUNS (9-digit) and LEI (ISO 17442). Source of truth for risk, sustainability, diversity, and tax flags.
+      keys: [supplier_id]
+      attributes:
+        - { name: supplier_id, type: varchar(64), isPrimaryKey: true }
+        - { name: duns_number, type: varchar(9), description: "Dun & Bradstreet 9-digit DUNS" }
+        - { name: lei, type: varchar(20), description: "ISO 17442 Legal Entity Identifier" }
+        - { name: legal_name, type: varchar(255) }
+        - { name: parent_duns, type: varchar(9), description: "Ultimate parent DUNS for corporate-family roll-up" }
+        - { name: tax_id, type: varchar(64), description: "VAT / EIN / GSTIN per country" }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: region, type: varchar(32), description: "NA|EMEA|APAC|LATAM|MEA" }
+        - { name: industry_naics, type: varchar(6) }
+        - { name: industry_sic, type: varchar(4) }
+        - { name: diversity_flags, type: text, description: "JSON: MBE|WBE|VBE|LGBTBE|SDB|HUBZone (NMSDC/WBENC/NVOIC certs)" }
+        - { name: ecovadis_score, type: smallint, description: "EcoVadis 0..100; Bronze>=45 Silver>=58 Gold>=68 Platinum>=78" }
+        - { name: ecovadis_medal, type: varchar(8), description: "none|bronze|silver|gold|platinum" }
+        - { name: cdp_climate_score, type: varchar(2), description: "CDP A..D-" }
+        - { name: sbti_committed, type: boolean, description: "Has the supplier publicly committed to SBTi targets?" }
+        - { name: paydex_score, type: smallint, description: "D&B Paydex 0..100 (payment behavior)" }
+        - { name: failure_score, type: smallint, description: "D&B Failure Score percentile" }
+        - { name: cyber_score, type: smallint, description: "BitSight/RiskRecon composite cyber score 250..900" }
+        - { name: critical_flag, type: boolean, description: "Single-source or business-critical supplier" }
+        - { name: sanctions_flag, type: boolean, description: "Listed on OFAC/UN/EU sanctions" }
+        - { name: status, type: varchar(16), description: "active|onboarding|blocked|terminated|watchlist" }
+        - { name: onboarded_at, type: timestamp }
+        - { name: last_assessment_at, type: timestamp }
+
+    - name: category_taxonomy
+      description: UNSPSC-anchored canonical category hierarchy used for spend cubing. Segment(2)→Family(2)→Class(2)→Commodity(2). Optionally cross-mapped to internal category trees.
+      keys: [category_code]
+      attributes:
+        - { name: category_code, type: varchar(8), isPrimaryKey: true, description: "UNSPSC 8-digit code" }
+        - { name: segment_code, type: varchar(2) }
+        - { name: family_code, type: varchar(4) }
+        - { name: class_code, type: varchar(6) }
+        - { name: commodity_code, type: varchar(8) }
+        - { name: segment_name, type: varchar(128) }
+        - { name: family_name, type: varchar(128) }
+        - { name: class_name, type: varchar(128) }
+        - { name: commodity_name, type: varchar(128) }
+        - { name: direct_or_indirect, type: varchar(8), description: "direct|indirect" }
+        - { name: capex_or_opex, type: varchar(5), description: "capex|opex" }
+        - { name: internal_category_id, type: varchar(64), description: "Tenant-specific category cross-walk" }
+        - { name: scope3_category, type: smallint, description: "GHG Protocol Scope 3 category 1..15" }
+
+    - name: contract
+      description: Master / framework agreement covering negotiated terms for a supplier-category pair. Includes price schedules, volume bands, rebate triggers, sustainability clauses.
+      keys: [contract_id]
+      attributes:
+        - { name: contract_id, type: varchar(64), isPrimaryKey: true }
+        - { name: supplier_id, type: varchar(64), isForeignKey: true, references: supplier.supplier_id }
+        - { name: contract_type, type: varchar(32), description: "framework|spot|MSA|SOW|catalog|rebate|service_agreement" }
+        - { name: parent_contract_id, type: varchar(64), description: "FK for SOW under MSA" }
+        - { name: title, type: varchar(255) }
+        - { name: effective_date, type: date }
+        - { name: expiry_date, type: date }
+        - { name: auto_renew, type: boolean }
+        - { name: notice_period_days, type: smallint }
+        - { name: total_commit_amount, type: "decimal(18,2)" }
+        - { name: total_commit_currency, type: varchar(3) }
+        - { name: payment_terms, type: varchar(16), description: "NET30|NET45|NET60|2_10_NET30|..." }
+        - { name: incoterms, type: varchar(8), description: "ICC Incoterms 2020 — DDP|FOB|EXW|..." }
+        - { name: rebate_pct, type: "decimal(5,4)" }
+        - { name: rebate_trigger_amount, type: "decimal(18,2)" }
+        - { name: sustainability_clauses, type: text, description: "JSON: scope3_disclosure_required|ecovadis_min|net_zero_2050|..." }
+        - { name: kpi_clauses, type: text, description: "JSON: OTIF target, defect ppm, NCMR cap, ..." }
+        - { name: contract_value_realized, type: "decimal(18,2)" }
+        - { name: status, type: varchar(16), description: "draft|active|expired|terminated|renewed" }
+        - { name: owner_buyer, type: varchar(64) }
+        - { name: meta_extracted_at, type: timestamp, description: "When LLM-extracted metadata was last refreshed" }
+
+    - name: purchase_order
+      description: Approved buying instrument issued to a supplier. PO header level — line items live in a separate fact for spend cubing.
+      keys: [po_id]
+      attributes:
+        - { name: po_id, type: varchar(64), isPrimaryKey: true }
+        - { name: po_number, type: varchar(32) }
+        - { name: supplier_id, type: varchar(64), isForeignKey: true, references: supplier.supplier_id }
+        - { name: contract_id, type: varchar(64), isForeignKey: true, references: contract.contract_id }
+        - { name: requester_user_id, type: varchar(64) }
+        - { name: buyer_user_id, type: varchar(64) }
+        - { name: cost_center, type: varchar(32) }
+        - { name: gl_account, type: varchar(16) }
+        - { name: legal_entity, type: varchar(32) }
+        - { name: plant_id, type: varchar(32), description: "Receiving plant for direct materials" }
+        - { name: requisition_id, type: varchar(64) }
+        - { name: requisition_ts, type: timestamp }
+        - { name: po_issued_ts, type: timestamp }
+        - { name: buying_channel, type: varchar(16), description: "catalog|punchout|free_text|marketplace|pcard|auto" }
+        - { name: total_amount, type: "decimal(18,2)" }
+        - { name: total_currency, type: varchar(3) }
+        - { name: total_amount_base_usd, type: "decimal(18,2)", description: "Converted at PO date FX" }
+        - { name: payment_terms, type: varchar(16) }
+        - { name: incoterms, type: varchar(8) }
+        - { name: status, type: varchar(16), description: "draft|approved|sent|partially_received|received|invoiced|closed|cancelled" }
+        - { name: touchless, type: boolean, description: "Issued with zero human-approval steps" }
+        - { name: maverick_flag, type: boolean, description: "Off-contract for a covered category" }
+        - { name: edi_855_received, type: boolean }
+        - { name: category_code, type: varchar(8), isForeignKey: true, references: category_taxonomy.category_code }
+
+    - name: po_line
+      description: One PO line per item / service. The spend-cube fact at the highest natural grain. Carries quantity, unit price, line value, and category cross-walk.
+      keys: [po_line_id]
+      attributes:
+        - { name: po_line_id, type: varchar(64), isPrimaryKey: true }
+        - { name: po_id, type: varchar(64), isForeignKey: true, references: purchase_order.po_id }
+        - { name: line_number, type: smallint }
+        - { name: item_id, type: varchar(64) }
+        - { name: item_description, type: varchar(255) }
+        - { name: category_code, type: varchar(8), isForeignKey: true, references: category_taxonomy.category_code }
+        - { name: quantity, type: "decimal(15,4)" }
+        - { name: uom, type: varchar(8), description: "UN/CEFACT recommendation 20 unit codes" }
+        - { name: unit_price, type: "decimal(18,6)" }
+        - { name: line_amount, type: "decimal(18,2)" }
+        - { name: line_currency, type: varchar(3) }
+        - { name: line_amount_base_usd, type: "decimal(18,2)" }
+        - { name: requested_delivery_date, type: date }
+        - { name: tax_amount, type: "decimal(18,2)" }
+        - { name: discount_pct, type: "decimal(5,4)" }
+        - { name: scope3_kgco2e, type: "decimal(18,4)", description: "Attributed Scope 3 Category 1/2 emissions for the line" }
+
+    - name: receipt
+      description: Goods or services receipt against a PO line. Anchors the three-way match.
+      keys: [receipt_id]
+      attributes:
+        - { name: receipt_id, type: varchar(64), isPrimaryKey: true }
+        - { name: po_id, type: varchar(64), isForeignKey: true, references: purchase_order.po_id }
+        - { name: po_line_id, type: varchar(64), isForeignKey: true, references: po_line.po_line_id }
+        - { name: receipt_ts, type: timestamp }
+        - { name: quantity_received, type: "decimal(15,4)" }
+        - { name: receiver_user_id, type: varchar(64) }
+        - { name: plant_id, type: varchar(32) }
+        - { name: gr_document_no, type: varchar(32), description: "ERP goods-receipt document number" }
+        - { name: status, type: varchar(16), description: "draft|posted|reversed" }
+
+    - name: invoice
+      description: AP invoice raised by a supplier. Settled via three-way (PO+receipt) or two-way match. Carries Peppol/EDI 810 metadata.
+      keys: [invoice_id]
+      attributes:
+        - { name: invoice_id, type: varchar(64), isPrimaryKey: true }
+        - { name: supplier_id, type: varchar(64), isForeignKey: true, references: supplier.supplier_id }
+        - { name: invoice_number, type: varchar(64) }
+        - { name: po_id, type: varchar(64), isForeignKey: true, references: purchase_order.po_id }
+        - { name: invoice_date, type: date }
+        - { name: due_date, type: date }
+        - { name: received_ts, type: timestamp }
+        - { name: total_amount, type: "decimal(18,2)" }
+        - { name: total_currency, type: varchar(3) }
+        - { name: total_amount_base_usd, type: "decimal(18,2)" }
+        - { name: tax_amount, type: "decimal(18,2)" }
+        - { name: match_type, type: varchar(8), description: "two_way|three_way|exception|none" }
+        - { name: matched, type: boolean, description: "Auto-cleared without exception" }
+        - { name: paid_ts, type: timestamp }
+        - { name: paid_amount, type: "decimal(18,2)" }
+        - { name: early_pay_discount_taken, type: boolean }
+        - { name: aging_days, type: smallint, description: "Now - due_date for unpaid; paid_ts - due_date otherwise" }
+        - { name: peppol_message_id, type: varchar(128), description: "Open Peppol BIS 3.0 envelope ID for e-invoices" }
+        - { name: edi_810_doc_no, type: varchar(32) }
+        - { name: status, type: varchar(16), description: "received|matched|approved|on_hold|paid|disputed|void" }
+
+    - name: supplier_risk_assessment
+      description: Snapshot of a supplier risk evaluation across financial, operational, geographic, cyber, compliance, and sustainability dimensions. Sourced from Resilinc, D&B, BitSight, EcoVadis, internal questionnaire.
+      keys: [assessment_id]
+      attributes:
+        - { name: assessment_id, type: varchar(64), isPrimaryKey: true }
+        - { name: supplier_id, type: varchar(64), isForeignKey: true, references: supplier.supplier_id }
+        - { name: assessment_ts, type: timestamp }
+        - { name: source, type: varchar(32), description: "resilinc|dnb|bitsight|ecovadis|riskmethods|internal_questionnaire" }
+        - { name: overall_score, type: "decimal(5,2)", description: "0..100 normalized (lower = riskier)" }
+        - { name: financial_score, type: smallint }
+        - { name: operational_score, type: smallint }
+        - { name: geographic_score, type: smallint }
+        - { name: cyber_score, type: smallint }
+        - { name: compliance_score, type: smallint }
+        - { name: sustainability_score, type: smallint }
+        - { name: tier, type: varchar(8), description: "low|medium|high|critical" }
+        - { name: mitigation_action, type: text }
+        - { name: assessor_user_id, type: varchar(64) }
+        - { name: valid_until, type: date }
+
+    - name: emissions_factor
+      description: Reference emissions factor used to attribute Scope 3 Category 1/2 emissions. Spend-based (kgCO2e per USD) and hybrid factors per UNSPSC commodity and country.
+      keys: [emissions_factor_id]
+      attributes:
+        - { name: emissions_factor_id, type: varchar(64), isPrimaryKey: true }
+        - { name: source, type: varchar(32), description: "exiobase|usio|ecoinvent|cdp_supplier|primary_supplier_data" }
+        - { name: vintage_year, type: smallint }
+        - { name: category_code, type: varchar(8), isForeignKey: true, references: category_taxonomy.category_code }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: factor_kgco2e_per_usd, type: "decimal(18,6)" }
+        - { name: factor_kgco2e_per_unit, type: "decimal(18,6)", description: "Activity-based factor where unit data is available" }
+        - { name: unit, type: varchar(16), description: "kg|liter|kWh|piece|m2|..." }
+        - { name: ghg_scope3_category, type: smallint, description: "1..15 per WBCSD/WRI Scope 3 Standard" }
+        - { name: uncertainty_pct, type: "decimal(5,2)" }
+        - { name: last_updated, type: timestamp }
+
+    - name: sustainability_attribute
+      description: Supplier-disclosed sustainability metric (CDP, EcoVadis, SBTi, primary disclosure). Time-stamped, append-only.
+      keys: [sustainability_attr_id]
+      attributes:
+        - { name: sustainability_attr_id, type: varchar(64), isPrimaryKey: true }
+        - { name: supplier_id, type: varchar(64), isForeignKey: true, references: supplier.supplier_id }
+        - { name: source, type: varchar(32), description: "ecovadis|cdp_supply_chain|sbti|msci_esg|sp_sustainable1|primary" }
+        - { name: reporting_year, type: smallint }
+        - { name: scope1_tco2e, type: "decimal(18,2)" }
+        - { name: scope2_market_tco2e, type: "decimal(18,2)" }
+        - { name: scope2_location_tco2e, type: "decimal(18,2)" }
+        - { name: scope3_tco2e, type: "decimal(18,2)" }
+        - { name: renewable_energy_pct, type: "decimal(5,2)" }
+        - { name: water_withdrawal_m3, type: "decimal(18,2)" }
+        - { name: waste_tonnes, type: "decimal(18,2)" }
+        - { name: sbti_target_year, type: smallint }
+        - { name: net_zero_target_year, type: smallint }
+        - { name: observed_at, type: timestamp }
+
+    - name: savings_event
+      description: Savings tracking entry — committed vs realized, hard vs soft, category and event source.
+      keys: [savings_event_id]
+      attributes:
+        - { name: savings_event_id, type: varchar(64), isPrimaryKey: true }
+        - { name: supplier_id, type: varchar(64), isForeignKey: true, references: supplier.supplier_id }
+        - { name: contract_id, type: varchar(64), isForeignKey: true, references: contract.contract_id }
+        - { name: category_code, type: varchar(8), isForeignKey: true, references: category_taxonomy.category_code }
+        - { name: event_type, type: varchar(16), description: "negotiation|consolidation|reverse_auction|spec_change|rebate|early_pay_discount|cost_avoidance" }
+        - { name: savings_kind, type: varchar(8), description: "hard|soft|avoidance" }
+        - { name: committed_amount_usd, type: "decimal(18,2)" }
+        - { name: realized_amount_usd, type: "decimal(18,2)" }
+        - { name: baseline_method, type: varchar(32), description: "prior_price|index|RFP_avg|benchmark|cost_model" }
+        - { name: signed_off_by, type: varchar(64), description: "Finance sign-off owner" }
+        - { name: committed_at, type: timestamp }
+        - { name: realized_through_ts, type: timestamp }
+
+  relationships:
+    - { from: contract, to: supplier, kind: many_to_one }
+    - { from: purchase_order, to: supplier, kind: many_to_one }
+    - { from: purchase_order, to: contract, kind: many_to_one }
+    - { from: purchase_order, to: category_taxonomy, kind: many_to_one }
+    - { from: po_line, to: purchase_order, kind: many_to_one }
+    - { from: po_line, to: category_taxonomy, kind: many_to_one }
+    - { from: receipt, to: purchase_order, kind: many_to_one }
+    - { from: receipt, to: po_line, kind: many_to_one }
+    - { from: invoice, to: supplier, kind: many_to_one }
+    - { from: invoice, to: purchase_order, kind: many_to_one }
+    - { from: supplier_risk_assessment, to: supplier, kind: many_to_one }
+    - { from: emissions_factor, to: category_taxonomy, kind: many_to_one }
+    - { from: sustainability_attribute, to: supplier, kind: many_to_one }
+    - { from: savings_event, to: supplier, kind: many_to_one }
+    - { from: savings_event, to: contract, kind: many_to_one }
+    - { from: savings_event, to: category_taxonomy, kind: many_to_one }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/procurement_spend_analytics_3nf.sql
+  vault: modeling/ddl/procurement_spend_analytics_vault.sql
+  dimensional: modeling/ddl/procurement_spend_analytics_dim.sql
+
+sourceSystems:
+  - { vendor: SAP, product: Ariba Network + Sourcing + Contracts + SLP, category: Source-to-Pay Suite }
+  - { vendor: Coupa, product: Coupa Business Spend Management, category: Source-to-Pay Suite }
+  - { vendor: Jaggaer, product: Jaggaer ONE, category: Source-to-Pay Suite }
+  - { vendor: Ivalua, product: Ivalua Source-to-Pay, category: Source-to-Pay Suite }
+  - { vendor: GEP, product: GEP SMART, category: Source-to-Pay Suite }
+  - { vendor: Oracle, product: Oracle Fusion Cloud Procurement, category: Procurement Cloud }
+  - { vendor: Workday, product: Workday Strategic Sourcing (Scout), category: Strategic Sourcing }
+  - { vendor: Tradeshift, product: Tradeshift Pay / Network, category: Supplier Network + e-Invoicing }
+  - { vendor: Basware, product: Basware AP Automation + e-Invoicing, category: AP Automation }
+  - { vendor: Zycus, product: Zycus Source-to-Pay (Merlin AI), category: Source-to-Pay Suite }
+  - { vendor: EcoVadis, product: EcoVadis Sustainability Ratings, category: Supplier Sustainability Ratings }
+  - { vendor: Sievo, product: Sievo Spend Analytics + Emissions Analytics, category: Spend Analytics }
+  - { vendor: Spendkey, product: Spendkey Managed Spend Analytics, category: Spend Analytics }
+  - { vendor: Resilinc, product: Resilinc EventWatchAI + Multi-Tier Mapping, category: Supplier Risk Monitoring }
+  - { vendor: Sphera, product: Sphera SCRM (Riskmethods), category: Supplier Risk Monitoring }
+  - { vendor: Everstream Analytics, product: Everstream Risk Center, category: Supplier Risk Monitoring }
+  - { vendor: Dun & Bradstreet, product: D&B Direct+ / Paydex / Failure Score, category: Supplier Master + Financial Risk }
+  - { vendor: BitSight, product: BitSight Security Ratings, category: Supplier Cyber Ratings }
+  - { vendor: Mastercard, product: RiskRecon, category: Supplier Cyber Ratings }
+  - { vendor: CDP, product: CDP Supply Chain Disclosure, category: Sustainability Disclosure }
+  - { vendor: SBTi, product: Science Based Targets initiative registry, category: Sustainability Disclosure }
+  - { vendor: SAP, product: SAP S/4HANA MM/FI, category: ERP (Materials Mgmt + Finance) }
+  - { vendor: Oracle, product: Oracle Cloud ERP (Payables, Cash Mgmt), category: ERP }
+  - { vendor: Microsoft, product: Dynamics 365 Finance & Operations, category: ERP }
+  - { vendor: Workday, product: Workday Financials, category: ERP }
+
+connectors:
+  - { type: SAP Ariba CIG / Ariba Network API, protocol: HTTPS / cXML, auth: OAuth2 + Ariba realm }
+  - { type: Coupa REST API, protocol: HTTPS JSON, auth: OAuth2 + bearer }
+  - { type: Jaggaer REST API, protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: Ivalua REST API, protocol: HTTPS JSON, auth: OAuth2 + tenant key }
+  - { type: GEP SMART REST, protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: Oracle Fusion Procurement REST, protocol: HTTPS JSON, auth: OAuth2 + tenant }
+  - { type: Workday Strategic Sourcing REST, protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: cXML PunchOut, protocol: HTTPS XML, auth: cXML shared secret }
+  - { type: Open Peppol BIS 3.0, protocol: AS4, auth: PKI mutual TLS }
+  - { type: EDI X12 (850/855/856/810/820/832), protocol: AS2, auth: PKI }
+  - { type: Tradeshift Network API, protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: Basware Network e-Invoice ingest, protocol: HTTPS / SFTP, auth: OAuth2 / SSH key }
+  - { type: EcoVadis Ratings API, protocol: HTTPS JSON, auth: API key }
+  - { type: Sievo Spend Analytics Connector, protocol: HTTPS / SFTP, auth: OAuth2 / SSH key }
+  - { type: Resilinc EventWatch API, protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: D&B Direct+ API, protocol: HTTPS JSON, auth: OAuth2 + product key }
+  - { type: BitSight Ratings API, protocol: HTTPS JSON, auth: API key }
+  - { type: CDP Supply Chain export, protocol: SFTP / API, auth: SSH key / OAuth2 }
+  - { type: SAP S/4HANA RFC / OData, protocol: RFC / HTTPS, auth: SAP user / OAuth2 }
+  - { type: Oracle Cloud ERP REST, protocol: HTTPS JSON, auth: OAuth2 }
+
+ingestionChallenges:
+  - High supplier-master churn — daily creates, merges (D&B parent re-roll), name changes, and tax-ID corrections produce a steady stream of CDC events that downstream spend cubes must absorb without restating closed periods.
+  - PO-line cardinality blow-up — a Fortune-500 manufacturer issues 5-20M PO lines/year; spend-cube refreshes must process this incrementally with watermark logic.
+  - Multi-ERP and multi-instance — global enterprises consolidate spend across multiple SAP instances + Oracle + Microsoft + acquired-co ERPs, each with its own GL chart, cost-center taxonomy, and FX rates.
+  - Long-tail free-text PO line descriptions — 30-50% of indirect PO lines have free-text descriptions only; ML categorization (UNSPSC) is required at ingest and must produce a confidence per line.
+  - Sustainability disclosure cadence mismatch — CDP and EcoVadis refresh annually; CO2e factors (EXIOBASE, USEEIO) vintage 2-3 years; reconciling to current-quarter spend requires explicit factor_vintage tracking.
+  - Late-arriving invoices — invoices land 30-90 days after the PO is closed; AP aging KPIs must accept the late binding and revise prior-period accruals.
+  - Tax-line normalization — VAT in EU, GST/HST in CA, sales tax in US, plus reverse-charge cases — invoice tax decomposition must reconcile to the line+header before any landed-cost analysis.
+
+integrationChallenges:
+  - name: Spend cube normalization across taxonomies (UNSPSC vs custom)
+    description: Each ERP carries its own category tree (SAP material group, Oracle item category, custom indirect tree). Spend cubes can only aggregate cleanly when every line is mapped to a canonical UNSPSC commodity. Free-text lines need ML categorization; mapped trees drift over time.
+    mitigation: Stand up a category cross-walk service backed by UNSPSC v26+ as the canonical key; train a free-text classifier on labeled supplier+line-description pairs; track classification_confidence per line and route low-confidence lines to a category steward queue.
+  - name: Supplier deduplication (D&B DUNS as the spine)
+    description: A single legal entity surfaces as 5-50 different supplier_id records across ERPs and S2P tools — variant legal names, addresses, tax-ID transcription errors, M&A roll-ups. Risk and sustainability scores attach to the parent corporate family but spend transacts against the local subsidiary.
+    mitigation: Use D&B DUNS + LEI as canonical join keys; build a parent_duns roll-up; expose a supplier_corporate_family bridge so spend aggregates at corporate-family while POs and invoices remain at local-entity grain.
+  - name: Scope 3 emissions attribution to suppliers
+    description: GHG Protocol Scope 3 Category 1 (purchased goods & services) requires emissions per dollar of spend. Pure spend-based factors (EXIOBASE, USEEIO) are coarse; activity-based factors (kg, liter, kWh) require unit conversion; primary supplier data (CDP) covers <15% of suppliers by count but often the majority of spend.
+    mitigation: Hybrid hierarchy at line level — prefer primary supplier disclosure, fall back to activity-based factors, then spend-based factors; track uncertainty_pct on every attribution; allocate parent-supplier emissions to child-spend pro-rata; reconcile annually to CSRD ESRS E1 disclosures.
+  - name: Contract metadata extraction
+    description: Negotiated terms (payment terms, rebate triggers, sustainability clauses, KPI commitments) often live in PDF/Word contracts, not structured contract systems. Without machine-readable metadata, contract-compliance KPIs cannot be computed.
+    mitigation: LLM-based clause extraction (Coupa CLM, Ironclad, Icertis, or in-house) populating contract.kpi_clauses and contract.sustainability_clauses JSON; track meta_extracted_at watermark; require human sign-off on extracted terms with high $ exposure.
+  - name: Multi-currency aggregation and FX timing
+    description: A global spend cube must aggregate transactions in 30+ currencies. Using transaction-date FX vs. period-end FX changes reported spend by 2-5%. Hedge accounting and translation gains/losses must not be double-counted.
+    mitigation: Persist both line_amount_base_usd at PO-date FX and a period-end re-translation for reporting; expose the FX policy explicitly on every fact; align with corporate Treasury's ASC 830 / IAS 21 stance.
+  - name: Three-way match exceptions at scale
+    description: 10-25% of invoices fail automated 3-way match — over-receipts, price variances, missing PO, wrong UoM. Manual exception resolution is the largest AP cost driver.
+    mitigation: Tiered tolerance bands ($ and % thresholds) configured per category and supplier; auto-clear within tolerance; route exceptions to AP exception queue with provenance (which leg failed); track exception_resolution_aging as a KPI.
+  - name: Supplier risk signal correlation across sources
+    description: Resilinc flags a fire at a tier-2 supplier; D&B drops the parent's Paydex; BitSight downgrades cyber; EcoVadis is silent. The signals correlate but arrive on different schedules, in different scales, with different supplier identifiers.
+    mitigation: Normalize each source's score to 0..100; weighted composite risk_score using configurable weights per category criticality; align all sources to supplier.duns_number first, with name+country fuzzy match as fallback; alert on supplier_risk_score crossing a delta threshold rather than absolute level.
+  - name: Maverick spend detection and routing
+    description: Buyers transact off-contract via P-card, free-text PO, or marketplace — bypassing negotiated rates and category controls. Detection requires reverse joining transaction to category and checking for a covering contract.
+    mitigation: Materialized maverick flag on po_line set at ingest by joining (supplier_id, category_code, transaction_date) to active contract scope; weekly maverick-spend dashboard per category manager; configurable thresholds for buyer manager approval.
+  - name: Sustainable procurement clause enforcement
+    description: ISO 20400 expects sustainability clauses to flow from policy through contract to operational measurement. In practice, signed clauses don't propagate to spend cubes — buyers can't see whether they're transacting with EcoVadis Silver+ suppliers.
+    mitigation: Expose supplier.ecovadis_medal on the buying UX; auto-block PO submission for categories with sustainability_clauses requiring Silver+ if supplier doesn't qualify; report sustainable_spend_pct against board commitment.
+
+dataModels:
+  threeNF: modeling/ddl/procurement_spend_analytics_3nf.sql
+  vault: modeling/ddl/procurement_spend_analytics_vault.sql
+  dimensional: modeling/ddl/procurement_spend_analytics_dim.sql
+
+glossaryTerms:
+  - Spend Under Management (SUM)
+  - Maverick Spend
+  - Tail Spend
+  - P-Card
+  - Three-Way Match
+  - Two-Way Match
+  - Touchless Invoice
+  - Source-to-Pay (S2P)
+  - Procure-to-Pay (P2P)
+  - Category Management
+  - UNSPSC
+  - eSourcing (RFI/RFP/RFQ)
+  - Reverse Auction
+  - GHG Protocol Scope 1/2/3
+  - ESG Procurement
+  - Supplier Consolidation
+  - DUNS Number
+  - Hard Savings vs Soft Savings
+  - Cost Avoidance
+  - Value Leakage
+  - Contract Leakage
+  - Punchout Catalog
+  - Incoterms 2020
+  - OTIF (On-Time-In-Full)
+  - EcoVadis Medal
+  - SBTi Commitment
+
+standards:
+  - { id: unspsc, name: UNSPSC (United Nations Standard Products and Services Code), version: "v26.0801 (2024)", url: "https://www.unspsc.org" }
+  - { id: ghg_protocol_scope3, name: GHG Protocol Corporate Value Chain (Scope 3) Standard, version: "2011 + Technical Guidance 2013", url: "https://ghgprotocol.org/corporate-value-chain-scope-3-standard" }
+  - { id: iso_14064, name: ISO 14064 GHG quantification and reporting, version: "Part 1:2018", url: "https://www.iso.org/standard/66453.html" }
+  - { id: iso_20400, name: ISO 20400 Sustainable procurement — Guidance, version: "2017", url: "https://www.iso.org/standard/63026.html" }
+  - { id: peppol_bis, name: Open Peppol BIS Billing 3.0, version: "3.0.18", url: "https://docs.peppol.eu/poacc/billing/3.0/" }
+  - { id: edi_x12_850, name: EDI X12 850 Purchase Order, version: "008010+", url: "https://x12.org/products/transaction-sets" }
+  - { id: edi_x12_855, name: EDI X12 855 Purchase Order Acknowledgment, version: "008010+", url: "https://x12.org/products/transaction-sets" }
+  - { id: edi_x12_810, name: EDI X12 810 Invoice, version: "008010+", url: "https://x12.org/products/transaction-sets" }
+  - { id: csrd_esrs_e1, name: EU CSRD — ESRS E1 Climate Change, version: "2024", url: "https://www.efrag.org/lab6" }
+  - { id: iso_20022, name: ISO 20022 (invoice payment rails — pacs.008), version: "2024", url: "https://www.iso20022.org" }
+  - { id: duns, name: Dun & Bradstreet D-U-N-S Number, version: "9-digit", url: "https://www.dnb.com/duns-number.html" }
+  - { id: lei, name: Legal Entity Identifier (ISO 17442), version: "2020", url: "https://www.gleif.org/en/about-lei/iso-17442-the-lei-code-structure" }
+  - { id: incoterms_2020, name: ICC Incoterms 2020, version: "2020", url: "https://iccwbo.org/business-solutions/incoterms-rules/" }
+  - { id: sbti, name: Science Based Targets initiative — Net-Zero Standard for Corporates, version: "1.2 (2024)", url: "https://sciencebasedtargets.org" }

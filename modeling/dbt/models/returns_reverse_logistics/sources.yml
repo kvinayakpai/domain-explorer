@@ -1,0 +1,72 @@
+version: 2
+
+sources:
+  - name: returns_reverse_logistics
+    description: |
+      Synthetic Returns & Reverse Logistics source schema produced by
+      synthetic-data/returns_reverse_logistics/generate.py and loaded into the
+      populated DuckDB. Mirrors what an Optoro / Loop / Narvar / Happy Returns
+      / SAP S/4 Returns / Manhattan Active WMS / Salesforce OMS / ZigZag /
+      ReBound / Doddle / Newmine stack would land after CDC.
+    schema: returns_reverse_logistics
+    tables:
+      - name: customer
+        description: Buying customer (PII-tokenized).
+        columns:
+          - name: customer_id
+            tests: [unique, not_null]
+      - name: sales_order
+        description: Original outbound sales order joined for COGS and channel.
+        columns:
+          - name: order_id
+            tests: [unique, not_null]
+      - name: reason_code
+        description: Normalized return-reason catalog reconciled across platforms.
+        columns:
+          - name: reason_code_id
+            tests: [unique, not_null]
+      - name: disposition
+        description: Disposition-lane catalog (restock / refurb / liquidate / donate / recycle / scrap / returnless).
+        columns:
+          - name: disposition_id
+            tests: [unique, not_null]
+      - name: return_authorization
+        description: RMA — Return Merchandise Authorization, maps to EDI 180.
+        columns:
+          - name: rma_id
+            tests: [unique, not_null]
+      - name: return_item
+        description: One returned SKU / unit on an RMA. Grain of disposition / refurb / recovery analytics.
+        columns:
+          - name: return_item_id
+            tests: [unique, not_null]
+      - name: refund
+        description: Money / credit issued back. May or may not be tied to a return_item (returnless).
+        columns:
+          - name: refund_id
+            tests: [unique, not_null]
+      - name: refurb_outcome
+        description: Refurb / CRC outcome per return_item per refurb attempt.
+        columns:
+          - name: refurb_outcome_id
+            tests: [unique, not_null]
+      - name: liquidation_lot
+        description: Multi-item lot sold through B-Stock / Liquidation.com / BULQ.
+        columns:
+          - name: lot_id
+            tests: [unique, not_null]
+      - name: liquidation_lot_item
+        description: Bridge — many return_items into one liquidation lot.
+        columns:
+          - name: lot_item_id
+            tests: [unique, not_null]
+      - name: fraud_signal
+        description: Per-return / per-customer fraud signal (Newmine / Appriss / internal).
+        columns:
+          - name: fraud_signal_id
+            tests: [unique, not_null]
+      - name: carrier_label
+        description: Reverse-leg shipping label (Loop / Happy Returns / Doddle / ZigZag / ReBound).
+        columns:
+          - name: label_id
+            tests: [unique, not_null]

@@ -1,0 +1,447 @@
+id: loss_prevention
+name: Loss Prevention
+vertical: Retail
+oneLiner: POS exception monitoring, organized retail crime (ORC) detection, return abuse / refund fraud, shrink analytics, and internal/external theft investigation across stores, e-com, and the supply chain.
+
+# Authoritative sources (mid-2026):
+#   Zebra Reflexis / Zebra Workforce Connect
+#     https://www.zebra.com/reflexis — task execution + audit + LP workflows.
+#   Sensormatic Solutions (Johnson Controls) — EAS, RFID, Visual Loss Prevention
+#     https://www.sensormatic.com — EAS pedestals, IR/RFID, ShrinkVision (Tyco-era).
+#   NCR Voyix Loss Prevention Analytics (formerly StoreLine / Profile)
+#     https://www.ncrvoyix.com — POS exception engine + investigation case mgmt.
+#   Oracle Retail XStore Loss Prevention (XBR analytics)
+#     https://www.oracle.com/retail/xstore — POS-side LP rules + dashboards.
+#   Auror — ORC platform, retailer-to-retailer + law-enforcement sharing
+#     https://www.auror.co — incident-level offender/vehicle linking across chains.
+#   Appriss Retail (formerly The Retail Equation) — return fraud scoring
+#     https://apprissretail.com — Verify Return Authorization + Engage.
+#   Datalogic — barcode/RFID scanners, "lane awareness" anti-sweethearting
+#     https://www.datalogic.com — Magellan + Joya scanner LP features.
+#   Profitect (Zebra) — prescriptive exception/opportunity engine
+#     https://www.zebra.com/us/en/products/software/store-software/prescriptive-analytics.html
+#   Aptos Loss Prevention (Aptos Analytics + Aptos ONE)
+#     https://www.aptos.com — exception + shrink analytics in the Aptos suite.
+#   Tyco RFID / Sensormatic ShrinkVision
+#     https://www.sensormatic.com/rfid — item-level RFID for shrink visibility.
+#   ALTO Alliance — retailer/law-enforcement ORC information-sharing standard.
+#     https://www.altoalliance.org — case formatting for prosecutor packets.
+#   Detego — Detego Cloud (item-level RFID + analytics, partnerships with NCR/Aptos).
+#     https://www.detego.com — RFID shrink + on-shelf inference.
+#   Indyme — self-service security (Smart Response, FreedomCase).
+#     https://indyme.com — shopper-noticed audio + smart locking cases.
+#   RetailNext — vision-based foot-traffic + dwell, paired with LP cameras.
+#     https://retailnext.net — ML on shelves + queues to flag suspicious motion.
+#   NCR Counterpoint — POS for smaller retailers with LP exception modules.
+#     https://www.ncr.com — specialty/SMB LP tooling.
+#   Honeywell Connected Retail / Honeywell HCI — connected-store inventory & loss.
+#     https://www.honeywell.com — sensor + POS + RFID fusion for shrink.
+#
+#   Standards & guidance:
+#   NIST SP 800-53 Rev. 5 — security & privacy controls (case management, access, audit).
+#     https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final
+#   ALTO Alliance Information Sharing Standard — multi-retailer ORC case format.
+#   PCI DSS v4.0 — anything that touches a card PAN (refund-card capture, fraud holds).
+#     https://www.pcisecuritystandards.org
+#   ASIS International Asset Protection Standards — investigation evidence integrity.
+#     https://www.asisonline.org
+#   FBI UCR / NIBRS reporting codes — incident classification when filing for prosecution.
+#     https://ucr.fbi.gov
+
+personas:
+  - { name: VP Loss Prevention, title: VP, Loss Prevention & Asset Protection, level: VP }
+  - { name: LP Investigator, title: Senior Loss Prevention Investigator, level: IC }
+  - { name: Store LP Manager, title: Store Loss Prevention Manager, level: Manager }
+  - { name: Fraud Analyst, title: Refund & Return Fraud Analyst, level: IC }
+  - { name: Compliance Officer, title: Director, Asset Protection Compliance, level: Director }
+  - { name: Asset Protection Specialist, title: Asset Protection Specialist (in-store), level: IC }
+  - { name: ORC Investigator, title: Organized Retail Crime Investigator, level: IC }
+
+decisions:
+  - { id: lp.d.investigate_exception, statement: "Open a formal investigation on a POS exception (e.g. high-value refund, void-then-rering, voided sale with cash-drawer touch) versus auto-close as noise." }
+  - { id: lp.d.audit_store, statement: "Trigger a physical audit / wall-to-wall count of a store based on shrink and exception-density trends." }
+  - { id: lp.d.prosecute, statement: "Refer an internal-theft or ORC case for criminal prosecution versus terminate-and-recover via civil demand." }
+  - { id: lp.d.refund_hold, statement: "Hold a customer refund or restrict their return privileges based on an Appriss Retail risk score and prior chargeback history." }
+  - { id: lp.d.suspect_link, statement: "Link a new incident to an existing ORC offender profile (Auror) versus treat as standalone." }
+  - { id: lp.d.case_share_alto, statement: "Share a case packet through ALTO Alliance for multi-retailer disclosure, or keep proprietary while building." }
+  - { id: lp.d.deploy_eas_or_rfid, statement: "Allocate scarce EAS hard-tag / RFID tag budget to a SKU based on shrink concentration and CRAVED scoring." }
+  - { id: lp.d.staff_lp_hours, statement: "Increase or shift in-store LP staffing hours by location based on exception-density and external-theft heatmap." }
+  - { id: lp.d.review_employee, statement: "Move an employee from monitor to investigation status based on associate-linked exception clustering (sweethearting patterns)." }
+  - { id: lp.d.case_closure, statement: "Close an investigation as recovered, written-off, prosecuted, or unfounded — and how to back-fill the loss to the shrink ledger." }
+
+kpis:
+  - id: lp.kpi.shrink_rate
+    name: Shrink Rate %
+    formula: shrink_dollars / net_sales
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [lp.d.audit_store, lp.d.deploy_eas_or_rfid]
+  - id: lp.kpi.known_shrink_pct
+    name: Known Shrink %
+    formula: known_shrink_dollars / total_shrink_dollars
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [lp.d.investigate_exception, lp.d.case_closure]
+  - id: lp.kpi.unknown_shrink_pct
+    name: Unknown Shrink %
+    formula: unknown_shrink_dollars / total_shrink_dollars
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [lp.d.audit_store]
+  - id: lp.kpi.inventory_accuracy
+    name: Inventory Accuracy %
+    formula: 1 - sum(abs(system_on_hand - counted_on_hand)) / sum(counted_on_hand)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [lp.d.audit_store]
+  - id: lp.kpi.pos_exception_rate
+    name: POS Exception Rate
+    formula: pos_exceptions / pos_transactions
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [lp.d.investigate_exception, lp.d.review_employee]
+  - id: lp.kpi.refund_fraud_rate
+    name: Refund Fraud Rate
+    formula: fraudulent_refunds / total_refunds
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [lp.d.refund_hold]
+  - id: lp.kpi.sweethearting_incidents
+    name: Sweethearting Incidents / Week
+    formula: sum(sweethearting_incidents) / weeks
+    unit: count
+    direction: lower_is_better
+    decisionsSupported: [lp.d.review_employee]
+  - id: lp.kpi.loss_recovery_dollars
+    name: Loss Recovery $
+    formula: sum(recovery_dollars)
+    unit: USD
+    direction: higher_is_better
+    decisionsSupported: [lp.d.case_closure, lp.d.prosecute]
+  - id: lp.kpi.external_theft_rate
+    name: External Theft Rate
+    formula: external_theft_incidents / store_traffic
+    unit: "per 1k visits"
+    direction: lower_is_better
+    decisionsSupported: [lp.d.staff_lp_hours, lp.d.deploy_eas_or_rfid]
+  - id: lp.kpi.internal_theft_rate
+    name: Internal Theft Rate
+    formula: internal_theft_incidents / employee_count
+    unit: "per 100 FTE"
+    direction: lower_is_better
+    decisionsSupported: [lp.d.review_employee]
+  - id: lp.kpi.orc_incident_frequency
+    name: ORC Incident Frequency
+    formula: orc_incidents / store_count / month
+    unit: "per store per month"
+    direction: lower_is_better
+    decisionsSupported: [lp.d.suspect_link, lp.d.case_share_alto]
+  - id: lp.kpi.investigation_closure_rate
+    name: Investigation Closure Rate
+    formula: investigations_closed / investigations_opened
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [lp.d.case_closure]
+  - id: lp.kpi.false_positive_rate
+    name: Alert False-Positive Rate
+    formula: closed_unfounded / alerts_raised
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [lp.d.investigate_exception]
+  - id: lp.kpi.return_abuse_rate
+    name: Return Abuse Rate
+    formula: abused_returns / total_returns
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [lp.d.refund_hold]
+
+dataModel:
+  entities:
+    - name: store
+      description: Selling location where exceptions and incidents originate. Carries LP staffing & format flags used for routing.
+      keys: [store_id]
+      attributes:
+        - { name: store_id, type: varchar(16), isPrimaryKey: true }
+        - { name: store_name, type: varchar(255) }
+        - { name: banner, type: varchar(64) }
+        - { name: region, type: varchar(64) }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: format, type: varchar(32), description: "hypermarket|supermarket|specialty|convenience|ecom_dc" }
+        - { name: lp_staffing_tier, type: varchar(8), description: "T1|T2|T3 — staffing-allocation tier" }
+        - { name: eas_enabled, type: boolean, description: "EAS pedestals deployed" }
+        - { name: rfid_enabled, type: boolean, description: "Sensormatic ShrinkVision / Tyco RFID at item level" }
+        - { name: status, type: varchar(16) }
+
+    - name: employee
+      description: Associate or contractor with POS-system access. Required for sweethearting and internal-theft attribution. PII-restricted column set.
+      keys: [employee_id]
+      attributes:
+        - { name: employee_id, type: varchar(16), isPrimaryKey: true }
+        - { name: employee_ref_hash, type: varchar(64), description: "SHA-256(HR-id + salt) — PII redacted; raw HR id stays in HRIS only" }
+        - { name: home_store_id, type: varchar(16) }
+        - { name: role, type: varchar(32), description: "cashier|supervisor|asset_protection|manager|stocker" }
+        - { name: hire_date, type: date }
+        - { name: termination_date, type: date }
+        - { name: status, type: varchar(16), description: "active|terminated|investigation|on_leave" }
+
+    - name: item
+      description: Item-level master used to attribute shrink and incidents. CRAVED scoring drives EAS/RFID decisions.
+      keys: [item_id]
+      attributes:
+        - { name: item_id, type: varchar(32), isPrimaryKey: true }
+        - { name: gtin, type: varchar(14), description: "GS1 GTIN-14" }
+        - { name: department, type: varchar(64) }
+        - { name: category, type: varchar(64) }
+        - { name: unit_cost_minor, type: bigint }
+        - { name: unit_retail_minor, type: bigint }
+        - { name: craved_score, type: "decimal(4,2)", description: "CRAVED index 0..10 — Concealable / Removable / Available / Valuable / Enjoyable / Disposable" }
+        - { name: eas_protected, type: boolean }
+        - { name: rfid_tagged, type: boolean }
+
+    - name: pos_transaction
+      description: POS receipt header. Joined to exceptions and to refunds. Carries employee + register + lane for sweethearting analytics.
+      keys: [transaction_id]
+      attributes:
+        - { name: transaction_id, type: varchar(32), isPrimaryKey: true }
+        - { name: store_id, type: varchar(16), isForeignKey: true, references: store.store_id }
+        - { name: register_id, type: varchar(16) }
+        - { name: employee_id, type: varchar(16), isForeignKey: true, references: employee.employee_id }
+        - { name: customer_ref_hash, type: varchar(64), description: "SHA-256 of loyalty id — PII tokenized" }
+        - { name: txn_ts, type: timestamp }
+        - { name: tender_type, type: varchar(16), description: "cash|credit|debit|gift|ebt|other" }
+        - { name: gross_amount_minor, type: bigint }
+        - { name: discount_amount_minor, type: bigint }
+        - { name: refund_amount_minor, type: bigint }
+        - { name: net_amount_minor, type: bigint }
+        - { name: item_count, type: integer }
+        - { name: void_flag, type: boolean }
+        - { name: no_sale_flag, type: boolean }
+
+    - name: pos_exception
+      description: One detected POS exception — sweethearting candidate, refund anomaly, void abuse, no-sale, cash skim. Source NCR Voyix LP / Oracle XBR / Profitect.
+      keys: [exception_id]
+      attributes:
+        - { name: exception_id, type: varchar(32), isPrimaryKey: true }
+        - { name: transaction_id, type: varchar(32), isForeignKey: true, references: pos_transaction.transaction_id }
+        - { name: store_id, type: varchar(16), isForeignKey: true, references: store.store_id }
+        - { name: employee_id, type: varchar(16), isForeignKey: true, references: employee.employee_id }
+        - { name: exception_type, type: varchar(32), description: "sweethearting|refund_no_receipt|void_after_tender|no_sale|cash_skim|price_override|barcode_swap|discount_abuse" }
+        - { name: exception_score, type: "decimal(5,3)", description: "Model risk score 0..1" }
+        - { name: source_system, type: varchar(32), description: "NCR_Voyix_LP|Oracle_XBR|Profitect|Aptos_LP|Sensormatic|Datalogic|NCR_Counterpoint|Honeywell" }
+        - { name: detected_at, type: timestamp }
+        - { name: status, type: varchar(16), description: "open|under_review|investigation|closed_unfounded|closed_confirmed" }
+        - { name: amount_at_risk_minor, type: bigint }
+        - { name: video_segment_ref, type: text, description: "Pointer to cold-storage video clip; PII-redacted by policy" }
+
+    - name: incident
+      description: Discrete loss/theft event — external shoplift, internal theft, ORC boost, organized fraud ring activity. Often built from one or more exceptions + manual observation.
+      keys: [incident_id]
+      attributes:
+        - { name: incident_id, type: varchar(32), isPrimaryKey: true }
+        - { name: store_id, type: varchar(16), isForeignKey: true, references: store.store_id }
+        - { name: incident_type, type: varchar(32), description: "external_shoplift|internal_theft|orc_boost|burglary|robbery|return_abuse|refund_fraud|cargo_theft" }
+        - { name: incident_ts, type: timestamp }
+        - { name: reported_by_employee_id, type: varchar(16) }
+        - { name: detected_via, type: varchar(32), description: "exception_alert|cctv_review|tip|customer_report|audit|inventory_count" }
+        - { name: suspect_id, type: varchar(32) }
+        - { name: gross_loss_minor, type: bigint }
+        - { name: recovered_minor, type: bigint }
+        - { name: net_loss_minor, type: bigint }
+        - { name: nibrs_code, type: varchar(8), description: "FBI NIBRS classification when reportable" }
+        - { name: status, type: varchar(16), description: "open|investigating|closed_recovered|closed_prosecuted|closed_writeoff|closed_unfounded" }
+
+    - name: suspect
+      description: Person of interest in one or more incidents. PII-tokenized — raw demographics live only in encrypted case-management.
+      keys: [suspect_id]
+      attributes:
+        - { name: suspect_id, type: varchar(32), isPrimaryKey: true }
+        - { name: suspect_ref_hash, type: varchar(64), description: "SHA-256 of {name, dob} salt — used for cross-incident linking without storing PII" }
+        - { name: alias_count, type: smallint }
+        - { name: first_seen_at, type: timestamp }
+        - { name: last_seen_at, type: timestamp }
+        - { name: orc_flag, type: boolean, description: "Member of a known organized retail crime ring" }
+        - { name: orc_ring_id, type: varchar(32) }
+        - { name: known_vehicle_ref_hash, type: varchar(64), description: "SHA-256(plate + state) — tokenized" }
+        - { name: auror_offender_id, type: varchar(64), description: "Cross-retailer link id where Auror is integrated" }
+        - { name: alto_packet_id, type: varchar(64), description: "ALTO Alliance shared-case id" }
+
+    - name: investigation
+      description: Case the LP investigator builds. Bound to one incident or many; tracks recovery, prosecution path, and chain-of-custody for evidence.
+      keys: [investigation_id]
+      attributes:
+        - { name: investigation_id, type: varchar(32), isPrimaryKey: true }
+        - { name: incident_id, type: varchar(32), isForeignKey: true, references: incident.incident_id }
+        - { name: opened_by_employee_id, type: varchar(16) }
+        - { name: opened_at, type: timestamp }
+        - { name: closed_at, type: timestamp }
+        - { name: investigation_type, type: varchar(32), description: "internal|external|orc|refund_fraud|sweethearting_audit|cargo" }
+        - { name: status, type: varchar(16), description: "open|in_progress|closed_recovered|closed_prosecuted|closed_writeoff|closed_unfounded" }
+        - { name: evidence_count, type: integer }
+        - { name: video_evidence_minutes, type: integer }
+        - { name: prosecution_referred, type: boolean }
+        - { name: alto_shared, type: boolean }
+        - { name: case_packet_uri, type: text, description: "Pointer to encrypted case-management object store" }
+
+    - name: recovery
+      description: Money / goods recovered from an incident or investigation — cash, merchandise, civil-demand collection, restitution.
+      keys: [recovery_id]
+      attributes:
+        - { name: recovery_id, type: varchar(32), isPrimaryKey: true }
+        - { name: incident_id, type: varchar(32), isForeignKey: true, references: incident.incident_id }
+        - { name: investigation_id, type: varchar(32), isForeignKey: true, references: investigation.investigation_id }
+        - { name: recovered_amount_minor, type: bigint }
+        - { name: recovery_type, type: varchar(32), description: "cash|merchandise|civil_demand|restitution|insurance_payout" }
+        - { name: recovered_at, type: timestamp }
+        - { name: recovered_by_employee_id, type: varchar(16) }
+
+    - name: fraud_score
+      description: Per-transaction or per-customer fraud score produced by Appriss Retail / internal model. Drives refund hold and return restriction.
+      keys: [fraud_score_id]
+      attributes:
+        - { name: fraud_score_id, type: varchar(32), isPrimaryKey: true }
+        - { name: customer_ref_hash, type: varchar(64) }
+        - { name: transaction_id, type: varchar(32) }
+        - { name: score_source, type: varchar(32), description: "Appriss_Retail|internal_xgb|Auror_offender_signal" }
+        - { name: score, type: "decimal(5,3)", description: "0..1 — risk score" }
+        - { name: recommendation, type: varchar(16), description: "approve|verify|deny" }
+        - { name: scored_at, type: timestamp }
+
+    - name: shrink_snapshot
+      description: Period (typically monthly) shrink snapshot per store × department. Splits known vs unknown shrink so the recovered-known share can be tracked.
+      keys: [snapshot_id]
+      attributes:
+        - { name: snapshot_id, type: varchar(32), isPrimaryKey: true }
+        - { name: store_id, type: varchar(16), isForeignKey: true, references: store.store_id }
+        - { name: department, type: varchar(64) }
+        - { name: period_start, type: date }
+        - { name: period_end, type: date }
+        - { name: opening_inventory_minor, type: bigint }
+        - { name: receipts_minor, type: bigint }
+        - { name: cogs_minor, type: bigint }
+        - { name: closing_inventory_minor, type: bigint }
+        - { name: known_shrink_minor, type: bigint }
+        - { name: unknown_shrink_minor, type: bigint }
+        - { name: total_shrink_minor, type: bigint }
+        - { name: shrink_pct, type: "decimal(6,4)" }
+
+  relationships:
+    - { from: employee, to: store, kind: many_to_one }
+    - { from: pos_transaction, to: store, kind: many_to_one }
+    - { from: pos_transaction, to: employee, kind: many_to_one }
+    - { from: pos_exception, to: pos_transaction, kind: many_to_one }
+    - { from: pos_exception, to: store, kind: many_to_one }
+    - { from: pos_exception, to: employee, kind: many_to_one }
+    - { from: incident, to: store, kind: many_to_one }
+    - { from: incident, to: suspect, kind: many_to_one }
+    - { from: investigation, to: incident, kind: many_to_one }
+    - { from: recovery, to: incident, kind: many_to_one }
+    - { from: recovery, to: investigation, kind: many_to_one }
+    - { from: shrink_snapshot, to: store, kind: many_to_one }
+    - { from: fraud_score, to: pos_transaction, kind: many_to_one }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/loss_prevention_3nf.sql
+  vault: modeling/ddl/loss_prevention_vault.sql
+  dimensional: modeling/ddl/loss_prevention_dim.sql
+
+sourceSystems:
+  - { vendor: Zebra, product: Zebra Reflexis / Workforce Connect, category: Workforce + Task Execution (LP audit) }
+  - { vendor: Sensormatic (Johnson Controls), product: Sensormatic EAS + ShrinkVision, category: EAS / RFID / Visual LP }
+  - { vendor: NCR Voyix, product: NCR Voyix Loss Prevention Analytics, category: POS Exception + Investigation }
+  - { vendor: Oracle, product: Oracle Retail XStore Loss Prevention (XBR), category: POS Exception Analytics }
+  - { vendor: Auror, product: Auror ORC Platform, category: ORC Intelligence Sharing }
+  - { vendor: Appriss Retail, product: Appriss Retail (formerly The Retail Equation) Verify, category: Return Fraud Scoring }
+  - { vendor: Zebra, product: Profitect Prescriptive Analytics, category: Prescriptive Exception Engine }
+  - { vendor: Aptos, product: Aptos Loss Prevention (Aptos Analytics), category: LP Analytics Suite }
+  - { vendor: Tyco (Sensormatic / JCI), product: Tyco RFID / Sensormatic ShrinkVision RFID, category: Item-Level RFID for Shrink }
+  - { vendor: ALTO Alliance, product: ALTO Information Sharing Platform, category: Retailer-LE ORC Sharing }
+  - { vendor: Detego, product: Detego Cloud (item-level RFID), category: Item-Level RFID / On-Shelf Inference }
+  - { vendor: Indyme, product: Indyme Smart Response / FreedomCase, category: Smart Lockable Display / Audio Deterrent }
+  - { vendor: NCR, product: NCR Counterpoint POS + LP modules, category: SMB POS / LP }
+  - { vendor: Honeywell, product: Honeywell Connected Retail, category: Connected-Store Inventory + Shrink }
+  - { vendor: RetailNext, product: RetailNext Aurora (vision foot traffic + LP), category: Vision Analytics }
+  - { vendor: Datalogic, product: Datalogic Magellan + Joya (scan-aware LP), category: Scanner / Lane Awareness }
+
+connectors:
+  - { type: Zebra Reflexis REST, protocol: HTTPS JSON, auth: OAuth2 + tenant key }
+  - { type: Sensormatic ShrinkVision API, protocol: HTTPS JSON, auth: API key + HMAC }
+  - { type: NCR Voyix LP REST, protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: Oracle XStore LP REST, protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: Auror REST + Webhook, protocol: HTTPS JSON, auth: OAuth2 + signed webhook }
+  - { type: Appriss Retail Verify API, protocol: HTTPS JSON, auth: API key + mTLS }
+  - { type: Profitect (Zebra) REST, protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: Aptos LP REST + SFTP, protocol: HTTPS + SFTP, auth: OAuth2 / SSH key }
+  - { type: Tyco RFID event stream, protocol: MQTT / Kafka, auth: TLS + cred }
+  - { type: ALTO Alliance case packet (JSON), protocol: HTTPS JSON, auth: OAuth2 + retailer cert }
+  - { type: Detego Cloud REST, protocol: HTTPS JSON, auth: API key }
+  - { type: Indyme device webhook, protocol: HTTPS, auth: HMAC }
+  - { type: POS exception stream (Toshiba TCx / NCR Voyix / Oracle XStore), protocol: Kafka, auth: SASL/SCRAM }
+  - { type: RetailNext Aurora REST, protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: Datalogic scanner telemetry, protocol: MQTT, auth: TLS + cred }
+  - { type: Honeywell HCI REST, protocol: HTTPS JSON, auth: OAuth2 }
+
+ingestionChallenges:
+  - High-cardinality POS exception streams — ~0.5% exception rate on a 500k-transaction/day chain produces millions of exception rows per week before dedup.
+  - Late-binding incidents — an incident is often built days later from CCTV review + audit trail; the exception row predates the incident by 7-30 days and must be back-filled.
+  - Video evidence segregation — investigators reference cold-storage CCTV clips by URI but the bytes must never land in the warehouse; lineage tooling must track the reference without copying.
+  - Multi-source exception dedup — NCR Voyix LP and Oracle XBR can both flag the same transaction; ingestion needs a (transaction_id, exception_type) idempotency key.
+  - PII-restricted columns — employee_id, suspect demographics, plates, customer phone numbers must be hash-tokenized at ingest; raw PII stays in encrypted case-management only.
+  - Cross-retailer ORC linking via Auror / ALTO needs durable suspect_ref_hash with the same salt across chains within an ALTO disclosure; salt rotation breaks lineage.
+
+integrationChallenges:
+  - name: PII redaction in incident reports
+    description: Incident write-ups and exception video clips routinely contain shopper names, employee SSN-stems, partial plates, and demographic descriptors. Pushing those into a data warehouse violates GDPR Art. 5, CCPA/CPRA, and most state LP statutes; pushing them into BI tools puts everyone in scope of PCI DSS v4.0 for residual card data.
+    mitigation: Tokenize at the connector boundary — replace name+dob+plate with deterministic SHA-256(value + tenant salt) hashes; quarantine raw PII in an encrypted case-management bucket with separate IAM; document the salt rotation policy and broadcast invalidation events to downstream ORC link tables.
+  - name: Video vs structured-data fusion
+    description: An exception is one row; the actual proof is 90 seconds of CCTV from three camera angles. Investigators need to jump from the warehouse row to the clip without the warehouse ever holding video bytes.
+    mitigation: Persist `video_segment_ref` as a signed URI to a cold-storage object (Sensormatic/RetailNext/Honeywell), with a short-lived presigned-URL minter behind an LP-only IAM role; never replicate video into the lake; capture audit logs of every clip view for chain-of-custody.
+  - name: Multi-store retailer data sharing for ORC tracking
+    description: Auror and ALTO Alliance only work if retailers share suspect / vehicle / incident data across chains — but every retailer has its own privacy policy and legal-disclosure rules. Naive replication risks breach of contract and statutory privacy violations.
+    mitigation: Share only deterministic hashes (suspect_ref_hash, vehicle_ref_hash) plus categorical incident metadata via the ALTO standard; require contractual ALTO disclosure consent at the case level before any cross-retailer link is materialized; persist `alto_packet_id` so any case can be unshared on request.
+  - name: Exception score drift between vendors
+    description: NCR Voyix LP, Oracle XBR, Profitect, and Aptos LP all output an exception score on different scales (0-100 vs 0-1 vs "low/medium/high"). Downstream alert thresholds and the false-positive KPI become meaningless when the scales drift.
+    mitigation: Normalize to a 0..1 score at staging with documented per-source calibration curves; persist both raw_score and normalized score for audit; recompute calibration quarterly against confirmed-incident outcomes.
+  - name: Sweethearting attribution to employees
+    description: Sweethearting (cashier discounting goods for friends) requires linking a register operator to an exception pattern over weeks — but employees swap registers, share logins in violation of policy, and shift mid-transaction. Naive employee-attribution wrongly accuses associates.
+    mitigation: Require register-session login events (start_session, end_session) joined to register_id + timestamp before attributing exceptions to employee_id; emit a "session-collision" DQ alert when overlapping sessions on the same register; never escalate to investigation on attribution alone — require corroborating signals.
+  - name: Refund fraud signal isolation
+    description: Appriss Retail returns a score and recommendation per return attempt; using that score downstream means a refund denial can be revisited with the model evidence. But Appriss output is contractually restricted from being used for non-LP purposes.
+    mitigation: Store Appriss scores in a separate `fraud_score` table with row-level security; expose only the binary recommendation (approve/verify/deny) to non-LP marts; encode use-purpose tags on each query to satisfy the Appriss DPA.
+  - name: ORC ring linkage without re-identification
+    description: Linking a new suspect to an existing ORC ring requires comparing biometric / behavioral / vehicle / location features across incidents — but storing those features creates a re-identification database under GDPR Art. 9.
+    mitigation: Use locality-sensitive-hashing (MinHash, SimHash) on tokenized features so two records can be probabilistically matched without round-tripping raw attributes; persist match_confidence and prohibit cross-attribute joins outside the case-management workflow.
+  - name: Reconciling exceptions to physical inventory shrink
+    description: Exceptions and incidents are signals; shrink is the ledger truth that appears only at physical count (quarterly or annual). Bridging the two requires reason-coding incidents to a shrink category (theft, error, damage, fraud) so the known/unknown shrink split can be improved over time.
+    mitigation: Maintain a controlled `shrink_reason_taxonomy` and post-count reconciliation job that maps closed_recovered + closed_prosecuted + closed_writeoff incidents to known_shrink_minor on the next shrink_snapshot; report Known Shrink % uplift as the program's headline KPI.
+  - name: Chain-of-custody for prosecution-grade evidence
+    description: Prosecution-bound cases require tamper-evident chain-of-custody on every evidence artifact (video, receipt, statement). A standard data lake's mutability breaks chain-of-custody.
+    mitigation: Persist evidence artifacts in WORM (write-once-read-many) storage with cryptographic hash anchored in a tamper-evident ledger; emit OpenLineage events on every read; surface chain-of-custody attestations via `investigation.case_packet_uri` rather than copying artifacts to BI.
+
+glossaryTerms:
+  - shrink
+  - known shrink
+  - unknown shrink
+  - sweethearting
+  - ORC (Organized Retail Crime)
+  - refund fraud
+  - return abuse
+  - EAS (Electronic Article Surveillance)
+  - CRAVED items
+  - POS exception
+  - void abuse
+  - no-sale
+  - cash skim
+  - asset protection
+  - fence (ORC)
+  - boost (ORC slang)
+  - case build
+  - prosecution
+  - chain of custody
+
+standards:
+  - { id: nist_sp_800_53, name: NIST SP 800-53 Rev. 5 (Security & Privacy Controls), version: "Rev. 5", url: "https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final" }
+  - { id: alto_iss, name: ALTO Alliance Information Sharing Standard, version: "2025", url: "https://www.altoalliance.org" }
+  - { id: pci_dss_4, name: PCI DSS, version: "4.0", url: "https://www.pcisecuritystandards.org" }
+  - { id: asis_aps, name: ASIS International Asset Protection Standards, version: "2024", url: "https://www.asisonline.org" }
+  - { id: nibrs, name: FBI NIBRS Reporting Codes, version: "2024", url: "https://ucr.fbi.gov" }
+  - { id: gs1_gtin, name: GS1 GTIN-14, version: "GS1 GenSpec 2024", url: "https://www.gs1.org/standards/id-keys/gtin" }

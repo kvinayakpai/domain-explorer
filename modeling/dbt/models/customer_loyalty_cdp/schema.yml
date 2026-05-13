@@ -1,0 +1,208 @@
+version: 2
+
+models:
+  # ---------- Staging ----------
+  - name: stg_customer_loyalty_cdp__customer_master
+    description: Golden customer record — output of identity resolution.
+    columns:
+      - name: customer_id
+        tests: [unique, not_null]
+      - name: resolution_method
+        tests:
+          - accepted_values:
+              values: [deterministic, probabilistic, hybrid, manual_merge]
+      - name: lifecycle_stage
+        tests:
+          - accepted_values:
+              values: [prospect, new, active, lapsed, churned, reactivated, vip]
+
+  - name: stg_customer_loyalty_cdp__identity_link
+    description: Identity-graph edge — many identifiers per customer.
+    columns:
+      - name: identity_id
+        tests: [unique, not_null]
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships: { to: ref('stg_customer_loyalty_cdp__customer_master'), field: customer_id }
+      - name: match_method
+        tests:
+          - accepted_values:
+              values: [deterministic, probabilistic, merged, manual]
+
+  - name: stg_customer_loyalty_cdp__event
+    description: Behavioral / engagement events.
+    columns:
+      - name: event_id
+        tests: [unique, not_null]
+      - name: event_type
+        tests:
+          - accepted_values:
+              values: [page_view, product_view, search, add_to_cart, purchase, email_send, email_open, email_click, push_send, push_open, sms_send, store_visit, app_open, review_submit, return]
+
+  - name: stg_customer_loyalty_cdp__segment
+    description: Segment / audience definition.
+    columns:
+      - name: segment_id
+        tests: [unique, not_null]
+      - name: segment_kind
+        tests:
+          - accepted_values:
+              values: [rfm, behavioural, predictive, rules, lookalike, suppression]
+
+  - name: stg_customer_loyalty_cdp__segment_membership
+    description: Append-only segment-membership episodes.
+    columns:
+      - name: membership_id
+        tests: [unique, not_null]
+      - name: segment_id
+        tests:
+          - relationships: { to: ref('stg_customer_loyalty_cdp__segment'), field: segment_id }
+
+  - name: stg_customer_loyalty_cdp__loyalty_account
+    description: Loyalty program enrollment per customer per program.
+    columns:
+      - name: loyalty_account_id
+        tests: [unique, not_null]
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships: { to: ref('stg_customer_loyalty_cdp__customer_master'), field: customer_id }
+      - name: tier_code
+        tests:
+          - accepted_values:
+              values: [bronze, silver, gold, platinum, black, founder]
+
+  - name: stg_customer_loyalty_cdp__points_ledger
+    description: ASC 606 book of record for points liability.
+    columns:
+      - name: ledger_id
+        tests: [unique, not_null]
+      - name: txn_type
+        tests:
+          - accepted_values:
+              values: [earn, redeem, expire, adjust, transfer_in, transfer_out, bonus, reversal]
+
+  - name: stg_customer_loyalty_cdp__reward
+    description: Reward catalog item.
+    columns:
+      - name: reward_id
+        tests: [unique, not_null]
+      - name: reward_type
+        tests:
+          - accepted_values:
+              values: [gift_card, product_voucher, discount_percent, discount_amount, partner_experience, charitable_donation, sweepstakes_entry]
+
+  - name: stg_customer_loyalty_cdp__redemption
+    description: Reward redemption event.
+    columns:
+      - name: redemption_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [pending, fulfilled, cancelled, reversed, fraud_review]
+
+  - name: stg_customer_loyalty_cdp__preference_center
+    description: Channel + topic preferences.
+    columns:
+      - name: preference_id
+        tests: [unique, not_null]
+      - name: state
+        tests:
+          - accepted_values:
+              values: [opted_in, opted_out, paused, never_set]
+
+  - name: stg_customer_loyalty_cdp__consent_record
+    description: GDPR / CCPA / CPRA append-only consent log.
+    columns:
+      - name: consent_id
+        tests: [unique, not_null]
+      - name: jurisdiction
+        tests:
+          - accepted_values:
+              values: [EU_GDPR, UK_GDPR, US_CCPA, US_CPRA, CA_PIPEDA, BR_LGPD, other]
+      - name: action
+        tests:
+          - accepted_values:
+              values: [granted, withdrawn, updated, right_to_delete, right_to_portability, complaint]
+
+  # ---------- Marts ----------
+  - name: dim_customer_cdp
+    description: Type-2 dimension for resolved customer master.
+    columns:
+      - name: customer_sk
+        tests: [unique, not_null]
+      - name: customer_id
+        tests: [unique, not_null]
+
+  - name: dim_date_cdp
+    description: Date dimension scoped to the customer_loyalty_cdp anchor. Suffix avoids collision.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+
+  - name: dim_segment
+    description: Dimension for CDP segments / audiences.
+    columns:
+      - name: segment_sk
+        tests: [unique, not_null]
+      - name: segment_id
+        tests: [unique, not_null]
+
+  - name: dim_loyalty_tier
+    description: Loyalty tier dimension.
+    columns:
+      - name: tier_sk
+        tests: [unique, not_null]
+      - name: tier_code
+        tests: [unique, not_null]
+
+  - name: dim_reward
+    description: Dimension for reward catalog items.
+    columns:
+      - name: reward_sk
+        tests: [unique, not_null]
+      - name: reward_id
+        tests: [unique, not_null]
+
+  - name: dim_channel
+    description: Dimension for engagement channels.
+    columns:
+      - name: channel_sk
+        tests: [unique, not_null]
+      - name: channel_code
+        tests: [unique, not_null]
+
+  - name: fct_events_cdp
+    description: Fact — one row per behavioral / engagement event.
+    columns:
+      - name: event_id
+        tests: [unique, not_null]
+      - name: customer_sk
+        tests:
+          - relationships: { to: ref('dim_customer_cdp'), field: customer_sk }
+
+  - name: fct_segment_memberships
+    description: Fact — one row per segment membership episode.
+    columns:
+      - name: membership_id
+        tests: [unique, not_null]
+      - name: segment_sk
+        tests:
+          - relationships: { to: ref('dim_segment'), field: segment_sk }
+
+  - name: fct_loyalty_points_ledger
+    description: Fact — one row per points-ledger transaction.
+    columns:
+      - name: ledger_id
+        tests: [unique, not_null]
+
+  - name: fct_redemptions
+    description: Fact — one row per reward redemption.
+    columns:
+      - name: redemption_id
+        tests: [unique, not_null]
+      - name: reward_sk
+        tests:
+          - relationships: { to: ref('dim_reward'), field: reward_sk }

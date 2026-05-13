@@ -1,0 +1,166 @@
+version: 2
+
+models:
+  # ---------- Staging ----------
+  - name: stg_trade_promotion_management__account
+    description: Retailer / customer hierarchy at headquarter level.
+    columns:
+      - name: account_id
+        tests: [unique, not_null]
+      - name: channel
+        tests:
+          - accepted_values:
+              values: [grocery, mass, club, drug, convenience, dollar, ecom, food_service]
+
+  - name: stg_trade_promotion_management__customer_outlet
+    description: Store-level outlet (one row per banner store).
+    columns:
+      - name: outlet_id
+        tests: [unique, not_null]
+      - name: account_id
+        tests:
+          - not_null
+          - relationships: { to: ref('stg_trade_promotion_management__account'), field: account_id }
+
+  - name: stg_trade_promotion_management__product
+    description: Manufacturer SKU, GS1 GTIN-keyed.
+    columns:
+      - name: sku_id
+        tests: [unique, not_null]
+
+  - name: stg_trade_promotion_management__promotion
+    description: Planned trade promotion at the account × brand × time grain.
+    columns:
+      - name: promotion_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [draft, approved, active, closed, cancelled]
+      - name: account_id
+        tests:
+          - relationships: { to: ref('stg_trade_promotion_management__account'), field: account_id }
+
+  - name: stg_trade_promotion_management__promo_tactic
+    description: One tactical execution under a promotion.
+    columns:
+      - name: tactic_id
+        tests: [unique, not_null]
+      - name: promotion_id
+        tests:
+          - relationships: { to: ref('stg_trade_promotion_management__promotion'), field: promotion_id }
+      - name: tactic_type
+        tests:
+          - accepted_values:
+              values: [off_invoice, scan_down, bill_back, mcb, edlp, trade_allowance, display, feature, tpr, coupon, bogo]
+
+  - name: stg_trade_promotion_management__deduction
+    description: Retailer-issued chargeback claim against a manufacturer invoice.
+    columns:
+      - name: deduction_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [open, matched, disputed, paid, written_off, chargeback_lost]
+
+  - name: stg_trade_promotion_management__baseline_forecast
+    description: Statistical baseline volume estimate per account × SKU × week.
+    columns:
+      - name: baseline_id
+        tests: [unique, not_null]
+
+  - name: stg_trade_promotion_management__lift_observation
+    description: Observed (post-event) incremental lift per tactic × week.
+    columns:
+      - name: lift_observation_id
+        tests: [unique, not_null]
+
+  - name: stg_trade_promotion_management__retailer_scan_data
+    description: Weekly retailer POS scan + on-hand inventory feed (EDI 852/867).
+    columns:
+      - name: scan_id
+        tests: [unique, not_null]
+      - name: source_doc
+        tests:
+          - accepted_values:
+              values: ["EDI 852", "EDI 867", circana, niq, numerator, first_party]
+
+  - name: stg_trade_promotion_management__trade_fund
+    description: Annual trade-spend fund pool by account × brand × tactic-class.
+    columns:
+      - name: fund_id
+        tests: [unique, not_null]
+      - name: fund_type
+        tests:
+          - accepted_values:
+              values: [accrual, lump_sum, pay_for_performance, mcb_pool]
+
+  # ---------- Marts ----------
+  - name: dim_account_tpm
+    description: Account dimension (TPM-suffixed to avoid collision with dim_account in other anchors).
+    columns:
+      - name: account_sk
+        tests: [unique, not_null]
+      - name: account_id
+        tests: [unique, not_null]
+
+  - name: dim_product_tpm
+    description: Product (SKU) dimension (TPM-suffixed to avoid collision with merchandising.dim_product).
+    columns:
+      - name: product_sk
+        tests: [unique, not_null]
+      - name: sku_id
+        tests: [unique, not_null]
+
+  - name: dim_promotion
+    description: Promotion dimension.
+    columns:
+      - name: promotion_sk
+        tests: [unique, not_null]
+      - name: promotion_id
+        tests: [unique, not_null]
+
+  - name: dim_tactic
+    description: Tactic dimension — one row per tactical execution under a promotion.
+    columns:
+      - name: tactic_sk
+        tests: [unique, not_null]
+      - name: tactic_id
+        tests: [unique, not_null]
+
+  - name: dim_date_tpm
+    description: Date dimension scoped to the trade_promotion_management window.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+
+  - name: fct_promo_plans
+    description: Fact — one row per planned tactic with plan-vs-actual columns.
+    columns:
+      - name: plan_event_id
+        tests: [unique, not_null]
+      - name: account_sk
+        tests:
+          - relationships: { to: ref('dim_account_tpm'), field: account_sk }
+
+  - name: fct_promo_performance_tpm
+    description: Fact — weekly post-event performance per tactic. Suffix `_tpm` avoids collision with pricing_and_promotions.fct_promo_performance.
+    columns:
+      - name: perf_id
+        tests: [unique, not_null]
+      - name: tactic_sk
+        tests:
+          - relationships: { to: ref('dim_tactic'), field: tactic_sk }
+
+  - name: fct_deductions
+    description: Fact — one row per retailer deduction with lifecycle flags + match-confidence.
+    columns:
+      - name: deduction_id
+        tests: [unique, not_null]
+
+  - name: fct_baseline_volume
+    description: Fact — weekly baseline-volume snapshot per account × SKU × baseline model.
+    columns:
+      - name: baseline_id
+        tests: [unique, not_null]

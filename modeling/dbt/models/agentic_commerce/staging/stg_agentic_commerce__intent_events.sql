@@ -16,6 +16,6 @@ select
     cast(resolved_at        as timestamp)  as resolved_at,
     case
         when resolved_at is not null
-            then date_diff('second', created_at, resolved_at)
+            then {{ dbt_utils.datediff('created_at', 'resolved_at', 'second') }}
     end as resolution_seconds
 from {{ source('agentic_commerce', 'intent_event') }}

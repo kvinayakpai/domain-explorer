@@ -19,7 +19,7 @@ with c as (select * from {{ ref('stg_p_and_c_claims__claims') }}),
      ),
      agg as (
          select
-             cast(strftime(c.fnol_ts, '%Y%m%d') as integer)    as fnol_date_key,
+             cast({{ format_date('c.fnol_ts', '%Y%m%d') }} as integer)    as fnol_date_key,
              cast(c.fnol_ts as date)                            as fnol_date,
              c.peril                                            as peril,
              count(*)                                           as claim_count,

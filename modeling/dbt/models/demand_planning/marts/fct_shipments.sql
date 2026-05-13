@@ -20,8 +20,8 @@ select
     s.carrier,
     s.shipped_at,
     s.delivered_at,
-    cast(strftime(s.shipped_at,   '%Y%m%d') as integer)       as shipped_date_key,
-    cast(strftime(s.delivered_at, '%Y%m%d') as integer)       as delivered_date_key,
+    cast({{ format_date('s.shipped_at', '%Y%m%d') }} as integer)       as shipped_date_key,
+    cast({{ format_date('s.delivered_at', '%Y%m%d') }} as integer)       as delivered_date_key,
     s.transit_hours,
     s.on_time,
     case

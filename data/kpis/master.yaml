@@ -575,6 +575,157 @@ kpis:
   - { id: maint.kpi.wrench_time, name: Wrench Time, formula: wrench_hours / labor_hours, unit: "%", direction: higher_is_better, vertical: Manufacturing, subdomains: [maintenance] }
   - { id: pdm.kpi.precision, name: PdM Model Precision, formula: tp / (tp+fp), unit: "%", direction: higher_is_better, vertical: Manufacturing, subdomains: [predictive_maintenance] }
   - { id: pdm.kpi.recall, name: PdM Model Recall, formula: tp / (tp+fn), unit: "%", direction: higher_is_better, vertical: Manufacturing, subdomains: [predictive_maintenance] }
+  # S&OP / IBP anchor (sop_supply_chain_planning)
+  - id: sop.kpi.forecast_accuracy_mape
+    name: Forecast Accuracy (MAPE)
+    formula: 1 - (sum(abs(actual - forecast)) / sum(actual))
+    unit: "%"
+    direction: higher_is_better
+    definition: Mean Absolute Percentage Error inverted to an accuracy reading; the headline forecast-quality KPI in S&OP / IBP. Penalises percentage error uniformly across rows.
+    vertical: Manufacturing
+    subdomains: [sop_supply_chain_planning, demand_planning]
+    related_personas: [Demand Planner, S&OP Process Lead]
+    decisionsSupported: [sop.d.consensus_forecast, sop.d.produce]
+  - id: sop.kpi.forecast_accuracy_wape
+    name: Forecast Accuracy (WAPE)
+    formula: 1 - (sum(abs(actual - forecast)) / sum(actual))
+    unit: "%"
+    direction: higher_is_better
+    definition: Weighted accuracy — the volume-weighted complement of WAPE. Robust to near-zero actuals; the favoured headline accuracy KPI in retail / CPG-heavy networks.
+    vertical: Manufacturing
+    subdomains: [sop_supply_chain_planning, demand_planning]
+    related_personas: [Demand Planner]
+    decisionsSupported: [sop.d.consensus_forecast]
+  - id: sop.kpi.forecast_bias
+    name: Forecast Bias
+    formula: sum(forecast - actual) / sum(actual)
+    unit: "%"
+    direction: target_band
+    definition: Systematic over- or under-forecast. Persistent positive bias drives excess inventory; negative bias drives stockouts.
+    vertical: Manufacturing
+    subdomains: [sop_supply_chain_planning, demand_planning]
+    related_personas: [Demand Planner]
+    decisionsSupported: [sop.d.consensus_forecast, sop.d.stock]
+  - id: sop.kpi.otif
+    name: On-Time In-Full (OTIF)
+    formula: orders_otif / total_orders
+    unit: "%"
+    direction: higher_is_better
+    definition: Orders delivered both on-time and complete. The supply-side service KPI that the plan defends.
+    vertical: Manufacturing
+    subdomains: [sop_supply_chain_planning, omnichannel_oms]
+    related_personas: [Supply Planner, VP Supply Chain Planning]
+    decisionsSupported: [sop.d.allocate, sop.d.defer]
+  - id: sop.kpi.fill_rate
+    name: Order Fill Rate
+    formula: lines_filled_complete / lines_ordered
+    unit: "%"
+    direction: higher_is_better
+    definition: Lines (or cases) shipped complete on first pass. Different from OTIF in that it ignores the on-time component.
+    vertical: Manufacturing
+    subdomains: [sop_supply_chain_planning, demand_planning]
+    related_personas: [Supply Planner]
+    decisionsSupported: [sop.d.stock, sop.d.allocate]
+  - id: sop.kpi.inventory_turns
+    name: Inventory Turns
+    formula: cogs_annualized / avg_inventory_value
+    unit: turns/yr
+    direction: higher_is_better
+    definition: How many times the average inventory turns over per year. Higher = leaner working capital.
+    vertical: Manufacturing
+    subdomains: [sop_supply_chain_planning, omnichannel_oms]
+    related_personas: [Inventory Strategist, CFO]
+    decisionsSupported: [sop.d.stock, sop.d.network_flow]
+  - id: sop.kpi.doh
+    name: Days on Hand (DOH)
+    formula: avg_inventory_units / avg_daily_demand_units
+    unit: days
+    direction: target_band
+    definition: Forward days of demand covered by on-hand inventory. Targeted per ABC class — A items low DOH, C items higher.
+    vertical: Manufacturing
+    subdomains: [sop_supply_chain_planning, omnichannel_oms]
+    related_personas: [Inventory Strategist]
+    decisionsSupported: [sop.d.stock, sop.d.produce]
+  - id: sop.kpi.plan_adherence
+    name: Plan Adherence %
+    formula: sum(min(actual_units, plan_units)) / sum(plan_units)
+    unit: "%"
+    direction: higher_is_better
+    definition: How closely the executed result tracked the consensus plan. Surfaces both supply misses and demand-side surprises.
+    vertical: Manufacturing
+    subdomains: [sop_supply_chain_planning]
+    related_personas: [Executive S&OP Sponsor, S&OP Process Lead]
+    decisionsSupported: [sop.d.produce, sop.d.exec_signoff]
+  - id: sop.kpi.capacity_utilization
+    name: Capacity Utilization %
+    formula: planned_load_hours / available_capacity_hours
+    unit: "%"
+    direction: target_band
+    definition: Planned-load over available capacity. Too low wastes capex; too high (>90%) creates fragile schedules.
+    vertical: Manufacturing
+    subdomains: [sop_supply_chain_planning, production_scheduling]
+    related_personas: [Plant Scheduler, VP Supply Chain Planning]
+    decisionsSupported: [sop.d.capacity_invest, sop.d.produce]
+  - id: sop.kpi.demand_sensing_lead_time
+    name: Demand Sensing Lead Time
+    formula: avg(plan_publish_ts - signal_observed_ts)
+    unit: hours
+    direction: lower_is_better
+    definition: Time from observing a near-real-time demand signal (POS, sell-through, weather) to a refreshed short-horizon plan. The headline sensing-loop KPI.
+    vertical: Manufacturing
+    subdomains: [sop_supply_chain_planning, demand_planning]
+    related_personas: [Demand Planner]
+    decisionsSupported: [sop.d.consensus_forecast, sop.d.scenario_choice]
+  - id: sop.kpi.scenario_cycle_time
+    name: Scenario Cycle Time
+    formula: avg(scenario_published_ts - scenario_requested_ts)
+    unit: minutes
+    direction: lower_is_better
+    definition: Wall-clock time to evaluate and publish a what-if scenario. Concurrent planning platforms (Kinaxis, o9) compete on this measure.
+    vertical: Manufacturing
+    subdomains: [sop_supply_chain_planning]
+    related_personas: [S&OP Process Lead]
+    decisionsSupported: [sop.d.scenario_choice]
+  - id: sop.kpi.working_capital_impact
+    name: Working Capital Impact ($)
+    formula: avg_inventory_value + avg_receivables - avg_payables
+    unit: USD
+    direction: lower_is_better
+    definition: Net working capital outcome of the plan — inventory + receivables less payables. The CFO-facing IBP KPI.
+    vertical: Manufacturing
+    subdomains: [sop_supply_chain_planning]
+    related_personas: [Executive S&OP Sponsor, CFO]
+    decisionsSupported: [sop.d.stock, sop.d.exec_signoff]
+  - id: sop.kpi.stockout_rate
+    name: Stockout Rate
+    formula: stockout_item_location_days / total_item_location_days
+    unit: "%"
+    direction: lower_is_better
+    definition: Item-location-days at zero on-hand divided by all item-location-days. Lagging indicator of safety-stock and supply-plan misses.
+    vertical: Manufacturing
+    subdomains: [sop_supply_chain_planning, omnichannel_oms]
+    related_personas: [Supply Planner, Inventory Strategist]
+    decisionsSupported: [sop.d.stock, sop.d.allocate]
+  - id: sop.kpi.excess_inventory_pct
+    name: Excess Inventory %
+    formula: excess_inventory_value / total_inventory_value
+    unit: "%"
+    direction: lower_is_better
+    definition: Inventory above policy caps divided by total inventory. Surfaces obsolete-risk and write-down exposure.
+    vertical: Manufacturing
+    subdomains: [sop_supply_chain_planning]
+    related_personas: [Inventory Strategist]
+    decisionsSupported: [sop.d.stock, sop.d.produce]
+  - id: sop.kpi.demand_volatility
+    name: Demand Volatility (CoV)
+    formula: stddev(weekly_demand) / mean(weekly_demand)
+    unit: ratio
+    direction: target_band
+    definition: Coefficient of variation of weekly demand per item-location. Drives safety-stock formulas and segmenting under XYZ classification.
+    vertical: Manufacturing
+    subdomains: [sop_supply_chain_planning, demand_planning]
+    related_personas: [Demand Planner, Inventory Strategist]
+    decisionsSupported: [sop.d.stock, sop.d.consensus_forecast]
   - { id: psch.kpi.otd, name: On-Time Delivery, formula: on_time_orders / total_orders, unit: "%", direction: higher_is_better, vertical: Manufacturing, subdomains: [production_scheduling] }
   - { id: psch.kpi.schedule_adherence, name: Schedule Adherence, formula: produced_on_plan / planned, unit: "%", direction: higher_is_better, vertical: Manufacturing, subdomains: [production_scheduling] }
   - { id: psch.kpi.expedites, name: Expedite Order Rate, formula: expedited_orders / total_orders, unit: "%", direction: lower_is_better, vertical: Manufacturing, subdomains: [production_scheduling] }
@@ -1109,3 +1260,1607 @@ kpis:
     vertical: CrossCutting
     subdomains: [agentic_commerce]
     related_personas: [Agent Experience PM, Agent Trust & Safety Lead]
+
+  # ============================================================
+  # Anchor: Loss Prevention (Retail)
+  # ============================================================
+  - id: lp.kpi.shrink_rate
+    name: Shrink Rate %
+    formula: shrink_dollars / net_sales
+    unit: "%"
+    direction: lower_is_better
+    definition: Inventory shrink dollars divided by net sales. Headline LP scorecard — a 1.4-1.6% national benchmark in most general-merchandise retail, with apparel & beauty trending higher and grocery lower.
+    vertical: Retail
+    subdomains: [loss_prevention, merchandising, store_ops]
+    related_personas: [VP Loss Prevention, Compliance Officer]
+    decisionsSupported: [lp.d.audit_store, lp.d.deploy_eas_or_rfid]
+  - id: lp.kpi.known_shrink_pct
+    name: Known Shrink %
+    formula: known_shrink_dollars / total_shrink_dollars
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of shrink with a documented root cause (closed_recovered + closed_prosecuted + closed_writeoff). Higher means the program is converting "unknown" to "known" — the leading indicator of LP maturity.
+    vertical: Retail
+    subdomains: [loss_prevention]
+    related_personas: [VP Loss Prevention, LP Investigator]
+    decisionsSupported: [lp.d.investigate_exception, lp.d.case_closure]
+  - id: lp.kpi.unknown_shrink_pct
+    name: Unknown Shrink %
+    formula: unknown_shrink_dollars / total_shrink_dollars
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of shrink with no documented cause at period close. The "gap" between physical count and the receipt/recovery ledger — usually external theft + administrative error.
+    vertical: Retail
+    subdomains: [loss_prevention]
+    related_personas: [VP Loss Prevention]
+    decisionsSupported: [lp.d.audit_store]
+  - id: lp.kpi.inventory_accuracy
+    name: Inventory Accuracy %
+    formula: 1 - sum(abs(system_on_hand - counted_on_hand)) / sum(counted_on_hand)
+    unit: "%"
+    direction: higher_is_better
+    definition: Item-level inventory record accuracy versus physical count. RFID-tagged categories sit at 95-98%; non-RFID general merchandise at 65-75%.
+    vertical: Retail
+    subdomains: [loss_prevention, merchandising]
+    related_personas: [VP Loss Prevention]
+    decisionsSupported: [lp.d.audit_store]
+  - id: lp.kpi.pos_exception_rate
+    name: POS Exception Rate
+    formula: pos_exceptions / pos_transactions
+    unit: "%"
+    direction: target_band
+    definition: Detected POS exceptions per transaction. Target band rather than minimum — too low means the rule engine is sleeping; too high means it's noisy.
+    vertical: Retail
+    subdomains: [loss_prevention]
+    related_personas: [LP Investigator, Fraud Analyst]
+    decisionsSupported: [lp.d.investigate_exception, lp.d.review_employee]
+  - id: lp.kpi.refund_fraud_rate
+    name: Refund Fraud Rate
+    formula: fraudulent_refunds / total_refunds
+    unit: "%"
+    direction: lower_is_better
+    definition: Refunds confirmed as fraudulent divided by total refunds. Driven by Appriss Retail Verify hold rate and post-hoc investigation outcomes.
+    vertical: Retail
+    subdomains: [loss_prevention]
+    related_personas: [Fraud Analyst]
+    decisionsSupported: [lp.d.refund_hold]
+  - id: lp.kpi.sweethearting_incidents
+    name: Sweethearting Incidents / Week
+    formula: sum(sweethearting_incidents) / weeks
+    unit: count
+    direction: lower_is_better
+    definition: Confirmed sweethearting incidents per week (cashier discounting goods for friends). Builds the case for register-session login-event enforcement.
+    vertical: Retail
+    subdomains: [loss_prevention]
+    related_personas: [LP Investigator, Store LP Manager]
+    decisionsSupported: [lp.d.review_employee]
+  - id: lp.kpi.loss_recovery_dollars
+    name: Loss Recovery $
+    formula: sum(recovery_dollars)
+    unit: USD
+    direction: higher_is_better
+    definition: Total dollars recovered (cash, merchandise, civil-demand, restitution, insurance payout). Tracked against gross loss for program ROI.
+    vertical: Retail
+    subdomains: [loss_prevention]
+    related_personas: [VP Loss Prevention, LP Investigator]
+    decisionsSupported: [lp.d.case_closure, lp.d.prosecute]
+  - id: lp.kpi.external_theft_rate
+    name: External Theft Rate
+    formula: external_theft_incidents / store_traffic
+    unit: "per 1k visits"
+    direction: lower_is_better
+    definition: External theft incidents per 1,000 store visits. Heatmap input for in-store LP staffing and EAS/RFID allocation.
+    vertical: Retail
+    subdomains: [loss_prevention]
+    related_personas: [Store LP Manager, Asset Protection Specialist]
+    decisionsSupported: [lp.d.staff_lp_hours, lp.d.deploy_eas_or_rfid]
+  - id: lp.kpi.internal_theft_rate
+    name: Internal Theft Rate
+    formula: internal_theft_incidents / employee_count
+    unit: "per 100 FTE"
+    direction: lower_is_better
+    definition: Internal-theft incidents per 100 FTE. Industry benchmark hovers near 1.0 — anything sustained above 2.0 signals controls failure.
+    vertical: Retail
+    subdomains: [loss_prevention]
+    related_personas: [VP Loss Prevention, Compliance Officer]
+    decisionsSupported: [lp.d.review_employee]
+  - id: lp.kpi.orc_incident_frequency
+    name: ORC Incident Frequency
+    formula: orc_incidents / store_count / month
+    unit: "per store per month"
+    direction: lower_is_better
+    definition: Organized Retail Crime incidents per store per month. Tracks Auror-linked offender activity and ALTO-shared cases.
+    vertical: Retail
+    subdomains: [loss_prevention]
+    related_personas: [ORC Investigator]
+    decisionsSupported: [lp.d.suspect_link, lp.d.case_share_alto]
+  - id: lp.kpi.investigation_closure_rate
+    name: Investigation Closure Rate
+    formula: investigations_closed / investigations_opened
+    unit: "%"
+    direction: higher_is_better
+    definition: Investigations closed (any disposition) divided by investigations opened in the period. Backlog indicator for the LP investigator staffing model.
+    vertical: Retail
+    subdomains: [loss_prevention]
+    related_personas: [LP Investigator]
+    decisionsSupported: [lp.d.case_closure]
+  - id: lp.kpi.false_positive_rate
+    name: Alert False-Positive Rate
+    formula: closed_unfounded / alerts_raised
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of alerts closed as unfounded. Above ~70% triggers a vendor-score recalibration (different scales across NCR Voyix LP, Oracle XBR, Profitect, Aptos LP).
+    vertical: Retail
+    subdomains: [loss_prevention]
+    related_personas: [LP Investigator, Fraud Analyst]
+    decisionsSupported: [lp.d.investigate_exception]
+  - id: lp.kpi.return_abuse_rate
+    name: Return Abuse Rate
+    formula: abused_returns / total_returns
+    unit: "%"
+    direction: lower_is_better
+    definition: Returns flagged as abuse (wardrobing, serial returns, wear-and-return) divided by total returns. Drives the customer-level return-restriction queue.
+    vertical: Retail
+    subdomains: [loss_prevention]
+    related_personas: [Fraud Analyst]
+    decisionsSupported: [lp.d.refund_hold]
+
+  # ============================================================
+  # Anchor: Predictive Maintenance (Manufacturing)
+  # ============================================================
+  - id: pm.kpi.mtbf
+    name: Mean Time Between Failures (MTBF)
+    formula: sum(operating_hours_between_failures) / count(failure_events)
+    unit: hours
+    direction: higher_is_better
+    definition: Average operating hours between two consecutive failures on the same asset class. The headline reliability index — drives RCM (SAE JA1011) program design and cost-vs-criticality trade-offs.
+    vertical: Manufacturing
+    subdomains: [predictive_maintenance, mes_quality]
+    related_personas: [Reliability Engineer, Maintenance Director, Asset Manager]
+    decisionsSupported: [pm.d.cbm_vs_tbm, pm.d.intervention_now]
+  - id: pm.kpi.mttr
+    name: Mean Time To Repair (MTTR)
+    formula: sum(repair_minutes) / count(repair_events)
+    unit: minutes
+    direction: lower_is_better
+    definition: Average minutes from failure-event start to asset-restored-to-service. Driven by spare availability, crew skill, and SOP quality.
+    vertical: Manufacturing
+    subdomains: [predictive_maintenance]
+    related_personas: [Maintenance Director, Maintenance Planner/Scheduler]
+    decisionsSupported: [pm.d.spares_stocking, pm.d.work_order_priority]
+  - id: pm.kpi.asset_availability
+    name: Asset Availability %
+    formula: (scheduled_runtime - unplanned_downtime) / scheduled_runtime
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of scheduled production time the asset was actually able to run. The 'A' factor in OEE.
+    vertical: Manufacturing
+    subdomains: [predictive_maintenance, mes_quality]
+    related_personas: [Plant Manager, Operations Excellence Lead]
+    decisionsSupported: [pm.d.intervention_now, pm.d.cbm_vs_tbm]
+  - id: pm.kpi.predictive_precision
+    name: Predictive Accuracy — Precision
+    formula: true_positives / (true_positives + false_positives)
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of model alerts that turned out to correspond to a real impending failure. Low precision erodes operator trust and triggers needless line shutdowns.
+    vertical: Manufacturing
+    subdomains: [predictive_maintenance]
+    related_personas: [Data Scientist (Time Series), Reliability Engineer]
+    decisionsSupported: [pm.d.alert_threshold, pm.d.model_retrain]
+  - id: pm.kpi.predictive_recall
+    name: Predictive Accuracy — Recall
+    formula: true_positives / (true_positives + false_negatives)
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of actual failures that the model warned about in advance. Low recall means failures keep surprising the team; the PdM program isn't paying off.
+    vertical: Manufacturing
+    subdomains: [predictive_maintenance]
+    related_personas: [Data Scientist (Time Series), Reliability Engineer]
+    decisionsSupported: [pm.d.alert_threshold, pm.d.model_retrain]
+  - id: pm.kpi.lead_time_to_failure
+    name: Lead Time to Failure (P-F interval realized)
+    formula: avg(failure_ts - prediction_ts) where alert_was_correct
+    unit: hours
+    direction: higher_is_better
+    definition: Average hours between an actionable alert and the eventual failure. The realized P-F interval per RCM. Too short means no time to plan; too long invites missed re-alarms.
+    vertical: Manufacturing
+    subdomains: [predictive_maintenance]
+    related_personas: [Reliability Engineer, Maintenance Planner/Scheduler]
+    decisionsSupported: [pm.d.spares_stocking, pm.d.intervention_now]
+  - id: pm.kpi.planned_vs_unplanned_pct
+    name: Planned vs Unplanned Maintenance %
+    formula: planned_wo_count / (planned_wo_count + unplanned_wo_count)
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of total maintenance work orders that were planned (preventive / PdM-triggered) versus unplanned (post-failure). World-class reliability programs target >85%.
+    vertical: Manufacturing
+    subdomains: [predictive_maintenance]
+    related_personas: [Maintenance Director, Operations Excellence Lead]
+    decisionsSupported: [pm.d.cbm_vs_tbm, pm.d.work_order_priority]
+  - id: pm.kpi.maint_cost_per_operating_hour
+    name: Maintenance Cost per Operating Hour
+    formula: sum(maintenance_cost) / sum(operating_hours)
+    unit: USD/hour
+    direction: lower_is_better
+    definition: Total maintenance spend (labor + parts + downtime-impact) divided by asset operating hours. Normalizes maintenance cost across fleets of different utilizations.
+    vertical: Manufacturing
+    subdomains: [predictive_maintenance]
+    related_personas: [Plant Manager, Asset Manager]
+    decisionsSupported: [pm.d.cbm_vs_tbm, pm.d.sensor_retrofit]
+  - id: pm.kpi.spare_stockout_rate
+    name: Spare-Part Stockout Rate
+    formula: stockout_events / parts_demand_events
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of spare-parts requisitions that hit a stockout. Spike in stockouts after a PdM rollout signals the parts supply chain didn't get the forward-looking demand signal.
+    vertical: Manufacturing
+    subdomains: [predictive_maintenance]
+    related_personas: [Maintenance Planner/Scheduler, Asset Manager]
+    decisionsSupported: [pm.d.spares_stocking]
+  - id: pm.kpi.false_positive_rate
+    name: False-Positive Rate
+    formula: false_positives / (false_positives + true_negatives)
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of non-failure intervals where the model fired an alert. The negative-class twin of precision; what operators feel as "alarm fatigue".
+    vertical: Manufacturing
+    subdomains: [predictive_maintenance]
+    related_personas: [Vibration Analyst, Reliability Engineer]
+    decisionsSupported: [pm.d.alert_threshold, pm.d.advisory_publish]
+  - id: pm.kpi.rul_prediction_error
+    name: RUL Prediction Error %
+    formula: mean(abs(rul_pred - rul_actual) / rul_actual)
+    unit: "%"
+    direction: lower_is_better
+    definition: Mean absolute percentage error of Remaining Useful Life estimates against ground-truth failure timestamps. Calibrated on the NASA C-MAPSS benchmark conventions.
+    vertical: Manufacturing
+    subdomains: [predictive_maintenance]
+    related_personas: [Data Scientist (Time Series)]
+    decisionsSupported: [pm.d.model_retrain, pm.d.intervention_now]
+  - id: pm.kpi.pct_failures_predicted
+    name: "% of Failures Predicted"
+    formula: predicted_failure_events / total_failure_events
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of failures the model caught with actionable advance warning. Closely related to recall but reported on the business-side coverage view.
+    vertical: Manufacturing
+    subdomains: [predictive_maintenance]
+    related_personas: [Reliability Engineer, Operations Excellence Lead]
+    decisionsSupported: [pm.d.alert_threshold, pm.d.model_retrain]
+  - id: pm.kpi.production_loss_avoided_pct
+    name: "% Production Loss Avoided"
+    formula: avoided_production_loss_units / (avoided_production_loss_units + actual_production_loss_units)
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of would-have-been-lost production units that the PdM program saved. The CFO-facing ROI KPI for predictive maintenance.
+    vertical: Manufacturing
+    subdomains: [predictive_maintenance]
+    related_personas: [Plant Manager, Asset Manager, Operations Excellence Lead]
+    decisionsSupported: [pm.d.intervention_now, pm.d.advisory_publish]
+
+  # ============================================================
+  # Anchor: Pricing & Promotions (Retail)
+  # ============================================================
+  - id: pp.kpi.gross_margin_pct
+    name: Gross Margin %
+    formula: (net_sales - cogs) / net_sales
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of net sales remaining after cost of goods sold. The aggregated outcome of regular pricing, promo depth, and markdown discipline.
+    vertical: Retail
+    subdomains: [pricing_and_promotions, merchandising]
+    related_personas: [Head of Pricing, Margin Strategist]
+    decisionsSupported: [pp.d.regular_price_change, pp.d.promo_depth, pp.d.markdown_cadence]
+  - id: pp.kpi.markdown_pct
+    name: Markdown %
+    formula: sum(markdown_dollars) / sum(gross_sales_dollars)
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of gross sales revenue lost to markdowns. Higher means earlier or deeper price reductions; lower means stronger sell-through at regular price.
+    vertical: Retail
+    subdomains: [pricing_and_promotions, merchandising]
+    related_personas: [Markdown Optimization Director]
+    decisionsSupported: [pp.d.markdown_cadence]
+  - id: pp.kpi.promo_lift_pct
+    name: Promo Lift %
+    formula: (promo_units - baseline_units) / baseline_units
+    unit: "%"
+    direction: higher_is_better
+    definition: Incremental units sold during a promotion compared to baseline expectation. Must be net of cannibalization and halo to be a true effectiveness signal.
+    vertical: Retail
+    subdomains: [pricing_and_promotions, trade_promotion]
+    related_personas: [Promo Effectiveness Lead]
+    decisionsSupported: [pp.d.promo_depth, pp.d.promo_calendar_clash]
+  - id: pp.kpi.sell_through_rate
+    name: Sell-Through Rate
+    formula: units_sold / units_received
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of received units sold within a defined window. Drives markdown timing decisions on lifecycle SKUs.
+    vertical: Retail
+    subdomains: [pricing_and_promotions, merchandising]
+    related_personas: [Markdown Optimization Director, Category Manager]
+    decisionsSupported: [pp.d.markdown_cadence]
+  - id: pp.kpi.price_elasticity
+    name: Price Elasticity (own-price)
+    formula: pct_change_units_sold / pct_change_price
+    unit: ratio
+    direction: target_band
+    definition: Percentage change in units sold per 1% change in price (typically negative). Estimated per cluster from POS panel data using Revionics / PROS / in-house panel models.
+    vertical: Retail
+    subdomains: [pricing_and_promotions]
+    related_personas: [Pricing Analyst]
+    decisionsSupported: [pp.d.regular_price_change, pp.d.elasticity_refresh]
+  - id: pp.kpi.regular_price_compliance
+    name: Regular Price Compliance
+    formula: priced_at_planned / total_price_observations
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of price observations where the ticketed/scanned price equals the planned regular price. Drift comes from late tag changes, POS overrides, and feed timing.
+    vertical: Retail
+    subdomains: [pricing_and_promotions, store_ops]
+    related_personas: [Pricing Analyst]
+    decisionsSupported: [pp.d.compliance_review]
+  - id: pp.kpi.competitive_price_index
+    name: Competitive Price Index (KVI)
+    formula: own_price_kvi / weighted_compset_price_kvi
+    unit: index
+    direction: target_band
+    definition: Own KVI price divided by weighted competitor KVI price. Drives the per-category price-position guardrails and triggers competitive match decisions.
+    vertical: Retail
+    subdomains: [pricing_and_promotions]
+    related_personas: [Competitive Intel Manager, Head of Pricing]
+    decisionsSupported: [pp.d.competitive_match, pp.d.kvi_classification]
+  - id: pp.kpi.promo_roi
+    name: Promo ROI
+    formula: (incremental_margin - promo_funding_cost) / promo_funding_cost
+    unit: ratio
+    direction: higher_is_better
+    definition: Net dollar return on every dollar of promo funding (vendor + retailer). Late-binding — actual funding settles over 60-180 days post-promo.
+    vertical: Retail
+    subdomains: [pricing_and_promotions, trade_promotion]
+    related_personas: [Promo Effectiveness Lead, Margin Strategist]
+    decisionsSupported: [pp.d.promo_depth, pp.d.promo_calendar_clash]
+  - id: pp.kpi.cannibalization_rate
+    name: Cannibalization Rate
+    formula: lost_baseline_units_in_halo_skus / promo_unit_lift
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of promo lift sourced from substitute SKUs' baseline rather than truly incremental demand.
+    vertical: Retail
+    subdomains: [pricing_and_promotions]
+    related_personas: [Promo Effectiveness Lead]
+    decisionsSupported: [pp.d.promo_calendar_clash]
+  - id: pp.kpi.forward_buy_inventory_pct
+    name: Forward-Buy Inventory %
+    formula: post_promo_excess_inventory_units / promo_baseline_units
+    unit: "%"
+    direction: lower_is_better
+    definition: Post-promo inventory carry attributable to trade-partner stockpiling during promoted cost windows. Drives forward-buy guardrails.
+    vertical: Retail
+    subdomains: [pricing_and_promotions, trade_promotion]
+    related_personas: [Margin Strategist]
+    decisionsSupported: [pp.d.forward_buy]
+  - id: pp.kpi.trade_spend_effectiveness
+    name: Trade Spend Effectiveness
+    formula: incremental_gross_profit / trade_dollars_spent
+    unit: ratio
+    direction: higher_is_better
+    definition: Incremental gross profit per dollar of trade funding. Coheres only after vendor settlement reconciliation closes.
+    vertical: Retail
+    subdomains: [pricing_and_promotions, trade_promotion]
+    related_personas: [Promo Effectiveness Lead]
+    decisionsSupported: [pp.d.promo_depth]
+  - id: pp.kpi.price_pack_mix_optimization
+    name: Price-Pack Mix Optimization Score
+    formula: weighted(margin_mix_delta) / portfolio_revenue
+    unit: index
+    direction: higher_is_better
+    definition: Composite score measuring portfolio-margin uplift from the current price-pack architecture vs the elasticity-optimal mix.
+    vertical: Retail
+    subdomains: [pricing_and_promotions]
+    related_personas: [Head of Pricing, Margin Strategist]
+    decisionsSupported: [pp.d.regular_price_change]
+  - id: pp.kpi.regret_factor
+    name: Regret Factor
+    formula: counterfactual_optimal_margin - realized_margin
+    unit: USD
+    direction: lower_is_better
+    definition: Lost margin from setting markdown depth/timing or regular price suboptimally relative to the optimizer recommendation. Tracks the cost of manual overrides.
+    vertical: Retail
+    subdomains: [pricing_and_promotions]
+    related_personas: [Markdown Optimization Director, Head of Pricing]
+    decisionsSupported: [pp.d.markdown_cadence, pp.d.regular_price_change]
+  - id: pp.kpi.markdown_recovery_rate
+    name: Markdown Recovery Rate
+    formula: net_revenue_post_markdown / original_ticketed_value
+    unit: "%"
+    direction: higher_is_better
+    definition: Net revenue captured on marked-down units relative to original ticketed value. Higher = better timing/depth choices.
+    vertical: Retail
+    subdomains: [pricing_and_promotions]
+    related_personas: [Markdown Optimization Director]
+    decisionsSupported: [pp.d.markdown_cadence]
+
+  # ============================================================
+  # Anchor: Trade Promotion Management (CrossCutting — CPG)
+  # ============================================================
+  - id: tpm.kpi.trade_spend_pct
+    name: Trade Spend %
+    formula: sum(trade_spend) / sum(gross_sales)
+    unit: "%"
+    direction: target_band
+    definition: Total trade promotion spend (off-invoice, scan-down, bill-back, MCB, slotting) as a share of gross sales. Industry benchmark sits in the 12-22% band; movement signals either over-investment or under-funded customer plans.
+    vertical: CrossCutting
+    subdomains: [trade_promotion_management]
+    related_personas: [Trade Marketing Director, Finance Controller (Trade), VP Sales]
+    decisionsSupported: [tpm.d.fund_allocation, tpm.d.tactic_mix]
+  - id: tpm.kpi.promo_roi
+    name: Promo ROI
+    formula: (incremental_gross_profit - trade_spend) / trade_spend
+    unit: ratio
+    direction: higher_is_better
+    definition: Net dollar return on every dollar of trade promotion spend, calculated as (incremental gross profit − trade spend) ÷ trade spend. The headline post-event scorecard — typical CPG target is ≥1.0; below 0 means the promo destroyed margin.
+    vertical: CrossCutting
+    subdomains: [trade_promotion_management]
+    related_personas: [Trade Marketing Director, Revenue Growth Manager]
+    decisionsSupported: [tpm.d.discount_depth, tpm.d.tactic_mix, tpm.d.promo_kill]
+  - id: tpm.kpi.deduction_rate
+    name: Deduction Rate
+    formula: sum(open_deductions) / sum(invoiced_revenue)
+    unit: "%"
+    direction: lower_is_better
+    definition: Open retailer-issued chargeback dollars as a share of invoiced revenue. Healthy CPGs run 2-4%; spikes flag broken settlement, late retail-execution evidence, or unmatched promo claims.
+    vertical: CrossCutting
+    subdomains: [trade_promotion_management]
+    related_personas: [Deductions Manager, Finance Controller (Trade)]
+    decisionsSupported: [tpm.d.deduction_dispute]
+  - id: tpm.kpi.net_promotion_effectiveness
+    name: Net Promotion Effectiveness
+    formula: incremental_units / promotional_units
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of promotional volume that is truly incremental (not pulled from baseline or cannibalized). The cleanest signal for "did this tactic move new units vs subsidize what would have sold anyway".
+    vertical: CrossCutting
+    subdomains: [trade_promotion_management]
+    related_personas: [Customer Marketing Manager, Trade Spend Analyst]
+    decisionsSupported: [tpm.d.discount_depth, tpm.d.tactic_mix]
+  - id: tpm.kpi.trade_stock_build_pct
+    name: Trade Stock Build %
+    formula: (forward_buy_units - normal_purchase_units) / normal_purchase_units
+    unit: "%"
+    direction: target_band
+    definition: Percentage uplift in retailer purchasing during a promo window above the normal baseline. A high build flags forward-buy distortion that drains post-event baseline and inflates true trade cost.
+    vertical: CrossCutting
+    subdomains: [trade_promotion_management, demand_planning]
+    related_personas: [Revenue Growth Manager, Trade Spend Analyst]
+    decisionsSupported: [tpm.d.forward_buy_cap]
+  - id: tpm.kpi.incremental_lift
+    name: Incremental Lift
+    formula: (promo_period_units - baseline_units) / baseline_units
+    unit: "%"
+    direction: higher_is_better
+    definition: Percentage volume uplift above the no-promo statistical baseline. Must be reported net of cannibalization and halo for trustworthy ROI; the choice of baseline model (Circana vs NielsenIQ vs in-house) can swing this 5-30 percentage points.
+    vertical: CrossCutting
+    subdomains: [trade_promotion_management, pricing_and_promotions]
+    related_personas: [Trade Spend Analyst, Customer Marketing Manager]
+    decisionsSupported: [tpm.d.discount_depth, tpm.d.promo_kill]
+  - id: tpm.kpi.baseline_volume
+    name: Baseline Volume
+    formula: sum(non_promo_units * weeks)
+    unit: cases
+    direction: target_band
+    definition: Statistical estimate of what would have sold without any promotion. The counterfactual every lift, incrementality, and ROI number is computed against. Persisted with model_name and model_version to make disagreement visible.
+    vertical: CrossCutting
+    subdomains: [trade_promotion_management]
+    related_personas: [Trade Spend Analyst]
+    decisionsSupported: [tpm.d.cannibalization_guardrail]
+  - id: tpm.kpi.forward_buy_inventory_weeks
+    name: Forward-Buy Inventory (weeks of supply)
+    formula: forward_buy_units / weekly_baseline_units
+    unit: weeks
+    direction: target_band
+    definition: How many weeks of normal demand the retailer has stockpiled during a promo. The hard ceiling that forward-buy caps enforce — beyond 4-6 weeks, post-event baseline draws down and depresses future forecasts.
+    vertical: CrossCutting
+    subdomains: [trade_promotion_management, demand_planning]
+    related_personas: [Revenue Growth Manager, Key Account Manager]
+    decisionsSupported: [tpm.d.forward_buy_cap]
+  - id: tpm.kpi.display_compliance_pct
+    name: Display Compliance %
+    formula: stores_with_compliant_display / stores_promised_display
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of stores that executed the contracted display (endcap, pallet drop, cooler) per the promo agreement. Gates pay-for-performance funding; sourced from AFS rep visits and Numerator photo audits.
+    vertical: CrossCutting
+    subdomains: [trade_promotion_management, retail_execution]
+    related_personas: [VP Sales, Key Account Manager]
+    decisionsSupported: [tpm.d.display_compliance]
+  - id: tpm.kpi.distribution_coverage
+    name: Distribution Coverage (%ACV)
+    formula: sum(acv_with_sku) / total_acv
+    unit: "%"
+    direction: higher_is_better
+    definition: All-Commodity-Volume-weighted distribution coverage — the share of category retail volume in stores where the SKU is carried. The denominator for new-item launch tracking and category-management reviews.
+    vertical: CrossCutting
+    subdomains: [trade_promotion_management]
+    related_personas: [Key Account Manager, Customer Marketing Manager]
+    decisionsSupported: [tpm.d.new_item_slot]
+  - id: tpm.kpi.on_shelf_availability_pct
+    name: On-Shelf Availability %
+    formula: stores_in_stock / stores_audited
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of audited outlets where the SKU was in-stock at the time of audit. Mid-promo OSA dips silently destroy lift; tracked from EDI 852 on-hand inventory plus retail-execution audits.
+    vertical: CrossCutting
+    subdomains: [trade_promotion_management, retail_execution]
+    related_personas: [VP Sales]
+    decisionsSupported: [tpm.d.display_compliance]
+  - id: tpm.kpi.perfect_store_score
+    name: Perfect Store Score
+    formula: weighted_avg(distribution, share_of_shelf, planogram_compliance, price_compliance, promo_compliance)
+    unit: index
+    direction: higher_is_better
+    definition: Composite outlet-level retail-execution score blending distribution, share-of-shelf, planogram, price, and promo compliance. Coca-Cola, Unilever, and PepsiCo publish branded frameworks; field-team incentive driver.
+    vertical: CrossCutting
+    subdomains: [trade_promotion_management, retail_execution]
+    related_personas: [VP Sales]
+    decisionsSupported: [tpm.d.display_compliance]
+  - id: tpm.kpi.retailer_scorecard
+    name: Retailer Score-card (Joint Business Plan)
+    formula: weighted(otif, fill_rate, deduction_rate, growth_pct, promo_compliance)
+    unit: index
+    direction: higher_is_better
+    definition: Composite scorecard a retailer rates the manufacturer on — service (OTIF, fill), commercial (growth, promo compliance), and finance (deduction hygiene). The quarterly JBP review uses this to negotiate next-period funds.
+    vertical: CrossCutting
+    subdomains: [trade_promotion_management]
+    related_personas: [Key Account Manager, VP Sales]
+    decisionsSupported: [tpm.d.fund_allocation]
+  - id: tpm.kpi.pay_for_performance_pct
+    name: Pay-for-Performance %
+    formula: sum(performance_qualified_spend) / sum(committed_spend)
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of committed trade spend that paid out only after performance evidence (display photo, scan-flag, audit log) was verified. Drives compliance with retail-execution targets and reduces unmatched-trade exposure.
+    vertical: CrossCutting
+    subdomains: [trade_promotion_management]
+    related_personas: [Revenue Growth Manager, Deductions Manager]
+    decisionsSupported: [tpm.d.display_compliance, tpm.d.deduction_dispute]
+
+  # ============================================================
+  # Anchor: Customer Loyalty & CDP (Retail)
+  # ============================================================
+  - id: cdp.kpi.clv
+    name: Customer Lifetime Value (CLV)
+    formula: sum(discounted_future_margin) per customer over horizon
+    unit: USD
+    direction: higher_is_better
+    definition: Discounted future margin attributable to a customer over the relationship horizon. The headline customer-economics KPI; drives loyalty-tier design and retention spend ceilings.
+    vertical: Retail
+    subdomains: [customer_loyalty_cdp, customer_analytics, loyalty]
+    related_personas: [Head of CRM, Customer Insights Manager, Loyalty Program Director]
+    decisionsSupported: [cdp.d.lifecycle_journey, cdp.d.churn_intervention, cdp.d.loyalty_tier_design]
+  - id: cdp.kpi.nps
+    name: Net Promoter Score (NPS)
+    formula: pct_promoters_9_10 - pct_detractors_0_6
+    unit: index
+    direction: higher_is_better
+    definition: Customer-loyalty index = %promoters (9-10) − %detractors (0-6) on the recommend question. Range -100 to +100; world-class retail sits ~50-70.
+    vertical: Retail
+    subdomains: [customer_loyalty_cdp, customer_care]
+    related_personas: [Head of CRM, Customer Insights Manager]
+    decisionsSupported: [cdp.d.lifecycle_journey, cdp.d.loyalty_tier_design]
+  - id: cdp.kpi.repeat_purchase_rate
+    name: Repeat Purchase Rate
+    formula: customers_with_2plus_orders_in_window / customers_with_1plus_orders_in_window
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of customers ordering twice or more in a given window. Strong leading indicator of CLV; declining repeat rate is the earliest churn signal.
+    vertical: Retail
+    subdomains: [customer_loyalty_cdp, churn_management]
+    related_personas: [Lifecycle Marketing Lead]
+    decisionsSupported: [cdp.d.lifecycle_journey]
+  - id: cdp.kpi.loyalty_member_pct
+    name: Loyalty Member %
+    formula: enrolled_customers / total_customers
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of identified customers enrolled in the loyalty program. Best-in-class retail programs (Sephora, Starbucks, Ulta) clear 80%+.
+    vertical: Retail
+    subdomains: [customer_loyalty_cdp, loyalty]
+    related_personas: [Loyalty Program Director]
+    decisionsSupported: [cdp.d.loyalty_tier_design]
+  - id: cdp.kpi.active_member_pct
+    name: Active Member %
+    formula: members_with_activity_90d / enrolled_members
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of enrolled members with a transaction or engagement event in the trailing 90 days. The single best read on program health.
+    vertical: Retail
+    subdomains: [customer_loyalty_cdp, loyalty]
+    related_personas: [Loyalty Program Director, Lifecycle Marketing Lead]
+    decisionsSupported: [cdp.d.lifecycle_journey, cdp.d.churn_intervention]
+  - id: cdp.kpi.reward_redemption_rate
+    name: Reward Redemption Rate
+    formula: points_redeemed / points_earned (trailing 12 months)
+    unit: "%"
+    direction: target_band
+    definition: Ratio of points redeemed to points earned over a window. Too low signals dormant program + ballooning liability under ASC 606; too high signals over-rich earn/burn that erodes margin.
+    vertical: Retail
+    subdomains: [customer_loyalty_cdp, loyalty]
+    related_personas: [Loyalty Program Director]
+    decisionsSupported: [cdp.d.earn_burn_ratio]
+  - id: cdp.kpi.identity_match_rate_det
+    name: Deterministic Identity Match Rate
+    formula: customers_with_deterministic_match / total_customers
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of customer_master rows resolved via a high-confidence shared identifier (login, hashed email, loyalty ID). High precision; recall bounded by anonymous-session conversion.
+    vertical: Retail
+    subdomains: [customer_loyalty_cdp]
+    related_personas: [Identity Resolution Lead, CDP Architect]
+    decisionsSupported: [cdp.d.identity_strategy]
+  - id: cdp.kpi.identity_match_rate_prob
+    name: Probabilistic Identity Match Rate
+    formula: customers_with_probabilistic_match_at_threshold / total_customers
+    unit: "%"
+    direction: target_band
+    definition: Share of customer_master rows resolved via probabilistic stitching above a tuned confidence threshold. Raises recall but risks polluting golden records below the threshold.
+    vertical: Retail
+    subdomains: [customer_loyalty_cdp]
+    related_personas: [Identity Resolution Lead, CDP Architect]
+    decisionsSupported: [cdp.d.identity_strategy]
+  - id: cdp.kpi.segment_move_rate
+    name: Segment Move Rate
+    formula: customers_moving_segment_in_period / total_customers
+    unit: "%"
+    direction: target_band
+    definition: Share of customers crossing an RFM cell or behavioural-segment boundary in a period. Moderate movement is healthy; spikes indicate either a campaign effect or a segmentation-rule drift.
+    vertical: Retail
+    subdomains: [customer_loyalty_cdp]
+    related_personas: [Segmentation Strategist, Lifecycle Marketing Lead]
+    decisionsSupported: [cdp.d.segment_design, cdp.d.lifecycle_journey]
+  - id: cdp.kpi.winback_rate
+    name: Win-back Rate
+    formula: reactivated_customers / targeted_lapsed_customers
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of lapsed customers entering a win-back journey who transact within 60 days. The headline test of churn-intervention investment.
+    vertical: Retail
+    subdomains: [customer_loyalty_cdp, churn_management]
+    related_personas: [Lifecycle Marketing Lead]
+    decisionsSupported: [cdp.d.churn_intervention, cdp.d.lifecycle_journey]
+  - id: cdp.kpi.churn_rate
+    name: Customer Churn Rate
+    formula: customers_inactive_180d / customers_active_at_start_of_period
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of customers active at period start who fall inactive (no purchase, no engagement) over the next 180 days. The retention-side denominator for CLV-driven decisions.
+    vertical: Retail
+    subdomains: [customer_loyalty_cdp, churn_management]
+    related_personas: [Lifecycle Marketing Lead, Customer Insights Manager]
+    decisionsSupported: [cdp.d.churn_intervention, cdp.d.lifecycle_journey]
+  - id: cdp.kpi.rfm_distribution_health
+    name: RFM Score Distribution Health
+    formula: customers_in_high_rfm_cells (R>=4 AND F>=4 AND M>=4) / total_customers
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of the customer base in high-value RFM cells (champions, loyal). The diagnostic for whether revenue concentration is healthy or top-heavy.
+    vertical: Retail
+    subdomains: [customer_loyalty_cdp]
+    related_personas: [Segmentation Strategist, Customer Insights Manager]
+    decisionsSupported: [cdp.d.segment_design]
+  - id: cdp.kpi.personalization_lift
+    name: Personalization Lift
+    formula: (personalized_conversion - control_conversion) / control_conversion
+    unit: "%"
+    direction: higher_is_better
+    definition: Conversion lift from personalized treatment vs control. Computed at the journey or destination grain; the headline justification for CDP investment.
+    vertical: Retail
+    subdomains: [customer_loyalty_cdp]
+    related_personas: [Lifecycle Marketing Lead, CDP Architect]
+    decisionsSupported: [cdp.d.lifecycle_journey, cdp.d.activation_destination]
+  - id: cdp.kpi.member_driven_revenue_pct
+    name: Member-Driven Revenue %
+    formula: revenue_attributed_to_loyalty_members / total_revenue
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of total revenue from identified loyalty members. The retail-board read on program economic significance; mature programs land 50-80%.
+    vertical: Retail
+    subdomains: [customer_loyalty_cdp, loyalty]
+    related_personas: [Loyalty Program Director, Head of CRM]
+    decisionsSupported: [cdp.d.loyalty_tier_design, cdp.d.activation_destination]
+  - id: cdp.kpi.cost_to_acquire_member
+    name: Cost to Acquire Member (CAC-Member)
+    formula: sum(member_acquisition_spend) / count(new_enrolled_members)
+    unit: USD
+    direction: lower_is_better
+    definition: Marketing + enrollment-incentive spend per new loyalty enrollee. The economic check on tier-design and welcome-offer depth.
+    vertical: Retail
+    subdomains: [customer_loyalty_cdp, loyalty]
+    related_personas: [Loyalty Program Director]
+    decisionsSupported: [cdp.d.loyalty_tier_design]
+
+  # ============================================================
+  # Anchor: Revenue Growth Management (CPG)
+  # ============================================================
+  - id: rgm.kpi.net_revenue_per_unit
+    name: Net Revenue per Unit
+    formula: sum(net_revenue) / sum(units_sold)
+    unit: USD
+    direction: higher_is_better
+    definition: List-to-net realized revenue per unit shipped. The cleanest single-number summary of price-pack architecture (PPA) health.
+    vertical: CPG
+    subdomains: [revenue_growth_management]
+    related_personas: [Chief Commercial Officer, VP Revenue Management, RGM Director]
+    decisionsSupported: [rgm.d.pack_architecture, rgm.d.list_price_move, rgm.d.mix_steer]
+  - id: rgm.kpi.price_realization
+    name: Price Realization
+    formula: sum(net_price * units) / sum(list_price * units)
+    unit: "%"
+    direction: higher_is_better
+    definition: Net price divided by list price weighted by units. The standard list-to-net realization metric; the inverse measures gross-to-net "leakage" through trade lines.
+    vertical: CPG
+    subdomains: [revenue_growth_management]
+    related_personas: [VP Revenue Management, Net Revenue Manager]
+    decisionsSupported: [rgm.d.list_price_move, rgm.d.gross_to_net_accrual, rgm.d.deal_floor]
+  - id: rgm.kpi.mix_index
+    name: Mix Index (Premium Share of Volume)
+    formula: sum(premium_tier_units) / sum(total_units)
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of premium-tier pack volume in the portfolio. The headline PPA-ladder mix metric.
+    vertical: CPG
+    subdomains: [revenue_growth_management]
+    related_personas: [Mix Optimization Lead, RGM Director]
+    decisionsSupported: [rgm.d.mix_steer, rgm.d.pack_architecture]
+  - id: rgm.kpi.pack_margin_mix_pct
+    name: Pack Margin Mix %
+    formula: sum(margin_per_pack * units) / sum(units * benchmark_margin)
+    unit: "%"
+    direction: higher_is_better
+    definition: Actual pack-weighted margin divided by benchmark margin — captures the margin uplift from mix shift toward higher-margin packs.
+    vertical: CPG
+    subdomains: [revenue_growth_management]
+    related_personas: [Mix Optimization Lead, Pricing Strategy Lead]
+    decisionsSupported: [rgm.d.pack_architecture, rgm.d.value_pack_intro]
+  - id: rgm.kpi.promo_effectiveness_index
+    name: Promo Effectiveness Index
+    formula: incremental_net_revenue / trade_spend
+    unit: ratio
+    direction: higher_is_better
+    definition: Incremental net revenue (vs baseline) divided by trade spend. The RGM-native variant of Promo ROI that uses net revenue rather than gross profit.
+    vertical: CPG
+    subdomains: [revenue_growth_management, trade_promotion_management]
+    related_personas: [RGM Director, Trade Investment Analyst]
+    decisionsSupported: [rgm.d.promo_strategy, rgm.d.trade_invest_allocation]
+  - id: rgm.kpi.trade_spend_roi
+    name: Trade Spend ROI
+    formula: (incremental_gross_profit - trade_spend) / trade_spend
+    unit: ratio
+    direction: higher_is_better
+    definition: Margin-based ROI on trade spend; target ≥1.0. Below zero, the deal destroyed margin.
+    vertical: CPG
+    subdomains: [revenue_growth_management, trade_promotion_management]
+    related_personas: [Trade Investment Analyst, RGM Director]
+    decisionsSupported: [rgm.d.trade_invest_allocation, rgm.d.promo_strategy]
+  - id: rgm.kpi.volume_variance
+    name: Volume Variance (vs Plan)
+    formula: (actual_units - plan_units) * plan_net_price
+    unit: USD
+    direction: higher_is_better
+    definition: Net revenue impact of selling more / fewer units than planned at plan price. First term of the price-volume-mix variance decomposition.
+    vertical: CPG
+    subdomains: [revenue_growth_management]
+    related_personas: [Net Revenue Manager, VP Revenue Management]
+    decisionsSupported: [rgm.d.mix_steer, rgm.d.promo_strategy]
+  - id: rgm.kpi.price_variance
+    name: Price Variance (vs Plan)
+    formula: (actual_net_price - plan_net_price) * actual_units
+    unit: USD
+    direction: higher_is_better
+    definition: Net revenue impact of realizing a net price different from plan at the actual volume. Second term of the price-volume-mix decomposition.
+    vertical: CPG
+    subdomains: [revenue_growth_management]
+    related_personas: [Pricing Strategy Lead, Net Revenue Manager]
+    decisionsSupported: [rgm.d.list_price_move, rgm.d.gross_to_net_accrual]
+  - id: rgm.kpi.mix_variance
+    name: Mix Variance (vs Plan)
+    formula: sum((actual_share - plan_share) * (sku_net_price - portfolio_net_price) * total_units)
+    unit: USD
+    direction: higher_is_better
+    definition: Net revenue impact of selling a different share of high-/low-price SKUs than planned. The mix-attribution term whose math breaks when PPA tier changes mid-period.
+    vertical: CPG
+    subdomains: [revenue_growth_management]
+    related_personas: [Mix Optimization Lead, RGM Director]
+    decisionsSupported: [rgm.d.mix_steer, rgm.d.channel_ladder]
+  - id: rgm.kpi.forward_buy_cost_pct
+    name: Forward Buy Cost %
+    formula: sum(forward_buy_cost_cents) / sum(trade_spend_cents)
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of trade spend attributable to forward-buy (trade-loading) — pure deadweight against ROI; the post-promo trough is the visible cost.
+    vertical: CPG
+    subdomains: [revenue_growth_management, trade_promotion_management]
+    related_personas: [Trade Investment Analyst, Net Revenue Manager]
+    decisionsSupported: [rgm.d.promo_strategy, rgm.d.deal_floor]
+  - id: rgm.kpi.net_revenue_growth_pct
+    name: Net Revenue Growth %
+    formula: (net_revenue_t - net_revenue_t_minus_1) / net_revenue_t_minus_1
+    unit: "%"
+    direction: higher_is_better
+    definition: Year-over-year or quarter-over-quarter growth in net revenue at constant FX. The headline commercial KPI for the CCO.
+    vertical: CPG
+    subdomains: [revenue_growth_management]
+    related_personas: [Chief Commercial Officer, VP Revenue Management]
+    decisionsSupported: [rgm.d.list_price_move, rgm.d.mix_steer, rgm.d.innovation_priority]
+  - id: rgm.kpi.channel_profitability
+    name: Channel Profitability
+    formula: sum(net_revenue_by_channel - cogs_by_channel - trade_by_channel) / sum(net_revenue_by_channel)
+    unit: "%"
+    direction: higher_is_better
+    definition: Net contribution margin per channel — the input to channel ladder break decisions.
+    vertical: CPG
+    subdomains: [revenue_growth_management]
+    related_personas: [RGM Director, VP Revenue Management]
+    decisionsSupported: [rgm.d.channel_ladder, rgm.d.trade_invest_allocation]
+  - id: rgm.kpi.customer_account_profitability
+    name: Customer-Account Profitability
+    formula: sum(net_revenue_account - cogs_account - trade_account) / sum(net_revenue_account)
+    unit: "%"
+    direction: higher_is_better
+    definition: Net contribution margin per account — the input to fund-allocation and deal-floor decisions.
+    vertical: CPG
+    subdomains: [revenue_growth_management]
+    related_personas: [Trade Investment Analyst, RGM Director]
+    decisionsSupported: [rgm.d.trade_invest_allocation, rgm.d.deal_floor]
+  - id: rgm.kpi.innovation_sales_pct
+    name: Innovation Sales %
+    formula: sum(units_skus_launched_24m * net_price) / sum(total_net_revenue)
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of total net revenue from SKUs launched in the trailing 24 months. The headline innovation-effectiveness metric — must be reported net of cannibalization on the existing portfolio.
+    vertical: CPG
+    subdomains: [revenue_growth_management]
+    related_personas: [Chief Commercial Officer, RGM Director]
+    decisionsSupported: [rgm.d.innovation_priority, rgm.d.pack_architecture]
+
+  # ============================================================
+  # Anchor: Omnichannel Order Management (Retail)
+  # ============================================================
+  - id: oms.kpi.order_cycle_time
+    name: Order Cycle Time
+    formula: avg(shipped_ts - order_capture_ts)
+    unit: hours
+    direction: lower_is_better
+    definition: Average elapsed time from order capture (any channel) to first shipment. The headline cross-network speed KPI; degrades when sourcing lands on a slow node or store-pick capacity is over-allocated.
+    vertical: Retail
+    subdomains: [omnichannel_oms]
+    related_personas: [Head of Omnichannel, Fulfillment Operations Director]
+    decisionsSupported: [oms.d.sourcing_rule, oms.d.split_shipment, oms.d.store_capacity]
+  - id: oms.kpi.pick_accuracy
+    name: Pick Accuracy
+    formula: lines_picked_correctly / total_lines_picked
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of order lines picked with the correct SKU and quantity at first attempt. Drops on store-pick more than DC-pick because store associates split attention between customers and orders.
+    vertical: Retail
+    subdomains: [omnichannel_oms, store_ops]
+    related_personas: [Store Ops Lead, Fulfillment Operations Director]
+    decisionsSupported: [oms.d.cancel_or_substitute, oms.d.store_capacity]
+  - id: oms.kpi.bopis_lead_time
+    name: BOPIS Lead Time (Order-to-Ready)
+    formula: avg(ready_for_pickup_ts - order_capture_ts)
+    unit: minutes
+    direction: lower_is_better
+    definition: Minutes from .com checkout to "ready-for-pickup" notification at the customer's chosen store. Industry benchmark sits at 30-90 minutes for general merch, 15-45 minutes for grocery.
+    vertical: Retail
+    subdomains: [omnichannel_oms, store_ops]
+    related_personas: [Store Ops Lead, Customer Experience Lead]
+    decisionsSupported: [oms.d.store_capacity, oms.d.sourcing_rule]
+  - id: oms.kpi.ship_from_store_mix
+    name: Ship-from-Store Mix %
+    formula: store_sourced_lines / total_sourced_lines
+    unit: "%"
+    direction: target_band
+    definition: Share of sourced lines that ship out of a store rather than a DC. Tuning band balances store-clearance pull (higher SFS) versus per-pick labor cost (lower SFS).
+    vertical: Retail
+    subdomains: [omnichannel_oms]
+    related_personas: [Fulfillment Operations Director, Head of Omnichannel]
+    decisionsSupported: [oms.d.sourcing_rule, oms.d.dark_store_designation]
+  - id: oms.kpi.atp_accuracy
+    name: ATP Accuracy
+    formula: 1 - mean_abs_error(atp_promised, atp_actual_at_pick)
+    unit: "%"
+    direction: higher_is_better
+    definition: One minus the mean absolute error between Available-To-Promise quoted at checkout and the inventory actually present at pick time. Drops on flash promotions and store walk-in cannibalization spikes.
+    vertical: Retail
+    subdomains: [omnichannel_oms]
+    related_personas: [Inventory Visibility Manager, OMS Product Manager]
+    decisionsSupported: [oms.d.atp_safety_stock, oms.d.endless_aisle]
+  - id: oms.kpi.inventory_visibility_unified_pct
+    name: Inventory Visibility (% Unified)
+    formula: skus_with_unified_position / total_skus
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of SKUs whose inventory positions across all nodes (stores, DCs, dark stores, drop-ship) are unified into a single ATP-eligible view. Sub-100% leaves pockets of stranded inventory invisible to the .com cart.
+    vertical: Retail
+    subdomains: [omnichannel_oms]
+    related_personas: [Inventory Visibility Manager]
+    decisionsSupported: [oms.d.atp_safety_stock, oms.d.endless_aisle]
+  - id: oms.kpi.order_split_rate
+    name: Order Split Rate
+    formula: orders_with_multiple_shipments / total_multi_line_orders
+    unit: "%"
+    direction: target_band
+    definition: Share of multi-line orders that ship as more than one parcel from more than one node. Tuning band balances customer-promise speed (higher splits) versus shipping cost (lower splits).
+    vertical: Retail
+    subdomains: [omnichannel_oms]
+    related_personas: [Fulfillment Operations Director, Customer Experience Lead]
+    decisionsSupported: [oms.d.split_shipment, oms.d.sourcing_rule]
+  - id: oms.kpi.cost_to_serve_per_channel
+    name: Cost-to-Serve per Channel
+    formula: sum(fulfillment_cost) / count(orders) by channel
+    unit: USD
+    direction: lower_is_better
+    definition: Per-channel weighted-average cost to fulfill — pick + pack + ship + reverse-logistics share. The economic input that determines sourcing-rule weights and dark-store designation decisions.
+    vertical: Retail
+    subdomains: [omnichannel_oms]
+    related_personas: [Head of Omnichannel, Fulfillment Operations Director]
+    decisionsSupported: [oms.d.sourcing_rule, oms.d.carrier_selection, oms.d.dark_store_designation]
+  - id: oms.kpi.on_time_delivery
+    name: On-Time Delivery %
+    formula: orders_delivered_by_promise / orders_delivered
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of orders delivered by the customer-facing promise date. Reads from carrier delivered-at scan; degrades under carrier-side disruption and aggressive promise windows.
+    vertical: Retail
+    subdomains: [omnichannel_oms]
+    related_personas: [Customer Experience Lead]
+    decisionsSupported: [oms.d.promise_window, oms.d.carrier_selection]
+  - id: oms.kpi.promise_vs_actual_gap
+    name: Promise vs Actual Gap
+    formula: avg(actual_delivery_ts - promised_delivery_ts)
+    unit: hours
+    direction: lower_is_better
+    definition: Average signed gap between the OPP-quoted promise and the carrier-confirmed delivery. Positive = late, negative = early. Sustained-positive gap means promise calibration is too tight.
+    vertical: Retail
+    subdomains: [omnichannel_oms]
+    related_personas: [Customer Experience Lead, OMS Product Manager]
+    decisionsSupported: [oms.d.promise_window]
+  - id: oms.kpi.cancellation_rate
+    name: Cancellation Rate
+    formula: cancelled_lines / accepted_lines
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of accepted order lines that are subsequently cancelled — by the retailer (no inventory) or the customer (changed mind). Each cancellation eats payment-auth fees and customer trust.
+    vertical: Retail
+    subdomains: [omnichannel_oms]
+    related_personas: [Fulfillment Operations Director, OMS Product Manager]
+    decisionsSupported: [oms.d.cancel_or_substitute, oms.d.atp_safety_stock]
+  - id: oms.kpi.substitution_rate
+    name: Substitution Rate
+    formula: substituted_lines / cancelled_lines
+    unit: "%"
+    direction: target_band
+    definition: Share of would-be cancellations that became substitutions instead. Common in grocery and consumables; band balances saving the order vs customer dissatisfaction with the swap.
+    vertical: Retail
+    subdomains: [omnichannel_oms]
+    related_personas: [Fulfillment Operations Director, Store Ops Lead]
+    decisionsSupported: [oms.d.cancel_or_substitute]
+  - id: oms.kpi.return_cycle_time
+    name: Return Cycle Time
+    formula: avg(refund_issued_ts - return_initiated_ts)
+    unit: days
+    direction: lower_is_better
+    definition: Average days from customer return-initiation to refund-issued. The reverse-logistics speed KPI; in-store returns close in hours, mail returns take 5-12 days.
+    vertical: Retail
+    subdomains: [omnichannel_oms, returns_management]
+    related_personas: [Returns Lead]
+    decisionsSupported: [oms.d.return_reroute]
+  - id: oms.kpi.first_pick_fill_rate
+    name: First-Pick Fill Rate
+    formula: lines_filled_first_attempt / lines_picked
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of order lines whose first allocated node successfully picks the line without short-pick or substitution. Drops when ATP cache is stale relative to actual on-hand.
+    vertical: Retail
+    subdomains: [omnichannel_oms]
+    related_personas: [Fulfillment Operations Director, Inventory Visibility Manager]
+    decisionsSupported: [oms.d.sourcing_rule, oms.d.atp_safety_stock]
+
+  # ============================================================
+  # Anchor: Direct Store Delivery (CPG)
+  # ============================================================
+  - id: dsd.kpi.stops_per_route
+    name: Stops per Route
+    formula: count(distinct stop_id) / count(distinct route_day_id)
+    unit: stops/day
+    direction: target_band
+    definition: Average number of stops a route services per service-day. The headline route-design lever; too low signals oversized routes, too high crushes dwell-time and EPOD quality.
+    vertical: CPG
+    subdomains: [direct_store_delivery]
+    related_personas: [Route Operations Manager, Route Planner]
+    decisionsSupported: [dsd.d.route_design, dsd.d.daily_dispatch, dsd.d.frequency_change]
+  - id: dsd.kpi.cases_per_stop
+    name: Cases per Stop
+    formula: sum(cases_delivered) / count(distinct stop_id)
+    unit: cases
+    direction: higher_is_better
+    definition: Average cases delivered per stop. Below the cost-per-stop floor a stop becomes uneconomic and a frequency change or merchandiser-only mode kicks in.
+    vertical: CPG
+    subdomains: [direct_store_delivery]
+    related_personas: [VP Field Sales, Account Sales Rep]
+    decisionsSupported: [dsd.d.presell_vs_deliver, dsd.d.frequency_change]
+  - id: dsd.kpi.drop_size_units
+    name: Drop Size (units)
+    formula: sum(units_delivered) / count(distinct stop_id)
+    unit: units
+    direction: higher_is_better
+    definition: Average units delivered per stop. Drives the presell-vs-deliver decision and fleet-size math; low drop size = more stops needed for the same volume.
+    vertical: CPG
+    subdomains: [direct_store_delivery]
+    related_personas: [VP Field Sales, Route Planner]
+    decisionsSupported: [dsd.d.presell_vs_deliver, dsd.d.fleet_size]
+  - id: dsd.kpi.on_time_delivery_pct
+    name: On-Time Delivery % (DSD)
+    formula: stops_delivered_in_window / stops_scheduled
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of DSD stops delivered inside the planned arrival window (typically ±15 minutes). The customer-facing service-level KPI for retailers running tight back-door windows.
+    vertical: CPG
+    subdomains: [direct_store_delivery]
+    related_personas: [Route Operations Manager, Delivery Driver Manager]
+    decisionsSupported: [dsd.d.daily_dispatch, dsd.d.dynamic_reroute]
+  - id: dsd.kpi.perfect_store_score_dsd
+    name: Perfect Store Score (DSD)
+    formula: weighted_avg(distribution, share_of_cooler, planogram_compliance, price_compliance, promo_compliance, freshness)
+    unit: index
+    direction: higher_is_better
+    definition: Composite outlet-level retail-execution score for DSD — distribution, share-of-cooler, planogram, price, promo, freshness. Drives driver/rep performance pay and pay-for-performance trade fund release.
+    vertical: CPG
+    subdomains: [direct_store_delivery, retail_execution]
+    related_personas: [Perfect Store Lead, VP Field Sales]
+    decisionsSupported: [dsd.d.perfect_store_credit, dsd.d.cooler_replenish]
+  - id: dsd.kpi.case_fill_rate
+    name: Case Fill Rate (CFR)
+    formula: cases_delivered / cases_ordered
+    unit: "%"
+    direction: higher_is_better
+    definition: Cases delivered as a share of cases ordered (line-level). Industry benchmark 97-99%; below 95% triggers retailer back-charges and lost-distribution risk.
+    vertical: CPG
+    subdomains: [direct_store_delivery]
+    related_personas: [Route Operations Manager, DSD Finance Controller]
+    decisionsSupported: [dsd.d.daily_dispatch, dsd.d.deduction_dispute]
+  - id: dsd.kpi.cost_per_stop
+    name: Cost per Stop
+    formula: (driver_wage + truck_cost + fuel_cost + overhead) / count(distinct stop_id)
+    unit: USD
+    direction: lower_is_better
+    definition: Fully-loaded driver + truck + fuel + overhead cost per stop. The unit economics floor for route design and the frequency-change decision.
+    vertical: CPG
+    subdomains: [direct_store_delivery]
+    related_personas: [DSD Finance Controller, Route Operations Manager]
+    decisionsSupported: [dsd.d.route_design, dsd.d.fleet_size, dsd.d.frequency_change]
+  - id: dsd.kpi.cost_per_case
+    name: Cost per Case Delivered
+    formula: total_route_cost / cases_delivered
+    unit: USD
+    direction: lower_is_better
+    definition: Fully-loaded delivery cost per case. The case-level economic input that determines whether a stop, route, or branch hits its contribution-margin floor.
+    vertical: CPG
+    subdomains: [direct_store_delivery]
+    related_personas: [DSD Finance Controller, VP Field Sales]
+    decisionsSupported: [dsd.d.fleet_size, dsd.d.presell_vs_deliver]
+  - id: dsd.kpi.settlement_accuracy
+    name: Settlement Accuracy %
+    formula: 1 - (sum(abs_settlement_variance) / sum(settlement_total_amount))
+    unit: "%"
+    direction: higher_is_better
+    definition: One minus the absolute settlement variance over total settled amount, by route-day. Best-in-class clears 99.5%; below 98% signals systematic cage / collection / pricing issues.
+    vertical: CPG
+    subdomains: [direct_store_delivery]
+    related_personas: [Settlement Manager, DSD Finance Controller]
+    decisionsSupported: [dsd.d.driver_settlement]
+  - id: dsd.kpi.returns_rate_dsd
+    name: Returns Rate (DSD)
+    formula: sum(returned_units) / sum(delivered_units)
+    unit: "%"
+    direction: lower_is_better
+    definition: DSD returned units (stales, swaps, damages) as a share of delivered units. High rates flag freshness gaps, planogram drift, or order-quantity errors.
+    vertical: CPG
+    subdomains: [direct_store_delivery]
+    related_personas: [Route Operations Manager, Perfect Store Lead]
+    decisionsSupported: [dsd.d.return_authorization, dsd.d.cooler_replenish]
+  - id: dsd.kpi.out_of_stock_pct
+    name: Out-of-Stock % (DSD shelf)
+    formula: stops_with_oos_observation / stops_audited
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of audited stops where at least one authorized SKU was out of stock. The fast-feedback KPI for cooler / shelf restock decisions and the trigger for off-cycle service visits.
+    vertical: CPG
+    subdomains: [direct_store_delivery, retail_execution]
+    related_personas: [Perfect Store Lead]
+    decisionsSupported: [dsd.d.cooler_replenish, dsd.d.perfect_store_credit]
+  - id: dsd.kpi.route_adherence_pct
+    name: Route Adherence %
+    formula: stops_visited_in_planned_sequence / stops_planned
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of stops visited in the planned sequence on the planned day. Low adherence signals dynamic re-route churn, driver discretion drift, or planning realism gaps.
+    vertical: CPG
+    subdomains: [direct_store_delivery]
+    related_personas: [Route Operations Manager, Route Planner]
+    decisionsSupported: [dsd.d.daily_dispatch, dsd.d.dynamic_reroute]
+  - id: dsd.kpi.sales_per_mile
+    name: Sales per Mile
+    formula: sum(net_sales_dollars) / sum(route_miles)
+    unit: USD/mile
+    direction: higher_is_better
+    definition: Net sales dollars generated per mile driven. The route-design quality KPI; degrades with sprawl, off-pattern stops, or undersized drop sizes.
+    vertical: CPG
+    subdomains: [direct_store_delivery]
+    related_personas: [Route Planner, DSD Finance Controller]
+    decisionsSupported: [dsd.d.route_design, dsd.d.fleet_size]
+  - id: dsd.kpi.driver_productivity
+    name: Driver Productivity (cases/hour)
+    formula: sum(cases_delivered) / sum(driver_paid_hours)
+    unit: cases/hour
+    direction: higher_is_better
+    definition: Cases delivered per driver paid hour. The labor-economics KPI; benchmarks vary widely by category (200+ cases/hour for high-velocity beverage, 30-50 for bakery DSD).
+    vertical: CPG
+    subdomains: [direct_store_delivery]
+    related_personas: [Delivery Driver Manager, Route Operations Manager]
+    decisionsSupported: [dsd.d.route_design, dsd.d.daily_dispatch]
+  - id: dsd.kpi.epod_capture_rate
+    name: EPOD Signature Capture Rate
+    formula: stops_with_signed_epod / stops_delivered
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of delivered stops with a signed EPOD (signature + photo + geo-stamp) on the handheld. Sub-95% signals device sync gaps and erodes deduction-dispute defensibility.
+    vertical: CPG
+    subdomains: [direct_store_delivery]
+    related_personas: [Settlement Manager, DSD Finance Controller]
+    decisionsSupported: [dsd.d.deduction_dispute, dsd.d.driver_settlement]
+
+  # ============================================================
+  # Anchor: Returns & Reverse Logistics (Retail)
+  # ============================================================
+  - id: rrl.kpi.return_rate_pct
+    name: Return Rate %
+    formula: return_items_units / sold_units
+    unit: "%"
+    direction: lower_is_better
+    definition: Returned units as a share of sold units in a window. The headline KPI of the entire reverse-logistics function — drives recovery economics, fraud exposure, and net contribution margin.
+    vertical: Retail
+    subdomains: [returns_reverse_logistics, returns_management, ecommerce]
+    related_personas: [VP Reverse Logistics, Returns Operations Director]
+    decisionsSupported: [rrl.d.disposition_route, rrl.d.returnless_threshold]
+  - id: rrl.kpi.refund_issue_time
+    name: Refund Issue Time
+    formula: avg(refund_issued_ts - rma_received_ts)
+    unit: days
+    direction: lower_is_better
+    definition: Days from RMA receipt to refund issuance. Correlates strongly with CSAT and chargeback rates; target varies by tender — store credit can be instant, original-tender card usually 3-5 business days.
+    vertical: Retail
+    subdomains: [returns_reverse_logistics]
+    related_personas: [Returns CX Lead]
+    decisionsSupported: [rrl.d.refund_tender, rrl.d.disposition_route]
+  - id: rrl.kpi.restocking_fee_capture_pct
+    name: Restocking Fee Capture %
+    formula: restocking_fees_collected / restocking_fees_eligible
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of eligible restocking fees actually collected. The margin-recovery lever that policy teams pull when net cost of returns exceeds plan.
+    vertical: Retail
+    subdomains: [returns_reverse_logistics]
+    related_personas: [Returns Finance Manager]
+    decisionsSupported: [rrl.d.fee_waiver]
+  - id: rrl.kpi.recovery_value_pct
+    name: Recovery Value %
+    formula: recovery_proceeds / original_cogs_returned
+    unit: "%"
+    direction: higher_is_better
+    definition: Total recovery proceeds (refurb resale + liquidation + donation tax + scrap salvage) over the original COGS of returned inventory. The net-economic outcome of the disposition decision tree.
+    vertical: Retail
+    subdomains: [returns_reverse_logistics]
+    related_personas: [Recovery Channels Lead, CRC Manager]
+    decisionsSupported: [rrl.d.disposition_route]
+  - id: rrl.kpi.refurb_yield_pct
+    name: Refurb Yield %
+    formula: units_refurbed_grade_A_or_B / units_attempted_refurb
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of units sent to refurb that come back as A-Grade or B-Grade sellable. Below threshold, refurb routing is uneconomic vs straight liquidation.
+    vertical: Retail
+    subdomains: [returns_reverse_logistics]
+    related_personas: [CRC Manager]
+    decisionsSupported: [rrl.d.disposition_route, rrl.d.crc_routing]
+  - id: rrl.kpi.liquidation_yield_pct
+    name: Liquidation Yield %
+    formula: lot_proceeds / lot_cost_basis
+    unit: "%"
+    direction: higher_is_better
+    definition: Proceeds from B2B liquidation lot sales over the cost basis of the lot. Sets the recovery floor for unsellable-as-new inventory; typical band 8-25% depending on category and condition mix.
+    vertical: Retail
+    subdomains: [returns_reverse_logistics]
+    related_personas: [Recovery Channels Lead]
+    decisionsSupported: [rrl.d.disposition_route, rrl.d.lot_release]
+  - id: rrl.kpi.returnless_refund_rate
+    name: Returnless Refund Rate
+    formula: returnless_refunds / total_refunds
+    unit: "%"
+    direction: target_band
+    definition: Share of refund events issued without requiring the item back. Tuned against fraud rate and cost-to-process — most retailers settle in a 5-15% band.
+    vertical: Retail
+    subdomains: [returns_reverse_logistics]
+    related_personas: [Returns Strategy Lead]
+    decisionsSupported: [rrl.d.returnless_threshold]
+  - id: rrl.kpi.return_fraud_rate
+    name: Return Fraud Rate
+    formula: fraud_flagged_returns / total_returns
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of returns flagged or confirmed as fraudulent (wardrobing, empty-box, stolen-goods return). Drives policy tightening, repeat-returner gating, and step-up authentication.
+    vertical: Retail
+    subdomains: [returns_reverse_logistics, fraud, loss_prevention]
+    related_personas: [Loss Prevention Director]
+    decisionsSupported: [rrl.d.fraud_block, rrl.d.returnless_threshold]
+  - id: rrl.kpi.cost_to_process_return
+    name: Cost to Process Return
+    formula: sum(reverse_logistics_cost) / count(return_items)
+    unit: USD
+    direction: lower_is_better
+    definition: Fully-loaded reverse-leg cost per returned item — label, transit, inspection, restock or refurb labor. The economic threshold below which a returnless-refund decision flips positive.
+    vertical: Retail
+    subdomains: [returns_reverse_logistics]
+    related_personas: [Returns Finance Manager, VP Reverse Logistics]
+    decisionsSupported: [rrl.d.returnless_threshold, rrl.d.carrier_selection]
+  - id: rrl.kpi.days_to_disposition
+    name: Days to Disposition
+    formula: avg(disposition_ts - rma_received_ts)
+    unit: days
+    direction: lower_is_better
+    definition: Days from RMA receipt to a final disposition decision (restock / refurb / liquidate / donate / recycle / scrap). Compression here lifts recovery value because price-erosion + carrying cost are real.
+    vertical: Retail
+    subdomains: [returns_reverse_logistics]
+    related_personas: [CRC Manager, Reverse Logistics Architect]
+    decisionsSupported: [rrl.d.disposition_route, rrl.d.crc_routing]
+  - id: rrl.kpi.cross_border_return_rate
+    name: Cross-Border Return Rate
+    formula: cross_border_return_units / cross_border_sold_units
+    unit: "%"
+    direction: lower_is_better
+    definition: Return rate isolated to cross-border orders. Typically 2-3x domestic; the KPI ZigZag and ReBound get measured on.
+    vertical: Retail
+    subdomains: [returns_reverse_logistics]
+    related_personas: [Cross-Border Operations Lead]
+    decisionsSupported: [rrl.d.cross_border_route]
+  - id: rrl.kpi.repeat_returners_pct
+    name: Repeat Returners %
+    formula: customers_with_3plus_returns_in_window / customers_with_1plus_returns_in_window
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of returning customers who have 3+ returns in a rolling window. Heavy returners drive disproportionate cost — fraud platforms (Appriss, Newmine) score them for friction policy.
+    vertical: Retail
+    subdomains: [returns_reverse_logistics, customer_analytics]
+    related_personas: [Returns Strategy Lead, Loss Prevention Director]
+    decisionsSupported: [rrl.d.returner_friction]
+  - id: rrl.kpi.net_cost_of_returns
+    name: Net Cost of Returns
+    formula: (refunds_issued + reverse_logistics_cost) - recovery_proceeds
+    unit: USD
+    direction: lower_is_better
+    definition: Refunds + reverse-leg + processing cost minus recovery proceeds, aggregated. The bottom-line P&L impact line that boards track.
+    vertical: Retail
+    subdomains: [returns_reverse_logistics]
+    related_personas: [CFO, VP Reverse Logistics]
+    decisionsSupported: [rrl.d.disposition_route, rrl.d.returnless_threshold]
+  - id: rrl.kpi.return_carbon_kg_co2e
+    name: Return Carbon Footprint (kg CO2e)
+    formula: sum(reverse_leg_distance_km * emission_factor_kg_per_km) + sum(disposition_emissions)
+    unit: kg CO2e
+    direction: lower_is_better
+    definition: Total Scope-3 emissions from the reverse leg — transit + inspection + disposition lane. Required disclosure under CSRD; lifted by BORIS/Happy Returns consolidation, depressed by long-tail mail returns.
+    vertical: Retail
+    subdomains: [returns_reverse_logistics, carbon_accounting]
+    related_personas: [Sustainability Lead]
+    decisionsSupported: [rrl.d.carrier_selection, rrl.d.disposition_route]
+
+  # ============================================================
+  # Anchor: Category Management (CPG / Retail)
+  # ============================================================
+  - id: cm.kpi.category_sales_growth_pct
+    name: Category Sales Growth %
+    formula: (category_sales_t - category_sales_t_minus_1) / category_sales_t_minus_1
+    unit: "%"
+    direction: higher_is_better
+    definition: Period-over-period category sales growth at the banner or total-market grain. The headline outcome metric for the category business plan; read from syndicated POS (Circana / NielsenIQ) at total-category aggregation.
+    vertical: CPG
+    subdomains: [category_management]
+    related_personas: [Category Manager, Category Director]
+    decisionsSupported: [cm.d.assortment_optimization, cm.d.role_of_category, cm.d.range_review]
+  - id: cm.kpi.distribution_coverage_pct
+    name: Distribution Coverage (%ACV)
+    formula: sum(acv_with_sku) / total_acv
+    unit: "%"
+    direction: higher_is_better
+    definition: Sum of All-Commodity-Volume weights of stores carrying an SKU divided by total ACV in the category market. Industry threshold for "broad national distribution" is 80%+ ACV.
+    vertical: CPG
+    subdomains: [category_management]
+    related_personas: [Vendor Account Manager, Category Manager]
+    decisionsSupported: [cm.d.assortment_optimization, cm.d.must_have_skus, cm.d.range_review]
+  - id: cm.kpi.range_productivity
+    name: Range Productivity (sales per SKU)
+    formula: sum(category_sales) / count(distinct_skus_listed)
+    unit: USD
+    direction: higher_is_better
+    definition: Category sales dollars divided by count of listed SKUs — the average productivity per range slot. The headline efficiency metric weighed against range breadth in range reviews.
+    vertical: CPG
+    subdomains: [category_management]
+    related_personas: [Category Manager, Range Strategist]
+    decisionsSupported: [cm.d.assortment_optimization, cm.d.delist_decision]
+  - id: cm.kpi.shelf_space_productivity
+    name: Shelf Space Productivity ($/linear ft)
+    formula: sum(category_sales) / sum(linear_feet_allocated)
+    unit: USD_per_linear_ft
+    direction: higher_is_better
+    definition: Category sales per linear shelf foot allocated. The planogram-level productivity metric; drives reallocation across categories at fixture re-cuts.
+    vertical: CPG
+    subdomains: [category_management]
+    related_personas: [Space Planner, Category Director]
+    decisionsSupported: [cm.d.shelf_space_allocation, cm.d.planogram_authoring]
+  - id: cm.kpi.out_of_stock_rate
+    name: Out-of-Stock Rate %
+    formula: skus_oos_at_audit / skus_audited
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of audited authorized SKUs not on shelf at the audit moment. Read from Trax / NielsenIQ Audit / store-rep handheld; planogram-level OOS silently erodes range-review ROI.
+    vertical: CPG
+    subdomains: [category_management, retail_execution]
+    related_personas: [Perfect Store Lead, Space Planner]
+    decisionsSupported: [cm.d.planogram_authoring, cm.d.shelf_space_allocation]
+  - id: cm.kpi.assortment_compliance_pct
+    name: Assortment Compliance %
+    formula: stores_carrying_mandated_skus / stores_audited
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of audited stores carrying the full mandated assortment for their cluster. Below 90% silently destroys the planned distribution-coverage uplift from a range review.
+    vertical: CPG
+    subdomains: [category_management]
+    related_personas: [Category Manager, Vendor Account Manager]
+    decisionsSupported: [cm.d.assortment_optimization, cm.d.range_review]
+  - id: cm.kpi.halo_effect
+    name: Halo Effect
+    formula: sum(adjacent_sku_sales_change) / sum(focal_sku_sales_change)
+    unit: ratio
+    direction: higher_is_better
+    definition: Ratio of incremental sales on related (non-promoted, non-changed) SKUs to incremental sales on the focal SKU. Strong halo is the structural argument for keeping an SKU even with weak own-velocity.
+    vertical: CPG
+    subdomains: [category_management]
+    related_personas: [Insights Manager, Category Manager]
+    decisionsSupported: [cm.d.planogram_authoring, cm.d.assortment_optimization]
+  - id: cm.kpi.cannibalization_rate
+    name: Cannibalization Rate (CM)
+    formula: cannibalized_units / new_listing_units
+    unit: "%"
+    direction: lower_is_better
+    definition: Sales transferred from existing range SKUs to a new listing as a share of the new listing's total units. Net-incremental units = new_units * (1 - cannibalization_rate); critical input to innovation-slot ROI.
+    vertical: CPG
+    subdomains: [category_management]
+    related_personas: [Insights Manager, Category Manager]
+    decisionsSupported: [cm.d.assortment_optimization, cm.d.innovation_slotting]
+  - id: cm.kpi.category_share_of_wallet
+    name: Category Share of Wallet
+    formula: sum(category_spend_at_banner) / sum(total_category_spend_in_market)
+    unit: "%"
+    direction: higher_is_better
+    definition: A banner's share of a category-buyer household's total category spend. Read from household panels (Numerator, NielsenIQ Homescan, Kantar Worldpanel). The deepest measure of category-loyalty for a banner.
+    vertical: CPG
+    subdomains: [category_management]
+    related_personas: [Shopper Insights Lead, Category Director]
+    decisionsSupported: [cm.d.role_of_category, cm.d.cluster_definition]
+  - id: cm.kpi.velocity_index
+    name: Velocity Index (vs Category Avg)
+    formula: sku_units_per_store_per_week / category_avg_units_per_store_per_week
+    unit: index
+    direction: higher_is_better
+    definition: SKU velocity as a ratio of category-average velocity. Above 1.0 is the threshold for above-fair-share facings; below 0.5 is the kill-candidate threshold.
+    vertical: CPG
+    subdomains: [category_management]
+    related_personas: [Category Manager, Insights Manager]
+    decisionsSupported: [cm.d.delist_decision, cm.d.must_have_skus]
+  - id: cm.kpi.average_item_velocity
+    name: Average Item Velocity (units/store/week)
+    formula: sum(units_sold) / (count(distinct_stores) * count(distinct_weeks))
+    unit: units_per_store_per_week
+    direction: higher_is_better
+    definition: Average weekly units sold per store carrying the SKU. The raw cut underneath velocity index; the metric on which retailer scorecards rank SKUs.
+    vertical: CPG
+    subdomains: [category_management]
+    related_personas: [Category Manager, Space Planner]
+    decisionsSupported: [cm.d.assortment_optimization, cm.d.shelf_space_allocation]
+  - id: cm.kpi.days_of_supply
+    name: Days of Supply (Shelf)
+    formula: on_hand_units / daily_velocity_units
+    unit: days
+    direction: target_band
+    definition: On-shelf units divided by daily velocity — how long the current shelf inventory will last before stockout at current velocity. Target band 3-14 days depending on category and replenishment cycle.
+    vertical: CPG
+    subdomains: [category_management]
+    related_personas: [Space Planner, Category Manager]
+    decisionsSupported: [cm.d.planogram_authoring, cm.d.shelf_space_allocation]
+  - id: cm.kpi.innovation_slot_pct
+    name: Innovation Slot %
+    formula: sku_count_launched_24m / sku_count_total
+    unit: "%"
+    direction: target_band
+    definition: Share of currently-listed SKUs launched in the last 24 months. Target band reflects category innovation tempo — beauty 25-40%, dry grocery 5-15%.
+    vertical: CPG
+    subdomains: [category_management]
+    related_personas: [Range Strategist, Category Director]
+    decisionsSupported: [cm.d.innovation_slotting, cm.d.range_review]
+  - id: cm.kpi.private_label_share
+    name: Private Label Share
+    formula: sum(private_label_sales) / sum(category_sales)
+    unit: "%"
+    direction: target_band
+    definition: Private-label (retailer-brand) sales as a share of total category sales at the banner. Target band; too low risks margin, too high risks category penetration / shopper choice perception.
+    vertical: CPG
+    subdomains: [category_management]
+    related_personas: [Category Director, Buyer]
+    decisionsSupported: [cm.d.private_label_balance, cm.d.role_of_category]
+
+  # ============================================================
+  # Anchor: Procurement & Spend Analytics (Manufacturing)
+  # ============================================================
+  - id: psa.kpi.spend_under_mgmt
+    name: Spend Under Management
+    formula: sum(spend_with_active_contract_or_strategic_sourced) / sum(total_spend)
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of total addressable spend that is governed by an active contract or strategic sourcing event. Headline maturity KPI for the CPO — best-in-class >85% on direct, >70% on indirect; sub-65% means the procurement org isn't covering the long tail.
+    vertical: Manufacturing
+    subdomains: [procurement_spend_analytics]
+    related_personas: [Chief Procurement Officer, Sourcing Director]
+    decisionsSupported: [psa.d.consolidate_suppliers, psa.d.tail_spend_strategy]
+  - id: psa.kpi.savings_realized_pct
+    name: Savings Realized %
+    formula: sum(savings_realized) / sum(savings_committed)
+    unit: "%"
+    direction: higher_is_better
+    definition: Realized procurement savings divided by committed savings (the negotiated savings forecast). Anything under 70% means contracted savings aren't sticking — leakage, off-contract spend, or unit-price drift between transaction and rebate accrual.
+    vertical: Manufacturing
+    subdomains: [procurement_spend_analytics]
+    related_personas: [Chief Procurement Officer, Finance Business Partner — Procurement]
+    decisionsSupported: [psa.d.negotiate_now, psa.d.contract_renewal]
+  - id: psa.kpi.maverick_spend_pct
+    name: Maverick Spend %
+    formula: sum(off_contract_spend) / sum(total_addressable_spend)
+    unit: "%"
+    direction: lower_is_better
+    definition: Off-contract spend in a covered category divided by total addressable spend for the category. Top decile organizations sit at 2-5%; weak controls run 15-25%. Detected by reverse-joining transaction to active contract scope at ingest.
+    vertical: Manufacturing
+    subdomains: [procurement_spend_analytics]
+    related_personas: [Category Manager (Indirect), Category Manager (Direct)]
+    decisionsSupported: [psa.d.maverick_spend_response, psa.d.tail_spend_strategy]
+  - id: psa.kpi.contract_compliance_pct
+    name: Contract Compliance %
+    formula: sum(spend_on_contracted_terms) / sum(spend_with_active_contract)
+    unit: "%"
+    direction: higher_is_better
+    definition: Spend that transacts on contracted unit prices, payment terms, and rebate triggers divided by total spend with an active contract for the supplier. Below 90% indicates value leakage — price drift, missed rebate thresholds, or terms not enforced at AP.
+    vertical: Manufacturing
+    subdomains: [procurement_spend_analytics, contract_management]
+    related_personas: [Contract Manager, Category Manager (Indirect)]
+    decisionsSupported: [psa.d.maverick_spend_response, psa.d.contract_renewal]
+  - id: psa.kpi.supplier_risk_score
+    name: Supplier Risk Score (weighted composite)
+    formula: weighted(financial, geographic, cyber, compliance, sustainability) per supplier
+    unit: index
+    direction: lower_is_better
+    definition: 0..100 weighted composite combining financial (D&B Paydex/Failure Score), geographic (Resilinc event exposure), cyber (BitSight/RiskRecon), compliance (sanctions/OFAC), and sustainability (EcoVadis/CDP). Lower = riskier. Weights are configured per category criticality.
+    vertical: Manufacturing
+    subdomains: [procurement_spend_analytics]
+    related_personas: [Supplier Risk Manager]
+    decisionsSupported: [psa.d.terminate_supplier, psa.d.diversify_geography]
+  - id: psa.kpi.supplier_diversity_pct
+    name: Supplier Diversity %
+    formula: sum(spend_with_diverse_suppliers) / sum(total_addressable_spend)
+    unit: "%"
+    direction: higher_is_better
+    definition: Spend with certified diverse suppliers (MBE/WBE/VBE/LGBTBE/SDB/HUBZone — NMSDC, WBENC, NVOIC, NGLCC, SBA certs) divided by total addressable spend. Required disclosure for many enterprise buyers and most US federal prime contractors.
+    vertical: Manufacturing
+    subdomains: [procurement_spend_analytics]
+    related_personas: [Chief Procurement Officer, Sourcing Director]
+    decisionsSupported: [psa.d.consolidate_suppliers]
+  - id: psa.kpi.scope3_intensity
+    name: Scope 3 Emissions per $ (Cat 1+2)
+    formula: sum(supplier_scope3_kgco2e) / sum(spend_usd)
+    unit: kgCO2e/USD
+    direction: lower_is_better
+    definition: GHG Protocol Scope 3 Category 1 (Purchased Goods & Services) + Category 2 (Capital Goods) emissions per dollar of spend. Attribution hierarchy at line level — primary supplier disclosure (CDP) > activity-based factor (unit × kg/unit) > spend-based factor (EXIOBASE/USEEIO). Disclosed under CSRD ESRS E1.
+    vertical: Manufacturing
+    subdomains: [procurement_spend_analytics, carbon_accounting]
+    related_personas: [Sustainability Procurement Lead]
+    decisionsSupported: [psa.d.scope3_supplier_engagement, psa.d.consolidate_suppliers]
+  - id: psa.kpi.touchless_po_pct
+    name: Touchless PO %
+    formula: count(po_no_human_intervention) / count(total_po)
+    unit: "%"
+    direction: higher_is_better
+    definition: POs that flow from requisition through PO issuance without any human approval step divided by total POs. Driven by catalog/punchout coverage, auto-approval rules, and category-spend thresholds. World-class on indirect tail is >70%; direct typically 40-55%.
+    vertical: Manufacturing
+    subdomains: [procurement_spend_analytics]
+    related_personas: [Procurement Systems Lead, AP Operations Lead]
+    decisionsSupported: [psa.d.tail_spend_strategy]
+  - id: psa.kpi.po_cycle_time
+    name: PO Cycle Time (requisition -> PO issued)
+    formula: avg(po_issued_ts - req_submitted_ts)
+    unit: hours
+    direction: lower_is_better
+    definition: Average elapsed time from requisition submission to PO issuance to the supplier. Catalog/punchout sits at minutes; free-text indirect 4-24 hours; direct materials with engineering review 48-120 hours.
+    vertical: Manufacturing
+    subdomains: [procurement_spend_analytics]
+    related_personas: [Category Manager (Indirect), Procurement Systems Lead]
+    decisionsSupported: [psa.d.tail_spend_strategy]
+  - id: psa.kpi.ap_aging_over_60
+    name: AP Aging > 60 days %
+    formula: sum(open_ap_amount where age_days > 60) / sum(open_ap_amount)
+    unit: "%"
+    direction: lower_is_better
+    definition: Open AP balance aged beyond 60 days divided by total open AP. Indicates exception backlog, disputed invoices, or working-capital stretching. Above 8-12% triggers operational review and supplier-relationship risk.
+    vertical: Manufacturing
+    subdomains: [procurement_spend_analytics]
+    related_personas: [AP Operations Lead]
+    decisionsSupported: [psa.d.invoice_match_threshold]
+  - id: psa.kpi.invoice_match_rate
+    name: Three-Way Invoice Match Rate
+    formula: count(invoices_matched_3way) / count(invoices_total)
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of invoices that clear three-way match (PO + receipt + invoice) within tolerance bands without exception. World-class on PO-backed spend is >85%; the 15-25% that fail are the largest AP cost driver and require tiered tolerance bands and exception-queue routing.
+    vertical: Manufacturing
+    subdomains: [procurement_spend_analytics]
+    related_personas: [AP Operations Lead]
+    decisionsSupported: [psa.d.invoice_match_threshold]
+  - id: psa.kpi.sustainable_spend_pct
+    name: Sustainable Spend %
+    formula: sum(spend_with_ecovadis_silver_or_better) / sum(total_addressable_spend)
+    unit: "%"
+    direction: higher_is_better
+    definition: Spend transacted with EcoVadis Silver+ (≥58 score) suppliers divided by total addressable spend. The board-level sustainable-procurement commitment metric; ESG-mature enterprises target 75-90% by 2030 in line with SBTi commitments.
+    vertical: Manufacturing
+    subdomains: [procurement_spend_analytics]
+    related_personas: [Sustainability Procurement Lead, Chief Procurement Officer]
+    decisionsSupported: [psa.d.scope3_supplier_engagement, psa.d.consolidate_suppliers]
+  - id: psa.kpi.critical_supplier_concentration
+    name: Critical Supplier Concentration (top-1 share)
+    formula: max(supplier_spend) / sum(category_spend) for critical_categories
+    unit: "%"
+    direction: lower_is_better
+    definition: Top-1 supplier share of total category spend, computed across categories flagged critical (single-source materials, regulated APIs, specialized capital goods). >50% is single-source exposure; mitigation is dual-source qualification or near-shore alternative.
+    vertical: Manufacturing
+    subdomains: [procurement_spend_analytics]
+    related_personas: [Supplier Risk Manager, Category Manager (Direct)]
+    decisionsSupported: [psa.d.diversify_geography, psa.d.terminate_supplier]
+  - id: psa.kpi.buying_channel_mix
+    name: Buying Channel Mix (catalog/punchout/free-text)
+    formula: count(po_lines by channel) / count(po_lines_total)
+    unit: "%"
+    direction: target_band
+    definition: Distribution of PO lines across channels — catalog, punchout, free-text, marketplace, P-card, auto-PO. Higher catalog/punchout share lifts touchless rates and compresses cycle time; free-text is the tail-spend leakage indicator.
+    vertical: Manufacturing
+    subdomains: [procurement_spend_analytics]
+    related_personas: [Procurement Systems Lead]
+    decisionsSupported: [psa.d.tail_spend_strategy]
+  - id: psa.kpi.tail_spend_pct
+    name: Tail Spend %
+    formula: sum(spend_in_bottom_80pct_suppliers) / sum(total_spend)
+    unit: "%"
+    direction: lower_is_better
+    definition: Spend in the bottom-80% of suppliers (the long tail) divided by total spend. Typical band 3-8% but supplier count carries 80%+ of the supplier-master workload. Tackled by catalog consolidation, marketplace channels, and P-card programs.
+    vertical: Manufacturing
+    subdomains: [procurement_spend_analytics]
+    related_personas: [Sourcing Director, Category Manager (Indirect)]
+    decisionsSupported: [psa.d.tail_spend_strategy, psa.d.consolidate_suppliers]

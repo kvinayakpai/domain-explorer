@@ -1,0 +1,454 @@
+id: trade_promotion_management
+name: Trade Promotion Management
+vertical: CPG
+oneLiner: Plan, fund, execute, measure, and settle the >$1T global trade-promotion spend that CPG manufacturers commit to retail partners — promo plans, retailer scan-data, deductions, and pay-for-performance ROI.
+
+# Authoritative sources (as of mid-2026):
+#   SAP TPM (S/4HANA CRM Trade Promotion Management)
+#     https://help.sap.com/docs/SAP_S4HANA_CLOUD/trade-promotion-management
+#     Promotion, Plan Account, Tactic, Funds, Settlement, Validation.
+#   Exceedra (Telus / now part of Telus International) — TPx (TPM + TPO)
+#     https://www.exceedra.com — Account Plan, Promotion, Funds, Lift Library.
+#   AFS Technologies (now Salient/AFS) Retail Execution + TPM
+#     https://www.afsi.com — DSD, AFS Customer Connect, TPM, Promotion ROI.
+#   T-Pro Solutions — promo optimization (TPx)
+#     https://www.tprosolutions.com — Predictive ROI, baseline science.
+#   BluePlanner (Upclear) — Revenue Growth Management + TPM
+#     https://www.upclear.com — TPM, TPO, Deduction, Live Trade Management.
+#   Anaplan TPM (Trade Promotion Management on Anaplan platform)
+#     https://www.anaplan.com — Connected Planning models for trade.
+#   Accenture CAS (Consumer Goods Cloud / Salesforce Consumer Goods)
+#     https://www.salesforce.com/products/consumer-goods/ — Retail Execution + TPM.
+#   Vistex Solutions for Trade Promotion
+#     https://www.vistex.com — pricing, rebates, deductions, settlements.
+#   IRI / Circana (merged 2022) — syndicated POS and panel
+#     https://www.circana.com — Unify scan + panel; Liquid Data.
+#   NielsenIQ / Nielsen Connect — syndicated retail measurement
+#     https://nielseniq.com — Connect Discover, Connect+ Retail.
+#   Numerator — purchase panel & promo intel
+#     https://www.numerator.com — Promo Insights, Receipt panel.
+#   Retailer EDI feeds (X12)
+#     EDI 852 — Product Activity Data (POS movement, on-hand inventory)
+#     EDI 867 — Product Transfer & Resale Report (sell-through to consumer)
+#     EDI 810 — Invoice (used for off-invoice claims)
+#     EDI 820 — Payment Order / Remittance (used for deduction settlement)
+#     X12 standards: https://www.x12.org/products/transaction-sets
+#   GS1 — GTIN / GLN / GDSN for product + location identification
+#     https://www.gs1.org
+#   NRF AROTS — Association for Retail Open Trading Standards
+#     Trade-promo data interchange profile.
+#   BlueYonder ESL (Electronic Shelf Labels) — display compliance signals.
+#   Salesforce CRM, SAP S/4HANA ERP — order, ship, invoice anchors for redemption.
+
+personas:
+  - { name: Trade Marketing Director, title: Director, Trade Marketing, level: Director }
+  - { name: Customer Marketing Manager, title: Senior Manager, Customer Marketing, level: Manager }
+  - { name: Trade Spend Analyst, title: Senior Analyst, Trade Spend Finance, level: IC }
+  - { name: Key Account Manager, title: Director, National Accounts (Walmart/Kroger), level: Director }
+  - { name: Deductions Manager, title: Manager, Deductions & Claims, level: Manager }
+  - { name: Revenue Growth Manager, title: Director, Revenue Growth Management, level: Director }
+  - { name: Finance Controller (Trade), title: Controller, Trade & Promotional Accounting, level: VP }
+  - { name: VP Sales, title: VP Sales, North America, level: VP }
+
+decisions:
+  - { id: tpm.d.promo_calendar, statement: "Lock the next 13-week promo calendar across the top-20 accounts: which weeks get a feature, which get a TPR, which carry a display." }
+  - { id: tpm.d.tactic_mix, statement: "For a given promotion, choose the tactic mix — off-invoice vs scan-down vs bill-back vs MCB — given account preference, deduction risk, and lift expectations." }
+  - { id: tpm.d.discount_depth, statement: "Set the consumer discount depth (e.g. $0.50 off vs 2-for-$5) given baseline volume, expected lift curve, and competitive promo intensity." }
+  - { id: tpm.d.fund_allocation, statement: "Allocate the annual trade fund across customers and brands — does Walmart get accrual-based or lump-sum, and how much shifts to Kroger if Albertsons under-spends?" }
+  - { id: tpm.d.deduction_dispute, statement: "On every retailer deduction, decide: pay, dispute, or reclassify against a different promotion — the wrong call costs 30-90 days of cash." }
+  - { id: tpm.d.forward_buy_cap, statement: "Set the forward-buy ceiling (cases per account per week of supply) so a deep promo doesn't drain post-event baseline volume." }
+  - { id: tpm.d.display_compliance, statement: "Decide whether to credit a retailer for display execution given AFS/Numerator photo-audit evidence — withholding pay-for-performance damages the relationship; over-paying inflates trade rate." }
+  - { id: tpm.d.promo_kill, statement: "Kill or pull-forward an in-flight promotion based on early-week scan data tracking below baseline lift expectation." }
+  - { id: tpm.d.new_item_slot, statement: "For a new SKU launch, pick the slotting + intro promo bundle that maximizes 6-month repeat purchase under a fixed introductory budget." }
+  - { id: tpm.d.cannibalization_guardrail, statement: "Approve a deep promotion on a hero SKU only if forecast cannibalization on the rest of the brand is below the guardrail (typically <15%)." }
+
+kpis:
+  - id: tpm.kpi.trade_spend_pct
+    name: Trade Spend %
+    formula: sum(trade_spend) / sum(gross_sales)
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [tpm.d.fund_allocation, tpm.d.tactic_mix]
+  - id: tpm.kpi.promo_roi
+    name: Promo ROI
+    formula: (incremental_gross_profit - trade_spend) / trade_spend
+    unit: ratio
+    direction: higher_is_better
+    decisionsSupported: [tpm.d.discount_depth, tpm.d.tactic_mix, tpm.d.promo_kill]
+  - id: tpm.kpi.deduction_rate
+    name: Deduction Rate
+    formula: sum(open_deductions) / sum(invoiced_revenue)
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [tpm.d.deduction_dispute]
+  - id: tpm.kpi.net_promotion_effectiveness
+    name: Net Promotion Effectiveness
+    formula: incremental_units / promotional_units
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [tpm.d.discount_depth, tpm.d.tactic_mix]
+  - id: tpm.kpi.trade_stock_build_pct
+    name: Trade Stock Build %
+    formula: (forward_buy_units - normal_purchase_units) / normal_purchase_units
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [tpm.d.forward_buy_cap]
+  - id: tpm.kpi.incremental_lift
+    name: Incremental Lift
+    formula: (promo_period_units - baseline_units) / baseline_units
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [tpm.d.discount_depth, tpm.d.promo_kill]
+  - id: tpm.kpi.baseline_volume
+    name: Baseline Volume
+    formula: sum(non_promo_units * weeks)
+    unit: cases
+    direction: target_band
+    decisionsSupported: [tpm.d.cannibalization_guardrail]
+  - id: tpm.kpi.forward_buy_inventory_weeks
+    name: Forward-Buy Inventory (weeks of supply)
+    formula: forward_buy_units / weekly_baseline_units
+    unit: weeks
+    direction: target_band
+    decisionsSupported: [tpm.d.forward_buy_cap]
+  - id: tpm.kpi.display_compliance_pct
+    name: Display Compliance %
+    formula: stores_with_compliant_display / stores_promised_display
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [tpm.d.display_compliance]
+  - id: tpm.kpi.distribution_coverage
+    name: Distribution Coverage (%ACV)
+    formula: sum(acv_with_sku) / total_acv
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [tpm.d.new_item_slot]
+  - id: tpm.kpi.on_shelf_availability_pct
+    name: On-Shelf Availability %
+    formula: stores_in_stock / stores_audited
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [tpm.d.display_compliance]
+  - id: tpm.kpi.perfect_store_score
+    name: Perfect Store Score
+    formula: weighted_avg(distribution, share_of_shelf, planogram_compliance, price_compliance, promo_compliance)
+    unit: index
+    direction: higher_is_better
+    decisionsSupported: [tpm.d.display_compliance]
+  - id: tpm.kpi.retailer_scorecard
+    name: Retailer Score-card (Joint Business Plan)
+    formula: weighted(otif, fill_rate, deduction_rate, growth_pct, promo_compliance)
+    unit: index
+    direction: higher_is_better
+    decisionsSupported: [tpm.d.fund_allocation]
+  - id: tpm.kpi.pay_for_performance_pct
+    name: Pay-for-Performance %
+    formula: sum(performance_qualified_spend) / sum(committed_spend)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [tpm.d.display_compliance, tpm.d.deduction_dispute]
+
+dataModel:
+  entities:
+    - name: account
+      description: Retailer / customer hierarchy at headquarter level. Mirrors SAP CRM Account or Exceedra Account Plan node — keyed by account_id, with a banner / customer / division roll-up.
+      keys: [account_id]
+      attributes:
+        - { name: account_id, type: varchar(32), isPrimaryKey: true }
+        - { name: account_name, type: varchar(255), description: "e.g. Walmart, Kroger, Target — headquarter level" }
+        - { name: parent_account_id, type: varchar(32), description: "Banner roll-up (e.g. Albertsons-Safeway umbrella)" }
+        - { name: channel, type: varchar(32), description: "grocery|mass|club|drug|convenience|dollar|ecom|food_service" }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: gln, type: varchar(13), description: "GS1 Global Location Number" }
+        - { name: trade_terms_code, type: varchar(16), description: "Off-invoice / scan-down / mixed terms profile" }
+        - { name: status, type: varchar(16) }
+        - { name: created_at, type: timestamp }
+
+    - name: customer_outlet
+      description: Store-level outlet (one row per banner store). Bridge for retailer EDI 852 store-level signals and AFS retail-execution visit logs.
+      keys: [outlet_id]
+      attributes:
+        - { name: outlet_id, type: varchar(32), isPrimaryKey: true }
+        - { name: account_id, type: varchar(32), isForeignKey: true, references: account.account_id }
+        - { name: store_number, type: varchar(16) }
+        - { name: gln, type: varchar(13), description: "GS1 GLN for the store" }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: state_region, type: varchar(8) }
+        - { name: postal_code, type: varchar(16) }
+        - { name: format, type: varchar(32), description: "supercenter|grocery|club|express|c-store" }
+        - { name: lat, type: "decimal(9,6)" }
+        - { name: lng, type: "decimal(9,6)" }
+        - { name: opened_at, type: date }
+        - { name: status, type: varchar(16) }
+
+    - name: product
+      description: Manufacturer SKU. Keyed by GTIN-14 with brand / sub-brand / pack / size / category metadata for promo planning.
+      keys: [sku_id]
+      attributes:
+        - { name: sku_id, type: varchar(32), isPrimaryKey: true }
+        - { name: gtin, type: varchar(14), description: "GS1 GTIN-14" }
+        - { name: brand, type: varchar(64) }
+        - { name: sub_brand, type: varchar(64) }
+        - { name: category, type: varchar(64), description: "Snacks, Beverages, Personal Care, etc." }
+        - { name: subcategory, type: varchar(64) }
+        - { name: pack_size, type: varchar(32) }
+        - { name: case_pack_qty, type: smallint }
+        - { name: list_price_cents, type: bigint, description: "Wholesale list price (case) in minor units" }
+        - { name: srp_cents, type: bigint, description: "Suggested retail price (each) in minor units" }
+        - { name: cost_of_goods_cents, type: bigint }
+        - { name: launch_date, type: date }
+        - { name: status, type: varchar(16) }
+
+    - name: promotion
+      description: A planned trade promotion at the account × brand × time window grain. Container for one or more tactics.
+      keys: [promotion_id]
+      attributes:
+        - { name: promotion_id, type: varchar(32), isPrimaryKey: true }
+        - { name: account_id, type: varchar(32), isForeignKey: true, references: account.account_id }
+        - { name: name, type: varchar(255), description: "e.g. Memorial Day Carbonated Soft Drinks Feature" }
+        - { name: fiscal_year, type: smallint }
+        - { name: fiscal_quarter, type: smallint }
+        - { name: start_date, type: date, description: "ISO 8601" }
+        - { name: end_date, type: date, description: "ISO 8601" }
+        - { name: ship_start_date, type: date, description: "Earliest order date eligible for the promo" }
+        - { name: ship_end_date, type: date }
+        - { name: status, type: varchar(16), description: "draft|approved|active|closed|cancelled" }
+        - { name: planned_spend_cents, type: bigint }
+        - { name: planned_volume_units, type: bigint }
+        - { name: planned_lift_pct, type: "decimal(5,2)" }
+        - { name: forecast_roi, type: "decimal(6,2)" }
+        - { name: created_by, type: varchar(64) }
+        - { name: created_at, type: timestamp }
+        - { name: approved_at, type: timestamp }
+
+    - name: promo_tactic
+      description: One tactical execution under a promotion (e.g. $1.00 off-invoice on a 12-pack for 4 weeks at Kroger). Multiple tactics may share a parent promotion.
+      keys: [tactic_id]
+      attributes:
+        - { name: tactic_id, type: varchar(32), isPrimaryKey: true }
+        - { name: promotion_id, type: varchar(32), isForeignKey: true, references: promotion.promotion_id }
+        - { name: sku_id, type: varchar(32), isForeignKey: true, references: product.sku_id }
+        - { name: tactic_type, type: varchar(32), description: "off_invoice|scan_down|bill_back|mcb|edlp|trade_allowance|display|feature|tpr|coupon|bogo" }
+        - { name: discount_per_unit_cents, type: bigint, description: "Manufacturer-funded discount per unit" }
+        - { name: consumer_price_cents, type: bigint, description: "Promoted retail price per unit" }
+        - { name: srp_cents, type: bigint }
+        - { name: planned_units, type: bigint }
+        - { name: planned_spend_cents, type: bigint }
+        - { name: actual_units, type: bigint }
+        - { name: actual_spend_cents, type: bigint }
+        - { name: lift_expected_pct, type: "decimal(5,2)" }
+        - { name: feature_type, type: varchar(16), description: "ad_block|insert|email|in_app|none" }
+        - { name: display_type, type: varchar(16), description: "endcap|aisle_violator|pallet_drop|cooler|none" }
+        - { name: tpr_only, type: boolean, description: "Temporary Price Reduction with no feature/display" }
+        - { name: settlement_method, type: varchar(16), description: "off_invoice|deduction|check|emc|edi820" }
+
+    - name: deduction
+      description: A retailer-issued chargeback claim against a manufacturer invoice. Lifecycle: open → matched → disputed | paid | written-off. Often arrives via EDI 812/820 or as a remittance line item.
+      keys: [deduction_id]
+      attributes:
+        - { name: deduction_id, type: varchar(32), isPrimaryKey: true }
+        - { name: account_id, type: varchar(32), isForeignKey: true, references: account.account_id }
+        - { name: invoice_id, type: varchar(64), description: "Originating manufacturer invoice (EDI 810)" }
+        - { name: claim_number, type: varchar(64), description: "Retailer-issued claim reference" }
+        - { name: tactic_id, type: varchar(32), isForeignKey: true, references: promo_tactic.tactic_id, description: "Matched tactic if reconciled" }
+        - { name: deduction_type, type: varchar(32), description: "promo|shortage|damages|pricing|compliance|slotting|mcb|other" }
+        - { name: amount_cents, type: bigint }
+        - { name: open_amount_cents, type: bigint }
+        - { name: opened_date, type: date }
+        - { name: aging_days, type: integer }
+        - { name: status, type: varchar(16), description: "open|matched|disputed|paid|written_off|chargeback_lost" }
+        - { name: dispute_reason, type: varchar(64) }
+        - { name: resolution_date, type: date }
+        - { name: validation_evidence_uri, type: text, description: "Pointer to scan-data export or photo audit used as evidence" }
+
+    - name: baseline_forecast
+      description: Statistical baseline volume estimate per account × SKU × week — what would have sold without the promo. Outputs from the IRI/Circana/NielsenIQ baseline model or in-house TPO.
+      keys: [baseline_id]
+      attributes:
+        - { name: baseline_id, type: varchar(32), isPrimaryKey: true }
+        - { name: account_id, type: varchar(32), isForeignKey: true, references: account.account_id }
+        - { name: sku_id, type: varchar(32), isForeignKey: true, references: product.sku_id }
+        - { name: week_start_date, type: date }
+        - { name: baseline_units, type: bigint }
+        - { name: baseline_dollars_cents, type: bigint }
+        - { name: model_name, type: varchar(64), description: "circana_unify|niq_baseline|tpro_predictive|inhouse_glm" }
+        - { name: model_version, type: varchar(16) }
+        - { name: confidence_band_low, type: bigint }
+        - { name: confidence_band_high, type: bigint }
+        - { name: generated_at, type: timestamp }
+
+    - name: lift_observation
+      description: Observed (post-event) incremental lift for a specific tactic week. Closes the loop on plan vs actual ROI.
+      keys: [lift_observation_id]
+      attributes:
+        - { name: lift_observation_id, type: varchar(32), isPrimaryKey: true }
+        - { name: tactic_id, type: varchar(32), isForeignKey: true, references: promo_tactic.tactic_id }
+        - { name: account_id, type: varchar(32), isForeignKey: true, references: account.account_id }
+        - { name: sku_id, type: varchar(32), isForeignKey: true, references: product.sku_id }
+        - { name: week_start_date, type: date }
+        - { name: actual_units, type: bigint }
+        - { name: baseline_units, type: bigint }
+        - { name: incremental_units, type: bigint, description: "actual - baseline" }
+        - { name: lift_pct, type: "decimal(6,2)" }
+        - { name: cannibalization_units, type: bigint, description: "Loss on related SKUs attributable to this promo" }
+        - { name: halo_units, type: bigint, description: "Gain on related SKUs attributable to this promo" }
+        - { name: incremental_gross_profit_cents, type: bigint }
+        - { name: actual_roi, type: "decimal(6,2)" }
+        - { name: source, type: varchar(32), description: "circana|niq|numerator|inhouse|retailer_scan" }
+
+    - name: retailer_scan_data
+      description: Weekly retailer POS scan and on-hand inventory feed. Sourced from EDI 852 (Product Activity Data) and EDI 867 (Product Transfer & Resale). The grain is account × outlet × SKU × week.
+      keys: [scan_id]
+      attributes:
+        - { name: scan_id, type: varchar(40), isPrimaryKey: true }
+        - { name: account_id, type: varchar(32), isForeignKey: true, references: account.account_id }
+        - { name: outlet_id, type: varchar(32), isForeignKey: true, references: customer_outlet.outlet_id }
+        - { name: sku_id, type: varchar(32), isForeignKey: true, references: product.sku_id }
+        - { name: gtin, type: varchar(14) }
+        - { name: week_start_date, type: date }
+        - { name: units_sold, type: bigint }
+        - { name: dollars_sold_cents, type: bigint }
+        - { name: avg_retail_price_cents, type: bigint }
+        - { name: on_hand_units, type: integer }
+        - { name: on_promo_flag, type: boolean }
+        - { name: feature_flag, type: boolean }
+        - { name: display_flag, type: boolean }
+        - { name: tpr_flag, type: boolean }
+        - { name: source_doc, type: varchar(8), description: "EDI 852|EDI 867|niq|circana|numerator|first_party" }
+        - { name: ingested_at, type: timestamp }
+
+    - name: trade_fund
+      description: Annual trade-spend fund pool by customer × brand × tactic-class. Drives accrual accounting and pay-for-performance gating.
+      keys: [fund_id]
+      attributes:
+        - { name: fund_id, type: varchar(32), isPrimaryKey: true }
+        - { name: account_id, type: varchar(32), isForeignKey: true, references: account.account_id }
+        - { name: brand, type: varchar(64) }
+        - { name: fiscal_year, type: smallint }
+        - { name: fund_type, type: varchar(16), description: "accrual|lump_sum|pay_for_performance|mcb_pool" }
+        - { name: planned_amount_cents, type: bigint }
+        - { name: committed_amount_cents, type: bigint }
+        - { name: spent_amount_cents, type: bigint }
+        - { name: balance_cents, type: bigint }
+        - { name: status, type: varchar(16) }
+
+  relationships:
+    - { from: customer_outlet, to: account, kind: many_to_one }
+    - { from: promotion, to: account, kind: many_to_one }
+    - { from: promo_tactic, to: promotion, kind: many_to_one }
+    - { from: promo_tactic, to: product, kind: many_to_one }
+    - { from: deduction, to: account, kind: many_to_one }
+    - { from: deduction, to: promo_tactic, kind: many_to_one }
+    - { from: baseline_forecast, to: account, kind: many_to_one }
+    - { from: baseline_forecast, to: product, kind: many_to_one }
+    - { from: lift_observation, to: promo_tactic, kind: many_to_one }
+    - { from: lift_observation, to: account, kind: many_to_one }
+    - { from: lift_observation, to: product, kind: many_to_one }
+    - { from: retailer_scan_data, to: account, kind: many_to_one }
+    - { from: retailer_scan_data, to: customer_outlet, kind: many_to_one }
+    - { from: retailer_scan_data, to: product, kind: many_to_one }
+    - { from: trade_fund, to: account, kind: many_to_one }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/trade_promotion_management_3nf.sql
+  vault: modeling/ddl/trade_promotion_management_vault.sql
+  dimensional: modeling/ddl/trade_promotion_management_dim.sql
+
+sourceSystems:
+  - { vendor: SAP, product: SAP TPM (S/4HANA CRM Trade Promotion Management), category: TPM Platform }
+  - { vendor: Exceedra (Telus), product: Exceedra TPx, category: TPM/TPO Platform }
+  - { vendor: AFS Technologies (Salient), product: AFS TPM + Retail Execution, category: Retail Execution / TPM }
+  - { vendor: T-Pro Solutions, product: T-Pro TPx, category: Trade Promo Optimization }
+  - { vendor: BluePlanner (Upclear), product: BluePlanner Live Trade Management, category: TPM / RGM }
+  - { vendor: Anaplan, product: Anaplan TPM (Connected Planning), category: TPM Platform }
+  - { vendor: Salesforce / Accenture, product: Salesforce Consumer Goods Cloud (CAS), category: CRM + Retail Execution }
+  - { vendor: Vistex, product: Vistex Solutions for Trade Promotion, category: Pricing / Rebates / Settlements }
+  - { vendor: Circana (formerly IRI), product: Circana Unify / Liquid Data, category: Syndicated POS & Panel }
+  - { vendor: NielsenIQ, product: NielsenIQ Connect / Connect+ Retail, category: Syndicated POS Measurement }
+  - { vendor: Numerator, product: Numerator Promo Insights, category: Receipt Panel / Promo Intel }
+  - { vendor: VAN (Value-Added Network), product: Retailer EDI 852/867/810/820 feeds, category: EDI }
+  - { vendor: Salesforce, product: Salesforce Sales Cloud, category: CRM }
+  - { vendor: SAP, product: SAP S/4HANA ERP — SD/FI, category: ERP — Order/Invoice/Settlement }
+  - { vendor: BlueYonder, product: BlueYonder Electronic Shelf Labels (ESL), category: Display Compliance Sensor }
+
+connectors:
+  - { type: SAP RFC/BAPI, protocol: RFC, auth: SAP user, typicalSources: [SAP TPM, SAP S/4HANA] }
+  - { type: SAP IDoc, protocol: RFC/file, auth: SAP user, typicalSources: [SAP TPM] }
+  - { type: REST/JSON, protocol: HTTPS, auth: OAuth2, typicalSources: [Exceedra, BluePlanner, Anaplan, Salesforce CG Cloud] }
+  - { type: AS2 EDI X12 (852/867/810/820), protocol: AS2, auth: PKI, typicalSources: [Walmart Retail Link, Kroger 84.51, Target Partners Online] }
+  - { type: SFTP file feeds, protocol: SFTP, auth: SSH key, typicalSources: [Circana Unify exports, NielsenIQ Connect drops, retailer DSR files] }
+  - { type: Circana Liquid Data API, protocol: HTTPS REST, auth: OAuth2 + API key, typicalSources: [Circana] }
+  - { type: NielsenIQ Connect API, protocol: HTTPS REST, auth: OAuth2, typicalSources: [NielsenIQ Connect] }
+  - { type: Numerator Insights API, protocol: HTTPS REST, auth: API key, typicalSources: [Numerator] }
+  - { type: Salesforce Bulk API + CDC, protocol: HTTPS, auth: OAuth2 + JWT, typicalSources: [Salesforce CG Cloud, Sales Cloud] }
+  - { type: BlueYonder ESL telemetry stream, protocol: MQTT/HTTPS, auth: TLS + cred, typicalSources: [BlueYonder ESL] }
+  - { type: Vistex deduction match webhook, protocol: HTTPS, auth: HMAC, typicalSources: [Vistex] }
+
+ingestionChallenges:
+  - Retailer EDI 852/867 feeds arrive on different cadences (Walmart daily, Kroger weekly, regional grocers monthly), with varying GTIN coverage and frequent late files; parser must reconcile partial weeks back-fill.
+  - GTIN-to-internal-SKU mapping is brittle — a single product re-pack creates a new GTIN that the master data team often back-dates by weeks, leaving scan rows orphaned in staging.
+  - Syndicated panels (Circana, NielsenIQ) ship attributes like baseline volume and any-promo flag at distinct geographies (Total US Food, Walmart-excl, Convenience+) that must be re-aggregated, not unioned.
+  - Deductions arrive as freeform remittance lines on EDI 820 / cheque stubs; OCR + NLP extraction creates probabilistic claim → tactic links, requiring an analyst-in-the-loop matching workflow.
+  - Promo plan version churn is high (deal sheets revised 4-7 times before lock); changefeed must capture each version and not just the latest, or post-event ROI compares against the wrong baseline.
+  - Retail-execution photo audits (AFS, Numerator) can land 2-7 days after the promo week ends — display-compliance KPIs must be late-binding and re-publish when audit data lands.
+
+integrationChallenges:
+  - name: Promo plan vs ERP redemption reconciliation
+    description: A planned tactic in SAP TPM commits funds, but actual redemption (off-invoice deduction, scan-down credit, MCB cheque) lands in SAP S/4HANA SD/FI as separate document flows — deductions, credit memos, and bill-back invoices. Reconciling plan to actual at the tactic grain requires 4-6 join hops with frequent cardinality blowups.
+    mitigation: Persist a tactic_id on every redemption document at point-of-creation (custom field in SAP CRM → SD); build a deterministic match pipeline with confidence scores and an explicit unmatched-bucket so finance can audit drift.
+  - name: Baseline volume model conflict
+    description: Three or more baseline models (Circana, NielsenIQ, in-house TPO) disagree by 5-30% on the no-promo counterfactual. The choice of baseline drives whether a promo "made ROI" or didn't — a political minefield between marketing and finance.
+    mitigation: Persist all baseline models side-by-side with model_name + model_version; require a single canonical baseline policy per account × category, locked annually with sign-off; expose baseline diff in the post-event analytics layer so disagreement is visible, not hidden.
+  - name: Retailer scan-data scope mismatch
+    description: Retailer EDI 852 covers a subset of stores and SKUs. Circana / NielsenIQ panels project to total category but at higher latency (8 weeks). Manufacturers must blend both — the 852 for early signal, the panel for the truth — without double-counting.
+    mitigation: Tag every scan_data row with source_doc (EDI 852 / Circana / NielsenIQ) and projection_factor; downstream lift_observation always uses panel data for closeout but allows EDI for in-flight monitoring.
+  - name: Deduction back-charge attribution
+    description: Walmart issues a single $400k deduction lump that covers 80 SKUs across 12 weeks; the manufacturer's TPM has those tactics across 4 promotions. Auto-matching is heuristic; unmatched residual goes to the catch-all "unmapped trade" bucket and inflates trade rate.
+    mitigation: Use a probabilistic matcher (BluePlanner Live Trade Management or Vistex Match Engine) with proposed allocations, plus an analyst-review queue; log every (deduction, tactic, weight) tuple so post-mortem is auditable.
+  - name: Forward-buy distortion of baseline
+    description: A deep promo causes the retailer to forward-buy 10 weeks of inventory; subsequent baseline weeks show artificially depressed volume because shelves are still draining the forward-buy. A naive baseline model interprets this as decay and lowers future plan targets.
+    mitigation: Tag inventory weeks downstream of a known promo as "forward-buy adjusted"; re-train baselines on a pre-promo window only; surface trade_stock_build_pct as a guardrail KPI on every plan.
+  - name: Pay-for-performance evidence chain
+    description: Retailers increasingly require proof of compliance (display photos, scan flags) before paying performance funds. Manufacturer evidence is fragmented across AFS rep visits, Numerator photo crowdsourcing, and self-reported compliance — joining at outlet × week × tactic is fragile.
+    mitigation: Standardize on a single compliance event log (outlet_id, tactic_id, week_start, evidence_uri, source) with deterministic resolution rules (audit > photo > self-report); pay-for-performance gating reads the unified table only.
+  - name: New-item slotting and intro-promo coupling
+    description: A new SKU's slotting fee, intro promo discount, and post-launch repeat-purchase forecast are tightly coupled but live in three systems (slotting in CRM/CG Cloud, promo in TPM, repeat in panel data). Decisions get made on month-old snapshots.
+    mitigation: Build a launch-tactic master that joins slotting fee + intro tactic + first 12 weeks of scan + Numerator first-time buyer panel into one fact (fct_new_item_launch); refresh weekly during the launch window.
+  - name: Cannibalization and halo within a promo
+    description: A 2-for-$5 promo on Brand A 12-pack drives volume at Brand A but cannibalizes Brand A 6-pack and halos Brand B salty-snack pairing. Lift attributable to the tactic depends on which related SKUs are in scope.
+    mitigation: Define a brand_basket per promo; compute lift, cannibalization, and halo at basket grain; surface all three on the same dashboard so the marketing team can't quietly omit cannibalization.
+  - name: Trade-deal grandfathering on price changes
+    description: When wholesale list price changes mid-flight, off-invoice deals committed at the old price create deduction disputes for weeks. Historical price tape must be queryable at deal-creation time, not as-of-now.
+    mitigation: Implement bi-temporal pricing (effective_from, recorded_at); deal calculations bind to the price as recorded at deal-creation time; audit log carries both the old and new price for every disputed deduction.
+
+glossaryTerms:
+  - MCB (Manufacturer Chargeback)
+  - Bill-back
+  - Scan-down
+  - Off-invoice
+  - Promo Lift
+  - Baseline Volume
+  - Incremental Volume
+  - Forward Buy
+  - Halo Effect
+  - Cannibalization
+  - Perfect Store
+  - Retail Execution
+  - Trade Spend
+  - MAP (Minimum Advertised Price)
+  - EDI 852 (Product Activity Data)
+  - EDI 867 (Product Transfer & Resale Report)
+  - NRF AROTS
+  - Pay-for-Performance
+  - Joint Business Plan (JBP)
+
+standards:
+  - { id: edi_852, name: "ASC X12 EDI 852 — Product Activity Data", version: "v4010+", url: "https://www.x12.org/products/transaction-sets" }
+  - { id: edi_867, name: "ASC X12 EDI 867 — Product Transfer & Resale Report", version: "v4010+", url: "https://www.x12.org/products/transaction-sets" }
+  - { id: edi_810, name: "ASC X12 EDI 810 — Invoice", version: "v4010+", url: "https://www.x12.org/products/transaction-sets" }
+  - { id: edi_820, name: "ASC X12 EDI 820 — Payment Order / Remittance", version: "v4010+", url: "https://www.x12.org/products/transaction-sets" }
+  - { id: gs1_gtin, name: "GS1 GTIN (Global Trade Item Number)", version: "GTIN-14", url: "https://www.gs1.org/standards/id-keys/gtin" }
+  - { id: gs1_gln, name: "GS1 GLN (Global Location Number)", version: "GLN", url: "https://www.gs1.org/standards/id-keys/gln" }
+  - { id: gs1_gdsn, name: "GS1 GDSN (Global Data Synchronisation Network)", version: "3.1", url: "https://www.gs1.org/services/gdsn" }
+  - { id: nrf_arots, name: "NRF AROTS — Association for Retail Open Trading Standards", version: "trade-promo profile", url: "https://nrf.com" }
+  - { id: iso_8601, name: "ISO 8601 — Date and time format (promo dates)", version: "2019", url: "https://www.iso.org/iso-8601-date-and-time-format.html" }

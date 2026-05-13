@@ -21,7 +21,7 @@ select
     p.amount                                            as paid_amount,
     p.payment_method,
     p.paid_at,
-    cast(strftime(p.paid_at, '%Y%m%d') as integer)      as paid_date_key,
+    cast({{ format_date('p.paid_at', '%Y%m%d') }} as integer)      as paid_date_key,
     case
         when l.amount > 0 then p.amount / l.amount
     end                                                 as line_paid_ratio,

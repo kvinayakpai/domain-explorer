@@ -11,6 +11,6 @@ select
     cast(status        as varchar)   as status,
     case
         when resolved_ts is not null
-            then date_diff('day', opened_ts, resolved_ts)
+            then {{ dbt_utils.datediff('opened_ts', 'resolved_ts', 'day') }}
     end                              as resolution_days
 from {{ source('payments', 'disputes') }}

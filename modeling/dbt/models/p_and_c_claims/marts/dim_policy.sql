@@ -17,7 +17,7 @@ select
     s.effective_date,
     s.expires_date,
     s.policy_state,
-    cast(date_diff('day', s.effective_date, s.expires_date) as integer) as policy_duration_days,
+    cast({{ dbt_utils.datediff('s.effective_date', 's.expires_date', 'day') }} as integer) as policy_duration_days,
     h.load_date                  as dim_loaded_at
 from hub h
 left join stg s on s.policy_id    = h.policy_bk

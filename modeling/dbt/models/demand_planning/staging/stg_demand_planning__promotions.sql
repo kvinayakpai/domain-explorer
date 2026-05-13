@@ -8,5 +8,5 @@ select
     cast(lift_pct      as double)  as lift_pct,
     cast(start_date    as date)    as start_date,
     cast(duration_days as integer) as duration_days,
-    cast(start_date as date) + (cast(duration_days as integer) * interval 1 day) as end_date
+    cast(start_date as date) + cast(duration_days as integer) as end_date
 from {{ source('demand_planning', 'promotions') }}

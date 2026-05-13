@@ -16,9 +16,9 @@ import { Badge } from "@/components/ui/badge";
 const VERTICAL_TAGLINES: Record<string, string> = {
   BFSI: "Payments, cards, lending, capital markets, AML, treasury.",
   Insurance: "Underwriting, claims, policy admin, reinsurance, actuarial.",
-  Retail: "Stores, ecommerce, returns, last-mile, dark stores.",
+  Retail: "Stores, ecommerce, pricing & promotions, returns, last-mile, dark stores.",
   RCG: "Pricing, supply chain, loyalty across consumer goods.",
-  CPG: "Demand, trade promotion, brand, retail execution.",
+  CPG: "Demand planning, trade promotion management, brand marketing, retail execution.",
   TTH: "Airlines, hotels, ride-share, rentals, ground ops.",
   Manufacturing: "Shop floor, MES, BOM, supply chain visibility.",
   LifeSciences: "Trials, pharmacovigilance, medical devices, supply chain.",

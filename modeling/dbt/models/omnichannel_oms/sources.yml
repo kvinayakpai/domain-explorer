@@ -1,0 +1,66 @@
+version: 2
+
+sources:
+  - name: omnichannel_oms
+    description: |
+      Synthetic Omnichannel Order Management source schema produced by
+      synthetic-data/omnichannel_oms/generate.py and loaded into the
+      populated DuckDB. Mirrors what a Manhattan Active OM / Sterling OMS /
+      Salesforce OMS / Shopify deployment would land after CDC and EDI ingest.
+    schema: omnichannel_oms
+    tables:
+      - name: customer
+        description: One row per unified customer (golden record stitched across channels).
+        columns:
+          - name: customer_id
+            tests: [unique, not_null]
+      - name: location
+        description: Inventory-holding / fulfilling node — store, DC, dark store, drop-ship, locker.
+        columns:
+          - name: location_id
+            tests: [unique, not_null]
+      - name: product
+        description: SKU master mirrored from RMS; GTIN-14 keyed.
+        columns:
+          - name: product_id
+            tests: [unique, not_null]
+      - name: inventory_position
+        description: Effective-dated quantity at a location × product. Atomic input to ATP.
+        columns:
+          - name: position_id
+            tests: [unique, not_null]
+      - name: sourcing_rule
+        description: Rule fragment used by the DOM broker to score fulfillment nodes.
+        columns:
+          - name: rule_id
+            tests: [unique, not_null]
+      - name: oms_order
+        description: Order header captured across channels.
+        columns:
+          - name: order_id
+            tests: [unique, not_null]
+      - name: order_line
+        description: SKU on an order — the fulfillment grain.
+        columns:
+          - name: order_line_id
+            tests: [unique, not_null]
+      - name: allocation
+        description: Order line ↔ fulfillment node binding from the DOM broker.
+        columns:
+          - name: allocation_id
+            tests: [unique, not_null]
+      - name: fulfillment_event
+        description: One state-transition event in an allocation's lifecycle (event-sourced).
+        columns:
+          - name: event_id
+            tests: [unique, not_null]
+      - name: shipment
+        description: Physical parcel handed to a carrier; one-to-one with EDI 945.
+        columns:
+          - name: shipment_id
+            tests: [unique, not_null]
+      - name: return_authorization
+        description: Customer return / RMA covering one or more order lines.
+        columns:
+          - name: rma_id
+            tests: [unique, not_null]

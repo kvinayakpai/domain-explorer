@@ -1245,3 +1245,1485 @@ terms:
     related_subdomains: [agentic_commerce]
     related_kpis: [ac.kpi.agent_chargeback_rate]
     steward: Open Agent Standards Architect
+
+  # ===========================================================================
+  # S&OP / IBP — added with the sop_supply_chain_planning anchor.
+  # ===========================================================================
+  - name: S&OP
+    aliases: [Sales & Operations Planning]
+    definition: Monthly cross-functional process that reconciles demand, supply, finance, and product plans into one consensus number set per Oliver Wight's five-step cycle (Product Review → Demand Review → Supply Review → Integrated Reconciliation → MBR).
+    related_subdomains: [sop_supply_chain_planning, demand_planning, supply_chain_visibility]
+    related_kpis: [sop.kpi.forecast_accuracy_mape, sop.kpi.plan_adherence]
+    steward: S&OP Process Lead
+  - name: IBP
+    aliases: [Integrated Business Planning]
+    definition: Evolved S&OP that integrates financial outcomes, strategic initiatives, and scenario planning. Operated as a connected planning canvas across SAP IBP, Kinaxis, o9, Anaplan and similar.
+    related_subdomains: [sop_supply_chain_planning]
+    related_kpis: [sop.kpi.plan_adherence, sop.kpi.working_capital_impact]
+    steward: VP Supply Chain Planning
+  - name: MAPE
+    aliases: [Mean Absolute Percentage Error]
+    definition: Forecast accuracy metric — mean of absolute(actual − forecast) / actual across rows. Penalizes percentage error uniformly, breaks down when actual is near zero.
+    related_subdomains: [sop_supply_chain_planning, demand_planning]
+    related_kpis: [sop.kpi.forecast_accuracy_mape]
+    steward: Demand Planner
+  - name: WAPE
+    aliases: [Weighted Absolute Percentage Error]
+    definition: Weighted accuracy metric — sum of absolute errors divided by sum of actuals. Robust to near-zero actuals; preferred in retail and CPG.
+    related_subdomains: [sop_supply_chain_planning, demand_planning]
+    related_kpis: [sop.kpi.forecast_accuracy_wape]
+    steward: Demand Planner
+  - name: Forecast Bias
+    aliases: [Bias]
+    definition: Systematic over- or under-forecast. Computed as sum(forecast − actual) / sum(actual); should oscillate around zero. Persistent positive bias drives excess inventory; negative bias drives stockouts.
+    related_subdomains: [sop_supply_chain_planning, demand_planning]
+    related_kpis: [sop.kpi.forecast_bias]
+    steward: Demand Planner
+  - name: OTIF
+    aliases: [On-Time In-Full]
+    definition: Order is delivered both on the requested date and complete — no shorts, no late lines. The headline service-level metric the supply plan defends.
+    related_subdomains: [sop_supply_chain_planning, omnichannel_oms, demand_planning]
+    related_kpis: [sop.kpi.otif]
+    steward: Supply Planner
+  - name: DOH
+    aliases: [Days on Hand, DIO, Days Inventory Outstanding]
+    definition: Inventory measured in days of forward demand. Computed as avg_inventory_units / avg_daily_demand_units. Targeted per ABC class — A items low DOH, C items higher.
+    related_subdomains: [sop_supply_chain_planning, omnichannel_oms]
+    related_kpis: [sop.kpi.doh, sop.kpi.inventory_turns]
+    steward: Inventory Strategist
+  - name: Fill Rate
+    aliases: [Case Fill, Line Fill]
+    definition: Percentage of order lines (or cases) shipped complete on first pass. Different from OTIF in that fill ignores the on-time component.
+    related_subdomains: [sop_supply_chain_planning, demand_planning]
+    related_kpis: [sop.kpi.fill_rate]
+    steward: Supply Planner
+  - name: Demand Sensing
+    aliases: []
+    definition: Short-horizon (days–weeks) forecast refinement driven by near-real-time signals — POS, sell-through, weather, web demand, channel inventory. Distinct from statistical baseline.
+    related_subdomains: [sop_supply_chain_planning, demand_planning]
+    related_kpis: [sop.kpi.demand_sensing_lead_time]
+    steward: Demand Planner
+  - name: Demand Shaping
+    aliases: []
+    definition: Active influence on demand through pricing, promotion, allocation, or channel routing to align with available supply.
+    related_subdomains: [sop_supply_chain_planning, revenue_growth_management]
+    related_kpis: []
+    steward: S&OP Process Lead
+  - name: Demand Consensus
+    aliases: []
+    definition: The single, signed-off demand number set produced by Integrated Reconciliation. All commercial + finance + supply teams plan against this number.
+    related_subdomains: [sop_supply_chain_planning]
+    related_kpis: [sop.kpi.forecast_accuracy_mape]
+    steward: S&OP Process Lead
+  - name: Supply Review
+    aliases: []
+    definition: Third step in Oliver Wight five-step. Net-supply the demand consensus against capacity, inventory, lead-times; surface the supply-demand gaps.
+    related_subdomains: [sop_supply_chain_planning]
+    related_kpis: [sop.kpi.capacity_utilization, sop.kpi.plan_adherence]
+    steward: Supply Planner
+  - name: Executive S&OP
+    aliases: [MBR, Management Business Review]
+    definition: The fifth and final step — exec sign-off on the consensus plan, gap-to-budget, and required interventions. Often chaired by COO / CSCO.
+    related_subdomains: [sop_supply_chain_planning]
+    related_kpis: [sop.kpi.plan_adherence, sop.kpi.working_capital_impact]
+    steward: Executive S&OP Sponsor
+  - name: What-If Scenario
+    aliases: [Scenario]
+    definition: A named alternate plan — supply disruption, demand surge, tariff shock — evaluated against the base plan for revenue, working capital, and service-level impact. Kinaxis / SAP IBP / o9 are scenario-first systems.
+    related_subdomains: [sop_supply_chain_planning]
+    related_kpis: [sop.kpi.scenario_cycle_time]
+    steward: S&OP Process Lead
+  - name: MEIO
+    aliases: [Multi-Echelon Inventory Optimization]
+    definition: Joint optimization of safety stock across plant → DC → forward-DC → store tiers, recognising that pooling at higher tiers reduces total network inventory for the same service level.
+    related_subdomains: [sop_supply_chain_planning, omnichannel_oms]
+    related_kpis: [sop.kpi.inventory_turns, sop.kpi.doh, sop.kpi.working_capital_impact]
+    steward: Inventory Strategist
+  - name: Capacity Constraint
+    aliases: [Bottleneck]
+    definition: Resource-period combination where planned load exceeds available capacity. Propagated through the BOM and network by a finite-capacity solver.
+    related_subdomains: [sop_supply_chain_planning, production_scheduling]
+    related_kpis: [sop.kpi.capacity_utilization]
+    steward: Plant Scheduler
+  - name: Item-Location
+    aliases: []
+    definition: The canonical SKU × stocking-location grain at which most supply chain plans, inventory positions, and accuracy metrics are calculated.
+    related_subdomains: [sop_supply_chain_planning]
+    related_kpis: []
+    steward: VP Supply Chain Planning
+  - name: Time-Phased Plan
+    aliases: []
+    definition: Plan expressed as quantities per period (day / week / month) over a rolling horizon — typically 18-36 months for IBP. Contrasted with single-number annual budgets.
+    related_subdomains: [sop_supply_chain_planning]
+    related_kpis: []
+    steward: VP Supply Chain Planning
+  - name: BOM
+    aliases: [Bill of Materials]
+    definition: Parent → component item hierarchy with quantity_per and yield, used to explode finished-good plans into material requirements.
+    related_subdomains: [sop_supply_chain_planning, mes_quality]
+    related_kpis: []
+    steward: Supply Planner
+  - name: Lot Sizing
+    aliases: [Lot-Size, Lot Sizing Rule]
+    definition: Decision rule for batching production / purchase orders — economic order quantity (EOQ), fixed lot, period order quantity, Wagner-Whitin, etc.
+    related_subdomains: [sop_supply_chain_planning]
+    related_kpis: [sop.kpi.inventory_turns, sop.kpi.working_capital_impact]
+    steward: Supply Planner
+
+  # ===========================================================================
+  # Loss Prevention — added with the loss_prevention anchor.
+  # ===========================================================================
+  - name: Shrink
+    aliases: [Inventory Shrinkage]
+    definition: Difference between book inventory and physical inventory, expressed in dollars or as a percentage of net sales. Comprises theft (internal + external + ORC), administrative error, vendor fraud, and damage.
+    related_subdomains: [loss_prevention, merchandising]
+    related_kpis: [lp.kpi.shrink_rate]
+    steward: VP Loss Prevention
+  - name: Known Shrink
+    aliases: []
+    definition: Portion of shrink with a documented root cause and a closed case in the LP investigation system. Counter to "unknown shrink".
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.known_shrink_pct]
+    steward: VP Loss Prevention
+  - name: Unknown Shrink
+    aliases: []
+    definition: Residual shrink at period close that lacks a documented cause. Usually external theft + administrative error. Converting unknown to known is the LP program's leading indicator.
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.unknown_shrink_pct]
+    steward: VP Loss Prevention
+  - name: Sweethearting
+    aliases: [Sweetheart Discounting]
+    definition: Cashier-level loss pattern where the associate undercharges or fails to charge friends/family — often via voided lines, fake discounts, or barcode-swap on premium SKUs. Detected via NCR Voyix LP / Oracle XBR / Profitect rule engines.
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.sweethearting_incidents, lp.kpi.internal_theft_rate]
+    steward: LP Investigator
+  - name: ORC
+    aliases: [Organized Retail Crime]
+    definition: Coordinated theft operations — boost-and-fence rings that steal high-CRAVED merchandise across multiple stores and resell through marketplaces or pawn networks. Tracked across chains via Auror and shared with law enforcement via ALTO Alliance.
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.orc_incident_frequency]
+    steward: ORC Investigator
+  - name: Refund Fraud
+    aliases: []
+    definition: Fraudulent return — no-receipt return of stolen goods, swapped-content return (rocks for electronics), or refund-to-fresh-card scheme. Scored at counter via Appriss Retail Verify.
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.refund_fraud_rate]
+    steward: Fraud Analyst
+  - name: Return Abuse
+    aliases: [Wardrobing, Serial Returner]
+    definition: Policy abuse — wearing the apparel before returning, returning beyond the published window, or repeated returns that abuse a generous policy without crossing into outright fraud.
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.return_abuse_rate]
+    steward: Fraud Analyst
+  - name: EAS
+    aliases: [Electronic Article Surveillance]
+    definition: Hard-tag or soft-tag system (Sensormatic AM 58 kHz, Checkpoint RF) that triggers a pedestal alarm on unsecured exit. Combined with item-level RFID in modern stores for inventory accuracy.
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.external_theft_rate]
+    steward: Asset Protection Specialist
+  - name: CRAVED
+    aliases: [CRAVED Items]
+    definition: Clarke's mnemonic for high-theft items — Concealable, Removable, Available, Valuable, Enjoyable, Disposable. Drives where EAS / RFID / Indyme smart locks get deployed.
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.shrink_rate]
+    steward: VP Loss Prevention
+  - name: POS Exception
+    aliases: [Lane Exception, Register Exception]
+    definition: Detected POS-side anomaly — high-value refund, void-after-tender, suspicious price override, barcode swap, cash skim. The exception engines (NCR Voyix LP, Oracle XBR, Profitect, Aptos LP, Datalogic lane-awareness, Honeywell HCI) all produce a stream of these.
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.pos_exception_rate]
+    steward: LP Investigator
+  - name: Void Abuse
+    aliases: [Void-After-Tender]
+    definition: Cashier voids a tendered transaction after cash is collected — pocketing the cash and leaving the till balanced. A leading sweethearting/internal-theft signal.
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.pos_exception_rate]
+    steward: LP Investigator
+  - name: No-Sale
+    aliases: [No-Sale Open]
+    definition: Drawer opened without a sale recorded. Sometimes legitimate (change-making) — but frequency × duration of no-sale opens correlates with cash-skim.
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.pos_exception_rate]
+    steward: LP Investigator
+  - name: Cash Skim
+    aliases: []
+    definition: Direct cash theft from the register — voided sales with cash kept, short-rung sales, or under-rung change. Detected by reconciling tender drops to system sales.
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.internal_theft_rate]
+    steward: LP Investigator
+  - name: Asset Protection
+    aliases: [AP]
+    definition: Modern umbrella term for the LP function, expanded to include safety, fraud, OSHA compliance, and supply-chain shrink — not just floor theft.
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.shrink_rate, lp.kpi.loss_recovery_dollars]
+    steward: VP Loss Prevention
+  - name: Fence
+    aliases: []
+    definition: An intermediary buyer who knowingly purchases stolen goods from boosters and resells them through pawn shops or online marketplaces. ORC investigation targets the fence as much as the booster.
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.orc_incident_frequency]
+    steward: ORC Investigator
+  - name: Boost
+    aliases: [Booster]
+    definition: ORC slang for stealing (boost) and the person who steals (booster). A boost crew typically targets high-CRAVED SKUs across multiple stores in a single sweep.
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.orc_incident_frequency]
+    steward: ORC Investigator
+  - name: Case Build
+    aliases: []
+    definition: The investigator's process of stitching exceptions, CCTV, witness statements, employee schedules, and recovered evidence into a packet for prosecution or civil demand.
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.investigation_closure_rate]
+    steward: LP Investigator
+  - name: Prosecution
+    aliases: [Criminal Referral]
+    definition: Referral of a case to law enforcement for criminal prosecution. Typically reserved for cases above a felony threshold (state-specific) and where evidence is prosecution-grade.
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.loss_recovery_dollars]
+    steward: VP Loss Prevention
+  - name: Chain of Custody
+    aliases: []
+    definition: Tamper-evident audit trail proving evidence (video, receipts, statements) hasn't been altered between collection and trial. Required by ASIS Asset Protection Standards and by most prosecutors.
+    related_subdomains: [loss_prevention]
+    related_kpis: []
+    steward: Compliance Officer
+  - name: ALTO Alliance
+    aliases: []
+    definition: Industry consortium and information-sharing standard that lets retailers and law-enforcement exchange case packets on ORC suspects, vehicles, and rings — under a tightly scoped multi-retailer disclosure framework.
+    related_subdomains: [loss_prevention]
+    related_kpis: [lp.kpi.orc_incident_frequency]
+    steward: ORC Investigator
+
+  # ===========================================================================
+  # Predictive Maintenance — added with the predictive_maintenance anchor.
+  # ===========================================================================
+  - name: RUL
+    aliases: [Remaining Useful Life]
+    definition: Model-estimated time (in hours, cycles, or distance) an asset can continue to operate before reaching a defined failure or end-of-useful-life threshold. Canonical benchmarks defined by the NASA C-MAPSS turbofan dataset.
+    related_subdomains: [predictive_maintenance]
+    related_kpis: [pm.kpi.rul_prediction_error]
+    steward: Data Scientist (Time Series)
+  - name: MTBF
+    aliases: [Mean Time Between Failures]
+    definition: Average operating time between two consecutive failures on the same asset class. The headline reliability index for repairable equipment; complement to MTTF for non-repairable.
+    related_subdomains: [predictive_maintenance]
+    related_kpis: [pm.kpi.mtbf]
+    steward: Reliability Engineer
+  - name: MTTR
+    aliases: [Mean Time To Repair]
+    definition: Average elapsed time from failure-event start to restored-to-service. Combines diagnosis, parts logistics, repair, and re-commissioning time.
+    related_subdomains: [predictive_maintenance]
+    related_kpis: [pm.kpi.mttr]
+    steward: Maintenance Planner/Scheduler
+  - name: Condition-Based Maintenance (CBM)
+    aliases: [CBM]
+    definition: Maintenance triggered by an observed condition (sensor crossing a threshold, vibration severity zone change) rather than fixed-interval calendar or runtime. Bridge between time-based PM and full predictive maintenance.
+    related_subdomains: [predictive_maintenance]
+    related_kpis: [pm.kpi.planned_vs_unplanned_pct]
+    steward: Reliability Engineer
+  - name: Prescriptive Maintenance
+    aliases: []
+    definition: PdM extended to recommend a specific action (lubricate, align, replace bearing, derate) keyed to the predicted failure mode. AspenTech Mtell and Augury's recommendation engine are reference implementations.
+    related_subdomains: [predictive_maintenance]
+    related_kpis: []
+    steward: Reliability Engineer
+  - name: Fault Tree
+    aliases: [Fault Tree Analysis, FTA]
+    definition: Top-down deductive analysis tracing a system failure to its contributing component failures via Boolean gate logic. Backbone of IEC 61508 functional-safety quantification.
+    related_subdomains: [predictive_maintenance]
+    related_kpis: []
+    steward: Reliability Engineer
+  - name: FMEA
+    aliases: [Failure Mode and Effects Analysis]
+    definition: Systematic catalog of each component's possible failure modes, their effects, severity, occurrence, detection, and resulting risk priority number (RPN). Required input to the failure_mode taxonomy.
+    related_subdomains: [predictive_maintenance, mes_quality]
+    related_kpis: []
+    steward: Reliability Engineer
+  - name: Bearing Fault Frequency
+    aliases: [BPFO, BPFI, BSF, FTF]
+    definition: Characteristic vibration frequencies generated by rolling-element bearing defects — Ball Pass Frequency Outer race (BPFO), Inner race (BPFI), Ball Spin Frequency (BSF), Fundamental Train (cage) Frequency (FTF). Tones appear at integer multiples of shaft RPM.
+    related_subdomains: [predictive_maintenance]
+    related_kpis: []
+    steward: Vibration Analyst
+  - name: P-F Curve
+    aliases: [Potential-Failure Curve]
+    definition: RCM concept (SAE JA1011) — the interval from when a developing failure first becomes detectable (P) to when it manifests as functional failure (F). Defines the operational lead-time window in which intervention is possible.
+    related_subdomains: [predictive_maintenance]
+    related_kpis: [pm.kpi.lead_time_to_failure]
+    steward: Reliability Engineer
+  - name: OT/IT
+    aliases: [Operational Technology / Information Technology, OT/IT Convergence]
+    definition: The bridge between plant-floor control systems (PLC, SCADA, DCS) and enterprise data platforms. Demarcated by the Purdue Model L0–L4 zones; bridged by OPC UA aggregating servers and IEC 62443-classified DMZs.
+    related_subdomains: [predictive_maintenance, mes_quality]
+    related_kpis: []
+    steward: Plant Manager
+  - name: OPC UA
+    aliases: [Open Platform Communications Unified Architecture, IEC 62541]
+    definition: Vendor-neutral industrial protocol for secure transport of machine data — typed information models, PKI-mutual-TLS auth, sub-second time-series. The default OT-IT bridge in greenfield plants.
+    related_subdomains: [predictive_maintenance, mes_quality]
+    related_kpis: []
+    steward: Reliability Engineer
+  - name: MQTT
+    aliases: [MQTT v5, Sparkplug B]
+    definition: Lightweight publish/subscribe protocol over TCP/TLS. The de-facto choice for retrofit wireless sensors and edge-to-cloud telemetry. Sparkplug B layers asset-aware payload conventions on top.
+    related_subdomains: [predictive_maintenance, ev_charging]
+    related_kpis: []
+    steward: Reliability Engineer
+  - name: SCADA
+    aliases: [Supervisory Control and Data Acquisition]
+    definition: Software layer that aggregates real-time data from PLCs across a plant and provides operator HMI screens, alarms, and historian feeds. Common SCADA: Wonderware (Aveva System Platform), Rockwell FactoryTalk View, Siemens WinCC.
+    related_subdomains: [predictive_maintenance, mes_quality]
+    related_kpis: []
+    steward: Plant Manager
+  - name: PLC
+    aliases: [Programmable Logic Controller]
+    definition: Industrial computer that executes ladder logic or function-block code at deterministic scan rates (typically 10–100ms) to control discrete or continuous plant equipment. Vendors: Siemens (SIMATIC S7), Rockwell (ControlLogix), Mitsubishi, Schneider.
+    related_subdomains: [predictive_maintenance, mes_quality]
+    related_kpis: []
+    steward: Plant Manager
+  - name: Historian
+    aliases: [Process Historian, Time-Series Historian]
+    definition: Specialized database optimized for high-rate process tag time-series — typically year-decades of retention with compression. OSIsoft PI (now Aveva PI System), GE Proficy Historian, Honeywell PHD are canonical.
+    related_subdomains: [predictive_maintenance, mes_quality]
+    related_kpis: []
+    steward: Reliability Engineer
+  - name: Golden Window
+    aliases: []
+    definition: Subset of historical operating data labeled as "known-good" for unsupervised anomaly detector training. Selecting the golden window is one of the highest-leverage modeling decisions — too narrow and the model is brittle; too wide and it learns the failure as normal.
+    related_subdomains: [predictive_maintenance]
+    related_kpis: []
+    steward: Data Scientist (Time Series)
+  - name: Autoencoder Anomaly
+    aliases: [Reconstruction Anomaly]
+    definition: Anomaly detection technique using a neural autoencoder trained on the golden window — at inference, samples with high reconstruction error are flagged. Robust for unsupervised PdM where labels are sparse.
+    related_subdomains: [predictive_maintenance]
+    related_kpis: [pm.kpi.predictive_precision, pm.kpi.predictive_recall]
+    steward: Data Scientist (Time Series)
+  - name: Spectral Analysis
+    aliases: [FFT, Fast Fourier Transform]
+    definition: Conversion of a time-domain vibration or acoustic signal into its frequency components. The basis tool for identifying bearing fault tones, gear mesh harmonics, and electrical line-frequency artifacts.
+    related_subdomains: [predictive_maintenance]
+    related_kpis: []
+    steward: Vibration Analyst
+  - name: Kurtosis
+    aliases: []
+    definition: Fourth-moment statistic of a vibration signal; sensitive to impulsive content. Spikes in kurtosis are an early indicator of bearing damage (impacts at the fault frequency) before broad-band RMS rises.
+    related_subdomains: [predictive_maintenance]
+    related_kpis: []
+    steward: Vibration Analyst
+  - name: Vibration Severity
+    aliases: [ISO 10816, ISO 20816, RMS Velocity]
+    definition: Standardized assessment of overall machine vibration health using RMS velocity bands and Zone A/B/C/D thresholds keyed to machine class and rigid/flexible-mounting. ISO 20816 is the 2016 update to ISO 10816.
+    related_subdomains: [predictive_maintenance]
+    related_kpis: []
+    steward: Vibration Analyst
+
+  # ============================================================
+  # Pricing & Promotions (Retail anchor)
+  # ============================================================
+  - name: KVI (Key Value Item)
+    aliases: [Key Value Item, Known Value Item]
+    definition: SKU on which shoppers form their price perception of the retailer — typically a high-frequency, high-traffic item whose price is checked across competitors. KVIs drive the Competitive Price Index and are protected from over-pricing.
+    related_subdomains: [pricing_and_promotions, merchandising]
+    related_kpis: [pp.kpi.competitive_price_index, pp.kpi.gross_margin_pct]
+    steward: Head of Pricing
+  - name: KVC (Key Value Category)
+    aliases: [Key Value Category]
+    definition: Category whose pricing perception disproportionately drives store-choice — e.g. milk, bananas, soda. Category-level price guardrails apply rather than SKU-level.
+    related_subdomains: [pricing_and_promotions]
+    related_kpis: [pp.kpi.competitive_price_index]
+    steward: Category Manager
+  - name: Regular Price
+    aliases: [List Price, Everyday Price, Base Price]
+    definition: The non-promotional ticketed price of a SKU at a store or price zone, governed by the regular-price line and EDI 832/879 cycles.
+    related_subdomains: [pricing_and_promotions]
+    related_kpis: [pp.kpi.regular_price_compliance]
+    steward: Head of Pricing
+  - name: Promo Price
+    aliases: [Promotional Price, Sale Price]
+    definition: Temporary price during an active promotion. Carries a mechanic (% off, BOGO, multibuy) and a funded duration; falls back to regular at end.
+    related_subdomains: [pricing_and_promotions]
+    related_kpis: [pp.kpi.promo_lift_pct, pp.kpi.promo_roi]
+    steward: Promo Effectiveness Lead
+  - name: Markdown
+    aliases: [Permanent Markdown, Lifecycle Markdown]
+    definition: Reduction of the regular price for a lifecycle-driven reason (excess inventory, seasonal end, clearance). Distinct from a promo because it is not time-boxed back to the original price.
+    related_subdomains: [pricing_and_promotions, merchandising]
+    related_kpis: [pp.kpi.markdown_pct, pp.kpi.markdown_recovery_rate, pp.kpi.regret_factor]
+    steward: Markdown Optimization Director
+  - name: Promo Lift
+    aliases: [Lift, Incremental Lift]
+    definition: Incremental units sold over a defined baseline during a promo, expressed as a percentage. Lift = (promo_units − baseline_units) / baseline_units; must be net of cannibalization and halo.
+    related_subdomains: [pricing_and_promotions]
+    related_kpis: [pp.kpi.promo_lift_pct, pp.kpi.cannibalization_rate]
+    steward: Promo Effectiveness Lead
+  - name: Cannibalization
+    aliases: [Promo Cannibalization]
+    definition: Sales transferred from a substitute SKU's baseline into the promoted SKU. Naive lift over-credits when cannibalization is ignored.
+    related_subdomains: [pricing_and_promotions]
+    related_kpis: [pp.kpi.cannibalization_rate, pp.kpi.promo_roi]
+    steward: Promo Effectiveness Lead
+  - name: Halo
+    aliases: [Halo Effect, Complementary Lift]
+    definition: Incremental sales of complementary SKUs caused by a promotion on another SKU (e.g. burger promo lifts bun sales). Counted opposite to cannibalization in net-lift measurement.
+    related_subdomains: [pricing_and_promotions]
+    related_kpis: [pp.kpi.promo_lift_pct]
+    steward: Promo Effectiveness Lead
+  - name: Price Elasticity
+    aliases: [Elasticity, Own-Price Elasticity]
+    definition: Percentage change in units sold per 1% change in price (negative number for normal goods). Estimated per cluster (SKU × store cluster × time window).
+    related_subdomains: [pricing_and_promotions]
+    related_kpis: [pp.kpi.price_elasticity]
+    steward: Pricing Analyst
+  - name: EDLP (Every-Day Low Price)
+    aliases: [EDLP, Everyday Low Price]
+    definition: Pricing strategy in which the retailer offers consistently low prices on most items rather than running deep promotions. Walmart and Aldi are exemplars.
+    related_subdomains: [pricing_and_promotions]
+    related_kpis: [pp.kpi.gross_margin_pct]
+    steward: Head of Pricing
+  - name: Hi-Lo Pricing
+    aliases: [High-Low Pricing, Promotional Pricing]
+    definition: Pricing strategy in which regular prices sit above EDLP equivalents but frequent deep promotions create traffic and basket-build. Common at Kroger, Albertsons, Carrefour.
+    related_subdomains: [pricing_and_promotions]
+    related_kpis: [pp.kpi.promo_lift_pct, pp.kpi.promo_roi]
+    steward: Head of Pricing
+  - name: Promo Calendar
+    aliases: [Promotional Calendar, Promo Plan]
+    definition: Forward-looking schedule of promotions by category × week, used to coordinate inventory, ads, and vendor funding. Conflicts between categories trigger clearance reviews.
+    related_subdomains: [pricing_and_promotions, trade_promotion]
+    related_kpis: [pp.kpi.promo_roi]
+    steward: Promo Effectiveness Lead
+  - name: Price Ladder
+    aliases: [Price Tier Ladder]
+    definition: Ordered price points across a brand/pack hierarchy designed to steer shoppers among entry, mainstream, and premium tiers without leaving margin or volume on the table.
+    related_subdomains: [pricing_and_promotions]
+    related_kpis: [pp.kpi.price_pack_mix_optimization]
+    steward: Category Manager
+  - name: Price-Pack Architecture
+    aliases: [Pack-Price Architecture, PPA]
+    definition: Combination of pack sizes and price points across a portfolio (e.g. single, 6-pack, 12-pack, 24-pack) tuned to channel occasions and willingness-to-pay.
+    related_subdomains: [pricing_and_promotions, trade_promotion]
+    related_kpis: [pp.kpi.price_pack_mix_optimization]
+    steward: Head of Pricing
+  - name: Price Compliance
+    aliases: [Regular Price Compliance, Tag Compliance]
+    definition: Share of in-store and online price observations where the realized price matches the planned regular/promo price. Drift comes from late tag changes, POS overrides, and feed timing.
+    related_subdomains: [pricing_and_promotions, store_ops]
+    related_kpis: [pp.kpi.regular_price_compliance]
+    steward: Pricing Analyst
+  - name: Regret Factor
+    aliases: []
+    definition: Counterfactual margin lost by setting markdown depth or timing sub-optimally vs the optimizer's recommendation. Tracks the cost of category-manager overrides.
+    related_subdomains: [pricing_and_promotions]
+    related_kpis: [pp.kpi.regret_factor]
+    steward: Markdown Optimization Director
+  - name: Trade Spend
+    aliases: [Trade Funds, Co-op Funding]
+    definition: Promotional dollars provided by a vendor to fund retail price reductions, displays, or features. Settled per joint business plan (JBP) terms with reconciliation lags of 60–180 days.
+    related_subdomains: [pricing_and_promotions, trade_promotion]
+    related_kpis: [pp.kpi.trade_spend_effectiveness]
+    steward: Promo Effectiveness Lead
+  - name: Sell-Through
+    aliases: [Sell-Through Rate]
+    definition: Share of received units actually sold within a window. Drives markdown timing — low sell-through with a fixed end-of-season deadline triggers deeper-and-earlier markdowns.
+    related_subdomains: [pricing_and_promotions, merchandising]
+    related_kpis: [pp.kpi.sell_through_rate, pp.kpi.markdown_pct]
+    steward: Markdown Optimization Director
+
+  # ===========================================================================
+  # Trade Promotion Management — added with the trade_promotion_management anchor.
+  # ===========================================================================
+  - name: MCB
+    aliases: [Manufacturer Chargeback]
+    definition: Manufacturer-funded credit issued via a chargeback to a wholesaler or retailer that resold an item at an agreed contract price below the standard wholesale list. The pool covers the per-unit difference; the manufacturer reconciles by claim line.
+    related_subdomains: [trade_promotion_management]
+    related_kpis: [tpm.kpi.trade_spend_pct, tpm.kpi.deduction_rate]
+    steward: Deductions Manager
+  - name: Bill-back
+    aliases: [Bill Back, Performance Bill-back]
+    definition: Trade-promotion settlement method in which the retailer ships at full price and "bills back" the manufacturer after performance is verified. Creates AR exposure and longer cash cycles than off-invoice but allows pay-for-performance gating.
+    related_subdomains: [trade_promotion_management]
+    related_kpis: [tpm.kpi.pay_for_performance_pct, tpm.kpi.deduction_rate]
+    steward: Trade Marketing Director
+  - name: Scan-down
+    aliases: [Scanback, Scan-back]
+    definition: Trade-promotion settlement method in which the manufacturer credits the retailer for each promoted unit actually scanned at point-of-sale during the promo window. Reconciled from EDI 852 / Circana / NielsenIQ scan feeds.
+    related_subdomains: [trade_promotion_management]
+    related_kpis: [tpm.kpi.promo_roi, tpm.kpi.net_promotion_effectiveness]
+    steward: Trade Marketing Director
+  - name: Off-invoice
+    aliases: [Off-Invoice Allowance, OI]
+    definition: Trade-promotion settlement method in which the discount is applied as a per-case allowance directly on the manufacturer's invoice at ship time. Fastest cash treatment but creates forward-buy exposure and no enforceable performance gate.
+    related_subdomains: [trade_promotion_management]
+    related_kpis: [tpm.kpi.trade_spend_pct, tpm.kpi.trade_stock_build_pct]
+    steward: Trade Marketing Director
+  - name: Promo Lift
+    aliases: [Lift, Incremental Lift]
+    definition: Percentage of post-event volume above the no-promo statistical baseline. lift_pct = (actual_units − baseline_units) / baseline_units. Headline measurement of promo effectiveness; should be reported net of cannibalization and halo.
+    related_subdomains: [trade_promotion_management, pricing_and_promotions]
+    related_kpis: [tpm.kpi.incremental_lift, tpm.kpi.promo_roi]
+    steward: Customer Marketing Manager
+  - name: Baseline Volume
+    aliases: [Baseline, Counterfactual Volume]
+    definition: Statistical estimate of what would have sold without any promotion in a given week. Computed by Circana Unify, NielsenIQ baseline, T-Pro Predictive, or in-house GLM/ML; the choice of model materially changes reported ROI.
+    related_subdomains: [trade_promotion_management]
+    related_kpis: [tpm.kpi.baseline_volume, tpm.kpi.incremental_lift]
+    steward: Trade Spend Analyst
+  - name: Incremental Volume
+    aliases: [Incremental Units]
+    definition: Units sold above baseline during a promo period. The numerator of lift and the denominator-driver for promo ROI; defended in syndicated audits (Circana, NielsenIQ, Numerator).
+    related_subdomains: [trade_promotion_management]
+    related_kpis: [tpm.kpi.incremental_lift, tpm.kpi.promo_roi]
+    steward: Trade Spend Analyst
+  - name: Forward Buy
+    aliases: [Trade Loading, Pre-Buy]
+    definition: Retailer's deliberate ordering of additional inventory during a promo window to lock in the discount and drain shelves at full price afterwards. Inflates short-term shipments and depresses post-promo baseline; the classic source of bullwhip in CPG.
+    related_subdomains: [trade_promotion_management, demand_planning]
+    related_kpis: [tpm.kpi.forward_buy_inventory_weeks, tpm.kpi.trade_stock_build_pct]
+    steward: Revenue Growth Manager
+  - name: Halo Effect
+    aliases: [Halo, Complementary Lift]
+    definition: Incremental sales of related (non-promoted) SKUs caused by traffic / basket-build from a promoted SKU. Counted opposite cannibalization in net-incremental measurement.
+    related_subdomains: [trade_promotion_management, pricing_and_promotions]
+    related_kpis: [tpm.kpi.incremental_lift]
+    steward: Customer Marketing Manager
+  - name: Cannibalization
+    aliases: [Promo Cannibalization]
+    definition: Sales transferred from a related SKU's baseline to the promoted SKU. Naive lift over-credits when cannibalization is not subtracted; commonly 5–30% of headline lift on hero promotions.
+    related_subdomains: [trade_promotion_management, pricing_and_promotions]
+    related_kpis: [tpm.kpi.incremental_lift, tpm.kpi.promo_roi]
+    steward: Customer Marketing Manager
+  - name: Perfect Store
+    aliases: [Perfect Store Score]
+    definition: Composite retail-execution KPI combining distribution, share of shelf, planogram compliance, price compliance, and promo compliance for a single outlet. Coca-Cola, Unilever, and PepsiCo publish branded scoring frameworks.
+    related_subdomains: [trade_promotion_management, retail_execution]
+    related_kpis: [tpm.kpi.perfect_store_score, tpm.kpi.display_compliance_pct]
+    steward: VP Sales
+  - name: Retail Execution
+    aliases: [In-Store Execution, Field Sales Execution]
+    definition: The set of in-store activities — display set-up, shelf restocking, planogram audit, price-tag verification, promo compliance — that bridge the planned promo and the shopper. AFS Retail Execution and Salesforce Consumer Goods Cloud are reference platforms.
+    related_subdomains: [trade_promotion_management]
+    related_kpis: [tpm.kpi.display_compliance_pct, tpm.kpi.on_shelf_availability_pct]
+    steward: VP Sales
+  - name: Trade Spend
+    aliases: [Trade Funds, Trade Promotion Spend]
+    definition: Money a CPG manufacturer commits to a retailer to fund promotional pricing, displays, features, slotting, and pay-for-performance. Globally >$1T/yr; second-largest line item after COGS for most CPG firms.
+    related_subdomains: [trade_promotion_management, pricing_and_promotions]
+    related_kpis: [tpm.kpi.trade_spend_pct]
+    steward: Finance Controller (Trade)
+  - name: MAP
+    aliases: [Minimum Advertised Price]
+    definition: Manufacturer-set price floor below which a retailer may not advertise (in-store sign, circular, online listing). Distinct from MSRP because it governs advertising not the actual transacted price; enforced via co-op funding and term sheets.
+    related_subdomains: [trade_promotion_management, pricing_and_promotions]
+    related_kpis: []
+    steward: Trade Marketing Director
+  - name: EDI 852
+    aliases: [Product Activity Data, ASC X12 852]
+    definition: ASC X12 EDI transaction set carrying weekly POS movement and on-hand inventory from retailer to manufacturer. The early-signal feed for in-flight promo monitoring; coverage varies by retailer.
+    related_subdomains: [trade_promotion_management]
+    related_kpis: [tpm.kpi.on_shelf_availability_pct]
+    steward: EDI / B2B Integration Lead
+  - name: EDI 867
+    aliases: [Product Transfer & Resale Report, ASC X12 867]
+    definition: ASC X12 EDI transaction set reporting product movement and resale to consumer. Used to verify scan-down claims and reconcile sell-through; complements EDI 852.
+    related_subdomains: [trade_promotion_management]
+    related_kpis: [tpm.kpi.deduction_rate]
+    steward: EDI / B2B Integration Lead
+  - name: NRF AROTS
+    aliases: [Association for Retail Open Trading Standards]
+    definition: NRF-led standards body publishing trade-promo data interchange profiles (promotion plan, tactic, settlement evidence). Adoption is patchy but reduces vendor-specific connector cost when present.
+    related_subdomains: [trade_promotion_management]
+    related_kpis: []
+    steward: Open Standards Architect
+  - name: Pay-for-Performance
+    aliases: [P4P, Performance-Based Trade]
+    definition: Trade-spend funding model in which committed funds are released only on verified compliance evidence — display photo audit, scan-flag, retail-execution visit log. Reduces trade rate but adds reconciliation overhead.
+    related_subdomains: [trade_promotion_management]
+    related_kpis: [tpm.kpi.pay_for_performance_pct]
+    steward: Revenue Growth Manager
+  - name: Joint Business Plan
+    aliases: [JBP]
+    definition: Annual collaborative plan between manufacturer and retailer covering volume targets, trade spend, innovation rollouts, and operational metrics. The retailer score-card rolls into the JBP review at quarterly checkpoints.
+    related_subdomains: [trade_promotion_management]
+    related_kpis: [tpm.kpi.retailer_scorecard]
+    steward: Key Account Manager
+
+  # ===========================================================================
+  # Customer Loyalty & CDP (Retail anchor)
+  # ===========================================================================
+  - name: CDP (Customer Data Platform)
+    aliases: [Customer Data Platform]
+    definition: System that unifies first-party customer data from multiple sources, resolves identity, and exposes audiences to activation destinations. Canonical vendors include Salesforce Data Cloud, Adobe RT-CDP, Treasure Data, mParticle, Tealium AudienceStream, Twilio Segment, and Amperity.
+    related_subdomains: [customer_loyalty_cdp, customer_analytics]
+    related_kpis: [cdp.kpi.identity_match_rate_det, cdp.kpi.identity_match_rate_prob]
+    steward: CDP Architect
+  - name: CRM (Customer Relationship Management)
+    aliases: [Customer Relationship Management]
+    definition: System that manages customer-facing interactions and account history — Salesforce, Microsoft Dynamics, HubSpot. The CDP feeds CRM; the CRM is rarely the system of record for behavioral events.
+    related_subdomains: [customer_loyalty_cdp, customer_care]
+    related_kpis: []
+    steward: Head of CRM
+  - name: Identity Graph
+    aliases: [Customer Identity Graph]
+    definition: Set of edges connecting observed identifiers (hashed email, hashed phone, device IDs, ad IDs, loyalty IDs, cookies) to a single resolved customer_master. Built by deterministic + probabilistic stitching.
+    related_subdomains: [customer_loyalty_cdp]
+    related_kpis: [cdp.kpi.identity_match_rate_det, cdp.kpi.identity_match_rate_prob]
+    steward: Identity Resolution Lead
+  - name: Deterministic Match
+    aliases: [Exact Match, Hard Match]
+    definition: Identity merge based on a shared, high-confidence identifier (e.g. authenticated login, hashed email, loyalty ID). Precision near 1.0; recall limited by anonymous traffic.
+    related_subdomains: [customer_loyalty_cdp]
+    related_kpis: [cdp.kpi.identity_match_rate_det]
+    steward: Identity Resolution Lead
+  - name: Probabilistic Match
+    aliases: [Fuzzy Match, Soft Match]
+    definition: Identity merge based on inferred signals (IP, user-agent, behavioral patterns, postal proximity) above a tuned confidence threshold. Recall higher than deterministic; precision risks polluting golden records.
+    related_subdomains: [customer_loyalty_cdp]
+    related_kpis: [cdp.kpi.identity_match_rate_prob]
+    steward: Identity Resolution Lead
+  - name: Golden Record
+    aliases: [Master Record, Resolved Profile]
+    definition: Single canonical customer record produced by survivorship rules across multiple source-system inputs. The row a personalization engine targets; the unit of CLV computation.
+    related_subdomains: [customer_loyalty_cdp]
+    related_kpis: [cdp.kpi.identity_match_rate_det]
+    steward: CDP Architect
+  - name: RFM (Recency-Frequency-Monetary)
+    aliases: [RFM Analysis, RFM Segmentation]
+    definition: Behavioural segmentation scheme assigning each customer a 1-5 score on Recency (days since last purchase), Frequency (orders per period), and Monetary (spend per period). Produces 125 cells; high-RFM cells (4-5/4-5/4-5) are champions.
+    related_subdomains: [customer_loyalty_cdp, customer_analytics]
+    related_kpis: [cdp.kpi.rfm_distribution_health]
+    steward: Segmentation Strategist
+  - name: NPS (Net Promoter Score)
+    aliases: [Net Promoter Score]
+    definition: Customer-loyalty index computed as %promoters (score 9-10) − %detractors (0-6) on the "how likely are you to recommend us" survey. Ranges -100 to +100.
+    related_subdomains: [customer_loyalty_cdp, customer_care]
+    related_kpis: [cdp.kpi.nps]
+    steward: Customer Insights Manager
+  - name: Segment / Audience
+    aliases: [Audience, Cohort]
+    definition: A rules-, RFM-, behavioural-, or model-defined group of customers eligible for a particular campaign / journey / activation destination. Refreshed on cadences from real-time to weekly.
+    related_subdomains: [customer_loyalty_cdp]
+    related_kpis: [cdp.kpi.segment_move_rate]
+    steward: Segmentation Strategist
+  - name: Consent Record
+    aliases: [Consent Log, Consent Event]
+    definition: Legally-defensible record of a customer's consent grant, withdrawal, or rights-request action. Stored alongside the IAB TCF v2.2 / GPP encoded consent string and the lawful basis under GDPR Art. 6.
+    related_subdomains: [customer_loyalty_cdp]
+    related_kpis: []
+    steward: Chief Privacy Officer
+  - name: Opt-in / Opt-out
+    aliases: [Marketing Opt-in, Subscription State]
+    definition: Channel-and-topic preference state declaring whether a customer wants to receive a class of messages. Authoritative for send-eligibility checks; suppressions propagate to all destinations.
+    related_subdomains: [customer_loyalty_cdp]
+    related_kpis: []
+    steward: Lifecycle Marketing Lead
+  - name: Lifecycle Stage
+    aliases: [Customer Lifecycle Stage]
+    definition: Discrete stage on the customer journey — prospect, new, active, lapsed, churned, reactivated, VIP — driving which journey treatments and which channels apply.
+    related_subdomains: [customer_loyalty_cdp]
+    related_kpis: [cdp.kpi.churn_rate, cdp.kpi.winback_rate]
+    steward: Lifecycle Marketing Lead
+  - name: Hashed Identifier (PII-safe)
+    aliases: [Hashed Email, Email SHA-256, EUID]
+    definition: SHA-256 hash of a normalized identifier (lower-cased trimmed email, E.164 phone) — the PII-safe envelope every major destination (Meta CAPI, Google EUID, TikTok Events) accepts.
+    related_subdomains: [customer_loyalty_cdp]
+    related_kpis: []
+    steward: CDP Architect
+  - name: Deduplication / Survivorship
+    aliases: [Survivorship Rules]
+    definition: Policy that picks the winning attribute value when sources disagree (most-recent, highest-trust, longest-non-null, weighted vote). The mechanism by which the golden record is constructed and audited.
+    related_subdomains: [customer_loyalty_cdp]
+    related_kpis: []
+    steward: CDP Architect
+  - name: Persona
+    aliases: [Customer Persona, Buyer Persona]
+    definition: Qualitative archetype describing a customer cluster's motivations, channels, and content preferences. Built from segmentation outputs + research; consumed by marketing for creative direction.
+    related_subdomains: [customer_loyalty_cdp, brand_marketing]
+    related_kpis: []
+    steward: Customer Insights Manager
+  - name: Loyalty Tier
+    aliases: [Tier, Status Tier]
+    definition: Stratification of loyalty-program members by accumulated points or spend within a window — bronze, silver, gold, platinum, black, founder. Each tier carries benefits + earn multipliers.
+    related_subdomains: [customer_loyalty_cdp, loyalty]
+    related_kpis: [cdp.kpi.member_driven_revenue_pct]
+    steward: Loyalty Program Director
+  - name: Points Ledger
+    aliases: [Loyalty Points Ledger]
+    definition: Append-only book of record for every points credit and debit. Drives points-liability accounting under FASB ASC 606 deferred-revenue treatment.
+    related_subdomains: [customer_loyalty_cdp, loyalty]
+    related_kpis: [cdp.kpi.reward_redemption_rate]
+    steward: Loyalty Program Director
+  - name: Reward Redemption
+    aliases: [Redemption]
+    definition: Event where a customer trades loyalty points (or status) for a reward — gift card, voucher, discount, partner experience. Drives the redemption-rate KPI and points-liability draw-down.
+    related_subdomains: [customer_loyalty_cdp, loyalty]
+    related_kpis: [cdp.kpi.reward_redemption_rate]
+    steward: Loyalty Program Director
+  - name: Reverse-ETL
+    aliases: [Reverse ETL, Operational Analytics Sync]
+    definition: Pattern of syncing modelled data from a cloud warehouse back to operational tools (Klaviyo, Braze, Iterable, Meta audiences) — typically via Hightouch, Census, or Segment Profile Sync. The activation half of the warehouse-native CDP architecture.
+    related_subdomains: [customer_loyalty_cdp]
+    related_kpis: []
+    steward: CDP Architect
+
+  # ===========================================================================
+  # Omnichannel Order Management (Retail anchor) — added with the omnichannel_oms anchor.
+  # ===========================================================================
+  - name: ATP (Available-To-Promise)
+    aliases: [Available To Promise, ATP Inventory]
+    definition: Sellable inventory at a node after subtracting allocated, in-transit-out, and reserved-safety quantities. The number a checkout cart can confidently promise the customer in real time. ATP refresh latency is the central engineering tradeoff in distributed OMS.
+    related_subdomains: [omnichannel_oms, merchandising]
+    related_kpis: [oms.kpi.atp_accuracy, oms.kpi.inventory_visibility_unified_pct]
+    steward: Inventory Visibility Manager
+  - name: OPP (Order Promise Provider)
+    aliases: [Order Promising Service, Manhattan Active Promise]
+    definition: Service that quotes a delivery date / pickup time at checkout by combining sourcing-rule simulation, ATP, carrier transit times, and store pick capacity. Manhattan Active Promise and IBM Sterling Promise are reference implementations.
+    related_subdomains: [omnichannel_oms]
+    related_kpis: [oms.kpi.promise_vs_actual_gap, oms.kpi.on_time_delivery]
+    steward: OMS Product Manager
+  - name: BOPIS (Buy-Online-Pickup-In-Store)
+    aliases: [Click-and-Collect, Pickup-in-Store, Click & Collect]
+    definition: Fulfillment method where the customer purchases on .com / mobile and collects at a designated store. Reduces last-mile cost, drives store traffic, and shifts the SLA clock to "ready-for-pickup" rather than "delivered".
+    related_subdomains: [omnichannel_oms, store_ops]
+    related_kpis: [oms.kpi.bopis_lead_time]
+    steward: Store Ops Lead
+  - name: BORIS (Buy-Online-Return-In-Store)
+    aliases: [In-Store Returns]
+    definition: Reverse-logistics pattern where an online order is returned at a physical store. Reduces freight cost and creates an upsell opportunity at refund time. Accounts for 60-70% of online returns at omnichannel retailers.
+    related_subdomains: [omnichannel_oms]
+    related_kpis: [oms.kpi.return_cycle_time]
+    steward: Returns Lead
+  - name: Ship-from-Store
+    aliases: [SFS, Store Fulfillment]
+    definition: Fulfillment of a .com order out of a store's on-hand inventory. Trades higher per-pick labor cost for shorter zone-skip transit + clearance pull on stranded inventory.
+    related_subdomains: [omnichannel_oms]
+    related_kpis: [oms.kpi.ship_from_store_mix, oms.kpi.cost_to_serve_per_channel]
+    steward: Fulfillment Operations Director
+  - name: RDC (Regional Distribution Center)
+    aliases: [Regional DC, Forward DC]
+    definition: Mid-tier warehouse positioned regionally to compress last-mile transit; sits between national-scale fulfillment and local stores in the network design.
+    related_subdomains: [omnichannel_oms, supply_chain]
+    related_kpis: [oms.kpi.cost_to_serve_per_channel]
+    steward: Fulfillment Operations Director
+  - name: Fulfillment-as-a-Service
+    aliases: [FaaS, 3PL Fulfillment]
+    definition: Outsourced model where the brand uses a third-party network (Shopify Fulfillment Network, ShipBob, Deliverr) for pick-pack-ship. The OMS routes through the partner's API contract rather than the brand's WMS.
+    related_subdomains: [omnichannel_oms]
+    related_kpis: [oms.kpi.cost_to_serve_per_channel, oms.kpi.on_time_delivery]
+    steward: Head of Omnichannel
+  - name: Sourcing Rules
+    aliases: [Sourcing Strategy, Routing Rules]
+    definition: Configurable rule fragments evaluated by the Distributed Order Management (DOM) broker to score candidate fulfillment nodes. Manhattan strategies, Sterling business-rules, Fluent GraphQL rules, and Salesforce OMS flows are vendor-specific dialects of the same idea.
+    related_subdomains: [omnichannel_oms]
+    related_kpis: [oms.kpi.cost_to_serve_per_channel, oms.kpi.order_split_rate]
+    steward: OMS Product Manager
+  - name: Allocation
+    aliases: [Order Allocation, Reservation]
+    definition: Concrete decision binding an order_line to a fulfillment node and decrementing the corresponding ATP. Issued by the DOM broker after sourcing-rule scoring; reversible up to the pick_started event.
+    related_subdomains: [omnichannel_oms]
+    related_kpis: [oms.kpi.first_pick_fill_rate]
+    steward: OMS Product Manager
+  - name: Drop-Ship
+    aliases: [Vendor Drop-Ship, Dropship]
+    definition: Fulfillment method where the order is shipped directly from the vendor or supplier to the customer without ever entering the retailer's warehouse. Removes inventory carry; adds 1-2 days transit and reconciliation overhead.
+    related_subdomains: [omnichannel_oms, supply_chain]
+    related_kpis: [oms.kpi.ship_from_store_mix, oms.kpi.cost_to_serve_per_channel]
+    steward: Fulfillment Operations Director
+  - name: EDI 940 / 945
+    aliases: [Warehouse Shipping Order, Warehouse Shipping Advice]
+    definition: ASC X12 EDI transaction pair for retailer-WMS coordination. EDI 940 instructs the WMS to ship; EDI 945 confirms what shipped, with serials, weights, and tracking. The two messages bracket the warehouse leg of the order lifecycle.
+    related_subdomains: [omnichannel_oms]
+    related_kpis: [oms.kpi.order_cycle_time]
+    steward: EDI / B2B Integration Lead
+  - name: Distributed Order Management (DOM)
+    aliases: [DOM, Distributed Order Management Engine]
+    definition: The orchestration layer of an OMS that decides which node fulfills which order line. Inputs are inventory positions across nodes, sourcing rules, capacity, carrier costs, and customer promise; outputs are allocations and ship-from decisions.
+    related_subdomains: [omnichannel_oms]
+    related_kpis: [oms.kpi.order_split_rate, oms.kpi.cost_to_serve_per_channel]
+    steward: OMS Product Manager
+  - name: Golden Record (Customer)
+    aliases: [Customer Golden Record, Unified Profile]
+    definition: Single canonical customer record stitched across .com, store loyalty, and call-center identifiers. The unit of returns lookup, promo eligibility, and lifetime-value calculation; the OMS keys returns to the golden record so a BORIS lookup finds the original .com order.
+    related_subdomains: [omnichannel_oms, customer_loyalty_cdp]
+    related_kpis: [oms.kpi.inventory_visibility_unified_pct]
+    steward: Head of Omnichannel
+  - name: Promise Window
+    aliases: [Delivery Promise, ETA Window]
+    definition: The delivery-date interval quoted at checkout (e.g. "arrives Wed-Fri"). Tighter windows lift conversion but raise SLA-breach risk; the Order Promise Provider service derives the window from sourcing simulation + carrier ETAs + safety buffer.
+    related_subdomains: [omnichannel_oms]
+    related_kpis: [oms.kpi.promise_vs_actual_gap, oms.kpi.on_time_delivery]
+    steward: Customer Experience Lead
+  - name: Endless Aisle
+    aliases: [Endless Aisle Ordering, Save-the-Sale]
+    definition: In-store ordering capability where an associate can promise a SKU not on the rack from the chain's pool, fulfilling via ship-to-home or pickup-at-another-store. Aptos ONE and Manhattan POS are reference implementations.
+    related_subdomains: [omnichannel_oms, store_ops]
+    related_kpis: [oms.kpi.atp_accuracy]
+    steward: Store Ops Lead
+  - name: Dark Store
+    aliases: [Micro-Fulfillment Center, MFC, Dotcom-Only Store]
+    definition: A retail box converted to a pure fulfillment node — no retail traffic, full pick / pack labor — typically positioned in a high-density urban zone to compress last-mile time. Common in grocery (Walmart, Tesco) and apparel.
+    related_subdomains: [omnichannel_oms, dark_stores]
+    related_kpis: [oms.kpi.bopis_lead_time, oms.kpi.cost_to_serve_per_channel]
+    steward: Fulfillment Operations Director
+  - name: Curbside Pickup
+    aliases: [Curbside, Drive-Up]
+    definition: Variant of BOPIS where the staff brings the order to a customer's vehicle at a marked spot. Adds a customer-arrival signal to the lifecycle; common in grocery + general merch.
+    related_subdomains: [omnichannel_oms]
+    related_kpis: [oms.kpi.bopis_lead_time]
+    steward: Store Ops Lead
+  - name: Reverse Logistics
+    aliases: [Returns Logistics, Reverse Supply Chain]
+    definition: End-to-end flow of a returned product back through the network — drop-off, transit, inspection, restock-or-disposition, and refund. The mirror of forward fulfillment with its own KPIs and partner ecosystem (Happy Returns, Loop, Optoro).
+    related_subdomains: [omnichannel_oms, returns_management]
+    related_kpis: [oms.kpi.return_cycle_time]
+    steward: Returns Lead
+
+  # ===========================================================================
+  # Revenue Growth Management (CPG anchor) — added with the revenue_growth_management anchor.
+  # ===========================================================================
+  - name: PPA
+    aliases: [Price Pack Architecture]
+    definition: The structured set of pack sizes, formats, and price points across a brand portfolio (entry / mainstream / premium / value / super tiers) that engineers consumer trade-up and trade-down within and across channels. The strategic centerpiece of CPG Revenue Growth Management.
+    related_subdomains: [revenue_growth_management, pricing_and_promotions, trade_promotion_management]
+    related_kpis: [rgm.kpi.mix_index, rgm.kpi.pack_margin_mix_pct]
+    steward: VP Revenue Management
+  - name: GTM
+    aliases: [Go-To-Market]
+    definition: The end-to-end commercial execution plan for a brand or portfolio — channel mix, pricing, trade investment, distribution, retail-execution. In RGM, GTM cost allocation (slotting, MDF, launch budgets) is the noisiest line in the gross-to-net waterfall.
+    related_subdomains: [revenue_growth_management, brand_marketing]
+    related_kpis: [rgm.kpi.channel_profitability]
+    steward: Chief Commercial Officer
+  - name: Net Revenue
+    aliases: [NSV, Net Sales Value]
+    definition: Gross revenue minus all gross-to-net items (off-invoice, scan-down, bill-back, MCB, rebate accruals, slotting amortization, marketing development funds, returns). The post-trade top line that flows through to gross margin.
+    related_subdomains: [revenue_growth_management, trade_promotion_management]
+    related_kpis: [rgm.kpi.net_revenue_per_unit, rgm.kpi.net_revenue_growth_pct]
+    steward: Net Revenue Manager
+  - name: Gross-to-Net
+    aliases: [GTN, Gross-to-Net Waterfall]
+    definition: The structured ladder of deductions between gross sales (units × list price) and net revenue — off-invoice allowances, scan-downs, bill-backs, manufacturer chargebacks (MCB), rebate accruals, slotting fees, marketing development funds, returns. Governed by IFRS 15 variable-consideration accounting.
+    related_subdomains: [revenue_growth_management]
+    related_kpis: [rgm.kpi.price_realization]
+    steward: Net Revenue Manager
+  - name: List-to-Net
+    aliases: [List Price to Net Price]
+    definition: Ratio of net realized price to original list price, net of all trade deductions. Used interchangeably with price realization at the per-unit grain.
+    related_subdomains: [revenue_growth_management]
+    related_kpis: [rgm.kpi.price_realization]
+    steward: Pricing Strategy Lead
+  - name: Price Realization
+    aliases: [Realized Price %]
+    definition: Net price divided by list price, weighted by units. Tracks how much of the published wholesale price actually lands in the manufacturer's books after the gross-to-net waterfall runs.
+    related_subdomains: [revenue_growth_management]
+    related_kpis: [rgm.kpi.price_realization]
+    steward: Pricing Strategy Lead
+  - name: Mix Shift
+    aliases: [Mix Effect]
+    definition: Change in the share of premium vs mainstream vs value packs (or channels) over a period. The dimension of variance that's hardest to attribute cleanly because it interacts with both volume and price.
+    related_subdomains: [revenue_growth_management]
+    related_kpis: [rgm.kpi.mix_index, rgm.kpi.mix_variance]
+    steward: Mix Optimization Lead
+  - name: Value Pack
+    aliases: [Bonus Pack, Value Tier Pack]
+    definition: A pack sized larger than the mainstream pack but priced below pro-rata to drive volume and household penetration (e.g. 18-count value pack vs the mainstream 12-count). Sits at the value tier of the PPA ladder.
+    related_subdomains: [revenue_growth_management]
+    related_kpis: [rgm.kpi.pack_margin_mix_pct]
+    steward: Mix Optimization Lead
+  - name: Super Pack
+    aliases: [Super-Size Pack, Club Pack]
+    definition: A very large pack format (24-, 36-, 48-count) sold predominantly through club channels (Costco, Sam's Club, BJ's). High volume per scan, lower margin per unit; lives at the super tier of the PPA ladder.
+    related_subdomains: [revenue_growth_management]
+    related_kpis: [rgm.kpi.channel_profitability]
+    steward: Mix Optimization Lead
+  - name: Multipack
+    aliases: [Multi-Pack]
+    definition: Pack containing multiple individual selling units (e.g. 12-pack of soda, 6-pack of yogurt). The mainstream pack tier in most grocery categories.
+    related_subdomains: [revenue_growth_management, merchandising]
+    related_kpis: [rgm.kpi.pack_margin_mix_pct]
+    steward: Mix Optimization Lead
+  - name: Premium Tier
+    aliases: [Premium Pack Tier]
+    definition: The high-price, high-margin tier of the PPA ladder — typically smaller, more elaborate pack formats (single-serve glass, gift box, limited edition). The tier that drives Mix Index uplift.
+    related_subdomains: [revenue_growth_management]
+    related_kpis: [rgm.kpi.mix_index]
+    steward: Pricing Strategy Lead
+  - name: Mainstream Tier
+    aliases: [Mainstream Pack Tier]
+    definition: The volume-anchor tier of the PPA ladder — the pack format with the largest share of category volume. Most distribution and promo investment concentrates here.
+    related_subdomains: [revenue_growth_management]
+    related_kpis: [rgm.kpi.mix_index]
+    steward: Mix Optimization Lead
+  - name: Value Tier
+    aliases: [Value Pack Tier, Entry Tier]
+    definition: The price-tier where consumers entering the category or shopping on budget transact. The PPA tier where trade-down risk is highest and where channel ladder breakage hurts most.
+    related_subdomains: [revenue_growth_management]
+    related_kpis: [rgm.kpi.mix_index]
+    steward: Mix Optimization Lead
+  - name: Channel Ladder
+    aliases: [Channel Price Ladder]
+    definition: The structured per-unit price differential maintained across club, mass, grocery, drug, convenience, and ecom channels. Breaking the ladder (e.g. a club exclusive at a lower per-unit) creates consumer perception arbitrage that's expensive to repair.
+    related_subdomains: [revenue_growth_management, pricing_and_promotions]
+    related_kpis: [rgm.kpi.channel_profitability]
+    steward: RGM Director
+  - name: Trade Prepayment
+    aliases: [Lump-Sum Trade Fund]
+    definition: An up-front, fixed-amount trade payment to a retailer (vs accrual-based pay-per-unit). Higher cash exposure but simpler to administer; common for slotting fees and innovation launch programs.
+    related_subdomains: [revenue_growth_management, trade_promotion_management]
+    related_kpis: [rgm.kpi.trade_spend_roi]
+    steward: Trade Investment Analyst
+  - name: Conditional Rebate
+    aliases: [Performance Rebate, Conditional Discount]
+    definition: A back-end rebate that only pays out if the retailer hits a performance threshold (volume, distribution coverage, display compliance). Replaces guaranteed off-invoice with pay-for-performance gating.
+    related_subdomains: [revenue_growth_management, trade_promotion_management]
+    related_kpis: [rgm.kpi.trade_spend_roi]
+    steward: Trade Investment Analyst
+  - name: Accrual
+    aliases: [Trade Accrual, Rebate Accrual]
+    definition: Period-end provision booked against expected future trade payouts (rebates, bill-backs, MCB) before they are formally claimed and settled. Under IFRS 15 it's the variable-consideration estimate inside net revenue.
+    related_subdomains: [revenue_growth_management]
+    related_kpis: [rgm.kpi.price_realization]
+    steward: Net Revenue Manager
+  - name: Innovation Sales
+    aliases: [Innovation Sales %, NPI %]
+    definition: Share of net revenue from SKUs launched in the trailing 24 months. Must be reported net of cannibalization on the existing portfolio or it over-credits the innovation pipeline.
+    related_subdomains: [revenue_growth_management]
+    related_kpis: [rgm.kpi.innovation_sales_pct]
+    steward: Chief Commercial Officer
+
+  # ===========================================================================
+  # Direct Store Delivery (CPG anchor) — added with the direct_store_delivery anchor.
+  # ===========================================================================
+  - name: DSD
+    aliases: [Direct Store Delivery, Store-Door Delivery]
+    definition: Distribution model where a CPG manufacturer's truck delivers product directly from a depot to the retail store, bypassing the retailer DC. Dominant in beverage, snacks, beer, bakery, dairy; >$200B/yr in the US.
+    related_subdomains: [direct_store_delivery]
+    related_kpis: [dsd.kpi.cost_per_case, dsd.kpi.case_fill_rate]
+    steward: VP Field Sales
+  - name: Route Accounting
+    aliases: [Route Accounting System, RAS]
+    definition: The end-to-end system of record for DSD operations — master routes, daily routes, settlement, returns, EPOD, driver pay. SAP DSD, Aldata Apollo, Epicor DSD, AFS DSD are reference platforms.
+    related_subdomains: [direct_store_delivery]
+    related_kpis: [dsd.kpi.settlement_accuracy]
+    steward: DSD Finance Controller
+  - name: Master Route
+    aliases: [Tour Plan, Standing Route]
+    definition: The recurring sequence of stops a route services on its standing service-day pattern (e.g. MWF). Re-cut quarterly as drop sizes and stop attrition shift.
+    related_subdomains: [direct_store_delivery]
+    related_kpis: [dsd.kpi.stops_per_route, dsd.kpi.sales_per_mile]
+    steward: Route Planner
+  - name: Daily Route
+    aliases: [Day Route, Daily Tour]
+    definition: One day's executed instance of a master route, with the optimized actual stop sequence after Roadnet/Descartes re-sequencing. The grain of stop, settlement, and EPOD records.
+    related_subdomains: [direct_store_delivery]
+    related_kpis: [dsd.kpi.route_adherence_pct]
+    steward: Route Operations Manager
+  - name: Drop Size
+    aliases: [Drop Size (cases), Drop Size (units)]
+    definition: Average cases or units delivered per stop. The unit-economics input that flips a stop between deliver-mode and presell-mode (or off the route entirely).
+    related_subdomains: [direct_store_delivery]
+    related_kpis: [dsd.kpi.cases_per_stop, dsd.kpi.drop_size_units]
+    steward: Account Sales Rep
+  - name: Presell
+    aliases: [Pre-Sell, Order-Day]
+    definition: DSD mode where an account sales rep visits the store today and writes an order for tomorrow's delivery truck. Decouples selling from delivery; preferred for high-value, low-frequency stops.
+    related_subdomains: [direct_store_delivery]
+    related_kpis: [dsd.kpi.cost_per_stop, dsd.kpi.driver_productivity]
+    steward: Account Sales Rep
+  - name: Deliver (DSD Mode)
+    aliases: [Deliver-Mode, Conventional DSD]
+    definition: DSD mode where the same driver writes the order and delivers the product on the same visit. Faster cash but lower stop productivity than presell-and-deliver split.
+    related_subdomains: [direct_store_delivery]
+    related_kpis: [dsd.kpi.cases_per_stop]
+    steward: Delivery Driver Manager
+  - name: EPOD
+    aliases: [Electronic Proof of Delivery, e-POD]
+    definition: On-handheld signature + photo + geo-stamp captured at the store door at delivery time. The single most important evidence artifact for disputing retailer chargebacks; carried inter-org by EDI 895.
+    related_subdomains: [direct_store_delivery]
+    related_kpis: [dsd.kpi.epod_capture_rate]
+    steward: Settlement Manager
+  - name: Driver Settlement
+    aliases: [Route Settlement, Tour Close, Cage Reconciliation]
+    definition: End-of-day reconciliation of cash + check + EFT + returns + spoils between the driver and the cage. Variance triggers HR + finance review; high variance is one of the strongest fraud / shrink leading indicators.
+    related_subdomains: [direct_store_delivery]
+    related_kpis: [dsd.kpi.settlement_accuracy]
+    steward: Settlement Manager
+  - name: Perfect Store (DSD)
+    aliases: [Perfect Store Score (DSD)]
+    definition: Composite outlet-level retail-execution score — distribution, share-of-cooler, planogram, price, promo, freshness — captured by the driver/rep on the handheld at the visit. Drives pay-for-performance gating and trade-fund release.
+    related_subdomains: [direct_store_delivery, retail_execution]
+    related_kpis: [dsd.kpi.perfect_store_score_dsd, dsd.kpi.out_of_stock_pct]
+    steward: Perfect Store Lead
+  - name: Planogram Compliance
+    aliases: [Planogram Adherence]
+    definition: Share of the contracted planogram's facings, blocks, and adjacencies actually present on the shelf at audit. The single biggest sub-score inside Perfect Store; gates pay-for-performance trade funds.
+    related_subdomains: [direct_store_delivery, retail_execution, trade_promotion_management]
+    related_kpis: [dsd.kpi.perfect_store_score_dsd]
+    steward: Perfect Store Lead
+  - name: On-Shelf Availability (DSD)
+    aliases: [OSA, Shelf OSA]
+    definition: Share of authorized SKUs found in stock during a stop audit. The fast-feedback signal for cooler/shelf restock decisions and the trigger for off-cycle service visits.
+    related_subdomains: [direct_store_delivery, retail_execution]
+    related_kpis: [dsd.kpi.out_of_stock_pct]
+    steward: Perfect Store Lead
+  - name: Out-of-Stock (DSD)
+    aliases: [OOS]
+    definition: An authorized SKU absent from the shelf or cooler during an audit. Mid-promo OOS silently destroys lift; in DSD it's correctable inside a single visit if the driver carries inventory on the truck.
+    related_subdomains: [direct_store_delivery]
+    related_kpis: [dsd.kpi.out_of_stock_pct]
+    steward: Perfect Store Lead
+  - name: Case Fill Rate (DSD)
+    aliases: [CFR, Service Level (DSD)]
+    definition: Cases delivered as a share of cases ordered, at line grain. Industry benchmark 97-99%; below 95% triggers retailer chargebacks and lost-distribution risk.
+    related_subdomains: [direct_store_delivery]
+    related_kpis: [dsd.kpi.case_fill_rate]
+    steward: Route Operations Manager
+  - name: Dynamic Routing
+    aliases: [Dynamic Re-Route, Live Route Optimization]
+    definition: Mid-day re-optimization of the remaining stop sequence on a route based on traffic, dwell-time overrun, or new orders. Trimble Roadnet, Descartes, Manhattan Active Routing all expose dynamic-routing APIs.
+    related_subdomains: [direct_store_delivery, last_mile_logistics]
+    related_kpis: [dsd.kpi.on_time_delivery_pct, dsd.kpi.route_adherence_pct]
+    steward: Route Operations Manager
+  - name: HOS
+    aliases: [Hours of Service, FMCSA HOS]
+    definition: U.S. federal driver-hours regulation under FMCSA 49 CFR §395 — 11-hour daily drive limit, 14-hour on-duty limit, 30-minute break, 70-hour weekly limit. Compliance recorded by an ELD.
+    related_subdomains: [direct_store_delivery, fleet_telematics]
+    related_kpis: []
+    steward: Route Operations Manager
+  - name: ELD
+    aliases: [Electronic Logging Device]
+    definition: FMCSA-registered device that automatically records the driver's HOS status from the truck's engine ECM. Mandatory under the 2017 ELD final rule for most commercial vehicles.
+    related_subdomains: [direct_store_delivery, fleet_telematics]
+    related_kpis: []
+    steward: DSD Finance Controller
+  - name: IFTA
+    aliases: [International Fuel Tax Agreement]
+    definition: Inter-jurisdiction agreement governing fuel-tax allocation across U.S. states and Canadian provinces for commercial vehicles. Quarterly reporting requires precise GPS-to-jurisdiction mile splits.
+    related_subdomains: [direct_store_delivery, fleet_telematics]
+    related_kpis: []
+    steward: DSD Finance Controller
+  - name: SSCC
+    aliases: [Serial Shipping Container Code, GS1 SSCC]
+    definition: GS1-issued unique identifier for a logistics unit (typically a pallet). Used to track DSD pallets from the depot bay through the truck to the store door.
+    related_subdomains: [direct_store_delivery, supply_chain_visibility]
+    related_kpis: []
+    steward: EDI / B2B Integration Lead
+  - name: Swap (DSD)
+    aliases: [Swap Transaction, Stale Swap]
+    definition: A DSD transaction where the driver pulls expired/damaged product off the shelf and replaces it with fresh — modeled as a paired return + sale or a no-cash swap depending on the platform.
+    related_subdomains: [direct_store_delivery]
+    related_kpis: [dsd.kpi.returns_rate_dsd]
+    steward: Delivery Driver Manager
+  - name: Stale / Spoils
+    aliases: [Stales, Spoilage Credit]
+    definition: Product pulled from the shelf because it's past or near expiry. Credited to the retailer at settlement; a top driver of DSD returns rate.
+    related_subdomains: [direct_store_delivery]
+    related_kpis: [dsd.kpi.returns_rate_dsd]
+    steward: Settlement Manager
+  - name: Bay-Slot Loading
+    aliases: [FleetLoader, Pre-Load]
+    definition: Pre-loading of a DSD truck at the depot — each bay/slot mapped to a specific stop or product class to minimize at-store search time. Trimble Roadnet FleetLoader / MobileCast and Manhattan Active Routing publish bay-slot plans.
+    related_subdomains: [direct_store_delivery]
+    related_kpis: [dsd.kpi.driver_productivity]
+    steward: Route Planner
+  - name: EDI 894
+    aliases: [Delivery/Return Base Record, ASC X12 894]
+    definition: ASC X12 EDI transaction set carrying the manufacturer's DSD invoice (delivery or return) to the retailer at the door. Mirror to EDI 895 acknowledgment.
+    related_subdomains: [direct_store_delivery]
+    related_kpis: []
+    steward: EDI / B2B Integration Lead
+  - name: EDI 895
+    aliases: [Delivery/Return Acknowledgement, ASC X12 895]
+    definition: ASC X12 EDI transaction set carrying the retailer's signed acknowledgment of EDI 894 delivery + returns. The inter-org wire for EPOD evidence in deduction disputes.
+    related_subdomains: [direct_store_delivery]
+    related_kpis: [dsd.kpi.epod_capture_rate]
+    steward: EDI / B2B Integration Lead
+
+  # ===========================================================================
+  # Returns & Reverse Logistics anchor — added with the returns_reverse_logistics anchor.
+  # ===========================================================================
+  - name: RMA
+    aliases: [Return Merchandise Authorization, Return Material Authorization]
+    definition: Customer-facing authorization that an item may be sent back. Maps to EDI 180 between manufacturer and retailer. The header-grain object in returns analytics, with one or many return_items underneath.
+    related_subdomains: [returns_reverse_logistics, returns_management, ecommerce]
+    related_kpis: [rrl.kpi.return_rate_pct, rrl.kpi.days_to_disposition]
+    steward: Returns Operations Director
+  - name: Returnless Refund
+    aliases: [Keep-It Refund, Refund-Without-Return, Returnless]
+    definition: Disposition where the refund is issued but the item is not requested back — economical when forward shipping + inspection + restock cost exceeds the unit recovery value. Pioneered at scale by Amazon and Walmart for low-cost categories.
+    related_subdomains: [returns_reverse_logistics, returns_management]
+    related_kpis: [rrl.kpi.returnless_refund_rate, rrl.kpi.cost_to_process_return]
+    steward: Returns Strategy Lead
+  - name: Restocking Fee
+    aliases: [Restock Fee, Return Fee]
+    definition: A deduction from the refund issued to the customer to recover handling and inspection cost on a returned item. Capture rate (fees collected vs eligible) is a closely-tracked margin lever; high-friction in CX, often waived for loyalty tiers.
+    related_subdomains: [returns_reverse_logistics]
+    related_kpis: [rrl.kpi.restocking_fee_capture_pct, rrl.kpi.net_cost_of_returns]
+    steward: Returns Finance Manager
+  - name: Refurb
+    aliases: [Refurbishment, Recondition, CRC Output]
+    definition: Restoring a returned item to a saleable state — cleaning, testing, repackaging, re-firmware-flashing, replacing consumables — through a Centralized Return Center (CRC). Yield (refurbed_A + refurbed_B share of inputs) drives net recovery vs liquidation.
+    related_subdomains: [returns_reverse_logistics, warranty]
+    related_kpis: [rrl.kpi.refurb_yield_pct, rrl.kpi.recovery_value_pct]
+    steward: CRC Manager
+  - name: Liquidation
+    aliases: [Lot Liquidation, Secondary-Market Sale]
+    definition: Sale of unsellable-as-new returned product through secondary-market lot marketplaces (B-Stock, Liquidation.com, BULQ, Direct Liquidation, eBay B-Stock). Liquidation yield (proceeds / cost basis) sets the floor of return-flow economics.
+    related_subdomains: [returns_reverse_logistics]
+    related_kpis: [rrl.kpi.liquidation_yield_pct, rrl.kpi.recovery_value_pct]
+    steward: Recovery Channels Lead
+  - name: B-Stock
+    aliases: [B-Stock Solutions, B-Stock Supply]
+    definition: The largest U.S. B2B liquidation-auction marketplace, where retailers and manufacturers sell off return-flow lots to vetted secondary-market buyers. Used as a generic noun for the channel itself ("send it to B-Stock").
+    related_subdomains: [returns_reverse_logistics]
+    related_kpis: [rrl.kpi.liquidation_yield_pct]
+    steward: Recovery Channels Lead
+  - name: Grade A / B / C
+    aliases: [A-Grade, B-Grade, C-Grade, Condition Grade]
+    definition: Standard condition tiers assigned at the CRC. A-Grade = sellable as new, B-Grade = open-box with minor cosmetic, C-Grade = functional but not retail-presentable. Drives downstream routing — A back to restock, B to refurb channels, C to liquidation.
+    related_subdomains: [returns_reverse_logistics]
+    related_kpis: [rrl.kpi.refurb_yield_pct]
+    steward: CRC Manager
+  - name: Days to Refund
+    aliases: [Refund Cycle Time, Time to Refund]
+    definition: Elapsed time from RMA receipt to refund_issued. A CX-critical KPI — long refund times correlate strongly with churn and chargeback rates; targets vary by tender (instant-credit vs original-tender card).
+    related_subdomains: [returns_reverse_logistics]
+    related_kpis: [rrl.kpi.refund_issue_time]
+    steward: Returns CX Lead
+  - name: Reverse Logistics (Industry)
+    aliases: [Reverse Supply Chain Industry, RL Industry]
+    definition: The $700B+/yr global industry covering the flow of returned, recalled, refurbed, or recycled product back through the supply chain. Anchor vendors: Optoro, Loop Returns, Happy Returns (PayPal), Narvar, ZigZag, ReBound, Doddle, Newmine.
+    related_subdomains: [returns_reverse_logistics]
+    related_kpis: [rrl.kpi.return_rate_pct, rrl.kpi.cost_to_process_return]
+    steward: VP Reverse Logistics
+  - name: BORIS
+    aliases: [Buy Online, Return In Store]
+    definition: Omnichannel return method where a customer returns a .com order at a physical store of the same chain. Compresses the reverse leg (no carrier transit) and lifts attach-sale rate (~25% of BORIS visits add a new purchase).
+    related_subdomains: [returns_reverse_logistics, returns_management, omnichannel_oms]
+    related_kpis: [rrl.kpi.return_rate_pct]
+    steward: Omnichannel Returns Lead
+  - name: CRC
+    aliases: [Centralized Return Center, Returns Hub]
+    definition: A dedicated warehouse that inspects, grades, refurbs, and disposes returned product at scale. Most large retailers operate 1-3 CRCs; reverse-logistics 3PLs (Optoro, Newmine, GENCO/FedEx Supply Chain) operate shared-tenant CRCs.
+    related_subdomains: [returns_reverse_logistics]
+    related_kpis: [rrl.kpi.cost_to_process_return, rrl.kpi.days_to_disposition]
+    steward: CRC Manager
+  - name: Forward-Stocked Returns
+    aliases: [Pre-Positioned Returns Inventory, Forward Returns Pool]
+    definition: Inventory model where common-return SKUs are held in forward DCs ready to resell — bypassing the round-trip to a CRC. Optoro OptiTurn and Happy Returns' aggregated-bag flow are leading patterns; lifts recovery value and compresses days-to-disposition.
+    related_subdomains: [returns_reverse_logistics]
+    related_kpis: [rrl.kpi.days_to_disposition, rrl.kpi.recovery_value_pct]
+    steward: Reverse Logistics Architect
+  - name: Scan-Based Trade
+    aliases: [SBT, Pay-on-Scan]
+    definition: Settlement model where the retailer pays the supplier only when the unit scans at POS — return ownership stays with the supplier. Heavy in newsstand and certain CPG categories; flips the returns risk allocation entirely.
+    related_subdomains: [returns_reverse_logistics, direct_store_delivery]
+    related_kpis: []
+    steward: Settlement Manager
+  - name: Recycling Lane
+    aliases: [Recycle Disposition, E-Waste Lane]
+    definition: Disposition pathway where a returned item is sent to a certified recycler rather than restocked, refurbed, or liquidated. Driven by EPR (Extended Producer Responsibility) regulation in EU and US states like California (SB 343).
+    related_subdomains: [returns_reverse_logistics, carbon_accounting]
+    related_kpis: [rrl.kpi.return_carbon_kg_co2e]
+    steward: Sustainability Lead
+  - name: Donation Lane
+    aliases: [Donation Disposition, Charitable Disposition]
+    definition: Disposition pathway where unsellable-but-functional returned product is donated to a vetted charity (Good360, Delivering Good). Tax-deductible at fair market value; common for apparel and home goods.
+    related_subdomains: [returns_reverse_logistics]
+    related_kpis: [rrl.kpi.recovery_value_pct]
+    steward: Sustainability Lead
+  - name: Wardrobing
+    aliases: [Return Fraud — Wardrobing]
+    definition: Customer behavior where an item is bought, worn or used once, and returned for full refund. The most common form of "soft" return fraud; flagged by signal-based fraud platforms (Newmine, Appriss Retail) on patterns like rapid-return + tag-removed.
+    related_subdomains: [returns_reverse_logistics, fraud, loss_prevention]
+    related_kpis: [rrl.kpi.return_fraud_rate]
+    steward: Loss Prevention Director
+  - name: EDI 180
+    aliases: [Return Merchandise Authorization, ASC X12 180]
+    definition: ASC X12 EDI transaction set carrying an RMA between trading partners. The B2B wire format that supplier returns portals and SAP S/4 Returns / Manhattan Returns emit; mirrors the customer-facing RMA in the OMS.
+    related_subdomains: [returns_reverse_logistics]
+    related_kpis: []
+    steward: EDI / B2B Integration Lead
+
+  # ===========================================================================
+  # Category Management — added with the category_management anchor.
+  # ===========================================================================
+  - name: Planogram
+    aliases: [POG, Plan-o-gram, Shelf Plan]
+    definition: The authoritative shelf-layout document for a category × store-cluster × effective window — SKU placement, facings, shelf, slot, block adjacencies, vertical/horizontal flow. Authored in Blue Yonder Space Planning, Symphony RetailAI Category Manager, RELEX Space, or Quad Tag Galleria. The single instrument that converts category strategy into a store-executable artifact.
+    related_subdomains: [category_management, retail_execution, direct_store_delivery]
+    related_kpis: [cm.kpi.shelf_space_productivity, cm.kpi.assortment_compliance_pct]
+    steward: Space Planner
+  - name: Range (Assortment)
+    aliases: [Assortment Range, Listing Range]
+    definition: The set of SKUs a retailer authorises a category to carry across stores or per store-cluster. Range is the output of the range review; the planogram is the placement instance of the range.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.range_productivity, cm.kpi.assortment_compliance_pct]
+    steward: Category Manager
+  - name: Assortment
+    aliases: [Listed Assortment, Assortment Matrix]
+    definition: The full SKU-by-store authorisation matrix for a category — which SKUs each store/cluster is permitted (or mandated) to carry. Distinct from range (banner-level) because the assortment matrix carries per-cluster differentiation.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.assortment_compliance_pct, cm.kpi.distribution_coverage_pct]
+    steward: Category Manager
+  - name: Role of Category
+    aliases: [Category Role, ECR Category Role]
+    definition: ECR-blueprint category classification — Destination, Routine, Occasional/Seasonal, or Convenience — that drives shelf-space, pricing, promo intensity, and assortment-depth policy for a banner. Foundational input to the category business plan.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.category_share_of_wallet, cm.kpi.category_sales_growth_pct]
+    steward: Category Director
+  - name: Destination Category
+    aliases: [Destination Role]
+    definition: A category the retailer wants shoppers to choose its banner specifically for — gets the most shelf space, deepest assortment, sharpest price, and heaviest promo investment. Typically 5-10 categories per banner.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.category_share_of_wallet, cm.kpi.category_sales_growth_pct]
+    steward: Category Director
+  - name: Routine Category
+    aliases: [Preferred Category, Routine Role]
+    definition: A category the retailer wants to be competitively viable on (price, range, in-stock) so that the trip basket completes there. Largest share of categories by count; competitive-parity assortment.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.category_sales_growth_pct, cm.kpi.range_productivity]
+    steward: Category Manager
+  - name: Occasional/Seasonal Category
+    aliases: [Occasional Category, Seasonal Category]
+    definition: A category visited intermittently (BBQ, back-to-school, holiday) — disproportionate basket and margin contribution at peak; minimal shelf at trough. Range and planogram cycle seasonally.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.innovation_slot_pct, cm.kpi.shelf_space_productivity]
+    steward: Category Manager
+  - name: Convenience Category
+    aliases: [Convenience Role]
+    definition: A "fill-in" category not driving trip choice but supporting basket completion — narrow assortment, minimum space, no deep promo. Risk is over-investing space here at expense of Destination roles.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.shelf_space_productivity]
+    steward: Category Manager
+  - name: Attribute Hierarchy
+    aliases: [Consumer Decision Tree, CDT, Attribute Tree]
+    definition: Ordered set of consumer-relevant attributes (flavor, pack, occasion, dietary, claim) the shopper uses to navigate a category. The structural input to assortment optimisation — must-stock walks the tree top-down to guarantee no branch is unstocked.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.assortment_compliance_pct]
+    steward: Shopper Insights Lead
+  - name: Market Share (Category)
+    aliases: [Category Share, Value Share, Volume Share]
+    definition: A brand's or SKU's share of a defined category × geography × time. Read from syndicated POS (Circana Unify / NielsenIQ Connect / Numerator) at value (dollars) and volume (units) cuts. The denominator definition (Total US Food vs Total US Multi-Outlet+) materially changes the number.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.category_share_of_wallet, cm.kpi.private_label_share]
+    steward: Insights Manager
+  - name: MFR Share
+    aliases: [Manufacturer Share]
+    definition: A manufacturer's aggregated share of a category across all its brands and sub-brands. Used for negotiating leverage in JBP (joint business planning) and for category-captain assignment.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.category_share_of_wallet]
+    steward: Vendor Account Manager
+  - name: Fair Share (Shelf)
+    aliases: [Fair-Share Allocation, Linear Fair-Share]
+    definition: Heuristic for allocating shelf space proportional to a brand's share of category sales — facings_brand ∝ share_brand × total_facings. Pure fair-share ignores margin, innovation, and shopper-loyalty signals; usually a constraint not an objective.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.shelf_space_productivity, cm.kpi.range_productivity]
+    steward: Space Planner
+  - name: Must-Have SKU
+    aliases: [Must-Stock, MHA SKU]
+    definition: SKU whose absence creates loss-of-trip — the shopper walks to another banner if it's not on shelf. Identified by household-panel walk-away analysis (Kantar / Numerator) and shopper-insight studies; hard constraint in the assortment optimiser.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.distribution_coverage_pct, cm.kpi.assortment_compliance_pct]
+    steward: Shopper Insights Lead
+  - name: Kill SKU
+    aliases: [Delist, Drop SKU]
+    definition: SKU recommended for removal in a range review — typically low velocity, low margin, low cannibalization-of-replacement. Velocity-only kill destroys halo on the brand; the right signal is decision-tree leaf coverage post-kill.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.range_productivity, cm.kpi.velocity_index]
+    steward: Category Manager
+  - name: Gold/Silver/Bronze
+    aliases: [GSB Tiering, SKU Tiering]
+    definition: Three-tier SKU productivity ranking inside a category — Gold = top quintile (mandate + premium facings), Silver = mid (optional, cluster-restricted), Bronze = bottom (kill-candidate). Standard output of Symphony Category Manager and Circana Unify Assortment.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.range_productivity, cm.kpi.velocity_index]
+    steward: Category Manager
+  - name: Syndicated Data
+    aliases: [Syndicated POS, Syndicated Measurement]
+    definition: Multi-retailer, multi-brand panel and POS data licensed from a measurement provider (Circana, NielsenIQ, Numerator, Kantar Worldpanel, GfK). The truth source for cross-banner category share and competitive velocity benchmarking; the manufacturer does not own the raw retailer feed.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.category_share_of_wallet, cm.kpi.category_sales_growth_pct]
+    steward: Insights Manager
+  - name: Scan-Track
+    aliases: [Scan Data, POS Scan]
+    definition: Census POS-scan feed (every transaction) aggregated weekly at SKU × store × week grain. Circana's MULO+ and NielsenIQ's Scantrack are reference cuts; basis for velocity, distribution, and price/promo elasticity computation.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.average_item_velocity, cm.kpi.distribution_coverage_pct]
+    steward: Insights Manager
+  - name: Household Panel
+    aliases: [Consumer Panel, Shopper Panel]
+    definition: A continuously-measured statistically-projected panel of households whose purchases (receipts, in-home scan, e-receipt) feed shopper-behaviour measurement — penetration, frequency, basket affinity, switching, walk-away. Numerator, NielsenIQ Homescan, Kantar Worldpanel are reference panels.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.category_share_of_wallet]
+    steward: Shopper Insights Lead
+  - name: Total Store
+    aliases: [Total Store View, Whole-Store]
+    definition: The top of the category hierarchy — the entire store assortment rolled up across all departments and categories. Anchor for cross-category share-of-wallet, halo, and trip-mission analytics.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.category_share_of_wallet]
+    steward: Category Director
+  - name: Range Review
+    aliases: [Assortment Review, SKU Rationalisation Review, Line Review]
+    definition: The recurring (seasonal / annual) cycle in which retailer + manufacturer (often the Category Captain) jointly review velocity, share, margin, and cannibalization, then decide SKU adds, drops, mandates, repacks, and reclasses. Drives the next planogram cycle.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.range_productivity, cm.kpi.innovation_slot_pct]
+    steward: Range Strategist
+  - name: Category Captain
+    aliases: [Captain, Cat Captain]
+    definition: The single manufacturer (typically category leader) appointed by a retailer to advise on category strategy, range, and planogram across all manufacturers in the category. Privileged seat with regulatory antitrust guardrails (Robinson-Patman, FTC guidelines).
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.category_sales_growth_pct]
+    steward: Vendor Account Manager
+  - name: Cluster (Assortment)
+    aliases: [Store Cluster, Assortment Cluster]
+    definition: Grouping of stores sharing assortment policy — defined by demographic, shopper-mission, volume, or format axes. Replaces "one assortment for all stores"; typical retailer carries 4-8 clusters per category.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.assortment_compliance_pct]
+    steward: Category Manager
+  - name: Planogram Compliance (CM)
+    aliases: [POG Compliance, Shelf Compliance]
+    definition: Share of the contracted planogram's facings, positions, and adjacencies actually present on the shelf at audit. Measured by image-recognition compliance audits (Trax, AFS, NIQ Audit, Numerator). Below 80% silently destroys range-review ROI.
+    related_subdomains: [category_management, retail_execution, direct_store_delivery]
+    related_kpis: [cm.kpi.assortment_compliance_pct, cm.kpi.out_of_stock_rate]
+    steward: Perfect Store Lead
+  - name: Distribution Coverage (%ACV)
+    aliases: [ACV Distribution, "%ACV"]
+    definition: Sum of All-Commodity-Volume weights of stores carrying an SKU divided by total ACV in the market. The standard industry metric for how widely an SKU is distributed; 80%+ ACV is the threshold for "broad national distribution."
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.distribution_coverage_pct]
+    steward: Vendor Account Manager
+  - name: Velocity (CM)
+    aliases: [Item Velocity, Units/Store/Week]
+    definition: Weekly units sold per store carrying the SKU — the rate at which the shelf turns. The single sharpest cut for SKU rationalisation; velocity index >1.0 vs category average is the threshold for "above-fair-share" facings.
+    related_subdomains: [category_management]
+    related_kpis: [cm.kpi.velocity_index, cm.kpi.average_item_velocity]
+    steward: Category Manager
+  - name: GPC Brick
+    aliases: [Global Product Classification Brick, GS1 GPC]
+    definition: GS1-issued lowest-level node of the Global Product Classification — globally consistent SKU classification (8-digit brick code). Used as the cross-supplier-cross-retailer category-hierarchy backbone.
+    related_subdomains: [category_management, bill_of_materials]
+    related_kpis: []
+    steward: Master Data Steward
+
+  # ===========================================================================
+  # Procurement & Spend Analytics — added with the procurement_spend_analytics anchor (2026-Q2).
+  # ===========================================================================
+  - name: Spend Under Management
+    aliases: [SUM, Managed Spend]
+    definition: Share of total addressable spend governed by an active contract or strategic sourcing event. Headline maturity KPI for the CPO; sub-65% means the procurement org isn't covering the long tail. Calculated as sum(spend_with_active_contract_or_strategic_sourced) / sum(total_spend).
+    related_subdomains: [procurement_spend_analytics, category_management]
+    related_kpis: [psa.kpi.spend_under_mgmt]
+    steward: Chief Procurement Officer
+  - name: Maverick Spend
+    aliases: [Off-Contract Spend, Rogue Spend]
+    definition: Spend transacted outside negotiated contracts for a category the procurement org has covered. The leakage-detection metric — typically 5-20% of indirect spend; flagged by joining PO lines to active contract scope at ingest and surfaced on the maverick_flag column on po_line.
+    related_subdomains: [procurement_spend_analytics]
+    related_kpis: [psa.kpi.maverick_spend_pct]
+    steward: Category Manager
+  - name: Tail Spend
+    aliases: [Long-Tail Spend, Bottom-80 Spend]
+    definition: The bottom-80% of suppliers by spend, typically accounting for only ~5% of total spend but most of the supplier-count workload. Tackled via catalog/punchout consolidation, P-card programs, marketplace channels (Amazon Business, Tradeshift), or rule-driven auto-PO. Headline tail-spend ratio is a CPO KPI.
+    related_subdomains: [procurement_spend_analytics]
+    related_kpis: [psa.kpi.tail_spend_pct]
+    steward: Sourcing Director
+  - name: P-Card
+    aliases: [Purchasing Card, Corporate Procurement Card]
+    definition: Corporate credit card issued for low-value, high-frequency purchases that bypass the requisition-PO-receipt-invoice flow. Trades AP workload for control loss; usage caps and category restrictions encoded at the issuer (Visa/Mastercard commercial card programs).
+    related_subdomains: [procurement_spend_analytics, expense_management]
+    related_kpis: []
+    steward: AP Operations Lead
+  - name: Three-Way Match
+    aliases: [3-Way Match, PO-Receipt-Invoice Match]
+    definition: AP control that auto-clears an invoice only when PO, goods receipt, and supplier invoice agree on quantity, unit price, and amount within configured tolerance bands. Industry baseline for PO-backed invoice automation; tolerance is typically $50/2% per line.
+    related_subdomains: [procurement_spend_analytics]
+    related_kpis: [psa.kpi.invoice_match_rate]
+    steward: AP Operations Lead
+  - name: Two-Way Match
+    aliases: [2-Way Match]
+    definition: Reduced match that compares only PO and invoice (no goods receipt). Used for services, subscription invoices, recurring fees, and low-value catalog spend where goods-receipt would cost more than the control gain.
+    related_subdomains: [procurement_spend_analytics]
+    related_kpis: [psa.kpi.invoice_match_rate]
+    steward: AP Operations Lead
+  - name: Touchless Invoice
+    aliases: [Touchless AP, Lights-Out AP, Straight-Through Invoice]
+    definition: Supplier invoice that flows from receipt through match through payment without human intervention. The headline AP automation KPI; world-class is >85% on PO-backed spend, ~60% on services. Pre-requisites are clean PO data, Peppol/EDI 810 receipt, and configured tolerance bands.
+    related_subdomains: [procurement_spend_analytics]
+    related_kpis: [psa.kpi.touchless_po_pct]
+    steward: AP Operations Lead
+  - name: Source-to-Pay
+    aliases: [S2P, Source-To-Pay]
+    definition: End-to-end procurement process from category strategy and supplier sourcing through contract, requisition, PO, receipt, invoice, and payment. The umbrella suite category (SAP Ariba, Coupa, Jaggaer, Ivalua, GEP SMART, Zycus). S2P replaced fragmented best-of-breed circa 2015.
+    related_subdomains: [procurement_spend_analytics, contract_management]
+    related_kpis: []
+    steward: Chief Procurement Officer
+  - name: Procure-to-Pay
+    aliases: [P2P, Purchase-to-Pay]
+    definition: The transactional subset of S2P — requisition through payment, excluding upstream sourcing/contracting. P2P optimization targets PO cycle time, touchless rates, three-way match coverage, and exception-resolution aging.
+    related_subdomains: [procurement_spend_analytics]
+    related_kpis: [psa.kpi.po_cycle_time, psa.kpi.touchless_po_pct]
+    steward: AP Operations Lead
+  - name: UNSPSC
+    aliases: [United Nations Standard Products and Services Code]
+    definition: 8-digit hierarchical category taxonomy (Segment-Family-Class-Commodity) maintained by GS1 US under license from the UN. Canonical key for spend cubing across multi-ERP enterprises; v26 carries ~150K commodity codes. Drives Scope 3 Category 1 attribution via spend-based emissions factors.
+    related_subdomains: [procurement_spend_analytics, category_management]
+    related_kpis: []
+    steward: Spend Analyst
+  - name: Reverse Auction
+    aliases: [eAuction, Sourcing Auction]
+    definition: Sourcing event where pre-qualified suppliers bid prices downward in a time-boxed window. Drives 5-15% price compression on commoditized categories with 4+ qualified bidders; ineffective for innovation/relationship spend or single-source items.
+    related_subdomains: [procurement_spend_analytics]
+    related_kpis: [psa.kpi.savings_realized_pct]
+    steward: Sourcing Director
+  - name: RFI/RFP/RFQ
+    aliases: [Request for Information, Request for Proposal, Request for Quotation]
+    definition: Three-stage sourcing instrument family — RFI for market discovery, RFP for solution-shaped responses with weighted scoring, RFQ for line-priced quotes against a fixed spec. eSourcing modules in Ariba Sourcing, Jaggaer ASO, Coupa Sourcing, Workday Strategic Sourcing (Scout).
+    related_subdomains: [procurement_spend_analytics]
+    related_kpis: []
+    steward: Sourcing Director
+  - name: GHG Protocol Scope 3
+    aliases: [Scope 3 Emissions, Value Chain Emissions]
+    definition: WRI/WBCSD standard for indirect GHG emissions across 15 categories of an organization's value chain. Categories 1 (Purchased Goods & Services) and 2 (Capital Goods) are owned by the procurement org and reported under CSRD ESRS E1 and CDP. Attribution hierarchy is primary supplier data > activity-based factor > spend-based factor.
+    related_subdomains: [procurement_spend_analytics, carbon_accounting]
+    related_kpis: [psa.kpi.scope3_intensity]
+    steward: Sustainability Procurement Lead
+  - name: EcoVadis Medal
+    aliases: [EcoVadis Score, EcoVadis Rating]
+    definition: Supplier sustainability scorecard issued by EcoVadis on 0-100 scale across Environment / Labor & Human Rights / Ethics / Sustainable Procurement. Medals — Bronze ≥45, Silver ≥58, Gold ≥68, Platinum ≥78 (top 1%). Used as contract-eligibility floor; sustainable_spend_pct measures share of spend with Silver+ suppliers.
+    related_subdomains: [procurement_spend_analytics]
+    related_kpis: [psa.kpi.sustainable_spend_pct]
+    steward: Sustainability Procurement Lead
+  - name: DUNS Number
+    aliases: [D-U-N-S, Dun & Bradstreet Number]
+    definition: 9-digit Dun & Bradstreet identifier assigned to every distinct business entity globally. The canonical join key for supplier deduplication across ERPs and S2P tools; parent_duns enables corporate-family roll-up so risk/sustainability scores attach to the parent while transactions flow against the local subsidiary.
+    related_subdomains: [procurement_spend_analytics]
+    related_kpis: []
+    steward: Supplier Master Data Owner
+  - name: Hard vs Soft Savings
+    aliases: [Realized Savings, Cost Avoidance, Negotiated Savings]
+    definition: Hard savings hit the P&L — negotiated unit-price drop on baseline volume with finance sign-off. Soft savings are cost avoidance (would-have-been increase deferred) or productivity gains tracked but not booked. Treat as separate columns on savings_event with explicit baseline_method and signed_off_by attribution.
+    related_subdomains: [procurement_spend_analytics]
+    related_kpis: [psa.kpi.savings_realized_pct]
+    steward: Finance Business Partner — Procurement
+  - name: Supplier Consolidation
+    aliases: [Vendor Rationalization, Supply Base Reduction]
+    definition: Strategy of reducing the active supplier count in a category to concentrate spend on top performers — gains negotiated price, risk visibility, and Scope 3 data coverage at the cost of single-source exposure. Typical industrial program targets 30-60% supplier-count reduction over 18-24 months.
+    related_subdomains: [procurement_spend_analytics]
+    related_kpis: [psa.kpi.critical_supplier_concentration]
+    steward: Category Manager
+  - name: Punchout Catalog
+    aliases: [Punchout, cXML Punchout, OCI Punchout]
+    definition: Buying integration where the buyer's S2P system launches the supplier's e-commerce site, the user shops, and the cart returns to the buyer's requisition as line items. cXML PunchOut is the dominant Ariba/Coupa protocol; OCI (Open Catalog Interface) is the SAP-flavored alternative.
+    related_subdomains: [procurement_spend_analytics]
+    related_kpis: [psa.kpi.buying_channel_mix]
+    steward: Procurement Systems Lead
+  - name: Value Leakage
+    aliases: [Contract Leakage, Realized vs Negotiated Gap]
+    definition: Gap between contractually negotiated terms (price, rebate triggers, payment terms) and what actually transacts. Leakage shows up as price-list drift, missed rebate thresholds, off-contract spend, and payment terms not enforced at AP. Compounds at 0.5-2% of spend annually if unaddressed.
+    related_subdomains: [procurement_spend_analytics, contract_management]
+    related_kpis: [psa.kpi.contract_compliance_pct, psa.kpi.maverick_spend_pct]
+    steward: Contract Manager
+  - name: Open Peppol BIS 3.0
+    aliases: [Peppol, Peppol Billing 3.0]
+    definition: Pan-European e-invoicing standard built on UBL 2.1 + AS4 messaging over the Peppol network of access points. Mandatory for B2G invoicing in EU, expanding to B2B with the EU VAT in the Digital Age (ViDA) framework. Carried on invoice.peppol_message_id in the procurement model.
+    related_subdomains: [procurement_spend_analytics]
+    related_kpis: []
+    steward: AP / e-Invoicing Lead

@@ -478,12 +478,83 @@ subdomains:
 
   - id: predictive_maintenance
     vertical: Manufacturing
-    tier: 2
+    tier: 1
+    anchor: true
     citations:
       - { name: 'NASA C-MAPSS dataset', url: 'https://www.nasa.gov/intelligent-systems-division/discovery-and-systems-health/pcoe/pcoe-data-set-repository/' }
-      - { name: 'AWS Lookout for Equipment', url: 'https://docs.aws.amazon.com/lookout-for-equipment/' }
-      - { name: 'ISO 13374 (paid)', url: 'https://www.iso.org/standard/61322.html' }
-    entities: [Asset, SensorChannel, TelemetrySample, HealthIndex, Anomaly, RemainingUsefulLifeEstimate, FailureMode, RecommendedAction, MaintenanceTrigger, ModelVersion]
+      - { name: 'ISO 13374 Condition monitoring', url: 'https://www.iso.org/standard/61322.html' }
+      - { name: 'ISO 14224 Reliability data', url: 'https://www.iso.org/standard/64076.html' }
+      - { name: 'ISA-95 / IEC 62264', url: 'https://www.isa.org/standards-and-publications/isa-standards/isa-standards-committees/isa95' }
+      - { name: 'OPC UA (IEC 62541)', url: 'https://opcfoundation.org/about/opc-technologies/opc-ua/' }
+      - { name: 'MIMOSA OSA-CBM', url: 'https://www.mimosa.org/' }
+      - { name: 'PTC ThingWorx', url: 'https://www.ptc.com/en/products/thingworx' }
+      - { name: 'Siemens MindSphere / Senseye', url: 'https://www.siemens.com/global/en/products/automation/topic-areas/predictive-maintenance.html' }
+      - { name: 'GE Digital APM', url: 'https://www.ge.com/digital/applications/asset-performance-management' }
+      - { name: 'Aveva PI System', url: 'https://www.aveva.com/en/products/pi-system/' }
+      - { name: 'IBM Maximo APM', url: 'https://www.ibm.com/products/maximo' }
+      - { name: 'AspenTech Mtell', url: 'https://www.aspentech.com/en/products/asset-performance-management/aspen-mtell' }
+      - { name: 'Augury', url: 'https://www.augury.com' }
+    entities: [Asset, Sensor, SensorReading, FailureMode, FailureEvent, WorkOrder, Prediction, MaintenancePlan, ModelVersion]
+    notes: Upgraded from Tier-2 stub to flagship anchor — fully attributed against ISO 13374 / 14224 / ISA-95 / OPC UA / MIMOSA + vendor public docs (PTC, Siemens, GE, Aveva, IBM, Honeywell, AspenTech, Augury, Uptake, SparkCognition).
+
+  - id: sop_supply_chain_planning
+    vertical: Manufacturing
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'ASCM/APICS SCOR Digital Standard', url: 'https://scor.ascm.org' }
+      - { name: 'ASCM IBP Body of Knowledge (Oliver Wight 5-step)', url: 'https://www.ascm.org/learning-development/certifications-credentials/cpim/' }
+      - { name: 'GS1 GTIN / GLN', url: 'https://www.gs1.org/standards/id-keys' }
+      - { name: 'ISO 28000 supply chain security', url: 'https://www.iso.org/standard/79612.html' }
+      - { name: 'SAP IBP', url: 'https://www.sap.com/products/scm/integrated-business-planning.html' }
+      - { name: 'Kinaxis RapidResponse', url: 'https://www.kinaxis.com' }
+      - { name: 'o9 Solutions', url: 'https://o9solutions.com' }
+      - { name: 'Blue Yonder Supply Chain Planning', url: 'https://blueyonder.com/solutions/supply-chain-planning' }
+      - { name: 'Oracle Supply Chain Planning Cloud', url: 'https://www.oracle.com/scm/supply-chain-planning/' }
+      - { name: 'Anaplan Connected Planning', url: 'https://www.anaplan.com' }
+      - { name: 'Logility Digital Supply Chain', url: 'https://www.logility.com' }
+      - { name: 'ToolsGroup SO99+', url: 'https://www.toolsgroup.com' }
+      - { name: 'GAINSystems', url: 'https://gainsystems.com' }
+      - { name: 'John Galt Atlas Planning Platform', url: 'https://www.johngalt.com' }
+      - { name: 'Demand Solutions DSX', url: 'https://www.demandsolutions.com' }
+    entities: [Item, Location, Customer, SopCycle, SalesHistory, Forecast, SupplyPlan, InventoryPosition, Capacity, Scenario, Bom]
+    notes: New Manufacturing deep-tier anchor — fully attributed against ASCM SCOR / IBP playbook + 11 named vendor platforms.
+
+  - id: procurement_spend_analytics
+    vertical: Manufacturing
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'UNSPSC (United Nations Standard Products and Services Code) v26', url: 'https://www.unspsc.org' }
+      - { name: 'GHG Protocol Corporate Value Chain (Scope 3) Standard', url: 'https://ghgprotocol.org/corporate-value-chain-scope-3-standard' }
+      - { name: 'ISO 20400 Sustainable procurement — Guidance', url: 'https://www.iso.org/standard/63026.html' }
+      - { name: 'ISO 14064-1 GHG quantification and reporting', url: 'https://www.iso.org/standard/66453.html' }
+      - { name: 'EU CSRD — ESRS E1 Climate Change disclosure', url: 'https://www.efrag.org/lab6' }
+      - { name: 'Open Peppol BIS Billing 3.0', url: 'https://docs.peppol.eu/poacc/billing/3.0/' }
+      - { name: 'ASC X12 EDI 850/855/810/820/832', url: 'https://x12.org/products/transaction-sets' }
+      - { name: 'ISO 20022 (payment rails — pacs.008)', url: 'https://www.iso20022.org' }
+      - { name: 'Dun & Bradstreet D-U-N-S Number', url: 'https://www.dnb.com/duns-number.html' }
+      - { name: 'Legal Entity Identifier (ISO 17442)', url: 'https://www.gleif.org/en/about-lei/iso-17442-the-lei-code-structure' }
+      - { name: 'Science Based Targets initiative (SBTi) Net-Zero Standard', url: 'https://sciencebasedtargets.org' }
+      - { name: 'CDP Supply Chain Disclosure', url: 'https://www.cdp.net/en/supply-chain' }
+      - { name: 'SAP Ariba (Network + Sourcing + Contracts + SLP)', url: 'https://www.ariba.com' }
+      - { name: 'Coupa Business Spend Management Platform', url: 'https://www.coupa.com' }
+      - { name: 'Jaggaer ONE Source-to-Pay', url: 'https://www.jaggaer.com' }
+      - { name: 'Ivalua Source-to-Pay', url: 'https://www.ivalua.com' }
+      - { name: 'GEP SMART (and GEP NEXXE)', url: 'https://www.gepworldwide.com' }
+      - { name: 'Oracle Fusion Cloud Procurement', url: 'https://www.oracle.com/scm/procurement/' }
+      - { name: 'Workday Strategic Sourcing (Scout RFP)', url: 'https://www.workday.com/en-us/products/strategic-sourcing/overview.html' }
+      - { name: 'Tradeshift Pay + Network', url: 'https://tradeshift.com' }
+      - { name: 'Basware AP Automation + e-Invoicing', url: 'https://www.basware.com' }
+      - { name: 'Zycus Source-to-Pay (Merlin AI)', url: 'https://www.zycus.com' }
+      - { name: 'EcoVadis Sustainability Ratings', url: 'https://ecovadis.com' }
+      - { name: 'Sievo Spend Analytics + Emissions Analytics', url: 'https://sievo.com' }
+      - { name: 'Resilinc EventWatchAI + Multi-Tier Mapping', url: 'https://www.resilinc.com' }
+      - { name: 'Sphera SCRM (Riskmethods)', url: 'https://sphera.com' }
+      - { name: 'Dun & Bradstreet Direct+ (Paydex / Failure Score)', url: 'https://www.dnb.com' }
+      - { name: 'BitSight Security Ratings', url: 'https://www.bitsight.com' }
+    entities: [Supplier, CategoryTaxonomy, Contract, PurchaseOrder, PoLine, Receipt, Invoice, SupplierRiskAssessment, EmissionsFactor, SustainabilityAttribute, SavingsEvent]
+    notes: New flagship Manufacturing anchor — fully attributed against UNSPSC v26 / GHG Protocol Scope 3 / ISO 20400 / Peppol BIS 3.0 / EDI X12 (850/855/810/820/832) / D&B / SBTi / CDP plus 16 named S2P + risk + sustainability vendors (Ariba, Coupa, Jaggaer, Ivalua, GEP, Oracle, Workday, Tradeshift, Basware, Zycus, EcoVadis, Sievo, Resilinc, Sphera, D&B, BitSight). Hub-and-spoke spend cube anchored on UNSPSC category taxonomy with D&B DUNS as supplier spine and hybrid Scope 3 attribution (primary disclosure > activity-based factor > spend-based factor).
 
   - id: supplier_quality
     vertical: Manufacturing
@@ -595,6 +666,22 @@ subdomains:
     tier: 3
     citations: []
     notes: Would require imagination — not recommended. SAP TPM / Vistex / Exceedra differ widely; EDI 852 covers POS feedback only.
+
+  - id: trade_promotion_management
+    vertical: CPG
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'SAP S/4HANA Trade Promotion Management', url: 'https://help.sap.com/docs/SAP_S4HANA_CLOUD/trade-promotion-management' }
+      - { name: 'ASC X12 EDI 852 Product Activity Data', url: 'https://www.x12.org/products/transaction-sets' }
+      - { name: 'ASC X12 EDI 867 Product Transfer & Resale Report', url: 'https://www.x12.org/products/transaction-sets' }
+      - { name: 'ASC X12 EDI 820 Payment Order / Remittance', url: 'https://www.x12.org/products/transaction-sets' }
+      - { name: 'GS1 GTIN / GLN', url: 'https://www.gs1.org/standards/id-keys/gtin' }
+      - { name: 'NRF AROTS — Open Retail Trading Standards', url: 'https://nrf.com' }
+      - { name: 'Exceedra TPx', url: 'https://www.exceedra.com' }
+      - { name: 'BluePlanner (Upclear) Live Trade Management', url: 'https://www.upclear.com' }
+    entities: [Account, CustomerOutlet, Product, Promotion, PromoTactic, Deduction, BaselineForecast, LiftObservation, RetailerScanData, TradeFund]
+    notes: Anchor — TPM (CrossCutting → CPG). Backed by SAP TPM data dictionary, ASC X12 EDI 852/867/820 standards, GS1 GTIN/GLN, NRF AROTS, and the Circana / NielsenIQ / Numerator panel feeds.
 
   # --- TTH ---
 
@@ -1153,3 +1240,214 @@ subdomains:
       - { name: 'W3C Secure Payment Confirmation', url: 'https://www.w3.org/TR/secure-payment-confirmation/' }
     entities: [Agent, Principal, Merchant, AuthorizationGrant, AgentSession, IntentEvent, ToolCall, Cart, AgentTransaction, AttributionLink, TrustScoreEvent, Dispute]
     notes: New flagship anchor — fully attributed against AP2/MCP/Visa/Mastercard/Stripe public docs.
+
+  # Retail deep-tier anchor — added 2026-Q2.
+  - id: pricing_and_promotions
+    vertical: Retail
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'Revionics Lifecycle Pricing (Aptos)', url: 'https://www.revionics.com' }
+      - { name: 'PROS Pricing', url: 'https://pros.com/products/pricing' }
+      - { name: 'Blue Yonder Pricing & Promotion', url: 'https://blueyonder.com/solutions/price-management' }
+      - { name: 'Oracle Retail Pricing Cloud Service (RPCS)', url: 'https://www.oracle.com/retail/pricing/' }
+      - { name: 'Eagle Eye AIR', url: 'https://www.eagleeye.com' }
+      - { name: 'Inmar Digital Promotions (Quotient)', url: 'https://www.inmar.com' }
+      - { name: 'NielsenIQ Discover', url: 'https://www.nielseniq.com' }
+      - { name: 'Numerator Promotions Intelligence', url: 'https://www.numerator.com' }
+      - { name: 'Wiser Solutions', url: 'https://www.wiser.com' }
+      - { name: 'GS1 GTIN-14 standard', url: 'https://www.gs1.org/standards/id-keys/gtin' }
+      - { name: 'X12 EDI 832/879/880-881', url: 'https://www.x12.org' }
+      - { name: 'EU Omnibus Directive 2019/2161 (prior 30-day low)', url: 'https://eur-lex.europa.eu/eli/dir/2019/2161/oj' }
+    entities: [Product, Store, PriceZone, Price, Promo, PromoLine, Markdown, CompetitivePrice, SalesFact, ElasticityEstimate]
+    notes: New flagship Retail anchor — fully attributed against Revionics / PROS / Blue Yonder / Oracle RPCS / Eagle Eye / Inmar / NielsenIQ / Numerator / Wiser. Naming suffixed with `_pricing` on dim_product / dim_store / dim_date / fct_markdowns to avoid collision with merchandising.
+
+  # CPG deep-tier anchor — added 2026-Q2.
+  - id: revenue_growth_management
+    vertical: CPG
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'Vistex Solutions for Revenue Optimization', url: 'https://www.vistex.com' }
+      - { name: 'Pricefx Price Optimization & Management Suite', url: 'https://www.pricefx.com' }
+      - { name: 'Model N Revenue Management Cloud', url: 'https://www.modeln.com' }
+      - { name: 'PROS RGM (Smart CPQ / RealPrice / Guidance)', url: 'https://pros.com' }
+      - { name: 'SAP S/4HANA Revenue Management + CCM', url: 'https://help.sap.com' }
+      - { name: 'Anaplan Connected Planning (PM)', url: 'https://www.anaplan.com' }
+      - { name: 'Periscope by McKinsey RGM apps', url: 'https://www.mckinsey.com/business-functions/operations/our-insights/periscope' }
+      - { name: 'Boston Consulting Group RGM toolkit (BCG OS)', url: 'https://www.bcg.com/capabilities/marketing-sales/pricing-revenue-growth' }
+      - { name: 'Zilliant Price IQ / Sales IQ / Deal Manager', url: 'https://www.zilliant.com' }
+      - { name: 'Revenue Analytics Marketplace Pricing / RGM', url: 'https://www.revenueanalytics.com' }
+      - { name: 'Plytix PIM', url: 'https://www.plytix.com' }
+      - { name: 'Vendavo Profit Analyzer / Deal Manager', url: 'https://www.vendavo.com' }
+      - { name: 'Circana Unify / Liquid Data', url: 'https://www.circana.com' }
+      - { name: 'NielsenIQ Connect', url: 'https://nielseniq.com' }
+      - { name: 'IFRS 15 — Revenue from Contracts with Customers', url: 'https://www.ifrs.org/issued-standards/list-of-standards/ifrs-15-revenue-from-contracts-with-customers/' }
+      - { name: 'GS1 GTIN-14 / GLN', url: 'https://www.gs1.org/standards/id-keys/gtin' }
+      - { name: 'ASC X12 EDI 832 — Price/Sales Catalog', url: 'https://www.x12.org/products/transaction-sets' }
+    entities: [Account, Product, Pack, PriceList, PriceEvent, PromoPlan, Deal, Baseline, MixSegment, SalesTransaction]
+    notes: New flagship CPG anchor — Revenue Growth Management. Fully attributed against Vistex / Pricefx / Model N / PROS / SAP CCM / Anaplan PM / Periscope (McKinsey) / BCG OS / Zilliant / Revenue Analytics / Vendavo / Plytix / Circana / NielsenIQ. Marts suffixed `_rgm` on collisions with merchandising/TPM/pricing (dim_date_rgm, dim_product_rgm, dim_account_rgm, fct_price_events_rgm).
+
+  # Retail deep-tier anchor — Customer Loyalty & CDP (2026-Q2).
+  - id: customer_loyalty_cdp
+    vertical: Retail
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'Salesforce Data Cloud', url: 'https://www.salesforce.com/products/data-cloud/' }
+      - { name: 'Adobe Real-Time CDP', url: 'https://business.adobe.com/products/real-time-customer-data-platform' }
+      - { name: 'Treasure Data CDP (Arm)', url: 'https://www.treasuredata.com' }
+      - { name: 'mParticle (Rokt)', url: 'https://www.mparticle.com' }
+      - { name: 'Tealium AudienceStream', url: 'https://tealium.com/products/audiencestream-cdp/' }
+      - { name: 'Twilio Segment', url: 'https://segment.com' }
+      - { name: 'Klaviyo', url: 'https://www.klaviyo.com' }
+      - { name: 'Braze', url: 'https://www.braze.com' }
+      - { name: 'Iterable', url: 'https://iterable.com' }
+      - { name: 'ActionIQ', url: 'https://www.actioniq.com' }
+      - { name: 'Amperity', url: 'https://amperity.com' }
+      - { name: 'Epsilon PeopleCloud', url: 'https://www.epsilon.com/peoplecloud' }
+      - { name: 'Eagle Eye AIR Loyalty', url: 'https://www.eagleeye.com' }
+      - { name: 'Annex Cloud Loyalty Experience', url: 'https://www.annexcloud.com' }
+      - { name: 'Comarch Loyalty Management', url: 'https://www.comarch.com/trade-and-services/loyalty-marketing' }
+      - { name: 'LoyaltyLion (Shopify)', url: 'https://loyaltylion.com' }
+      - { name: 'Smile.io Rewards', url: 'https://smile.io' }
+      - { name: 'IAB TCF v2.2 / GPP consent framework', url: 'https://iabtechlab.com/gpp/' }
+      - { name: 'GDPR (Regulation 2016/679)', url: 'https://eur-lex.europa.eu/eli/reg/2016/679/oj' }
+      - { name: 'CCPA + CPRA (California)', url: 'https://oag.ca.gov/privacy/ccpa' }
+      - { name: 'Adobe XDM', url: 'https://github.com/adobe/xdm' }
+      - { name: 'FASB ASC 606 (points liability)', url: 'https://www.fasb.org/' }
+    entities: [CustomerMaster, IdentityLink, Event, Segment, SegmentMembership, LoyaltyAccount, PointsLedger, Reward, Redemption, PreferenceCenter, ConsentRecord]
+    notes: New flagship Retail anchor — CDP + loyalty. Suffixed `_cdp` on dim_customer / dim_date / fct_events to avoid collision with customer_analytics and loyalty anchors.
+
+  # Retail deep-tier anchor — Omnichannel Order Management (2026-Q2).
+  - id: omnichannel_oms
+    vertical: Retail
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'Manhattan Active Omni / Active Order Management', url: 'https://www.manh.com/products/active-omni' }
+      - { name: 'IBM Sterling Order Management', url: 'https://www.ibm.com/products/order-management' }
+      - { name: 'Salesforce Order Management (Commerce Cloud OMS)', url: 'https://www.salesforce.com/products/order-management' }
+      - { name: 'Shopify Order Management + Fulfillment Network', url: 'https://shopify.dev/docs/api/admin/order' }
+      - { name: 'Oracle Retail Order Management Cloud Service (ROMS)', url: 'https://www.oracle.com/retail/order-management/' }
+      - { name: 'Kibo Order Management', url: 'https://kibocommerce.com/order-management/' }
+      - { name: 'Fluent Commerce — Fluent Order Management', url: 'https://fluentcommerce.com/products/fluent-order-management' }
+      - { name: 'Deck Commerce OMS', url: 'https://deckcommerce.com' }
+      - { name: 'Aptos ONE / Aptos OMS', url: 'https://www.aptos.com/products/order-management' }
+      - { name: 'Logiwa WMS+OMS', url: 'https://www.logiwa.com' }
+      - { name: 'Blue Yonder (JDA) WMS', url: 'https://blueyonder.com/solutions/warehouse-management' }
+      - { name: 'NCR Voyix Commerce POS', url: 'https://www.ncrvoyix.com/retail' }
+      - { name: 'Toshiba TCx Elevate POS', url: 'https://commerce.toshiba.com' }
+      - { name: 'FedEx Web Services', url: 'https://www.fedex.com/en-us/developer.html' }
+      - { name: 'UPS Developer Kit', url: 'https://developer.ups.com' }
+      - { name: 'USPS Web Tools', url: 'https://www.usps.com/business/web-tools-apis/' }
+      - { name: 'DHL XML PI', url: 'https://developer.dhl.com' }
+      - { name: 'GS1 GTIN-14 / GLN / SSCC', url: 'https://www.gs1.org/standards/id-keys' }
+      - { name: 'ASC X12 EDI 940 / 945 / 943 / 944 / 846 / 856', url: 'https://www.x12.org/products/transaction-sets' }
+      - { name: 'OASIS OData v4', url: 'https://www.odata.org' }
+    entities: [Customer, Location, Product, InventoryPosition, OmsOrder, OrderLine, SourcingRule, Allocation, FulfillmentEvent, Shipment, ReturnAuthorization]
+    notes: New flagship Retail anchor — Distributed OMS / DOM / ATP / BOPIS / SFS / endless aisle / reverse logistics. Order table named `oms_order` to avoid SQL-reserved `order`. Customer/Location/Product mirrored locally (not joined to merchandising) so the anchor is deployable standalone.
+
+  # Retail deep-tier anchor — Loss Prevention (2026-Q2).
+  - id: loss_prevention
+    vertical: Retail
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'Zebra Reflexis / Workforce Connect', url: 'https://www.zebra.com/reflexis' }
+      - { name: 'Sensormatic Solutions (Johnson Controls)', url: 'https://www.sensormatic.com' }
+      - { name: 'NCR Voyix Loss Prevention Analytics', url: 'https://www.ncrvoyix.com' }
+      - { name: 'Oracle Retail XStore Loss Prevention (XBR)', url: 'https://www.oracle.com/retail/xstore/' }
+      - { name: 'Auror ORC Platform', url: 'https://www.auror.co' }
+      - { name: 'Appriss Retail Verify (formerly The Retail Equation)', url: 'https://apprissretail.com' }
+      - { name: 'Profitect (Zebra) Prescriptive Analytics', url: 'https://www.zebra.com/us/en/products/software/store-software/prescriptive-analytics.html' }
+      - { name: 'Aptos Loss Prevention', url: 'https://www.aptos.com' }
+      - { name: 'Tyco RFID / Sensormatic ShrinkVision RFID', url: 'https://www.sensormatic.com/rfid' }
+      - { name: 'ALTO Alliance Information Sharing Standard', url: 'https://www.altoalliance.org' }
+      - { name: 'Detego Cloud (item-level RFID)', url: 'https://www.detego.com' }
+      - { name: 'Indyme Smart Response / FreedomCase', url: 'https://indyme.com' }
+      - { name: 'Honeywell Connected Retail (HCI)', url: 'https://www.honeywell.com' }
+      - { name: 'RetailNext Aurora', url: 'https://retailnext.net' }
+      - { name: 'Datalogic Magellan + Joya scan-aware LP', url: 'https://www.datalogic.com' }
+      - { name: 'NIST SP 800-53 Rev. 5', url: 'https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final' }
+      - { name: 'PCI DSS v4.0', url: 'https://www.pcisecuritystandards.org' }
+      - { name: 'FBI NIBRS reporting codes', url: 'https://ucr.fbi.gov' }
+    entities: [Store, Employee, Item, PosTransaction, PosException, Suspect, Incident, Investigation, Recovery, FraudScore, ShrinkSnapshot]
+    notes: New flagship Retail anchor — POS exception monitoring (NCR Voyix LP / Oracle XBR / Profitect / Aptos LP), ORC investigation (Auror + ALTO), refund-fraud (Appriss Retail), RFID-driven shrink (Sensormatic / Tyco / Detego), and store-level shrink ledger. PII (employee / suspect / customer / vehicle) is pre-tokenized at the connector boundary. Marts suffixed `_lp` on collisions with merchandising / pricing_and_promotions (dim_date_lp, dim_store_lp, dim_product_lp).
+
+  # CPG flagship anchor — Direct Store Delivery (2026-Q2).
+  - id: direct_store_delivery
+    vertical: CPG
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'SAP DSD (S/4HANA Direct Store Delivery)', url: 'https://help.sap.com/docs/SAP_S4HANA_CLOUD/direct-store-delivery' }
+      - { name: 'SymphonyAI Retail/CPG — Aldata Apollo Route Accounting', url: 'https://www.symphonyretailai.com' }
+      - { name: 'Trimble Roadnet Anywhere', url: 'https://transportation.trimble.com/products/roadnet-anywhere' }
+      - { name: 'Trimble PeopleNet (ELD + Telematics)', url: 'https://transportation.trimble.com/products/peoplenet' }
+      - { name: 'Epicor DSD + Epicor Eagle', url: 'https://www.epicor.com/en/industries/distribution/direct-store-delivery' }
+      - { name: 'Salient CMx (DSD profitability)', url: 'https://www.salient.com' }
+      - { name: 'AFS Technologies (Salient/AFS) — AFS DSD + Retail Execution', url: 'https://www.afsi.com' }
+      - { name: 'ToolsGroup SO99+ / JustEnough Forecasting', url: 'https://www.toolsgroup.com' }
+      - { name: 'Descartes Route Planner OnDemand + Mobile', url: 'https://www.descartes.com' }
+      - { name: 'WorkWave Route Manager (IFS)', url: 'https://www.workwave.com' }
+      - { name: 'Manhattan Active Routing & Resource Management', url: 'https://www.manh.com/products/active-supply-chain-planning/active-routing' }
+      - { name: 'Zebra rugged handhelds (MC9300, TC78)', url: 'https://www.zebra.com' }
+      - { name: 'Honeywell rugged handhelds (CN80, CT45)', url: 'https://sps.honeywell.com' }
+      - { name: 'GS1 — GTIN-14 / GLN / SSCC standards', url: 'https://www.gs1.org' }
+      - { name: 'ASC X12 EDI 894 / 895 (Delivery + Return)', url: 'https://x12.org' }
+      - { name: 'FMCSA 49 CFR Part 395 — Hours of Service / ELD', url: 'https://www.fmcsa.dot.gov' }
+    entities: [Route, Driver, Vehicle, Stop, DsdOrder, DsdOrderLine, Settlement, EpodEvent, PerfectStoreAudit, RouteTelemetry, Deduction, Outlet, Account, Product]
+    notes: New flagship CPG anchor — route accounting (SAP DSD / Aldata Apollo / Epicor DSD / AFS DSD), route optimization & EPOD (Roadnet / Descartes / WorkWave / Manhattan Active Routing), telematics & ELD (PeopleNet), DSD profitability (Salient CMx), demand & truck-load (ToolsGroup SO99+), and perfect-store / planogram audits at the shelf. Order entity named `dsd_order` to avoid SQL-reserved `order`. Marts suffixed `_dsd` on collisions with merchandising / trade_promotion_management (dim_date_dsd, dim_product_dsd, dim_outlet_dsd, dim_account_dsd). EPOD signatures and deduction settlement reconcile back via EDI 894/895.
+
+  # Retail flagship anchor — Returns & Reverse Logistics (2026-Q2).
+  - id: returns_reverse_logistics
+    vertical: Retail
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'Optoro OptiTurn — returns & reverse logistics platform', url: 'https://www.optoro.com' }
+      - { name: 'Loop Returns (Shopify-native returns portal)', url: 'https://www.loopreturns.com' }
+      - { name: 'Happy Returns (PayPal) — Return Bar network', url: 'https://happyreturns.com' }
+      - { name: 'Narvar — Returns & Exchange', url: 'https://corp.narvar.com' }
+      - { name: 'SAP S/4HANA Advanced Returns Management', url: 'https://help.sap.com/docs/SAP_S4HANA_CLOUD/returns' }
+      - { name: 'Manhattan Active WMS — Returns module', url: 'https://www.manh.com/products/active-supply-chain' }
+      - { name: 'Salesforce Order Management — Returns', url: 'https://help.salesforce.com/articleView?id=sf.order_management_returns.htm' }
+      - { name: 'ReBound — cross-border returns', url: 'https://www.rebound-returns.com' }
+      - { name: 'ZigZag Global — returns platform', url: 'https://zigzag.global' }
+      - { name: 'Doddle — QR drop-off returns', url: 'https://www.doddle.com' }
+      - { name: 'Newmine — Chief Returns Officer + Returns Fraud Detect', url: 'https://www.newmine.com' }
+      - { name: 'B-Stock Supply — liquidation auctions', url: 'https://www.bstock.com' }
+      - { name: 'ASC X12 EDI 180 — Return Merchandise Authorization', url: 'https://x12.org' }
+      - { name: 'FedEx Returns Manager', url: 'https://www.fedex.com/en-us/shipping/returns.html' }
+      - { name: 'UPS Returns', url: 'https://www.ups.com/us/en/business-solutions/return-services.page' }
+      - { name: 'USPS Label Broker / Returns API', url: 'https://www.usps.com/business/return-services.htm' }
+      - { name: 'NRF — 2024 Consumer Returns in the Retail Industry report', url: 'https://nrf.com/research/2024-consumer-returns-retail-industry' }
+    entities: [Customer, SalesOrder, ReasonCode, Disposition, ReturnAuthorization, ReturnItem, Refund, RefurbOutcome, LiquidationLot, LiquidationLotItem, FraudSignal, CarrierLabel]
+    notes: New flagship Retail anchor — returns portal & customer-facing journey (Loop / Narvar / Happy Returns), enterprise returns engines (SAP S/4 Advanced Returns / Manhattan Active WMS Returns / Salesforce OMS Returns), reverse-logistics optimization (Optoro OptiTurn), cross-border returns (ReBound / ZigZag), in-store + QR drop-off (BORIS / Happy Returns / Doddle), returns reduction + fraud (Newmine, Appriss), liquidation marketplaces (B-Stock), and refurb / CRC disposition with carrier returns APIs. RMA grain maps to EDI 180. Marts suffixed `_rrl` on collisions with merchandising / pricing / loss_prevention / omnichannel_oms (dim_date_rrl, dim_customer_rrl, dim_product_rrl).
+
+  # CPG / Retail flagship anchor — Category Management (2026-Q2).
+  - id: category_management
+    vertical: CPG
+    tier: 1
+    anchor: true
+    citations:
+      - { name: 'Blue Yonder Category Management (Space Planning / Floor Planning / Assortment Optimization — JDA/Intactix lineage)', url: 'https://blueyonder.com/solutions/category-management' }
+      - { name: 'Symphony RetailAI Category Manager + CINDE AI', url: 'https://www.symphonyretailai.com' }
+      - { name: 'RELEX Solutions — Assortment + Space + Floor Planning', url: 'https://www.relexsolutions.com' }
+      - { name: 'Circana (IRI + NPD merged 2023) — Unify / Liquid Data / Total Category View', url: 'https://www.circana.com' }
+      - { name: 'NielsenIQ Connect / Discover / Spectra / Homescan', url: 'https://nielseniq.com' }
+      - { name: 'Numerator — receipt-based purchase panel + category measurement', url: 'https://www.numerator.com' }
+      - { name: 'Kantar Worldpanel — global FMCG household panel', url: 'https://www.kantarworldpanel.com' }
+      - { name: 'dunnhumby — Customer Data Science for range / assortment', url: 'https://www.dunnhumby.com' }
+      - { name: 'GfK (part of NielsenIQ) — durables and tech panel', url: 'https://www.gfk.com' }
+      - { name: 'Quad Tag Galleria — visual planogram + retail design', url: 'https://www.quad.com' }
+      - { name: 'Galileo Pricing — pricing & promo into category strategy', url: 'https://galileopricing.com' }
+      - { name: 'GS1 — GTIN / GLN / GPC / GDSN standards', url: 'https://www.gs1.org' }
+      - { name: 'ASC X12 EDI 852 / 867 / 832 / 879', url: 'https://x12.org' }
+      - { name: 'Trax Retail — image-recognition shelf compliance', url: 'https://traxretail.com' }
+      - { name: 'Salesforce Consumer Goods Cloud — planogram + retail execution audit', url: 'https://www.salesforce.com/products/consumer-goods-cloud' }
+      - { name: 'AFS Customer Connect — handheld planogram audit', url: 'https://www.afsi.com' }
+      - { name: 'ECR Europe — Category Management Best Practices Report (Role of Category framework)', url: 'https://ecr.digital' }
+    entities: [Category, Sku, SkuAttribute, Store, Planogram, PlanogramPosition, DistributionRecord, SyndicatedMeasurement, RangeReview, RangeReviewDecision, ComplianceAudit]
+    notes: New flagship CPG/Retail anchor — joint manufacturer-retailer category management process. Planogram authoring (Blue Yonder Space Planning / Symphony Category Manager / RELEX Space / Quad Tag Galleria), assortment & range optimization (Symphony CINDE / dunnhumby Range Science), syndicated POS + panel measurement (Circana Unify / NielsenIQ Connect / Numerator / Kantar Worldpanel / GfK), retailer EDI 852 / 867 feeds, GS1 GDSN attribute hierarchy, and image-recognition planogram compliance (Trax / Salesforce CG Cloud / AFS Customer Connect). Marts suffixed `_cm` on collisions with merchandising / trade_promotion_management / direct_store_delivery (dim_date_cm, dim_product_cm, dim_store_cm).

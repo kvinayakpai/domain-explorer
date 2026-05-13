@@ -21,7 +21,7 @@ select
     i.room_type_id,
     rt.h_room_type_hk                                   as room_type_key,
     i.stay_date,
-    cast(strftime(i.stay_date, '%Y%m%d') as integer)    as stay_date_key,
+    cast({{ format_date('i.stay_date', '%Y%m%d') }} as integer)    as stay_date_key,
     i.available_rooms,
     i.sold_rooms,
     i.out_of_order_rooms,

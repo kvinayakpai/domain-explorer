@@ -1,0 +1,67 @@
+version: 2
+
+sources:
+  - name: sop_supply_chain_planning
+    description: |
+      Synthetic S&OP / IBP source schema produced by
+      synthetic-data/sop_supply_chain_planning/generate.py and loaded into the
+      populated DuckDB. Mirrors what a planning team running SAP IBP /
+      Kinaxis RapidResponse / o9 / Blue Yonder SCP / Oracle SCP / Anaplan /
+      Logility / ToolsGroup / GAINS would land for monthly S&OP cycles.
+    schema: sop_supply_chain_planning
+    tables:
+      - name: item
+        description: Planning item (GS1 GTIN where assigned).
+        columns:
+          - name: item_id
+            tests: [unique, not_null]
+      - name: location
+        description: Planning location (GS1 GLN where assigned).
+        columns:
+          - name: location_id
+            tests: [unique, not_null]
+      - name: customer
+        description: Demand-side customer / channel bucket.
+        columns:
+          - name: customer_id
+            tests: [unique, not_null]
+      - name: sop_cycle
+        description: Monthly S&OP cycle (Oliver Wight 5-step gates).
+        columns:
+          - name: cycle_id
+            tests: [unique, not_null]
+      - name: sales_history
+        description: Actual shipments / consumption history.
+        columns:
+          - name: sales_history_id
+            tests: [unique, not_null]
+      - name: scenario
+        description: Named what-if planning scenario.
+        columns:
+          - name: scenario_id
+            tests: [unique, not_null]
+      - name: forecast
+        description: Time-phased demand forecast (multi-version).
+        columns:
+          - name: forecast_id
+            tests: [unique, not_null]
+      - name: supply_plan
+        description: Time-phased supply plan.
+        columns:
+          - name: supply_plan_id
+            tests: [unique, not_null]
+      - name: inventory_position
+        description: On-hand + on-order + in-transit inventory snapshot.
+        columns:
+          - name: inventory_position_id
+            tests: [unique, not_null]
+      - name: capacity
+        description: Available capacity per location-resource-period.
+        columns:
+          - name: capacity_id
+            tests: [unique, not_null]
+      - name: bom
+        description: Bill of Materials.
+        columns:
+          - name: bom_id
+            tests: [unique, not_null]

@@ -1,0 +1,482 @@
+id: sop_supply_chain_planning
+name: S&OP / Integrated Business Planning
+vertical: Manufacturing
+oneLiner: Monthly Sales & Operations Planning / Integrated Business Planning — demand sensing, supply balancing, what-if scenarios, multi-tier visibility, and executive S&OP — that reconciles a single rolling 18-36 month plan across commercial, supply, finance, and product workstreams.
+
+# Authoritative sources (as of mid-2026):
+#   ASCM/APICS SCOR Digital Standard (Supply Chain Operations Reference)
+#     — Plan / Source / Make / Deliver / Return / Enable process taxonomy
+#     and the canonical metric tree (Perfect Order Fulfillment, Cash-to-Cash,
+#     Forecast Accuracy, etc.).  https://scor.ascm.org
+#   ASCM IBP Body of Knowledge (Oliver Wight five-step S&OP, evolved IBP):
+#     Product Review → Demand Review → Supply Review → Integrated
+#     Reconciliation → Management Business Review.
+#   GS1 GTIN, GLN, SSCC — global item and location identifiers used to
+#     align item-location plan rows across trading partners.
+#   ISO 28000 — Supply chain security management.
+#   Vendor S&OP / IBP platforms:
+#     SAP IBP (Integrated Business Planning for Supply Chain)
+#       https://www.sap.com/products/scm/integrated-business-planning.html
+#       — time-series + order-based planning, MEIO, sales & ops planning,
+#       demand sensing, response & supply, control tower.
+#     Kinaxis RapidResponse (Maestro) — concurrent planning, what-if scenarios,
+#       https://www.kinaxis.com
+#     o9 Solutions — Enterprise Knowledge Graph, planning copilots,
+#       https://o9solutions.com
+#     Blue Yonder (formerly JDA) Supply Chain Planning — Luminate Planning,
+#       https://blueyonder.com/solutions/supply-chain-planning
+#     Oracle Supply Chain Planning Cloud (Demand Management, Supply Planning,
+#       Sales & Operations Planning) https://www.oracle.com/scm/supply-chain-planning/
+#     Anaplan — connected planning canvas commonly used for IBP financial
+#       reconciliation, https://www.anaplan.com
+#     Logility Digital Supply Chain Platform (DemandAI+, InventoryAI+)
+#       https://www.logility.com
+#     ToolsGroup SO99+ / Service Optimizer (probabilistic forecasting + MEIO)
+#       https://www.toolsgroup.com
+#     Demand Solutions / DSX (forecast + supply + S&OP)
+#       https://www.demandsolutions.com
+#     John Galt Solutions Atlas Planning Platform
+#       https://www.johngalt.com
+#     GAINSystems GAINS — probabilistic planning, MEIO
+#       https://gainsystems.com
+#     Steelwedge (acquired by E2open, now part of WorkForce.com lineage —
+#       legacy S&OP enterprise SaaS still cited)
+#   Adjacent systems the plan reconciles against:
+#     ERP — SAP S/4HANA, Oracle EBS, Microsoft Dynamics 365 F&O.
+#     CRM — Salesforce, Microsoft Dynamics CRM (opportunity-level demand).
+#     MES — Rockwell FactoryTalk, Siemens Opcenter (capacity actuals).
+#     POS / sell-through — retailer EDI 852, Nielsen / Circana syndicated data.
+#   Modeling references:
+#     Multi-Echelon Inventory Optimization (Graves & Willems, 2008).
+#     Demand sensing — McKinsey-OW reference architectures (2018-2024).
+#     Probabilistic forecasting (CRPS, quantile loss) — ToolsGroup, GAINS.
+
+personas:
+  - { name: VP Supply Chain Planning, title: VP, Global Supply Chain Planning, level: VP }
+  - { name: S&OP Process Lead, title: Director, S&OP / IBP Process, level: Director }
+  - { name: Demand Planner, title: Senior Demand Planner, level: IC }
+  - { name: Supply Planner, title: Senior Supply Planner, level: IC }
+  - { name: Plant Scheduler, title: Plant Master Scheduler, level: IC }
+  - { name: Inventory Strategist, title: Director, Inventory & Network Strategy, level: Director }
+  - { name: Executive S&OP Sponsor, title: COO / Chief Supply Chain Officer, level: C-suite }
+
+decisions:
+  - { id: sop.d.produce, statement: "Should we increase factory build for this item-family at this site this period, draw from inventory, or defer to the next window?" }
+  - { id: sop.d.stock, statement: "Target safety stock and DOH per item-location given service-level commitment, demand volatility, and lead-time variability." }
+  - { id: sop.d.defer, statement: "Defer or pull-forward a customer order/allocation when a constrained item cannot meet aggregate demand?" }
+  - { id: sop.d.allocate, statement: "Allocation of constrained supply across regions / channels / strategic customers when demand > supply." }
+  - { id: sop.d.consensus_forecast, statement: "Reconcile statistical baseline + sales-driven + marketing-driven + finance-aligned forecast streams into one consensus number." }
+  - { id: sop.d.capacity_invest, statement: "Add a shift, qualify an alternate line/co-manufacturer, or accept service erosion when capacity is constrained over the 6-18 month horizon." }
+  - { id: sop.d.scenario_choice, statement: "Which what-if scenario do we operationalize (base / upside / downside / disruption-response)?" }
+  - { id: sop.d.new_product_curve, statement: "What launch curve, cannibalization, and ramp-down do we plan for a new product introduction or end-of-life?" }
+  - { id: sop.d.exec_signoff, statement: "Does the Executive S&OP / MBR sign off the consensus plan, gap-to-budget, and required interventions?" }
+  - { id: sop.d.network_flow, statement: "Source from which plant / DC / supplier given total landed cost, tariff exposure, and constraint propagation across tiers?" }
+
+kpis:
+  - id: sop.kpi.forecast_accuracy_mape
+    name: Forecast Accuracy (MAPE)
+    formula: 1 - (sum(abs(actual - forecast)) / sum(actual))
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [sop.d.consensus_forecast, sop.d.produce]
+  - id: sop.kpi.forecast_accuracy_wape
+    name: Forecast Accuracy (WAPE)
+    formula: 1 - (sum(abs(actual - forecast)) / sum(actual))
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [sop.d.consensus_forecast]
+  - id: sop.kpi.forecast_bias
+    name: Forecast Bias
+    formula: sum(forecast - actual) / sum(actual)
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [sop.d.consensus_forecast, sop.d.stock]
+  - id: sop.kpi.otif
+    name: On-Time In-Full (OTIF)
+    formula: orders_otif / total_orders
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [sop.d.allocate, sop.d.defer]
+  - id: sop.kpi.fill_rate
+    name: Order Fill Rate (case/line)
+    formula: lines_filled_complete / lines_ordered
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [sop.d.stock, sop.d.allocate]
+  - id: sop.kpi.inventory_turns
+    name: Inventory Turns
+    formula: cogs_annualized / avg_inventory_value
+    unit: turns/yr
+    direction: higher_is_better
+    decisionsSupported: [sop.d.stock, sop.d.network_flow]
+  - id: sop.kpi.doh
+    name: Days on Hand (DOH)
+    formula: avg_inventory_units / avg_daily_demand_units
+    unit: days
+    direction: target_band
+    decisionsSupported: [sop.d.stock, sop.d.produce]
+  - id: sop.kpi.plan_adherence
+    name: Plan Adherence %
+    formula: sum(min(actual_units, plan_units)) / sum(plan_units)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [sop.d.produce, sop.d.exec_signoff]
+  - id: sop.kpi.capacity_utilization
+    name: Capacity Utilization %
+    formula: planned_load_hours / available_capacity_hours
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [sop.d.capacity_invest, sop.d.produce]
+  - id: sop.kpi.demand_sensing_lead_time
+    name: Demand Sensing Lead Time
+    formula: avg(plan_publish_ts - signal_observed_ts)
+    unit: hours
+    direction: lower_is_better
+    decisionsSupported: [sop.d.consensus_forecast, sop.d.scenario_choice]
+  - id: sop.kpi.scenario_cycle_time
+    name: Scenario Cycle Time
+    formula: avg(scenario_published_ts - scenario_requested_ts)
+    unit: minutes
+    direction: lower_is_better
+    decisionsSupported: [sop.d.scenario_choice]
+  - id: sop.kpi.working_capital_impact
+    name: Working Capital Impact ($)
+    formula: avg_inventory_value + avg_receivables - avg_payables
+    unit: USD
+    direction: lower_is_better
+    decisionsSupported: [sop.d.stock, sop.d.exec_signoff]
+  - id: sop.kpi.stockout_rate
+    name: Stockout Rate
+    formula: stockout_item_location_days / total_item_location_days
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [sop.d.stock, sop.d.allocate]
+  - id: sop.kpi.excess_inventory_pct
+    name: Excess Inventory %
+    formula: excess_inventory_value / total_inventory_value
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [sop.d.stock, sop.d.produce]
+  - id: sop.kpi.demand_volatility
+    name: Demand Volatility (CoV)
+    formula: stddev(weekly_demand) / mean(weekly_demand)
+    unit: ratio
+    direction: target_band
+    decisionsSupported: [sop.d.stock, sop.d.consensus_forecast]
+
+dataModel:
+  entities:
+    - name: item
+      description: Planning item — finished good, semi-finished, raw, or pack. Canonical GS1 GTIN where applicable; SAP IBP "PRDID" or Kinaxis "Part".
+      keys: [item_id]
+      attributes:
+        - { name: item_id, type: varchar(64), isPrimaryKey: true }
+        - { name: gtin, type: varchar(14), description: "GS1 Global Trade Item Number where assigned" }
+        - { name: sku, type: varchar(64), description: "Local SKU code in source ERP" }
+        - { name: item_family, type: varchar(64), description: "Planning family / SBU for aggregate forecasting" }
+        - { name: item_class, type: varchar(8), description: "ABC class — A|B|C by revenue contribution" }
+        - { name: xyz_class, type: varchar(8), description: "XYZ class — X|Y|Z by demand variability (CoV)" }
+        - { name: lifecycle_stage, type: varchar(16), description: "intro|growth|mature|decline|eol" }
+        - { name: uom_base, type: varchar(8), description: "EA|CS|KG|L (base unit of measure)" }
+        - { name: planning_uom, type: varchar(8) }
+        - { name: unit_cost, type: "decimal(15,4)" }
+        - { name: unit_price, type: "decimal(15,4)" }
+        - { name: shelf_life_days, type: integer }
+        - { name: created_at, type: timestamp }
+        - { name: status, type: varchar(16), description: "active|phasing_in|phasing_out|obsolete" }
+
+    - name: location
+      description: Planning location — plant, DC, warehouse, supplier, customer-DC. Keyed by GS1 GLN where assigned.
+      keys: [location_id]
+      attributes:
+        - { name: location_id, type: varchar(64), isPrimaryKey: true }
+        - { name: gln, type: varchar(13), description: "GS1 Global Location Number" }
+        - { name: location_type, type: varchar(16), description: "plant|dc|warehouse|supplier|customer_dc|consignment" }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: region, type: varchar(32), description: "Planning region — NA|EMEA|APAC|LATAM" }
+        - { name: tier, type: smallint, description: "Network tier (0=plant, 1=regional DC, 2=forward DC, 3=customer)" }
+        - { name: time_zone, type: varchar(32) }
+        - { name: status, type: varchar(16) }
+
+    - name: customer
+      description: Demand-side customer / channel — direct customer, retailer chain, or aggregated channel bucket.
+      keys: [customer_id]
+      attributes:
+        - { name: customer_id, type: varchar(64), isPrimaryKey: true }
+        - { name: customer_name, type: varchar(255) }
+        - { name: channel, type: varchar(32), description: "retail|ecom|distributor|direct|ota|other" }
+        - { name: segment, type: varchar(32), description: "strategic|key|growth|tail" }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: region, type: varchar(32) }
+        - { name: priority, type: smallint, description: "Allocation priority 1..5" }
+        - { name: status, type: varchar(16) }
+
+    - name: sales_history
+      description: Actual shipments / consumption history at item-location-customer-period grain. The truth source for forecast accuracy.
+      keys: [sales_history_id]
+      attributes:
+        - { name: sales_history_id, type: bigint, isPrimaryKey: true }
+        - { name: item_id, type: varchar(64), isForeignKey: true, references: item.item_id }
+        - { name: location_id, type: varchar(64), isForeignKey: true, references: location.location_id }
+        - { name: customer_id, type: varchar(64), isForeignKey: true, references: customer.customer_id }
+        - { name: period_start, type: date, description: "Week or month bucket start" }
+        - { name: period_grain, type: varchar(8), description: "day|week|month" }
+        - { name: shipped_units, type: "decimal(18,4)" }
+        - { name: shipped_value, type: "decimal(18,4)" }
+        - { name: returns_units, type: "decimal(18,4)" }
+        - { name: source_system, type: varchar(32), description: "ERP|POS|EDI_852|syndicated" }
+        - { name: ingested_at, type: timestamp }
+
+    - name: forecast
+      description: Time-phased demand forecast — one row per item-location-customer-period per forecast_version. Multi-version: statistical_baseline, sales_input, marketing_input, finance_aligned, consensus.
+      keys: [forecast_id]
+      attributes:
+        - { name: forecast_id, type: bigint, isPrimaryKey: true }
+        - { name: item_id, type: varchar(64), isForeignKey: true, references: item.item_id }
+        - { name: location_id, type: varchar(64), isForeignKey: true, references: location.location_id }
+        - { name: customer_id, type: varchar(64), isForeignKey: true, references: customer.customer_id }
+        - { name: forecast_version, type: varchar(32), description: "statistical_baseline|sales_input|marketing_input|finance_aligned|consensus" }
+        - { name: cycle_id, type: varchar(32), description: "Monthly S&OP cycle id e.g. 2026-04" }
+        - { name: period_start, type: date }
+        - { name: period_grain, type: varchar(8), description: "week|month" }
+        - { name: forecast_units, type: "decimal(18,4)" }
+        - { name: forecast_value, type: "decimal(18,4)" }
+        - { name: forecast_low, type: "decimal(18,4)", description: "Lower bound (e.g., P10) for probabilistic forecast" }
+        - { name: forecast_high, type: "decimal(18,4)", description: "Upper bound (e.g., P90)" }
+        - { name: model_id, type: varchar(64), description: "Forecast model reference (ARIMA, ETS, Prophet, GBM, transformer)" }
+        - { name: published_at, type: timestamp }
+        - { name: locked, type: boolean, description: "Locked into the consensus snapshot" }
+
+    - name: supply_plan
+      description: Time-phased supply plan — production, transfer, purchase, or co-manufacture, by item-location-period and source-location.
+      keys: [supply_plan_id]
+      attributes:
+        - { name: supply_plan_id, type: bigint, isPrimaryKey: true }
+        - { name: item_id, type: varchar(64), isForeignKey: true, references: item.item_id }
+        - { name: location_id, type: varchar(64), isForeignKey: true, references: location.location_id }
+        - { name: source_location_id, type: varchar(64), description: "Origin: plant/supplier; NULL for stock from same location" }
+        - { name: supply_type, type: varchar(16), description: "produce|transfer|purchase|co_manufacture|alternate" }
+        - { name: cycle_id, type: varchar(32) }
+        - { name: scenario_id, type: varchar(64), description: "Scenario the plan belongs to; NULL for the published plan" }
+        - { name: period_start, type: date }
+        - { name: period_grain, type: varchar(8) }
+        - { name: planned_units, type: "decimal(18,4)" }
+        - { name: planned_value, type: "decimal(18,4)" }
+        - { name: lead_time_days, type: smallint }
+        - { name: status, type: varchar(16), description: "draft|firm|released|cancelled" }
+        - { name: published_at, type: timestamp }
+
+    - name: inventory_position
+      description: On-hand + on-order + in-transit inventory at item-location-period snapshot. Foundation for DOH, working capital, MEIO.
+      keys: [inventory_position_id]
+      attributes:
+        - { name: inventory_position_id, type: bigint, isPrimaryKey: true }
+        - { name: item_id, type: varchar(64), isForeignKey: true, references: item.item_id }
+        - { name: location_id, type: varchar(64), isForeignKey: true, references: location.location_id }
+        - { name: snapshot_ts, type: timestamp }
+        - { name: on_hand_units, type: "decimal(18,4)" }
+        - { name: on_order_units, type: "decimal(18,4)" }
+        - { name: in_transit_units, type: "decimal(18,4)" }
+        - { name: allocated_units, type: "decimal(18,4)", description: "Units allocated to firm customer orders" }
+        - { name: safety_stock_units, type: "decimal(18,4)", description: "Target safety stock per inventory policy" }
+        - { name: reorder_point_units, type: "decimal(18,4)" }
+        - { name: inventory_value, type: "decimal(18,4)" }
+        - { name: doh_days, type: "decimal(8,2)", description: "Computed days on hand at this snapshot" }
+        - { name: excess_units, type: "decimal(18,4)", description: "Units above policy cap" }
+        - { name: stockout_flag, type: boolean }
+
+    - name: capacity
+      description: Available production / labor / line capacity per location-resource-period. Constrains the supply plan.
+      keys: [capacity_id]
+      attributes:
+        - { name: capacity_id, type: varchar(64), isPrimaryKey: true }
+        - { name: location_id, type: varchar(64), isForeignKey: true, references: location.location_id }
+        - { name: resource_id, type: varchar(64), description: "Line / machine / labor pool / supplier" }
+        - { name: resource_type, type: varchar(16), description: "line|machine|labor|supplier|tooling" }
+        - { name: period_start, type: date }
+        - { name: period_grain, type: varchar(8) }
+        - { name: available_hours, type: "decimal(12,2)" }
+        - { name: planned_load_hours, type: "decimal(12,2)" }
+        - { name: utilization_pct, type: "decimal(5,2)" }
+        - { name: changeover_hours, type: "decimal(8,2)" }
+        - { name: status, type: varchar(16), description: "available|reduced|down|qualified_alt" }
+
+    - name: scenario
+      description: A named what-if planning scenario — supply disruption, demand surge, capacity loss, tariff shock, etc. Holds its own forecast / supply / inventory snapshot via scenario_id linkage.
+      keys: [scenario_id]
+      attributes:
+        - { name: scenario_id, type: varchar(64), isPrimaryKey: true }
+        - { name: cycle_id, type: varchar(32) }
+        - { name: scenario_name, type: varchar(255) }
+        - { name: scenario_type, type: varchar(32), description: "base|upside|downside|disruption|capacity_invest|tariff|new_product|eol" }
+        - { name: description, type: text }
+        - { name: created_by, type: varchar(64) }
+        - { name: created_at, type: timestamp }
+        - { name: published_at, type: timestamp }
+        - { name: status, type: varchar(16), description: "draft|evaluated|adopted|rejected|archived" }
+        - { name: revenue_impact_usd, type: "decimal(18,2)" }
+        - { name: working_capital_impact_usd, type: "decimal(18,2)" }
+        - { name: service_level_impact_pct, type: "decimal(5,2)" }
+
+    - name: bom
+      description: Bill of Materials — parent item to component item relationships for production explosion. Drives material requirements.
+      keys: [bom_id]
+      attributes:
+        - { name: bom_id, type: varchar(64), isPrimaryKey: true }
+        - { name: parent_item_id, type: varchar(64), isForeignKey: true, references: item.item_id }
+        - { name: component_item_id, type: varchar(64), isForeignKey: true, references: item.item_id }
+        - { name: location_id, type: varchar(64), isForeignKey: true, references: location.location_id, description: "BOM may be location-specific (alternate recipe)" }
+        - { name: quantity_per, type: "decimal(15,6)" }
+        - { name: yield_pct, type: "decimal(5,2)" }
+        - { name: effective_from, type: date }
+        - { name: effective_to, type: date }
+        - { name: bom_version, type: varchar(16) }
+
+    - name: sop_cycle
+      description: Monthly S&OP cycle metadata — Product Review → Demand Review → Supply Review → Integrated Reconciliation → MBR (Oliver Wight five-step).
+      keys: [cycle_id]
+      attributes:
+        - { name: cycle_id, type: varchar(32), isPrimaryKey: true, description: "YYYY-MM" }
+        - { name: cycle_start, type: date }
+        - { name: cycle_end, type: date }
+        - { name: product_review_ts, type: timestamp }
+        - { name: demand_review_ts, type: timestamp }
+        - { name: supply_review_ts, type: timestamp }
+        - { name: integrated_reconciliation_ts, type: timestamp }
+        - { name: mbr_ts, type: timestamp, description: "Management Business Review / Executive S&OP" }
+        - { name: signed_off_by, type: varchar(128) }
+        - { name: signed_off_at, type: timestamp }
+        - { name: status, type: varchar(16), description: "open|locked|signed_off|reopened" }
+
+  relationships:
+    - { from: sales_history, to: item, kind: many_to_one }
+    - { from: sales_history, to: location, kind: many_to_one }
+    - { from: sales_history, to: customer, kind: many_to_one }
+    - { from: forecast, to: item, kind: many_to_one }
+    - { from: forecast, to: location, kind: many_to_one }
+    - { from: forecast, to: customer, kind: many_to_one }
+    - { from: supply_plan, to: item, kind: many_to_one }
+    - { from: supply_plan, to: location, kind: many_to_one }
+    - { from: supply_plan, to: scenario, kind: many_to_one }
+    - { from: inventory_position, to: item, kind: many_to_one }
+    - { from: inventory_position, to: location, kind: many_to_one }
+    - { from: capacity, to: location, kind: many_to_one }
+    - { from: scenario, to: sop_cycle, kind: many_to_one }
+    - { from: bom, to: item, kind: many_to_one }
+    - { from: bom, to: location, kind: many_to_one }
+    - { from: forecast, to: sop_cycle, kind: many_to_one }
+    - { from: supply_plan, to: sop_cycle, kind: many_to_one }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/sop_supply_chain_planning_3nf.sql
+  vault: modeling/ddl/sop_supply_chain_planning_vault.sql
+  dimensional: modeling/ddl/sop_supply_chain_planning_dim.sql
+
+sourceSystems:
+  - { vendor: SAP, product: SAP IBP (Integrated Business Planning), category: S&OP / IBP Platform }
+  - { vendor: Kinaxis, product: RapidResponse / Maestro, category: Concurrent Planning }
+  - { vendor: o9 Solutions, product: o9 Digital Brain, category: IBP / EKG Platform }
+  - { vendor: Blue Yonder, product: Luminate Planning (Supply Chain Planning), category: Supply Chain Planning Suite }
+  - { vendor: Oracle, product: Oracle Supply Chain Planning Cloud, category: Demand & Supply Planning Suite }
+  - { vendor: Anaplan, product: Anaplan Connected Planning, category: Connected Planning / IBP }
+  - { vendor: Logility, product: Logility Digital Supply Chain Platform (DemandAI+, InventoryAI+), category: SCP / MEIO }
+  - { vendor: ToolsGroup, product: SO99+ / Service Optimizer 99+, category: Probabilistic Forecasting + MEIO }
+  - { vendor: Demand Solutions, product: DSX (Demand Solutions Suite), category: Demand & S&OP }
+  - { vendor: John Galt Solutions, product: Atlas Planning Platform, category: Demand & S&OP }
+  - { vendor: GAINSystems, product: GAINS, category: Probabilistic Planning + MEIO }
+  - { vendor: Steelwedge (legacy), product: Steelwedge S&OP (now under WorkForce.com lineage), category: Legacy S&OP SaaS }
+  - { vendor: SAP, product: SAP S/4HANA ERP, category: ERP (actuals / orders) }
+  - { vendor: Oracle, product: Oracle EBS / Fusion ERP, category: ERP }
+  - { vendor: Salesforce, product: Salesforce Sales Cloud, category: CRM (pipeline → demand) }
+  - { vendor: Rockwell Automation, product: FactoryTalk MES, category: MES (capacity actuals) }
+  - { vendor: Siemens, product: Opcenter MES / Execution, category: MES (capacity actuals) }
+  - { vendor: NielsenIQ, product: NielsenIQ Discover, category: Syndicated POS / Consumption }
+  - { vendor: Circana (formerly IRI), product: Circana Liquid Data, category: Syndicated POS / Consumption }
+  - { vendor: Retailer EDI, product: EDI 852 (Product Activity), category: Channel sell-through }
+
+connectors:
+  - { type: SAP IBP RFC/OData, protocol: HTTPS + RFC, auth: OAuth2 / SAP user }
+  - { type: Kinaxis RapidResponse REST, protocol: HTTPS JSON, auth: OAuth2 + scenario context }
+  - { type: o9 Connect / REST, protocol: HTTPS JSON, auth: OAuth2 + tenant key }
+  - { type: Blue Yonder Luminate API, protocol: HTTPS JSON, auth: OAuth2 + tenant key }
+  - { type: Oracle SCM Cloud REST, protocol: HTTPS JSON, auth: OAuth2 + JWT user assertion }
+  - { type: Anaplan API v2, protocol: HTTPS JSON, auth: OAuth2 / CA-certificate }
+  - { type: Logility REST, protocol: HTTPS JSON, auth: API key + tenant header }
+  - { type: ToolsGroup SO99+ REST, protocol: HTTPS JSON, auth: API key }
+  - { type: EDI 852 Product Activity, protocol: AS2, auth: PKI }
+  - { type: NielsenIQ / Circana SFTP feed, protocol: SFTP, auth: SSH key }
+  - { type: SAP S/4HANA CDS Views OData, protocol: HTTPS OData, auth: OAuth2 / SAP user }
+  - { type: Salesforce Bulk API 2.0, protocol: HTTPS JSON, auth: OAuth2 + JWT bearer }
+  - { type: MES / OPC UA capacity actuals, protocol: OPC UA, auth: PKI mutual TLS }
+  - { type: File feed (CSV / Parquet on object storage), protocol: HTTPS / S3, auth: IAM role }
+
+ingestionChallenges:
+  - Forecast snapshot proliferation — a single monthly cycle produces 3-7 forecast versions × millions of item-location-customer-period rows; incremental upserts must preserve the immutable signed-off snapshot.
+  - Multi-grain reconciliation — POS arrives daily, syndicated weekly, ERP shipments monthly; aligning grains without double-counting requires deterministic disaggregation/aggregation rules.
+  - Late-arriving sales actuals — retailer EDI 852 feeds and syndicated data arrive 2-6 weeks late; forecast-accuracy backfills must restate without rewriting closed cycle snapshots.
+  - Hierarchy drift — item families re-classify, customers re-segment, locations re-tier mid-cycle; planning hierarchies must be slowly-changing (Type-2) and reproducible at any prior cycle.
+  - High-cardinality scenario explosion — 5k items × 100 locations × 26 weeks × 10 scenarios = 130M scenario rows per cycle; scenario data must be sparsified (delta against base) or partitioned by scenario_id.
+  - Cross-system master-data drift — the same item carries different IDs in SAP S/4 vs SAP IBP vs Kinaxis vs distributor systems; canonical GTIN mapping is required at ingest.
+
+integrationChallenges:
+  - name: Hierarchical disaggregation
+    description: Forecasts are produced at item-family / region / month for accuracy but executed at item-location-customer / week. The mapping must preserve totals across levels and remain stable when the hierarchy itself changes.
+    mitigation: Implement reconciliation passes (top-down proportional, bottom-up sum, middle-out blended) per ASCM IBP playbook; lock disaggregation weights at cycle close to make the consensus snapshot reproducible; snapshot the hierarchy with each forecast row (cycle_id + hierarchy_version).
+  - name: Multi-currency rollup and FX exposure
+    description: A global plan rolls plant-local currencies (EUR, JPY, INR, MXN, CNY) into reporting USD/EUR. FX rates and corporate finance assumptions can swing working capital and gap-to-budget by tens of millions; the same plan re-stated at fresh FX looks like a "plan change".
+    mitigation: Persist a forecast_value_local + applied FX rate + plan_currency on every forecast/supply row; freeze the FX rate-set at cycle close in a slowly-changing dim_fx; provide an "as if at today's FX" view for variance analysis without rewriting history.
+  - name: Capacity constraint propagation
+    description: A bottleneck on a specific line in one plant cascades into supplier capacity, packaging, labor, and downstream DC inventory through the BOM and network. Naive S&OP planners ignore the cascade and produce infeasible plans.
+    mitigation: Run a finite-capacity solver (linear program or constraint solver — SAP IBP Optimizer, Kinaxis solver, o9 solver) after the demand consensus; persist constraint violations as facts (fct_constraint_violations) so the planner sees what was clipped and why; tie work-order release back to relieved bottlenecks.
+  - name: Cross-functional plan reconciliation
+    description: Sales has one number, marketing another, finance a third, supply a fourth. The Integrated Reconciliation step in IBP must produce a single consensus that everyone signs off on — and the gaps must be auditable.
+    mitigation: Persist every forecast_version side-by-side at the same grain; compute and surface gap-to-budget, gap-to-prior-cycle, and gap-to-statistical-baseline; track signed-off consensus as an immutable row set per cycle_id; preserve commentary blob keyed by cycle_id for audit.
+  - name: Late-binding actuals and restated history
+    description: Sell-through arrives weeks after ship; returns and chargebacks arrive months after invoice. Forecast accuracy must be recomputed as the truth set fills in, without invalidating closed-cycle signoffs.
+    mitigation: Append-only sales_history with valid-time + transaction-time; recompute fct_forecast_accuracy on every actual-arrival event but anchor the locked consensus snapshot; report "MAPE at lag N" rather than a single MAPE number.
+  - name: SKU explosion under variant / promo combinations
+    description: A base item splinters into pack-size, regional-pack, promo-on-pack, club-pack variants — multiplying the forecast grid 5-10× with sparse history per leaf SKU.
+    mitigation: Forecast at the planning-family level + use share-of-family disaggregation for leaf SKUs; use probabilistic models (ToolsGroup, GAINS) that handle sparse intermittent demand (Croston, TSB, hierarchical Bayesian).
+  - name: New product introduction (NPI) and EOL curves
+    description: New products have no history; supersession / cannibalization shifts existing item demand; EOL items decay non-linearly. Statistical models fail; planner overrides dominate.
+    mitigation: Maintain library of curve templates (launch S-curve, exponential ramp, cliff EOL); chain superseded item history to successor; track NPI rows separately and audit accuracy at month-3 / month-6 / month-12.
+  - name: Tariff / trade-policy shocks
+    description: A new tariff on US$ imports from a country flips the lowest-landed-cost source for thousands of item-locations overnight; the supply plan must reroute and the inventory plan must absorb in-flight stock.
+    mitigation: Maintain a tariff matrix as a slowly-changing dim; re-cost forecast_value + supply_plan_value at scenario evaluation; expose a "tariff what-if" scenario template prepopulated for common shocks.
+
+dataModels:
+  threeNF: modeling/ddl/sop_supply_chain_planning_3nf.sql
+  vault: modeling/ddl/sop_supply_chain_planning_vault.sql
+  dimensional: modeling/ddl/sop_supply_chain_planning_dim.sql
+
+glossaryTerms:
+  - S&OP (Sales & Operations Planning)
+  - IBP (Integrated Business Planning)
+  - MAPE (Mean Absolute Percentage Error)
+  - WAPE (Weighted Absolute Percentage Error)
+  - Forecast Bias
+  - OTIF (On-Time In-Full)
+  - DOH (Days on Hand)
+  - Fill Rate
+  - Demand Sensing
+  - Demand Shaping
+  - Demand Consensus
+  - Supply Review
+  - Executive S&OP (MBR)
+  - What-If Scenario
+  - MEIO (Multi-Echelon Inventory Optimization)
+  - Capacity Constraint
+  - Item-Location
+  - Time-Phased Plan
+  - BOM (Bill of Materials)
+  - Lot Sizing
+
+standards:
+  - { id: ascm_scor, name: "ASCM/APICS SCOR Digital Standard", version: "SCOR DS (2024)", url: "https://scor.ascm.org" }
+  - { id: ascm_ibp, name: "ASCM IBP Body of Knowledge (Oliver Wight 5-step S&OP)", version: "2024", url: "https://www.ascm.org/learning-development/certifications-credentials/cpim/" }
+  - { id: gs1_gtin, name: "GS1 GTIN (Global Trade Item Number)", version: "2024 General Specs", url: "https://www.gs1.org/standards/id-keys/gtin" }
+  - { id: gs1_gln, name: "GS1 GLN (Global Location Number)", version: "2024", url: "https://www.gs1.org/standards/id-keys/gln" }
+  - { id: iso_28000, name: "ISO 28000 — Supply chain security management systems", version: "2022", url: "https://www.iso.org/standard/79612.html" }
+  - { id: edi_852, name: "EDI 852 — Product Activity Data", version: "X12", url: "https://www.x12.org/" }
+  - { id: edi_830, name: "EDI 830 — Planning Schedule with Release Capability", version: "X12", url: "https://www.x12.org/" }
+  - { id: edi_862, name: "EDI 862 — Shipping Schedule", version: "X12", url: "https://www.x12.org/" }

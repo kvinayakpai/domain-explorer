@@ -1,0 +1,62 @@
+version: 2
+
+sources:
+  - name: revenue_growth_management
+    description: |
+      Synthetic Revenue Growth Management source schema produced by
+      synthetic-data/revenue_growth_management/generate.py and loaded into the
+      populated DuckDB. Mirrors what a CPG manufacturer running SAP CCM +
+      Vistex/Pricefx/Model N + Anaplan PM + Periscope/BCG OS + Circana/NielsenIQ
+      measurement would land after CDC.
+    schema: revenue_growth_management
+    tables:
+      - name: account
+        description: Retailer / customer headquarter (channel + tier).
+        columns:
+          - name: account_id
+            tests: [unique, not_null]
+      - name: product
+        description: Manufacturer brand × sub-brand × variant (SKU).
+        columns:
+          - name: sku_id
+            tests: [unique, not_null]
+      - name: pack
+        description: PPA ladder entity — pack tier per SKU.
+        columns:
+          - name: pack_id
+            tests: [unique, not_null]
+      - name: price_list
+        description: List price + SRP per pack × account × effective window.
+        columns:
+          - name: price_list_id
+            tests: [unique, not_null]
+      - name: price_event
+        description: Atomic list-price change events.
+        columns:
+          - name: price_event_id
+            tests: [unique, not_null]
+      - name: promo_plan
+        description: Strategic promo plan header (account × brand × period).
+        columns:
+          - name: promo_plan_id
+            tests: [unique, not_null]
+      - name: deal
+        description: Tactical deal under a promo plan — account × pack × tactic × window.
+        columns:
+          - name: deal_id
+            tests: [unique, not_null]
+      - name: baseline
+        description: Counterfactual baseline (no-promo) net revenue / units forecast.
+        columns:
+          - name: baseline_id
+            tests: [unique, not_null]
+      - name: mix_segment
+        description: Channel × tier × category segment for mix attribution.
+        columns:
+          - name: segment_id
+            tests: [unique, not_null]
+      - name: sales_transaction
+        description: Invoiced shipment fact — gross-to-net line.
+        columns:
+          - name: transaction_id
+            tests: [unique, not_null]

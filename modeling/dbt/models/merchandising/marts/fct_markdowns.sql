@@ -17,7 +17,7 @@ select
     pr.category,
     pr.subcategory,
     m.applied_at,
-    cast(strftime(m.applied_at, '%Y%m%d') as integer)    as applied_date_key,
+    cast({{ format_date('m.applied_at', '%Y%m%d') }} as integer)    as applied_date_key,
     cast(m.applied_at as date)                           as applied_date,
     m.depth_pct,
     m.reason,

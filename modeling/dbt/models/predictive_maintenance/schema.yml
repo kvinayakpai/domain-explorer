@@ -1,0 +1,164 @@
+version: 2
+
+models:
+  # ---------- Staging ----------
+  - name: stg_predictive_maintenance__asset
+    description: One row per asset. ISA-95 tag-id, RCM A/B/C criticality.
+    columns:
+      - name: asset_id
+        tests: [unique, not_null]
+      - name: criticality
+        tests:
+          - accepted_values:
+              values: [A, B, C]
+
+  - name: stg_predictive_maintenance__sensor
+    description: Telemetry channels attached to assets.
+    columns:
+      - name: sensor_id
+        tests: [unique, not_null]
+      - name: asset_id
+        tests:
+          - not_null
+          - relationships: { to: ref('stg_predictive_maintenance__asset'), field: asset_id }
+
+  - name: stg_predictive_maintenance__sensor_reading
+    description: High-cardinality time-series. Kept as a view; downstream marts pre-aggregate.
+    columns:
+      - name: reading_id
+        tests: [not_null]
+
+  - name: stg_predictive_maintenance__failure_mode
+    description: ISO 14224 failure mode catalog.
+    columns:
+      - name: failure_mode_id
+        tests: [unique, not_null]
+      - name: severity_tier
+        tests:
+          - accepted_values:
+              values: [S1, S2, S3]
+
+  - name: stg_predictive_maintenance__failure_event
+    description: Observed failure events.
+    columns:
+      - name: failure_event_id
+        tests: [unique, not_null]
+      - name: detected_by
+        tests:
+          - accepted_values:
+              values: [model_alert, operator, inspection, protective_trip, catastrophic]
+
+  - name: stg_predictive_maintenance__model_version
+    description: Trained model artifacts.
+    columns:
+      - name: model_version_id
+        tests: [unique, not_null]
+
+  - name: stg_predictive_maintenance__prediction
+    description: One PdM model output per row.
+    columns:
+      - name: prediction_id
+        tests: [unique, not_null]
+      - name: severity
+        tests:
+          - accepted_values:
+              values: [info, warning, alarm, critical]
+
+  - name: stg_predictive_maintenance__work_order
+    description: CMMS work orders.
+    columns:
+      - name: work_order_id
+        tests: [unique, not_null]
+      - name: wo_type
+        tests:
+          - accepted_values:
+              values: [preventive, corrective, predictive, inspection, emergency]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [open, in_progress, completed, cancelled, rejected]
+
+  - name: stg_predictive_maintenance__maintenance_plan
+    description: Plan rules driving auto-generation of work orders.
+    columns:
+      - name: plan_id
+        tests: [unique, not_null]
+      - name: plan_type
+        tests:
+          - accepted_values:
+              values: [calendar, runtime, condition, predictive]
+
+  # ---------- Marts ----------
+  - name: dim_date_pm
+    description: Date dimension scoped to the predictive_maintenance window. Suffix `_pm` avoids collision with other anchors' dim_date.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+
+  - name: dim_asset_pm
+    description: Asset dimension. Suffix `_pm` avoids collision with other anchors' dim_asset.
+    columns:
+      - name: asset_sk
+        tests: [unique, not_null]
+      - name: asset_id
+        tests: [unique, not_null]
+
+  - name: dim_sensor
+    description: Sensor dimension.
+    columns:
+      - name: sensor_sk
+        tests: [unique, not_null]
+      - name: sensor_id
+        tests: [unique, not_null]
+
+  - name: dim_failure_mode
+    description: ISO 14224 failure mode dimension.
+    columns:
+      - name: failure_mode_sk
+        tests: [unique, not_null]
+      - name: failure_mode_id
+        tests: [unique, not_null]
+
+  - name: dim_model_version_pm
+    description: Model version dimension. Suffix `_pm` future-proofs against collisions.
+    columns:
+      - name: model_version_sk
+        tests: [unique, not_null]
+      - name: model_version_id
+        tests: [unique, not_null]
+
+  - name: fct_sensor_readings_pm
+    description: Hourly-grain pre-aggregated sensor readings. Suffix `_pm` avoids collision.
+    columns:
+      - name: reading_id
+        tests: [not_null]
+      - name: asset_sk
+        tests:
+          - relationships: { to: ref('dim_asset_pm'), field: asset_sk }
+
+  - name: fct_failure_events
+    description: Fact — one row per failure event with lead-time-to-failure measure.
+    columns:
+      - name: failure_event_id
+        tests: [unique, not_null]
+      - name: asset_sk
+        tests:
+          - relationships: { to: ref('dim_asset_pm'), field: asset_sk }
+
+  - name: fct_work_orders_pm
+    description: Fact — one row per work order. Suffix `_pm` avoids collision with mes_quality's fct_work_orders.
+    columns:
+      - name: work_order_id
+        tests: [unique, not_null]
+      - name: asset_sk
+        tests:
+          - relationships: { to: ref('dim_asset_pm'), field: asset_sk }
+
+  - name: fct_asset_availability
+    description: Daily availability fact — drives MTBF, MTTR, Asset Availability %.
+    columns:
+      - name: asset_availability_id
+        tests: [unique, not_null]
+      - name: asset_sk
+        tests:
+          - relationships: { to: ref('dim_asset_pm'), field: asset_sk }

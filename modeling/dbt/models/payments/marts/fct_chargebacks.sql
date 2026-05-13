@@ -22,7 +22,7 @@ select
     cb.reason_code,
     cb.amount,
     cb.status                                      as chargeback_status,
-    cast(strftime(cb.filed_at, '%Y%m%d') as integer) as filed_date_key,
+    cast({{ format_date('cb.filed_at', '%Y%m%d') }} as integer) as filed_date_key,
     cb.filed_at,
     coalesce(dp.dispute_count, 0)                  as dispute_count,
     dp.first_opened_ts                             as dispute_opened_ts,

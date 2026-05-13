@@ -11,7 +11,7 @@ select
     s.payment_id,
     s.batch_id,
     s.network,
-    cast(strftime(s.settled_at, '%Y%m%d') as integer) as settled_date_key,
+    cast({{ format_date('s.settled_at', '%Y%m%d') }} as integer) as settled_date_key,
     s.settled_at,
     s.amount,
     s.currency,

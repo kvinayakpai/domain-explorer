@@ -1,0 +1,72 @@
+version: 2
+
+sources:
+  - name: customer_loyalty_cdp
+    description: |
+      Synthetic Customer Loyalty & CDP source schema produced by
+      synthetic-data/customer_loyalty_cdp/generate.py and loaded into the
+      populated DuckDB. Mirrors what a CDP (Salesforce Data Cloud / Adobe
+      RT-CDP / Treasure Data / mParticle / Tealium / Segment / Amperity) plus
+      a loyalty engine (Eagle Eye / Annex Cloud / Comarch / LoyaltyLion /
+      Smile.io) would land after CDC.
+    schema: customer_loyalty_cdp
+    tables:
+      - name: customer_master
+        description: Golden customer record — output of identity resolution.
+        columns:
+          - name: customer_id
+            tests: [unique, not_null]
+      - name: identity_link
+        description: Identity-graph edge — many identifiers per customer.
+        columns:
+          - name: identity_id
+            tests: [unique, not_null]
+          - name: customer_id
+            tests: [not_null]
+      - name: event
+        description: Behavioral / engagement events (Adobe XDM ExperienceEvent grain).
+        columns:
+          - name: event_id
+            tests: [unique, not_null]
+      - name: segment
+        description: Segment / audience definition.
+        columns:
+          - name: segment_id
+            tests: [unique, not_null]
+      - name: segment_membership
+        description: Append-only segment-membership episodes.
+        columns:
+          - name: membership_id
+            tests: [unique, not_null]
+      - name: loyalty_account
+        description: Loyalty program enrollment per customer per program.
+        columns:
+          - name: loyalty_account_id
+            tests: [unique, not_null]
+          - name: customer_id
+            tests: [not_null]
+      - name: points_ledger
+        description: ASC 606 book of record for points liability.
+        columns:
+          - name: ledger_id
+            tests: [unique, not_null]
+      - name: reward
+        description: Reward catalog item.
+        columns:
+          - name: reward_id
+            tests: [unique, not_null]
+      - name: redemption
+        description: Reward redemption event.
+        columns:
+          - name: redemption_id
+            tests: [unique, not_null]
+      - name: preference_center
+        description: Channel + topic preferences (opt-in/opt-out state).
+        columns:
+          - name: preference_id
+            tests: [unique, not_null]
+      - name: consent_record
+        description: GDPR / CCPA / CPRA append-only consent log.
+        columns:
+          - name: consent_id
+            tests: [unique, not_null]

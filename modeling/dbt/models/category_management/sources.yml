@@ -1,0 +1,75 @@
+version: 2
+
+sources:
+  - name: category_management
+    description: |
+      Synthetic Category Management source schema produced by
+      synthetic-data/category_management/generate.py and loaded into the
+      populated DuckDB. Mirrors what a CPG manufacturer / retailer joint
+      category-management process (Blue Yonder Space Planning, Symphony
+      RetailAI CINDE, RELEX Solutions) plus syndicated POS+panel
+      (Circana, NielsenIQ, Numerator, Kantar Worldpanel, dunnhumby) plus
+      retailer EDI 852/867/832 feeds would land after CDC.
+    schema: category_management
+    tables:
+      - name: category
+        description: Top-level / sub / segment category hierarchy node.
+        columns:
+          - name: category_id
+            tests: [unique, not_null]
+      - name: sku
+        description: Manufacturer SKU within category-management scope.
+        columns:
+          - name: sku_id
+            tests: [unique, not_null]
+      - name: sku_attribute
+        description: Attribute hierarchy values per SKU (flavor, pack format, etc.).
+        columns:
+          - name: sku_id
+            tests: [not_null]
+      - name: store
+        description: Retailer store outlet.
+        columns:
+          - name: store_id
+            tests: [unique, not_null]
+      - name: planogram
+        description: Authoritative planogram for a category × cluster × window.
+        columns:
+          - name: planogram_id
+            tests: [unique, not_null]
+      - name: planogram_position
+        description: One SKU position on a planogram (shelf × slot grain).
+        columns:
+          - name: position_id
+            tests: [unique, not_null]
+          - name: planogram_id
+            tests: [not_null]
+          - name: sku_id
+            tests: [not_null]
+      - name: distribution_record
+        description: Per store × SKU × week distribution-status fact (EDI 852 + panels).
+        columns:
+          - name: distribution_record_id
+            tests: [unique, not_null]
+      - name: syndicated_measurement
+        description: Syndicated POS / panel measurement (Circana / NielsenIQ / Numerator / Kantar).
+        columns:
+          - name: measurement_id
+            tests: [unique, not_null]
+      - name: range_review
+        description: A range-review cycle for a category × banner × season.
+        columns:
+          - name: range_review_id
+            tests: [unique, not_null]
+      - name: range_review_decision
+        description: One SKU-level outcome from a range review.
+        columns:
+          - name: decision_id
+            tests: [unique, not_null]
+          - name: range_review_id
+            tests: [not_null]
+      - name: planogram_compliance_audit
+        description: Store-level audit observation of planogram compliance.
+        columns:
+          - name: audit_id
+            tests: [unique, not_null]

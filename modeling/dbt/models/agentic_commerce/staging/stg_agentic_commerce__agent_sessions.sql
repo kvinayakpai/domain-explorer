@@ -11,6 +11,6 @@ select
     cast(principal_present as boolean)    as principal_present,
     case
         when ended_at is not null
-            then date_diff('second', started_at, ended_at)
+            then {{ dbt_utils.datediff('started_at', 'ended_at', 'second') }}
     end as duration_seconds
 from {{ source('agentic_commerce', 'agent_session') }}

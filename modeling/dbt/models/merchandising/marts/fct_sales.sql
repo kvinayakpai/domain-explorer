@@ -33,7 +33,7 @@ select
     s.extended_amount,
     s.channel,
     s.ts                                             as sale_ts,
-    cast(strftime(s.ts, '%Y%m%d') as integer)        as sale_date_key,
+    cast({{ format_date('s.ts', '%Y%m%d') }} as integer)        as sale_date_key,
     coalesce(prod.cost, 0.0) * s.quantity            as cogs,
     s.extended_amount - coalesce(prod.cost, 0.0) * s.quantity  as gross_profit,
     md_active.max_md_depth_pct                       as max_md_depth_pct,

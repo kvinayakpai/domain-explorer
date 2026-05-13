@@ -23,7 +23,7 @@ select
     e.ape,
     1.0 - e.ape                                         as accuracy_pct,
     e.computed_at,
-    cast(strftime(e.computed_at, '%Y%m%d') as integer)  as computed_date_key,
+    cast({{ format_date('e.computed_at', '%Y%m%d') }} as integer)  as computed_date_key,
     f.lower_80,
     f.upper_80,
     case

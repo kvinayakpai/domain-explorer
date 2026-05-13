@@ -1,0 +1,416 @@
+id: pricing_and_promotions
+name: Pricing & Promotions
+vertical: Retail
+oneLiner: Regular price line management, markdown optimization, promotional planning + lift measurement, and competitive price intelligence across retail SKUs, stores, and channels.
+
+# Authoritative sources (mid-2026):
+#   Revionics (Aptos) — Lifecycle Pricing (regular, promo, markdown).
+#     https://www.revionics.com — elasticity-driven price optimization.
+#   PROS Pricing (Smart Configure Price Quote, RealPrice, Guidance)
+#     https://pros.com/products/pricing — AI willingness-to-pay scoring.
+#   Blue Yonder Pricing & Promotion
+#     https://blueyonder.com/solutions/price-management — formerly JDA Pricing.
+#   Eagle Eye Solutions — AIR platform (digital promotions, personalized offers)
+#     https://www.eagleeye.com — coupon/promo issuance at POS and online.
+#   Quotient (now Inmar Intelligence Digital Promotions)
+#     https://www.inmar.com — digital coupon settlement and promo redemption.
+#   Symphony RetailAI CINDE Pricing & Promotion
+#     https://symphonyretailai.com — promo-effectiveness analytics.
+#   Nielsen Price/Promo (NielsenIQ Discover, formerly Spaceman)
+#     https://www.nielseniq.com — market price + promo intelligence.
+#   Numerator — promo/competitive intel, receipt-derived prices.
+#     https://www.numerator.com — promo calendar + price index reporting.
+#   Wiser Solutions, Price2Spy, Skuuudle, DataWeave — competitive price scrapers.
+#   Oracle Retail Pricing Cloud Service (RPCS) / Oracle RMS.
+#   SAP Customer Activity Repository (CAR) + SAP for Retail price catalog.
+#   NCR Voyix POS + Toshiba TCx Elevate POS — price-effective ticket capture.
+#   GS1 — GTIN keys; EDI 832 (price/sales catalog); EDI 879 (price change);
+#     EDI 880/881 (grocery promo / promo announcement).
+#   FTC pricing accuracy rules; Robinson-Patman price discrimination guidance;
+#     EU Directive 98/6/EC (unit pricing) + Omnibus Directive (prior-30-day price
+#     for promo displays).
+
+personas:
+  - { name: Head of Pricing, title: VP, Pricing & Revenue Growth Management, level: VP }
+  - { name: Category Manager, title: Category Manager, level: Manager }
+  - { name: Pricing Analyst, title: Senior Pricing Analyst, level: IC }
+  - { name: Markdown Optimization Director, title: Director, Lifecycle & Markdown Pricing, level: Director }
+  - { name: Competitive Intel Manager, title: Manager, Competitive Price Intelligence, level: Manager }
+  - { name: Promo Effectiveness Lead, title: Director, Promotion Effectiveness & Trade Strategy, level: Director }
+  - { name: Margin Strategist, title: Director, Margin & Mix Strategy, level: Director }
+
+decisions:
+  - { id: pp.d.kvi_classification, statement: "Which SKUs to classify as KVIs (Key Value Items) versus traffic builders, premium, or background — and how often to refresh the classification." }
+  - { id: pp.d.regular_price_change, statement: "Approve a base/regular price change for a category, accounting for elasticity, competitive index, and category margin guardrails." }
+  - { id: pp.d.markdown_cadence, statement: "When and how aggressively to first markdown each lifecycle SKU to hit end-of-season sell-through targets without leaving margin on the table." }
+  - { id: pp.d.promo_depth, statement: "Set promo discount depth and mechanic (% off, BOGO, $-off, multi-buy, loyalty-exclusive) for a feature week." }
+  - { id: pp.d.promo_calendar_clash, statement: "Resolve overlapping promotions on substitutable SKUs to avoid cannibalization and margin compression." }
+  - { id: pp.d.competitive_match, statement: "Match, ignore, or under-cut a competitor price move at the SKU-store-week grain." }
+  - { id: pp.d.zone_pricing, statement: "Which stores should belong to which price zone, and what zone-level price differentials we maintain." }
+  - { id: pp.d.forward_buy, statement: "Allow trade partners to forward-buy at promoted cost or impose stock-up limits to dampen post-promo trough." }
+  - { id: pp.d.compliance_review, statement: "Investigate stores or e-com endpoints with low regular-price compliance — system-priced vs ticketed/shelf-tag price drift." }
+  - { id: pp.d.elasticity_refresh, statement: "Re-estimate price elasticities — full panel re-fit, Bayesian update, or override with category-manager judgment for a specific cluster." }
+
+kpis:
+  - id: pp.kpi.gross_margin_pct
+    name: Gross Margin %
+    formula: (net_sales - cogs) / net_sales
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [pp.d.regular_price_change, pp.d.promo_depth, pp.d.markdown_cadence]
+  - id: pp.kpi.markdown_pct
+    name: Markdown %
+    formula: sum(markdown_dollars) / sum(gross_sales_dollars)
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [pp.d.markdown_cadence]
+  - id: pp.kpi.promo_lift_pct
+    name: Promo Lift %
+    formula: (promo_units - baseline_units) / baseline_units
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [pp.d.promo_depth, pp.d.promo_calendar_clash]
+  - id: pp.kpi.sell_through_rate
+    name: Sell-Through Rate
+    formula: units_sold / units_received
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [pp.d.markdown_cadence]
+  - id: pp.kpi.price_elasticity
+    name: Price Elasticity (own-price)
+    formula: pct_change_units_sold / pct_change_price
+    unit: ratio
+    direction: target_band
+    decisionsSupported: [pp.d.regular_price_change, pp.d.elasticity_refresh]
+  - id: pp.kpi.regular_price_compliance
+    name: Regular Price Compliance
+    formula: priced_at_planned / total_price_observations
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [pp.d.compliance_review]
+  - id: pp.kpi.competitive_price_index
+    name: Competitive Price Index (KVI)
+    formula: own_price_kvi / weighted_compset_price_kvi
+    unit: index
+    direction: target_band
+    decisionsSupported: [pp.d.competitive_match, pp.d.kvi_classification]
+  - id: pp.kpi.promo_roi
+    name: Promo ROI
+    formula: (incremental_margin - promo_funding_cost) / promo_funding_cost
+    unit: ratio
+    direction: higher_is_better
+    decisionsSupported: [pp.d.promo_depth, pp.d.promo_calendar_clash]
+  - id: pp.kpi.cannibalization_rate
+    name: Cannibalization Rate
+    formula: lost_baseline_units_in_halo_skus / promo_unit_lift
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [pp.d.promo_calendar_clash]
+  - id: pp.kpi.forward_buy_inventory_pct
+    name: Forward-Buy Inventory %
+    formula: post_promo_excess_inventory_units / promo_baseline_units
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [pp.d.forward_buy]
+  - id: pp.kpi.trade_spend_effectiveness
+    name: Trade Spend Effectiveness
+    formula: incremental_gross_profit / trade_dollars_spent
+    unit: ratio
+    direction: higher_is_better
+    decisionsSupported: [pp.d.promo_depth]
+  - id: pp.kpi.price_pack_mix_optimization
+    name: Price-Pack Mix Optimization Score
+    formula: weighted(margin_mix_delta) / portfolio_revenue
+    unit: index
+    direction: higher_is_better
+    decisionsSupported: [pp.d.regular_price_change]
+  - id: pp.kpi.regret_factor
+    name: Regret Factor
+    formula: counterfactual_optimal_margin - realized_margin
+    unit: USD
+    direction: lower_is_better
+    decisionsSupported: [pp.d.markdown_cadence, pp.d.regular_price_change]
+  - id: pp.kpi.markdown_recovery_rate
+    name: Markdown Recovery Rate
+    formula: net_revenue_post_markdown / original_ticketed_value
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [pp.d.markdown_cadence]
+
+dataModel:
+  entities:
+    - name: product
+      description: SKU-level product master. GTIN-keyed where available; carries lifecycle stage and KVI classification used to drive pricing rules.
+      keys: [product_id]
+      attributes:
+        - { name: product_id, type: varchar(32), isPrimaryKey: true }
+        - { name: gtin, type: varchar(14), description: "GS1 GTIN-14" }
+        - { name: sku, type: varchar(32) }
+        - { name: name, type: varchar(255) }
+        - { name: brand, type: varchar(128) }
+        - { name: category_id, type: varchar(32) }
+        - { name: subcategory_id, type: varchar(32) }
+        - { name: lifecycle_stage, type: varchar(16), description: "intro|grow|core|decline|clearance" }
+        - { name: kvi_class, type: varchar(8), description: "KVI|KVC|background|traffic|premium" }
+        - { name: unit_cost, type: "decimal(12,4)" }
+        - { name: created_at, type: timestamp }
+
+    - name: store
+      description: Selling location. Stores roll up to price zones — the unit of regular-price decisioning.
+      keys: [store_id]
+      attributes:
+        - { name: store_id, type: varchar(16), isPrimaryKey: true }
+        - { name: store_name, type: varchar(255) }
+        - { name: banner, type: varchar(64) }
+        - { name: price_zone_id, type: varchar(16) }
+        - { name: region, type: varchar(64) }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: format, type: varchar(32), description: "hypermarket|supermarket|convenience|specialty|ecom" }
+        - { name: open_date, type: date }
+        - { name: status, type: varchar(16), description: "active|closing|closed" }
+
+    - name: price_zone
+      description: Group of stores under a single regular-price policy. The price-change unit at the chain level.
+      keys: [price_zone_id]
+      attributes:
+        - { name: price_zone_id, type: varchar(16), isPrimaryKey: true }
+        - { name: zone_name, type: varchar(64) }
+        - { name: pricing_strategy, type: varchar(16), description: "EDLP|hi-lo|hybrid" }
+        - { name: tier, type: varchar(16), description: "premium|mainstream|value" }
+
+    - name: price
+      description: Time-effective regular and promotional prices per SKU × store (or zone). One row per price event; immutable history under EDI 879 conventions.
+      keys: [price_id]
+      attributes:
+        - { name: price_id, type: varchar(32), isPrimaryKey: true }
+        - { name: product_id, type: varchar(32), isForeignKey: true, references: product.product_id }
+        - { name: store_id, type: varchar(16), isForeignKey: true, references: store.store_id }
+        - { name: price_zone_id, type: varchar(16) }
+        - { name: price_type, type: varchar(16), description: "regular|promo|markdown|clearance|cost" }
+        - { name: amount, type: "decimal(12,4)" }
+        - { name: currency, type: varchar(3) }
+        - { name: effective_from, type: timestamp }
+        - { name: effective_to, type: timestamp }
+        - { name: source_system, type: varchar(32), description: "RMS|RPCS|Revionics|PROS|BlueYonder|POS" }
+        - { name: prior_30day_low_minor, type: bigint, description: "EU Omnibus Directive — lowest in prior 30 days for promo disclosure" }
+        - { name: status, type: varchar(16) }
+
+    - name: promo
+      description: Promotional campaign header. Mechanic + funding + window. One promo can have many SKU lines.
+      keys: [promo_id]
+      attributes:
+        - { name: promo_id, type: varchar(32), isPrimaryKey: true }
+        - { name: promo_name, type: varchar(255) }
+        - { name: mechanic, type: varchar(32), description: "pct_off|dollar_off|bogo|multibuy|tpr|loyalty|coupon" }
+        - { name: discount_pct, type: "decimal(5,4)" }
+        - { name: discount_amount_minor, type: bigint }
+        - { name: start_ts, type: timestamp }
+        - { name: end_ts, type: timestamp }
+        - { name: funding_source, type: varchar(16), description: "retailer|vendor|jbp|coop" }
+        - { name: trade_spend_minor, type: bigint }
+        - { name: vendor_id, type: varchar(32) }
+        - { name: status, type: varchar(16), description: "planned|active|completed|cancelled" }
+        - { name: created_at, type: timestamp }
+
+    - name: promo_line
+      description: SKU-level participation in a promo. Carries the planned baseline and lift expectation used to score effectiveness later.
+      keys: [promo_line_id]
+      attributes:
+        - { name: promo_line_id, type: varchar(32), isPrimaryKey: true }
+        - { name: promo_id, type: varchar(32), isForeignKey: true, references: promo.promo_id }
+        - { name: product_id, type: varchar(32), isForeignKey: true, references: product.product_id }
+        - { name: store_id, type: varchar(16), isForeignKey: true, references: store.store_id }
+        - { name: planned_baseline_units, type: integer }
+        - { name: planned_lift_pct, type: "decimal(6,4)" }
+        - { name: planned_funding_minor, type: bigint }
+        - { name: actual_units, type: integer }
+        - { name: actual_funding_minor, type: bigint }
+        - { name: cannibalization_flag, type: boolean }
+
+    - name: markdown
+      description: Lifecycle markdown event for a SKU at a store/zone. Reason-coded; tied to inventory and sell-through targets.
+      keys: [markdown_id]
+      attributes:
+        - { name: markdown_id, type: varchar(32), isPrimaryKey: true }
+        - { name: product_id, type: varchar(32), isForeignKey: true, references: product.product_id }
+        - { name: store_id, type: varchar(16), isForeignKey: true, references: store.store_id }
+        - { name: pre_price_minor, type: bigint }
+        - { name: post_price_minor, type: bigint }
+        - { name: markdown_depth_pct, type: "decimal(6,4)" }
+        - { name: reason_code, type: varchar(16), description: "seasonal|excess_inventory|damage|defective|clearance|competitor" }
+        - { name: optimizer, type: varchar(32), description: "Revionics|BlueYonder|PROS|Oracle_RPCS|manual" }
+        - { name: triggered_at, type: timestamp }
+        - { name: effective_from, type: timestamp }
+        - { name: effective_to, type: timestamp }
+        - { name: planned_sell_through_pct, type: "decimal(6,4)" }
+        - { name: actual_sell_through_pct, type: "decimal(6,4)" }
+
+    - name: competitive_price
+      description: Externally observed competitor price snapshot for a matched SKU. Source-attributed (Wiser, Numerator, Nielsen, manual).
+      keys: [competitive_price_id]
+      attributes:
+        - { name: competitive_price_id, type: varchar(32), isPrimaryKey: true }
+        - { name: product_id, type: varchar(32), isForeignKey: true, references: product.product_id }
+        - { name: competitor_id, type: varchar(16) }
+        - { name: competitor_name, type: varchar(128) }
+        - { name: channel, type: varchar(16), description: "in_store|web|app|marketplace" }
+        - { name: observed_price_minor, type: bigint }
+        - { name: currency, type: varchar(3) }
+        - { name: on_promo, type: boolean }
+        - { name: match_type, type: varchar(16), description: "exact_gtin|equivalent|like_for_like" }
+        - { name: match_confidence, type: "decimal(4,3)" }
+        - { name: source, type: varchar(32), description: "Wiser|Price2Spy|Skuuudle|DataWeave|Numerator|NielsenIQ|manual" }
+        - { name: observed_at, type: timestamp }
+
+    - name: sales_fact
+      description: Receipts at the SKU × store × day grain — the dependent variable for elasticity and lift modelling. POS-derived.
+      keys: [sales_id]
+      attributes:
+        - { name: sales_id, type: varchar(32), isPrimaryKey: true }
+        - { name: product_id, type: varchar(32), isForeignKey: true, references: product.product_id }
+        - { name: store_id, type: varchar(16), isForeignKey: true, references: store.store_id }
+        - { name: sale_date, type: date }
+        - { name: units_sold, type: integer }
+        - { name: gross_revenue_minor, type: bigint }
+        - { name: discount_minor, type: bigint }
+        - { name: net_revenue_minor, type: bigint }
+        - { name: cogs_minor, type: bigint }
+        - { name: on_promo, type: boolean }
+        - { name: promo_id, type: varchar(32) }
+        - { name: realized_price_minor, type: bigint }
+
+    - name: elasticity_estimate
+      description: Per-cluster (product × store-cluster × time) own- and cross-price elasticity estimates produced by Revionics / PROS / in-house panel models.
+      keys: [estimate_id]
+      attributes:
+        - { name: estimate_id, type: varchar(32), isPrimaryKey: true }
+        - { name: product_id, type: varchar(32), isForeignKey: true, references: product.product_id }
+        - { name: cluster_id, type: varchar(16) }
+        - { name: own_price_elasticity, type: "decimal(6,4)" }
+        - { name: cross_price_elasticity_top1, type: "decimal(6,4)" }
+        - { name: cross_product_id_top1, type: varchar(32) }
+        - { name: confidence_interval_low, type: "decimal(6,4)" }
+        - { name: confidence_interval_high, type: "decimal(6,4)" }
+        - { name: model_version, type: varchar(32) }
+        - { name: fit_window_start, type: date }
+        - { name: fit_window_end, type: date }
+        - { name: estimated_at, type: timestamp }
+
+  relationships:
+    - { from: store, to: price_zone, kind: many_to_one }
+    - { from: price, to: product, kind: many_to_one }
+    - { from: price, to: store, kind: many_to_one }
+    - { from: promo_line, to: promo, kind: many_to_one }
+    - { from: promo_line, to: product, kind: many_to_one }
+    - { from: promo_line, to: store, kind: many_to_one }
+    - { from: markdown, to: product, kind: many_to_one }
+    - { from: markdown, to: store, kind: many_to_one }
+    - { from: competitive_price, to: product, kind: many_to_one }
+    - { from: sales_fact, to: product, kind: many_to_one }
+    - { from: sales_fact, to: store, kind: many_to_one }
+    - { from: elasticity_estimate, to: product, kind: many_to_one }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/pricing_and_promotions_3nf.sql
+  vault: modeling/ddl/pricing_and_promotions_vault.sql
+  dimensional: modeling/ddl/pricing_and_promotions_dim.sql
+
+sourceSystems:
+  - { vendor: Revionics (Aptos), product: Revionics Lifecycle Pricing, category: Price Optimization }
+  - { vendor: PROS, product: PROS Pricing (Smart CPQ / RealPrice), category: Price Optimization }
+  - { vendor: Blue Yonder, product: Blue Yonder Pricing & Promotion, category: Price & Promo Suite }
+  - { vendor: Blue Yonder, product: Blue Yonder Markdown Optimization (legacy JDA), category: Markdown Optimization }
+  - { vendor: Eagle Eye Solutions, product: Eagle Eye AIR, category: Promotion / Coupon Engine }
+  - { vendor: Inmar Intelligence (Quotient), product: Inmar Digital Promotions, category: Digital Coupon Settlement }
+  - { vendor: Symphony RetailAI, product: CINDE Pricing & Promotion, category: Promo Analytics }
+  - { vendor: NielsenIQ, product: NielsenIQ Discover (Price/Promo), category: Market Price/Promo Data }
+  - { vendor: Numerator, product: Numerator Promotions Intelligence, category: Competitive Promo Intel }
+  - { vendor: Wiser Solutions, product: Wiser Commerce Execution Suite, category: Competitive Price Scraping }
+  - { vendor: Price2Spy, product: Price2Spy Monitoring, category: Competitive Price Scraping }
+  - { vendor: SAP, product: SAP for Retail (IS-Retail + CAR), category: ERP / Price Catalog }
+  - { vendor: Oracle, product: Oracle Retail Pricing Cloud Service (RPCS), category: Pricing Platform }
+  - { vendor: NCR Voyix, product: NCR Voyix Commerce POS, category: POS }
+  - { vendor: Toshiba, product: Toshiba TCx Elevate, category: POS }
+
+connectors:
+  - { type: Revionics REST API, protocol: HTTPS JSON, auth: OAuth2 + API key }
+  - { type: PROS Pricing REST, protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: Blue Yonder Luminate API, protocol: HTTPS JSON, auth: OAuth2 + tenant key }
+  - { type: Eagle Eye AIR API, protocol: HTTPS JSON, auth: API key + HMAC }
+  - { type: Inmar Digital Promotions API, protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: NielsenIQ Discover SFTP feed, protocol: SFTP, auth: SSH key }
+  - { type: Numerator API, protocol: HTTPS JSON, auth: API key }
+  - { type: Wiser scraper API, protocol: HTTPS JSON, auth: API key }
+  - { type: EDI 832 Price/Sales Catalog, protocol: AS2, auth: PKI }
+  - { type: EDI 879 Price Change, protocol: AS2, auth: PKI }
+  - { type: EDI 880/881 Promo Announcement, protocol: AS2, auth: PKI }
+  - { type: SAP IDoc COND_A (price condition), protocol: RFC/file, auth: SAP user }
+  - { type: Oracle RPCS REST, protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: POS event stream (Toshiba / NCR), protocol: Kafka, auth: SASL/SCRAM }
+  - { type: Competitive scraper webhook, protocol: HTTPS, auth: HMAC }
+
+ingestionChallenges:
+  - High-cardinality SKU × store × day prices — 10k SKUs × 200 stores × 90 days × 4 events/day approaches a billion price snapshots per year before compaction.
+  - Effective-dated overlapping prices — regular and promo prices coexist; ingestion must resolve "what was the realized price?" via a price-resolution function rather than a simple last-write-wins.
+  - POS price-paid drift versus catalog price — POS-side promo engines, manual overrides, and damaged-goods discounts produce realized prices the catalog never sent.
+  - Competitive price feeds are noisy and partially matched — match_confidence is itself a column you must threshold and audit before feeding it into the index.
+  - Markdown reason codes vary by source system and chain — Revionics, Blue Yonder, and manual all use different code tables; normalization matters for the regret-factor analysis.
+  - EDI 879 latency is batch — price-change files land hours after the trading partner posted them, so reconciliation against POS-realized prices is back-dated and reopens prior days' fact rows.
+
+integrationChallenges:
+  - name: Resolving the realized price at the receipt
+    description: Multiple systems own price — RMS owns regular, the price optimizer owns markdown, the promotion engine owns coupon-deduction, the loyalty engine owns member-exclusive. At POS scan time a price-resolution stack chooses the lowest legal price; the warehouse must reconstruct that decision.
+    mitigation: Persist every effective-dated price event by source_system + price_type; on the warehouse side run a single price-resolution function (lowest legal price at time t) joined to POS to produce the realized_price; reconcile and reason-code the residual.
+  - name: Cannibalization and halo measurement
+    description: A promo on Coke 12-pack lifts Coke units but drops Pepsi 12-pack baseline (cannibalization) and may lift chip sales (halo). Naive lift = (promo_units / baseline_units) over-credits without isolating substitution.
+    mitigation: Estimate cross-price elasticities at the cluster grain; include halo and cannibalization terms in the lift model; report Net Lift = Own Lift − Cannibalized Units + Halo Units.
+  - name: EU Omnibus 30-day prior-low compliance
+    description: EU Directive 2019/2161 (Omnibus) requires retailers to display the lowest price applied in the prior 30 days alongside any "sale" claim. Computing that price per SKU × store at promo go-live is a query, not a column.
+    mitigation: Materialize a daily prior_30day_low view per SKU × store; expose it as a contract column on the price catalog feed to e-com and signage; audit promo creative against it pre-publish.
+  - name: KVI classification drift
+    description: KVI lists go stale — competitor index calculations against a stale KVI list mismeasure price position and over-protect SKUs that no longer drive traffic.
+    mitigation: Refresh KVI classification monthly using a click-stream + receipt-attachment + competitor-coverage signal; persist class history so historical CPI remains comparable; flag re-classifications to category managers.
+  - name: Competitor matching ambiguity
+    description: Like-for-like SKU matching across retailers is fuzzy — different pack sizes, store-brand equivalents, regional variants. A wrongly matched competitor price inflates or deflates the CPI silently.
+    mitigation: Store match_type and match_confidence on every competitive_price row; require ≥0.90 confidence for KVI-level CPI inputs; sample-audit weekly; rebuild match table after any merchandising hierarchy change.
+  - name: Trade spend reconciliation
+    description: Vendor-funded promotions land in the books months after promo close — reconciliation between planned trade dollars, claimed deductions, and finally settled invoices spans 60-180 days.
+    mitigation: Carry actual_funding_minor as a late-binding column on promo_line; cohort the Promo ROI KPI by settlement_age_days; close prior periods on a 90-day rolling refresh rather than at month-end.
+  - name: Markdown optimizer disagreement with category manager
+    description: Revionics / Blue Yonder recommends a deeper-and-earlier first markdown; the category manager overrides for brand-perception reasons. The override is rarely logged with reasoning.
+    mitigation: Record optimizer_recommended vs actual on every markdown row; require a reason_override field on overrides ≥10% deeper or earlier; track Regret Factor on overridden vs accepted recommendations.
+  - name: Multi-channel price coherence (omni-channel)
+    description: Web price = $4.99, in-store ticket = $5.49, marketplace listing = $4.79. Customers screenshot the lowest and ask for it everywhere; pricing systems were built per channel.
+    mitigation: Treat channel as a dimension on price (in_store|web|app|marketplace) and run a daily coherence DQ check; expose policy variance allowances per category; alert on out-of-policy variance windows ≥24h.
+  - name: Promo-calendar collisions across categories
+    description: Beer promo and chips promo overlap. Coffee promo and breakfast cereal promo overlap. Without a category-clearance gate, in-store ad space and customer attention are over-allocated, dampening per-promo lift.
+    mitigation: Promo planning system must publish a category-week heat map and a clearance gate before promo go-live; resolve high-overlap weeks via category-manager negotiation; persist gating decisions on promo header.
+
+glossaryTerms:
+  - KVI (Key Value Item)
+  - KVC (Key Value Category)
+  - Regular Price
+  - Promo Price
+  - Markdown
+  - Promo Lift
+  - Cannibalization
+  - Halo
+  - Price Elasticity
+  - EDLP (Every-Day Low Price)
+  - Hi-Lo Pricing
+  - Promo Calendar
+  - Price Ladder
+  - Price-Pack Architecture
+  - Price Compliance
+  - Regret Factor
+  - Trade Spend
+  - Sell-Through
+
+standards:
+  - { id: gs1_gtin, name: GS1 GTIN-14, version: "GS1 GenSpec 2024", url: "https://www.gs1.org/standards/id-keys/gtin" }
+  - { id: edi_832, name: EDI 832 Price/Sales Catalog (X12), version: "X12 005010", url: "https://www.x12.org" }
+  - { id: edi_879, name: EDI 879 Price Change (X12), version: "X12 005010", url: "https://www.x12.org" }
+  - { id: edi_880_881, name: EDI 880/881 Grocery Promo Announcement, version: "X12 005010", url: "https://www.x12.org" }
+  - { id: eu_omnibus, name: EU Omnibus Directive (Directive 2019/2161), version: "2022 transposition", url: "https://eur-lex.europa.eu/eli/dir/2019/2161/oj" }
+  - { id: eu_98_6_ec, name: EU Directive 98/6/EC — Unit Pricing, version: "1998/2022", url: "https://eur-lex.europa.eu/eli/dir/1998/6/oj" }
+  - { id: ftc_pricing_accuracy, name: FTC Pricing Accuracy Guidelines, version: "16 CFR §233", url: "https://www.ftc.gov" }

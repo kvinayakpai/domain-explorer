@@ -1,0 +1,190 @@
+version: 2
+
+models:
+  # ---------- Staging ----------
+  - name: stg_sop_supply_chain_planning__items
+    description: One row per planning item (GS1 GTIN where assigned).
+    columns:
+      - name: item_id
+        tests: [unique, not_null]
+      - name: item_class
+        tests:
+          - accepted_values:
+              values: [A, B, C]
+
+  - name: stg_sop_supply_chain_planning__locations
+    description: One row per planning location (GS1 GLN where assigned).
+    columns:
+      - name: location_id
+        tests: [unique, not_null]
+      - name: location_type
+        tests:
+          - accepted_values:
+              values: [plant, dc, warehouse, supplier, customer_dc, consignment]
+
+  - name: stg_sop_supply_chain_planning__customers
+    description: Demand-side customer / channel.
+    columns:
+      - name: customer_id
+        tests: [unique, not_null]
+
+  - name: stg_sop_supply_chain_planning__sop_cycles
+    description: Monthly S&OP cycle (Oliver Wight 5-step gates).
+    columns:
+      - name: cycle_id
+        tests: [unique, not_null]
+
+  - name: stg_sop_supply_chain_planning__sales_history
+    description: Actual shipments / consumption history.
+    columns:
+      - name: sales_history_id
+        tests: [unique, not_null]
+      - name: item_id
+        tests:
+          - not_null
+          - relationships: { to: ref('stg_sop_supply_chain_planning__items'), field: item_id }
+      - name: location_id
+        tests:
+          - relationships: { to: ref('stg_sop_supply_chain_planning__locations'), field: location_id }
+
+  - name: stg_sop_supply_chain_planning__scenarios
+    description: Named what-if planning scenario.
+    columns:
+      - name: scenario_id
+        tests: [unique, not_null]
+      - name: scenario_type
+        tests:
+          - accepted_values:
+              values: [base, upside, downside, disruption, capacity_invest, tariff, new_product, eol]
+
+  - name: stg_sop_supply_chain_planning__forecasts
+    description: Time-phased demand forecast (multi-version).
+    columns:
+      - name: forecast_id
+        tests: [unique, not_null]
+      - name: forecast_version
+        tests:
+          - accepted_values:
+              values: [statistical_baseline, sales_input, marketing_input, finance_aligned, consensus]
+
+  - name: stg_sop_supply_chain_planning__supply_plans
+    description: Time-phased supply plan.
+    columns:
+      - name: supply_plan_id
+        tests: [unique, not_null]
+      - name: supply_type
+        tests:
+          - accepted_values:
+              values: [produce, transfer, purchase, co_manufacture, alternate]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [draft, firm, released, cancelled]
+
+  - name: stg_sop_supply_chain_planning__inventory_positions
+    description: On-hand + on-order + in-transit inventory snapshot.
+    columns:
+      - name: inventory_position_id
+        tests: [unique, not_null]
+
+  - name: stg_sop_supply_chain_planning__capacity
+    description: Available capacity per location-resource-period.
+    columns:
+      - name: capacity_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [available, reduced, down, qualified_alt]
+
+  - name: stg_sop_supply_chain_planning__bom
+    description: Bill of Materials parent ↔ component.
+    columns:
+      - name: bom_id
+        tests: [unique, not_null]
+
+  # ---------- Marts ----------
+  - name: dim_date_sop
+    description: Date dimension scoped to the sop_supply_chain_planning anchor. Suffix `_sop` avoids collision.
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+
+  - name: dim_item_sop
+    description: Item dimension. Suffix `_sop` avoids collision with other anchors' dim_item.
+    columns:
+      - name: item_sk
+        tests: [unique, not_null]
+      - name: item_id
+        tests: [unique, not_null]
+
+  - name: dim_location_sop
+    description: Location dimension. Suffix `_sop` avoids collision.
+    columns:
+      - name: location_sk
+        tests: [unique, not_null]
+      - name: location_id
+        tests: [unique, not_null]
+
+  - name: dim_customer_sop
+    description: Customer / channel dimension. Suffix `_sop` avoids collision.
+    columns:
+      - name: customer_sk
+        tests: [unique, not_null]
+      - name: customer_id
+        tests: [unique, not_null]
+
+  - name: dim_scenario
+    description: Scenario dimension — one row per what-if scenario.
+    columns:
+      - name: scenario_sk
+        tests: [unique, not_null]
+      - name: scenario_id
+        tests: [unique, not_null]
+
+  - name: dim_sop_cycle
+    description: S&OP cycle dimension (Oliver Wight 5-step).
+    columns:
+      - name: cycle_sk
+        tests: [unique, not_null]
+      - name: cycle_id
+        tests: [unique, not_null]
+
+  - name: fct_forecasts
+    description: Fact — one row per forecast item-location-customer-period-version.
+    columns:
+      - name: forecast_id
+        tests: [unique, not_null]
+      - name: item_sk
+        tests:
+          - relationships: { to: ref('dim_item_sop'), field: item_sk }
+
+  - name: fct_supply_plans
+    description: Fact — one row per supply plan item-location-cycle-scenario-period.
+    columns:
+      - name: supply_plan_id
+        tests: [unique, not_null]
+      - name: item_sk
+        tests:
+          - relationships: { to: ref('dim_item_sop'), field: item_sk }
+
+  - name: fct_inventory_positions_sop
+    description: Fact — inventory position per item-location-snapshot. Suffix `_sop` avoids collision.
+    columns:
+      - name: inventory_position_id
+        tests: [unique, not_null]
+      - name: item_sk
+        tests:
+          - relationships: { to: ref('dim_item_sop'), field: item_sk }
+
+  - name: fct_forecast_accuracy
+    description: Fact — forecast vs actual reconciliation; drives MAPE/WAPE/Bias.
+    columns:
+      - name: accuracy_id
+        tests: [unique, not_null]
+
+  - name: fct_capacity_load
+    description: Fact — capacity vs planned load per resource-period.
+    columns:
+      - name: capacity_load_id
+        tests: [unique, not_null]

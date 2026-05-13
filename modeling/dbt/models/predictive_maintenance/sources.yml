@@ -1,0 +1,60 @@
+version: 2
+
+sources:
+  - name: predictive_maintenance
+    description: |
+      Synthetic Predictive Maintenance source schema produced by
+      synthetic-data/predictive_maintenance/generate.py and loaded into the
+      populated DuckDB. Mirrors what an industrial plant with PTC ThingWorx,
+      Siemens MindSphere, GE Predix, Aveva PI System, IBM Maximo APM, Augury,
+      and Uptake would land after OPC UA / MQTT / Sparkplug B ingest plus
+      CMMS CDC.
+    schema: predictive_maintenance
+    tables:
+      - name: asset
+        description: One row per physical asset. ISA-95 tag-id, RCM criticality.
+        columns:
+          - name: asset_id
+            tests: [unique, not_null]
+      - name: sensor
+        description: Telemetry channel attached to an asset.
+        columns:
+          - name: sensor_id
+            tests: [unique, not_null]
+          - name: asset_id
+            tests: [not_null]
+      - name: sensor_reading
+        description: Time-stamped scalar sample from a sensor. High-cardinality.
+        columns:
+          - name: reading_id
+            tests: [not_null]
+      - name: failure_mode
+        description: ISO 14224 catalogued failure mode.
+        columns:
+          - name: failure_mode_id
+            tests: [unique, not_null]
+      - name: failure_event
+        description: Observed equipment failure event — the supervised label class.
+        columns:
+          - name: failure_event_id
+            tests: [unique, not_null]
+      - name: model_version
+        description: Trained PdM model artifact reference.
+        columns:
+          - name: model_version_id
+            tests: [unique, not_null]
+      - name: prediction
+        description: One PdM model output at a point in time.
+        columns:
+          - name: prediction_id
+            tests: [unique, not_null]
+      - name: work_order
+        description: CMMS-issued maintenance order (preventive / corrective / predictive).
+        columns:
+          - name: work_order_id
+            tests: [unique, not_null]
+      - name: maintenance_plan
+        description: Plan rule (calendar / runtime / condition / predictive).
+        columns:
+          - name: plan_id
+            tests: [unique, not_null]

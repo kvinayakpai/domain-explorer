@@ -757,3 +757,1122 @@ rules:
     expectation: "KYA trust score in [0,100]"
     severity: medium
     sql: "SELECT COUNT(*) FROM agentic_commerce.agent WHERE kya_trust_score IS NOT NULL AND (kya_trust_score < 0 OR kya_trust_score > 100)"
+
+  # ---------- predictive_maintenance (Manufacturing) ----------
+  - id: dq_predmaint_001
+    subdomain: predictive_maintenance
+    table: predictive_maintenance.asset
+    column: asset_id
+    rule_type: uniqueness
+    expectation: "asset_id is unique"
+    severity: critical
+    sql: "SELECT (SELECT COUNT(*) FROM predictive_maintenance.asset) - (SELECT COUNT(DISTINCT asset_id) FROM predictive_maintenance.asset)"
+
+  - id: dq_predmaint_002
+    subdomain: predictive_maintenance
+    table: predictive_maintenance.sensor
+    column: asset_id
+    rule_type: foreign_key
+    expectation: "every sensor.asset_id resolves in asset"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM predictive_maintenance.sensor s LEFT JOIN predictive_maintenance.asset a ON s.asset_id = a.asset_id WHERE a.asset_id IS NULL"
+
+  - id: dq_predmaint_003
+    subdomain: predictive_maintenance
+    table: predictive_maintenance.sensor_reading
+    column: quality_code
+    rule_type: distribution
+    expectation: "OPC UA StatusCode in known set {0,64,192}"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM predictive_maintenance.sensor_reading WHERE quality_code NOT IN (0, 64, 192)"
+
+  - id: dq_predmaint_004
+    subdomain: predictive_maintenance
+    table: predictive_maintenance.failure_event
+    column: downtime_minutes
+    rule_type: range
+    expectation: "downtime minutes non-negative"
+    severity: high
+    sql: "SELECT COUNT(*) FROM predictive_maintenance.failure_event WHERE downtime_minutes IS NULL OR downtime_minutes < 0"
+
+  - id: dq_predmaint_005
+    subdomain: predictive_maintenance
+    table: predictive_maintenance.work_order
+    column: actual_end
+    rule_type: invariant
+    expectation: "actual_end >= actual_start when both present"
+    severity: high
+    sql: "SELECT COUNT(*) FROM predictive_maintenance.work_order WHERE actual_start IS NOT NULL AND actual_end IS NOT NULL AND actual_end < actual_start"
+
+  - id: dq_predmaint_006
+    subdomain: predictive_maintenance
+    table: predictive_maintenance.prediction
+    column: anomaly_score
+    rule_type: range
+    expectation: "anomaly_score in [0,1]"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM predictive_maintenance.prediction WHERE anomaly_score IS NOT NULL AND (anomaly_score < 0 OR anomaly_score > 1)"
+
+  - id: dq_predmaint_007
+    subdomain: predictive_maintenance
+    table: predictive_maintenance.prediction
+    column: severity
+    rule_type: distribution
+    expectation: "severity in {info,warning,alarm,critical}"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM predictive_maintenance.prediction WHERE severity NOT IN ('info','warning','alarm','critical')"
+
+  - id: dq_predmaint_008
+    subdomain: predictive_maintenance
+    table: predictive_maintenance.asset
+    column: criticality
+    rule_type: distribution
+    expectation: "RCM criticality in {A,B,C}"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM predictive_maintenance.asset WHERE criticality NOT IN ('A','B','C')"
+
+  # ---------- sop_supply_chain_planning (Manufacturing) ----------
+  - id: dq_sop_001
+    subdomain: sop_supply_chain_planning
+    table: sop_supply_chain_planning.item
+    column: item_id
+    rule_type: uniqueness
+    expectation: "item_id is unique"
+    severity: critical
+    sql: "SELECT (SELECT COUNT(*) FROM sop_supply_chain_planning.item) - (SELECT COUNT(DISTINCT item_id) FROM sop_supply_chain_planning.item)"
+
+  - id: dq_sop_002
+    subdomain: sop_supply_chain_planning
+    table: sop_supply_chain_planning.forecast
+    column: item_id
+    rule_type: foreign_key
+    expectation: "every forecast.item_id resolves in item"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM sop_supply_chain_planning.forecast f LEFT JOIN sop_supply_chain_planning.item i ON f.item_id = i.item_id WHERE i.item_id IS NULL"
+
+  - id: dq_sop_003
+    subdomain: sop_supply_chain_planning
+    table: sop_supply_chain_planning.forecast
+    column: forecast_version
+    rule_type: distribution
+    expectation: "forecast_version in IBP-aligned set"
+    severity: high
+    sql: "SELECT COUNT(*) FROM sop_supply_chain_planning.forecast WHERE forecast_version NOT IN ('statistical_baseline','sales_input','marketing_input','finance_aligned','consensus')"
+
+  - id: dq_sop_004
+    subdomain: sop_supply_chain_planning
+    table: sop_supply_chain_planning.forecast
+    column: forecast_units
+    rule_type: range
+    expectation: "forecast_units must be non-negative"
+    severity: high
+    sql: "SELECT COUNT(*) FROM sop_supply_chain_planning.forecast WHERE forecast_units IS NULL OR forecast_units < 0"
+
+  - id: dq_sop_005
+    subdomain: sop_supply_chain_planning
+    table: sop_supply_chain_planning.supply_plan
+    column: status
+    rule_type: distribution
+    expectation: "supply_plan.status in {draft,firm,released,cancelled}"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM sop_supply_chain_planning.supply_plan WHERE status NOT IN ('draft','firm','released','cancelled')"
+
+  - id: dq_sop_006
+    subdomain: sop_supply_chain_planning
+    table: sop_supply_chain_planning.inventory_position
+    column: on_hand_units
+    rule_type: range
+    expectation: "on_hand_units must be non-negative"
+    severity: high
+    sql: "SELECT COUNT(*) FROM sop_supply_chain_planning.inventory_position WHERE on_hand_units IS NULL OR on_hand_units < 0"
+
+  - id: dq_sop_007
+    subdomain: sop_supply_chain_planning
+    table: sop_supply_chain_planning.capacity
+    column: utilization_pct
+    rule_type: range
+    expectation: "utilization_pct within [0,130] — values >130 flag data error"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM sop_supply_chain_planning.capacity WHERE utilization_pct IS NOT NULL AND (utilization_pct < 0 OR utilization_pct > 130)"
+
+  - id: dq_sop_008
+    subdomain: sop_supply_chain_planning
+    table: sop_supply_chain_planning.scenario
+    column: scenario_type
+    rule_type: distribution
+    expectation: "scenario_type in catalogued set"
+    severity: low
+    sql: "SELECT COUNT(*) FROM sop_supply_chain_planning.scenario WHERE scenario_type NOT IN ('base','upside','downside','disruption','capacity_invest','tariff','new_product','eol')"
+
+  # ---------- pricing_and_promotions (Retail) ----------
+  - id: dq_pricingpromo_001
+    subdomain: pricing_and_promotions
+    table: pricing_and_promotions.price
+    column: amount
+    rule_type: range
+    expectation: "price amount strictly positive"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM pricing_and_promotions.price WHERE amount IS NULL OR amount <= 0"
+
+  - id: dq_pricingpromo_002
+    subdomain: pricing_and_promotions
+    table: pricing_and_promotions.price
+    column: price_type
+    rule_type: distribution
+    expectation: "price_type in {regular,promo,markdown,clearance,cost}"
+    severity: high
+    sql: "SELECT COUNT(*) FROM pricing_and_promotions.price WHERE price_type NOT IN ('regular','promo','markdown','clearance','cost')"
+
+  - id: dq_pricingpromo_003
+    subdomain: pricing_and_promotions
+    table: pricing_and_promotions.price
+    column: effective_from
+    rule_type: invariant
+    expectation: "effective_from precedes effective_to"
+    severity: high
+    sql: "SELECT COUNT(*) FROM pricing_and_promotions.price WHERE effective_from IS NOT NULL AND effective_to IS NOT NULL AND effective_from > effective_to"
+
+  - id: dq_pricingpromo_004
+    subdomain: pricing_and_promotions
+    table: pricing_and_promotions.promo
+    column: discount_pct
+    rule_type: range
+    expectation: "promo discount_pct in [0,1]"
+    severity: high
+    sql: "SELECT COUNT(*) FROM pricing_and_promotions.promo WHERE discount_pct IS NOT NULL AND (discount_pct < 0 OR discount_pct > 1)"
+
+  - id: dq_pricingpromo_005
+    subdomain: pricing_and_promotions
+    table: pricing_and_promotions.promo_line
+    column: promo_id
+    rule_type: foreign_key
+    expectation: "every promo_line.promo_id resolves in promo"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM pricing_and_promotions.promo_line pl LEFT JOIN pricing_and_promotions.promo p ON pl.promo_id = p.promo_id WHERE p.promo_id IS NULL"
+
+  - id: dq_pricingpromo_006
+    subdomain: pricing_and_promotions
+    table: pricing_and_promotions.markdown
+    column: markdown_depth_pct
+    rule_type: range
+    expectation: "markdown depth in [0,1]"
+    severity: high
+    sql: "SELECT COUNT(*) FROM pricing_and_promotions.markdown WHERE markdown_depth_pct IS NOT NULL AND (markdown_depth_pct < 0 OR markdown_depth_pct > 1)"
+
+  - id: dq_pricingpromo_007
+    subdomain: pricing_and_promotions
+    table: pricing_and_promotions.markdown
+    column: reason_code
+    rule_type: distribution
+    expectation: "markdown reason_code in canonical set"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM pricing_and_promotions.markdown WHERE reason_code NOT IN ('seasonal','excess_inventory','damage','defective','clearance','competitor')"
+
+  - id: dq_pricingpromo_008
+    subdomain: pricing_and_promotions
+    table: pricing_and_promotions.competitive_price
+    column: match_confidence
+    rule_type: range
+    expectation: "match_confidence in [0,1]"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM pricing_and_promotions.competitive_price WHERE match_confidence IS NOT NULL AND (match_confidence < 0 OR match_confidence > 1)"
+
+  - id: dq_pricingpromo_009
+    subdomain: pricing_and_promotions
+    table: pricing_and_promotions.competitive_price
+    column: source
+    rule_type: distribution
+    expectation: "competitive source in known vendor set"
+    severity: low
+    sql: "SELECT COUNT(*) FROM pricing_and_promotions.competitive_price WHERE source NOT IN ('Wiser','Price2Spy','Skuuudle','DataWeave','Numerator','NielsenIQ','manual')"
+
+  - id: dq_pricingpromo_010
+    subdomain: pricing_and_promotions
+    table: pricing_and_promotions.sales_fact
+    column: net_revenue_minor
+    rule_type: invariant
+    expectation: "net_revenue = gross_revenue - discount"
+    severity: high
+    sql: "SELECT COUNT(*) FROM pricing_and_promotions.sales_fact WHERE net_revenue_minor <> (gross_revenue_minor - discount_minor)"
+
+  - id: dq_pricingpromo_011
+    subdomain: pricing_and_promotions
+    table: pricing_and_promotions.elasticity_estimate
+    column: own_price_elasticity
+    rule_type: range
+    expectation: "own-price elasticity bounded in (-10, 0]"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM pricing_and_promotions.elasticity_estimate WHERE own_price_elasticity IS NOT NULL AND (own_price_elasticity > 0 OR own_price_elasticity < -10)"
+
+  # ---------- trade_promotion_management (CrossCutting — CPG) ----------
+  - id: dq_tpm_001
+    subdomain: trade_promotion_management
+    table: trade_promotion_management.promotion
+    column: end_date
+    rule_type: invariant
+    expectation: "promotion.end_date must be strictly after promotion.start_date"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM trade_promotion_management.promotion WHERE end_date IS NOT NULL AND start_date IS NOT NULL AND end_date <= start_date"
+
+  - id: dq_tpm_002
+    subdomain: trade_promotion_management
+    table: trade_promotion_management.promo_tactic
+    column: tactic_type
+    rule_type: distribution
+    expectation: "tactic_type in canonical CPG trade-tactic enum"
+    severity: high
+    sql: "SELECT COUNT(*) FROM trade_promotion_management.promo_tactic WHERE tactic_type NOT IN ('off_invoice','scan_down','bill_back','mcb','edlp','trade_allowance','display','feature','tpr','coupon','bogo')"
+
+  - id: dq_tpm_003
+    subdomain: trade_promotion_management
+    table: trade_promotion_management.promo_tactic
+    column: promotion_id
+    rule_type: foreign_key
+    expectation: "every promo_tactic.promotion_id resolves in promotion"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM trade_promotion_management.promo_tactic t LEFT JOIN trade_promotion_management.promotion p ON t.promotion_id = p.promotion_id WHERE p.promotion_id IS NULL"
+
+  - id: dq_tpm_004
+    subdomain: trade_promotion_management
+    table: trade_promotion_management.deduction
+    column: amount_cents
+    rule_type: invariant
+    expectation: "deduction.open_amount_cents must not exceed deduction.amount_cents"
+    severity: high
+    sql: "SELECT COUNT(*) FROM trade_promotion_management.deduction WHERE open_amount_cents IS NOT NULL AND amount_cents IS NOT NULL AND open_amount_cents > amount_cents"
+
+  - id: dq_tpm_005
+    subdomain: trade_promotion_management
+    table: trade_promotion_management.deduction
+    column: status
+    rule_type: distribution
+    expectation: "deduction.status in canonical lifecycle enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM trade_promotion_management.deduction WHERE status NOT IN ('open','matched','disputed','paid','written_off','chargeback_lost')"
+
+  - id: dq_tpm_006
+    subdomain: trade_promotion_management
+    table: trade_promotion_management.retailer_scan_data
+    column: units_sold
+    rule_type: range
+    expectation: "scan units_sold non-negative"
+    severity: high
+    sql: "SELECT COUNT(*) FROM trade_promotion_management.retailer_scan_data WHERE units_sold IS NULL OR units_sold < 0"
+
+  - id: dq_tpm_007
+    subdomain: trade_promotion_management
+    table: trade_promotion_management.retailer_scan_data
+    column: source_doc
+    rule_type: distribution
+    expectation: "scan source_doc tagged to known feed origin"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM trade_promotion_management.retailer_scan_data WHERE source_doc NOT IN ('EDI 852','EDI 867','niq','circana','numerator','first_party')"
+
+  - id: dq_tpm_008
+    subdomain: trade_promotion_management
+    table: trade_promotion_management.lift_observation
+    column: baseline_units
+    rule_type: invariant
+    expectation: "lift_observation.incremental_units must equal actual_units - baseline_units"
+    severity: high
+    sql: "SELECT COUNT(*) FROM trade_promotion_management.lift_observation WHERE actual_units IS NOT NULL AND baseline_units IS NOT NULL AND incremental_units IS NOT NULL AND incremental_units <> (actual_units - baseline_units)"
+
+  - id: dq_tpm_009
+    subdomain: trade_promotion_management
+    table: trade_promotion_management.trade_fund
+    column: balance_cents
+    rule_type: invariant
+    expectation: "trade_fund.balance = planned - spent (committed already reflected in spent)"
+    severity: high
+    sql: "SELECT COUNT(*) FROM trade_promotion_management.trade_fund WHERE balance_cents IS NOT NULL AND planned_amount_cents IS NOT NULL AND spent_amount_cents IS NOT NULL AND balance_cents <> (planned_amount_cents - spent_amount_cents)"
+
+  - id: dq_tpm_010
+    subdomain: trade_promotion_management
+    table: trade_promotion_management.baseline_forecast
+    column: model_name
+    rule_type: distribution
+    expectation: "baseline model_name in known set — disagreement between models is tracked, not hidden"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM trade_promotion_management.baseline_forecast WHERE model_name NOT IN ('circana_unify','niq_baseline','tpro_predictive','inhouse_glm')"
+
+  # ---------- customer_loyalty_cdp (Retail) ----------
+  - id: dq_cdp_001
+    subdomain: customer_loyalty_cdp
+    table: customer_loyalty_cdp.customer_master
+    column: customer_id
+    rule_type: uniqueness
+    expectation: "customer_id is unique"
+    severity: critical
+    sql: "SELECT (SELECT COUNT(*) FROM customer_loyalty_cdp.customer_master) - (SELECT COUNT(DISTINCT customer_id) FROM customer_loyalty_cdp.customer_master)"
+
+  - id: dq_cdp_002
+    subdomain: customer_loyalty_cdp
+    table: customer_loyalty_cdp.identity_link
+    column: customer_id
+    rule_type: foreign_key
+    expectation: "every identity_link.customer_id resolves in customer_master"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM customer_loyalty_cdp.identity_link i LEFT JOIN customer_loyalty_cdp.customer_master c ON i.customer_id = c.customer_id WHERE c.customer_id IS NULL"
+
+  - id: dq_cdp_003
+    subdomain: customer_loyalty_cdp
+    table: customer_loyalty_cdp.customer_master
+    column: confidence_score
+    rule_type: range
+    expectation: "confidence_score in [0,1]"
+    severity: high
+    sql: "SELECT COUNT(*) FROM customer_loyalty_cdp.customer_master WHERE confidence_score IS NOT NULL AND (confidence_score < 0 OR confidence_score > 1)"
+
+  - id: dq_cdp_004
+    subdomain: customer_loyalty_cdp
+    table: customer_loyalty_cdp.customer_master
+    column: resolution_method
+    rule_type: distribution
+    expectation: "resolution_method in known set"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM customer_loyalty_cdp.customer_master WHERE resolution_method NOT IN ('deterministic','probabilistic','hybrid','manual_merge')"
+
+  - id: dq_cdp_005
+    subdomain: customer_loyalty_cdp
+    table: customer_loyalty_cdp.loyalty_account
+    column: current_points_balance
+    rule_type: invariant
+    expectation: "current_points_balance = lifetime_earned - lifetime_redeemed (non-negative)"
+    severity: high
+    sql: "SELECT COUNT(*) FROM customer_loyalty_cdp.loyalty_account WHERE current_points_balance IS NOT NULL AND current_points_balance < 0"
+
+  - id: dq_cdp_006
+    subdomain: customer_loyalty_cdp
+    table: customer_loyalty_cdp.points_ledger
+    column: txn_type
+    rule_type: distribution
+    expectation: "txn_type in ASC-606-aligned set"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM customer_loyalty_cdp.points_ledger WHERE txn_type NOT IN ('earn','redeem','expire','adjust','transfer_in','transfer_out','bonus','reversal')"
+
+  - id: dq_cdp_007
+    subdomain: customer_loyalty_cdp
+    table: customer_loyalty_cdp.points_ledger
+    column: points_delta
+    rule_type: invariant
+    expectation: "earn/transfer_in/bonus must be positive; redeem/expire/transfer_out must be negative"
+    severity: high
+    sql: "SELECT COUNT(*) FROM customer_loyalty_cdp.points_ledger WHERE (txn_type IN ('earn','transfer_in','bonus') AND points_delta < 0) OR (txn_type IN ('redeem','expire','transfer_out') AND points_delta > 0)"
+
+  - id: dq_cdp_008
+    subdomain: customer_loyalty_cdp
+    table: customer_loyalty_cdp.consent_record
+    column: jurisdiction
+    rule_type: distribution
+    expectation: "jurisdiction in known regulatory set (GDPR / CCPA / CPRA / PIPEDA / LGPD / other)"
+    severity: high
+    sql: "SELECT COUNT(*) FROM customer_loyalty_cdp.consent_record WHERE jurisdiction NOT IN ('EU_GDPR','UK_GDPR','US_CCPA','US_CPRA','CA_PIPEDA','BR_LGPD','other')"
+
+  - id: dq_cdp_009
+    subdomain: customer_loyalty_cdp
+    table: customer_loyalty_cdp.segment_membership
+    column: entered_at
+    rule_type: invariant
+    expectation: "exited_at must be null or >= entered_at"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM customer_loyalty_cdp.segment_membership WHERE exited_at IS NOT NULL AND entered_at IS NOT NULL AND exited_at < entered_at"
+
+  - id: dq_cdp_010
+    subdomain: customer_loyalty_cdp
+    table: customer_loyalty_cdp.redemption
+    column: status
+    rule_type: distribution
+    expectation: "redemption.status restricted to {pending,fulfilled,cancelled,reversed,fraud_review}"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM customer_loyalty_cdp.redemption WHERE status NOT IN ('pending','fulfilled','cancelled','reversed','fraud_review')"
+
+  # ---------- revenue_growth_management (CPG) ----------
+  - id: dq_rgm_001
+    subdomain: revenue_growth_management
+    table: revenue_growth_management.account
+    column: channel
+    rule_type: distribution
+    expectation: "account.channel restricted to canonical CPG channel enum"
+    severity: high
+    sql: "SELECT COUNT(*) FROM revenue_growth_management.account WHERE channel NOT IN ('grocery','mass','club','drug','convenience','dollar','ecom','food_service')"
+
+  - id: dq_rgm_002
+    subdomain: revenue_growth_management
+    table: revenue_growth_management.pack
+    column: ppa_tier
+    rule_type: distribution
+    expectation: "pack.ppa_tier in canonical PPA ladder enum"
+    severity: high
+    sql: "SELECT COUNT(*) FROM revenue_growth_management.pack WHERE ppa_tier NOT IN ('entry','mainstream','premium','value','super')"
+
+  - id: dq_rgm_003
+    subdomain: revenue_growth_management
+    table: revenue_growth_management.pack
+    column: sku_id
+    rule_type: foreign_key
+    expectation: "every pack.sku_id resolves in product"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM revenue_growth_management.pack p LEFT JOIN revenue_growth_management.product pr ON p.sku_id = pr.sku_id WHERE pr.sku_id IS NULL"
+
+  - id: dq_rgm_004
+    subdomain: revenue_growth_management
+    table: revenue_growth_management.price_event
+    column: new_list_price_cents
+    rule_type: invariant
+    expectation: "price_event.new_list_price_cents must be > 0"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM revenue_growth_management.price_event WHERE new_list_price_cents IS NULL OR new_list_price_cents <= 0"
+
+  - id: dq_rgm_005
+    subdomain: revenue_growth_management
+    table: revenue_growth_management.price_list
+    column: effective_to
+    rule_type: invariant
+    expectation: "price_list.effective_to strictly after effective_from"
+    severity: high
+    sql: "SELECT COUNT(*) FROM revenue_growth_management.price_list WHERE effective_to IS NOT NULL AND effective_from IS NOT NULL AND effective_to <= effective_from"
+
+  - id: dq_rgm_006
+    subdomain: revenue_growth_management
+    table: revenue_growth_management.deal
+    column: tactic_type
+    rule_type: distribution
+    expectation: "deal.tactic_type in canonical RGM tactic enum"
+    severity: high
+    sql: "SELECT COUNT(*) FROM revenue_growth_management.deal WHERE tactic_type NOT IN ('off_invoice','scan_down','bill_back','mcb','tpr','feature','display','multibuy','bogo','coupon','loyalty','edlp')"
+
+  - id: dq_rgm_007
+    subdomain: revenue_growth_management
+    table: revenue_growth_management.deal
+    column: promo_plan_id
+    rule_type: foreign_key
+    expectation: "every deal.promo_plan_id resolves in promo_plan"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM revenue_growth_management.deal d LEFT JOIN revenue_growth_management.promo_plan p ON d.promo_plan_id = p.promo_plan_id WHERE p.promo_plan_id IS NULL"
+
+  - id: dq_rgm_008
+    subdomain: revenue_growth_management
+    table: revenue_growth_management.deal
+    column: deal_floor_cents
+    rule_type: invariant
+    expectation: "deal_floor_cents must be < benchmark_net_price_cents (deal floor below benchmark net price)"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM revenue_growth_management.deal d JOIN revenue_growth_management.pack p ON d.pack_id = p.pack_id WHERE d.deal_floor_cents IS NOT NULL AND d.deal_floor_cents >= p.benchmark_net_price_cents"
+
+  - id: dq_rgm_009
+    subdomain: revenue_growth_management
+    table: revenue_growth_management.baseline
+    column: model_name
+    rule_type: distribution
+    expectation: "baseline.model_name in known set — model disagreement is tracked, not hidden"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM revenue_growth_management.baseline WHERE model_name NOT IN ('circana_unify','niq_baseline','periscope_glm','inhouse_ml','pricefx_optimizer')"
+
+  - id: dq_rgm_010
+    subdomain: revenue_growth_management
+    table: revenue_growth_management.sales_transaction
+    column: net_revenue_cents
+    rule_type: invariant
+    expectation: "sales_transaction.net_revenue_cents = gross - off_invoice - rebate - scan_down - bill_back - mcb - slotting - mdf (waterfall reconciles)"
+    severity: high
+    sql: "SELECT COUNT(*) FROM revenue_growth_management.sales_transaction WHERE net_revenue_cents IS NOT NULL AND gross_revenue_cents IS NOT NULL AND net_revenue_cents <> (gross_revenue_cents - off_invoice_cents - rebate_accrual_cents - scan_down_cents - bill_back_cents - mcb_cents - slotting_cents - marketing_dev_funds_cents)"
+
+  - id: dq_rgm_011
+    subdomain: revenue_growth_management
+    table: revenue_growth_management.sales_transaction
+    column: units
+    rule_type: range
+    expectation: "sales_transaction.units non-negative"
+    severity: high
+    sql: "SELECT COUNT(*) FROM revenue_growth_management.sales_transaction WHERE units IS NULL OR units < 0"
+
+  - id: dq_rgm_012
+    subdomain: revenue_growth_management
+    table: revenue_growth_management.price_event
+    column: event_type
+    rule_type: distribution
+    expectation: "price_event.event_type in canonical event enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM revenue_growth_management.price_event WHERE event_type NOT IN ('list_increase','list_decrease','srp_change','cost_change','currency_revaluation')"
+
+  # ---------- omnichannel_oms (Retail) ----------
+  - id: dq_oms_001
+    subdomain: omnichannel_oms
+    table: omnichannel_oms.oms_order
+    column: order_id
+    rule_type: uniqueness
+    expectation: "order_id is unique across orders"
+    severity: critical
+    sql: "SELECT (SELECT COUNT(*) FROM omnichannel_oms.oms_order) - (SELECT COUNT(DISTINCT order_id) FROM omnichannel_oms.oms_order)"
+
+  - id: dq_oms_002
+    subdomain: omnichannel_oms
+    table: omnichannel_oms.oms_order
+    column: order_status
+    rule_type: distribution
+    expectation: "order_status in canonical OMS lifecycle enum"
+    severity: high
+    sql: "SELECT COUNT(*) FROM omnichannel_oms.oms_order WHERE order_status NOT IN ('captured','sourced','in_fulfillment','partial_shipped','shipped','delivered','picked_up','cancelled','returned')"
+
+  - id: dq_oms_003
+    subdomain: omnichannel_oms
+    table: omnichannel_oms.oms_order
+    column: capture_channel
+    rule_type: distribution
+    expectation: "capture_channel in canonical capture-channel enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM omnichannel_oms.oms_order WHERE capture_channel NOT IN ('web','app','store_pos','kiosk','call_center','marketplace','agent')"
+
+  - id: dq_oms_004
+    subdomain: omnichannel_oms
+    table: omnichannel_oms.order_line
+    column: order_id
+    rule_type: foreign_key
+    expectation: "every order_line.order_id resolves in oms_order"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM omnichannel_oms.order_line ol LEFT JOIN omnichannel_oms.oms_order o ON ol.order_id = o.order_id WHERE o.order_id IS NULL"
+
+  - id: dq_oms_005
+    subdomain: omnichannel_oms
+    table: omnichannel_oms.order_line
+    column: fulfillment_method
+    rule_type: distribution
+    expectation: "fulfillment_method in canonical OMS method enum"
+    severity: high
+    sql: "SELECT COUNT(*) FROM omnichannel_oms.order_line WHERE fulfillment_method NOT IN ('ship_to_home','bopis','sfs','curbside','delivery','drop_ship','same_day')"
+
+  - id: dq_oms_006
+    subdomain: omnichannel_oms
+    table: omnichannel_oms.inventory_position
+    column: atp_units
+    rule_type: invariant
+    expectation: "atp_units = on_hand_units - allocated_units - reserved_safety_units (non-negative ATP)"
+    severity: high
+    sql: "SELECT COUNT(*) FROM omnichannel_oms.inventory_position WHERE atp_units IS NOT NULL AND on_hand_units IS NOT NULL AND atp_units <> (on_hand_units - COALESCE(allocated_units,0) - COALESCE(reserved_safety_units,0))"
+
+  - id: dq_oms_007
+    subdomain: omnichannel_oms
+    table: omnichannel_oms.allocation
+    column: order_line_id
+    rule_type: foreign_key
+    expectation: "every allocation.order_line_id resolves in order_line"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM omnichannel_oms.allocation a LEFT JOIN omnichannel_oms.order_line ol ON a.order_line_id = ol.order_line_id WHERE ol.order_line_id IS NULL"
+
+  - id: dq_oms_008
+    subdomain: omnichannel_oms
+    table: omnichannel_oms.allocation
+    column: status
+    rule_type: distribution
+    expectation: "allocation.status in canonical allocation lifecycle enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM omnichannel_oms.allocation WHERE status NOT IN ('issued','accepted','rejected','reallocated','completed')"
+
+  - id: dq_oms_009
+    subdomain: omnichannel_oms
+    table: omnichannel_oms.shipment
+    column: carrier
+    rule_type: distribution
+    expectation: "shipment.carrier in known carrier enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM omnichannel_oms.shipment WHERE carrier NOT IN ('fedex','ups','usps','dhl','store_courier','ontrac','lasership','same_day')"
+
+  - id: dq_oms_010
+    subdomain: omnichannel_oms
+    table: omnichannel_oms.return_authorization
+    column: refund_issued_at
+    rule_type: invariant
+    expectation: "refund_issued_at must be null or >= initiated_at"
+    severity: high
+    sql: "SELECT COUNT(*) FROM omnichannel_oms.return_authorization WHERE refund_issued_at IS NOT NULL AND initiated_at IS NOT NULL AND refund_issued_at < initiated_at"
+
+  # ---------- loss_prevention (Retail) ----------
+  - id: dq_lp_001
+    subdomain: loss_prevention
+    table: loss_prevention.pos_exception
+    column: exception_score
+    rule_type: range
+    expectation: "normalized exception_score in [0,1]"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM loss_prevention.pos_exception WHERE exception_score IS NOT NULL AND (exception_score < 0 OR exception_score > 1)"
+
+  - id: dq_lp_002
+    subdomain: loss_prevention
+    table: loss_prevention.pos_exception
+    column: source_system
+    rule_type: distribution
+    expectation: "source_system in canonical LP-vendor enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM loss_prevention.pos_exception WHERE source_system NOT IN ('NCR_Voyix_LP','Oracle_XBR','Profitect','Aptos_LP','Sensormatic','Datalogic','NCR_Counterpoint','Honeywell')"
+
+  - id: dq_lp_003
+    subdomain: loss_prevention
+    table: loss_prevention.pos_exception
+    column: exception_type
+    rule_type: distribution
+    expectation: "exception_type in canonical enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM loss_prevention.pos_exception WHERE exception_type NOT IN ('sweethearting','refund_no_receipt','void_after_tender','no_sale','cash_skim','price_override','barcode_swap','discount_abuse')"
+
+  - id: dq_lp_004
+    subdomain: loss_prevention
+    table: loss_prevention.incident
+    column: net_loss_minor
+    rule_type: invariant
+    expectation: "net_loss = gross_loss - recovered"
+    severity: high
+    sql: "SELECT COUNT(*) FROM loss_prevention.incident WHERE net_loss_minor IS NOT NULL AND gross_loss_minor IS NOT NULL AND recovered_minor IS NOT NULL AND net_loss_minor <> (gross_loss_minor - recovered_minor)"
+
+  - id: dq_lp_005
+    subdomain: loss_prevention
+    table: loss_prevention.investigation
+    column: closed_at
+    rule_type: invariant
+    expectation: "closed_at >= opened_at when both present"
+    severity: high
+    sql: "SELECT COUNT(*) FROM loss_prevention.investigation WHERE opened_at IS NOT NULL AND closed_at IS NOT NULL AND closed_at < opened_at"
+
+  - id: dq_lp_006
+    subdomain: loss_prevention
+    table: loss_prevention.suspect
+    column: suspect_ref_hash
+    rule_type: pattern
+    expectation: "suspect_ref_hash is a 64-char hex SHA-256 (PII tokenization enforced)"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM loss_prevention.suspect WHERE suspect_ref_hash IS NOT NULL AND length(suspect_ref_hash) <> 64"
+
+  - id: dq_lp_007
+    subdomain: loss_prevention
+    table: loss_prevention.fraud_score
+    column: score
+    rule_type: range
+    expectation: "Appriss / internal fraud score in [0,1]"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM loss_prevention.fraud_score WHERE score IS NOT NULL AND (score < 0 OR score > 1)"
+
+  - id: dq_lp_008
+    subdomain: loss_prevention
+    table: loss_prevention.fraud_score
+    column: recommendation
+    rule_type: distribution
+    expectation: "recommendation in {approve,verify,deny}"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM loss_prevention.fraud_score WHERE recommendation NOT IN ('approve','verify','deny')"
+
+  - id: dq_lp_009
+    subdomain: loss_prevention
+    table: loss_prevention.shrink_snapshot
+    column: total_shrink_minor
+    rule_type: invariant
+    expectation: "total_shrink = known + unknown"
+    severity: high
+    sql: "SELECT COUNT(*) FROM loss_prevention.shrink_snapshot WHERE total_shrink_minor IS NOT NULL AND total_shrink_minor <> (known_shrink_minor + unknown_shrink_minor)"
+
+  - id: dq_lp_010
+    subdomain: loss_prevention
+    table: loss_prevention.incident
+    column: status
+    rule_type: distribution
+    expectation: "incident.status in canonical lifecycle enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM loss_prevention.incident WHERE status NOT IN ('open','investigating','closed_recovered','closed_prosecuted','closed_writeoff','closed_unfounded')"
+
+  # ---------- direct_store_delivery (CPG) ----------
+  - id: dq_dsd_001
+    subdomain: direct_store_delivery
+    table: direct_store_delivery.stop
+    column: route_id
+    rule_type: foreign_key
+    expectation: "every stop.route_id resolves in route"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM direct_store_delivery.stop s LEFT JOIN direct_store_delivery.route r ON s.route_id = r.route_id WHERE r.route_id IS NULL"
+
+  - id: dq_dsd_002
+    subdomain: direct_store_delivery
+    table: direct_store_delivery.stop
+    column: status
+    rule_type: distribution
+    expectation: "stop.status in canonical lifecycle enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM direct_store_delivery.stop WHERE status NOT IN ('scheduled','in_route','on_site','completed','skipped','reattempt')"
+
+  - id: dq_dsd_003
+    subdomain: direct_store_delivery
+    table: direct_store_delivery.stop
+    column: actual_departure
+    rule_type: invariant
+    expectation: "actual_departure >= actual_arrival when both present"
+    severity: high
+    sql: "SELECT COUNT(*) FROM direct_store_delivery.stop WHERE actual_arrival IS NOT NULL AND actual_departure IS NOT NULL AND actual_departure < actual_arrival"
+
+  - id: dq_dsd_004
+    subdomain: direct_store_delivery
+    table: direct_store_delivery.dsd_order_line
+    column: delivered_units
+    rule_type: invariant
+    expectation: "delivered_units + returned_units + short_units must equal ordered_units"
+    severity: high
+    sql: "SELECT COUNT(*) FROM direct_store_delivery.dsd_order_line WHERE ordered_units IS NOT NULL AND delivered_units IS NOT NULL AND returned_units IS NOT NULL AND short_units IS NOT NULL AND (delivered_units + returned_units + short_units) <> ordered_units"
+
+  - id: dq_dsd_005
+    subdomain: direct_store_delivery
+    table: direct_store_delivery.dsd_order_line
+    column: gtin
+    rule_type: pattern
+    expectation: "GS1 GTIN-14 is 14 numeric digits"
+    severity: high
+    sql: "SELECT COUNT(*) FROM direct_store_delivery.dsd_order_line WHERE gtin IS NOT NULL AND length(gtin) <> 14"
+
+  - id: dq_dsd_006
+    subdomain: direct_store_delivery
+    table: direct_store_delivery.dsd_order
+    column: order_type
+    rule_type: distribution
+    expectation: "dsd_order.order_type in canonical enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM direct_store_delivery.dsd_order WHERE order_type NOT IN ('presell','deliver','return','swap','service')"
+
+  - id: dq_dsd_007
+    subdomain: direct_store_delivery
+    table: direct_store_delivery.settlement
+    column: variance_cents
+    rule_type: invariant
+    expectation: "settlement variance must equal collected − (invoiced − returns − spoils)"
+    severity: high
+    sql: "SELECT COUNT(*) FROM direct_store_delivery.settlement WHERE total_invoiced_cents IS NOT NULL AND variance_cents IS NOT NULL AND ABS(variance_cents - ((total_collected_cash_cents + total_collected_check_cents + total_collected_eft_cents + total_charge_account_cents) - (total_invoiced_cents - returns_credit_cents - spoilage_credit_cents))) > 1"
+
+  - id: dq_dsd_008
+    subdomain: direct_store_delivery
+    table: direct_store_delivery.epod_event
+    column: stop_id
+    rule_type: foreign_key
+    expectation: "every epod_event.stop_id resolves in stop"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM direct_store_delivery.epod_event e LEFT JOIN direct_store_delivery.stop s ON e.stop_id = s.stop_id WHERE s.stop_id IS NULL"
+
+  - id: dq_dsd_009
+    subdomain: direct_store_delivery
+    table: direct_store_delivery.perfect_store_audit
+    column: perfect_store_score
+    rule_type: range
+    expectation: "perfect_store_score in [0,100]"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM direct_store_delivery.perfect_store_audit WHERE perfect_store_score IS NOT NULL AND (perfect_store_score < 0 OR perfect_store_score > 100)"
+
+  - id: dq_dsd_010
+    subdomain: direct_store_delivery
+    table: direct_store_delivery.route_telemetry
+    column: hos_status
+    rule_type: distribution
+    expectation: "hos_status in FMCSA canonical enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM direct_store_delivery.route_telemetry WHERE hos_status NOT IN ('off_duty','sleeper','on_duty','driving')"
+
+  - id: dq_dsd_011
+    subdomain: direct_store_delivery
+    table: direct_store_delivery.deduction
+    column: status
+    rule_type: distribution
+    expectation: "deduction.status in canonical lifecycle enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM direct_store_delivery.deduction WHERE status NOT IN ('open','matched','disputed','paid','written_off','chargeback_lost')"
+
+  - id: dq_dsd_012
+    subdomain: direct_store_delivery
+    table: direct_store_delivery.driver
+    column: cdl_expiry
+    rule_type: invariant
+    expectation: "active drivers must have cdl_expiry in the future (FMCSA compliance)"
+    severity: high
+    sql: "SELECT COUNT(*) FROM direct_store_delivery.driver WHERE status = 'active' AND cdl_expiry IS NOT NULL AND cdl_expiry < CURRENT_DATE"
+
+  # ---------- returns_reverse_logistics (Retail) ----------
+  - id: dq_rrl_001
+    subdomain: returns_reverse_logistics
+    table: returns_reverse_logistics.return_authorization
+    column: order_id
+    rule_type: foreign_key
+    expectation: "every RMA.order_id resolves in sales_order"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM returns_reverse_logistics.return_authorization r LEFT JOIN returns_reverse_logistics.sales_order o ON r.order_id = o.order_id WHERE o.order_id IS NULL"
+
+  - id: dq_rrl_002
+    subdomain: returns_reverse_logistics
+    table: returns_reverse_logistics.return_item
+    column: rma_id
+    rule_type: foreign_key
+    expectation: "every return_item.rma_id resolves in return_authorization"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM returns_reverse_logistics.return_item ri LEFT JOIN returns_reverse_logistics.return_authorization r ON ri.rma_id = r.rma_id WHERE r.rma_id IS NULL"
+
+  - id: dq_rrl_003
+    subdomain: returns_reverse_logistics
+    table: returns_reverse_logistics.return_authorization
+    column: rma_status
+    rule_type: distribution
+    expectation: "rma_status in canonical lifecycle enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM returns_reverse_logistics.return_authorization WHERE rma_status NOT IN ('issued','in_transit','received','cancelled','expired')"
+
+  - id: dq_rrl_004
+    subdomain: returns_reverse_logistics
+    table: returns_reverse_logistics.disposition
+    column: disposition_code
+    rule_type: distribution
+    expectation: "disposition_code in canonical enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM returns_reverse_logistics.disposition WHERE disposition_code NOT IN ('restock_A','restock_open_box','refurb','b_stock_liquidation','donation','recycle','scrap','returnless')"
+
+  - id: dq_rrl_005
+    subdomain: returns_reverse_logistics
+    table: returns_reverse_logistics.refund
+    column: refund_amount
+    rule_type: invariant
+    expectation: "refund.refund_amount must be non-negative"
+    severity: high
+    sql: "SELECT COUNT(*) FROM returns_reverse_logistics.refund WHERE refund_amount IS NOT NULL AND refund_amount < 0"
+
+  - id: dq_rrl_006
+    subdomain: returns_reverse_logistics
+    table: returns_reverse_logistics.return_authorization
+    column: received_ts
+    rule_type: invariant
+    expectation: "received_ts >= issued_ts when both present"
+    severity: high
+    sql: "SELECT COUNT(*) FROM returns_reverse_logistics.return_authorization WHERE issued_ts IS NOT NULL AND received_ts IS NOT NULL AND received_ts < issued_ts"
+
+  - id: dq_rrl_007
+    subdomain: returns_reverse_logistics
+    table: returns_reverse_logistics.return_authorization
+    column: return_method
+    rule_type: distribution
+    expectation: "return_method in canonical enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM returns_reverse_logistics.return_authorization WHERE return_method NOT IN ('mail','boris_store','happy_returns_bar','doddle_qr','carrier_pickup','locker','returnless')"
+
+  - id: dq_rrl_008
+    subdomain: returns_reverse_logistics
+    table: returns_reverse_logistics.refund
+    column: refund_type
+    rule_type: distribution
+    expectation: "refund.refund_type in canonical enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM returns_reverse_logistics.refund WHERE refund_type NOT IN ('original_tender','store_credit','exchange','gift_card','returnless')"
+
+  - id: dq_rrl_009
+    subdomain: returns_reverse_logistics
+    table: returns_reverse_logistics.liquidation_lot_item
+    column: return_item_id
+    rule_type: foreign_key
+    expectation: "every liquidation_lot_item.return_item_id resolves in return_item"
+    severity: high
+    sql: "SELECT COUNT(*) FROM returns_reverse_logistics.liquidation_lot_item li LEFT JOIN returns_reverse_logistics.return_item ri ON li.return_item_id = ri.return_item_id WHERE ri.return_item_id IS NULL"
+
+  - id: dq_rrl_010
+    subdomain: returns_reverse_logistics
+    table: returns_reverse_logistics.refurb_outcome
+    column: outcome
+    rule_type: distribution
+    expectation: "refurb_outcome.outcome in canonical enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM returns_reverse_logistics.refurb_outcome WHERE outcome NOT IN ('refurbed_A','refurbed_B','refurbed_open_box','scrapped','sent_to_liquidation','returned_to_vendor')"
+
+  # ---------- category_management (CPG / Retail) ----------
+  - id: dq_cm_001
+    subdomain: category_management
+    table: category_management.sku
+    column: sku_id
+    rule_type: uniqueness
+    expectation: "sku_id is unique in the SKU master"
+    severity: critical
+    sql: "SELECT (SELECT COUNT(*) FROM category_management.sku) - (SELECT COUNT(DISTINCT sku_id) FROM category_management.sku)"
+
+  - id: dq_cm_002
+    subdomain: category_management
+    table: category_management.sku
+    column: gtin
+    rule_type: format
+    expectation: "GTIN must be 14 digits (GS1 GTIN-14) when populated"
+    severity: high
+    sql: "SELECT COUNT(*) FROM category_management.sku WHERE gtin IS NOT NULL AND NOT regexp_matches(gtin, '^[0-9]{14}$')"
+
+  - id: dq_cm_003
+    subdomain: category_management
+    table: category_management.sku
+    column: category_id
+    rule_type: foreign_key
+    expectation: "every sku.category_id resolves in category"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM category_management.sku s LEFT JOIN category_management.category c ON s.category_id = c.category_id WHERE s.category_id IS NOT NULL AND c.category_id IS NULL"
+
+  - id: dq_cm_004
+    subdomain: category_management
+    table: category_management.category
+    column: category_role
+    rule_type: distribution
+    expectation: "category_role in canonical ECR enum {destination, routine, occasional_seasonal, convenience}"
+    severity: high
+    sql: "SELECT COUNT(*) FROM category_management.category WHERE category_role IS NOT NULL AND category_role NOT IN ('destination','routine','occasional_seasonal','convenience')"
+
+  - id: dq_cm_005
+    subdomain: category_management
+    table: category_management.planogram_position
+    column: planogram_id
+    rule_type: foreign_key
+    expectation: "every planogram_position.planogram_id resolves in planogram"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM category_management.planogram_position pp LEFT JOIN category_management.planogram p ON pp.planogram_id = p.planogram_id WHERE p.planogram_id IS NULL"
+
+  - id: dq_cm_006
+    subdomain: category_management
+    table: category_management.planogram_position
+    column: sku_id
+    rule_type: foreign_key
+    expectation: "every planogram_position.sku_id resolves in sku"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM category_management.planogram_position pp LEFT JOIN category_management.sku s ON pp.sku_id = s.sku_id WHERE s.sku_id IS NULL"
+
+  - id: dq_cm_007
+    subdomain: category_management
+    table: category_management.planogram
+    column: status
+    rule_type: distribution
+    expectation: "planogram.status in canonical enum"
+    severity: high
+    sql: "SELECT COUNT(*) FROM category_management.planogram WHERE status NOT IN ('draft','approved','in_market','superseded','killed')"
+
+  - id: dq_cm_008
+    subdomain: category_management
+    table: category_management.planogram
+    column: effective_to
+    rule_type: integrity
+    expectation: "effective_to must be on or after effective_from"
+    severity: high
+    sql: "SELECT COUNT(*) FROM category_management.planogram WHERE effective_to IS NOT NULL AND effective_from IS NOT NULL AND effective_to < effective_from"
+
+  - id: dq_cm_009
+    subdomain: category_management
+    table: category_management.distribution_record
+    column: acv_weight
+    rule_type: range
+    expectation: "acv_weight must be in [0,1] — it's a fractional weight"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM category_management.distribution_record WHERE acv_weight IS NOT NULL AND (acv_weight < 0 OR acv_weight > 1)"
+
+  - id: dq_cm_010
+    subdomain: category_management
+    table: category_management.syndicated_measurement
+    column: source
+    rule_type: distribution
+    expectation: "syndicated_measurement.source in known providers"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM category_management.syndicated_measurement WHERE source NOT IN ('circana_unify','niq_connect','numerator','kantar_worldpanel','first_party')"
+
+  # ---------- procurement_spend_analytics (Manufacturing) ----------
+  - id: dq_psa_001
+    subdomain: procurement_spend_analytics
+    table: procurement_spend_analytics.supplier
+    column: duns_number
+    rule_type: format
+    expectation: "supplier.duns_number is exactly 9 numeric digits when present (D&B DUNS)"
+    severity: high
+    sql: "SELECT COUNT(*) FROM procurement_spend_analytics.supplier WHERE duns_number IS NOT NULL AND NOT regexp_matches(duns_number, '^[0-9]{9}$')"
+
+  - id: dq_psa_002
+    subdomain: procurement_spend_analytics
+    table: procurement_spend_analytics.supplier
+    column: supplier_id
+    rule_type: uniqueness
+    expectation: "supplier_id is unique across the supplier master"
+    severity: critical
+    sql: "SELECT (SELECT COUNT(*) FROM procurement_spend_analytics.supplier) - (SELECT COUNT(DISTINCT supplier_id) FROM procurement_spend_analytics.supplier)"
+
+  - id: dq_psa_003
+    subdomain: procurement_spend_analytics
+    table: procurement_spend_analytics.contract
+    column: expiry_date
+    rule_type: integrity
+    expectation: "contract.expiry_date must be on or after contract.effective_date"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM procurement_spend_analytics.contract WHERE effective_date IS NOT NULL AND expiry_date IS NOT NULL AND expiry_date < effective_date"
+
+  - id: dq_psa_004
+    subdomain: procurement_spend_analytics
+    table: procurement_spend_analytics.contract
+    column: supplier_id
+    rule_type: foreign_key
+    expectation: "every contract.supplier_id resolves in supplier"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM procurement_spend_analytics.contract c LEFT JOIN procurement_spend_analytics.supplier s ON c.supplier_id = s.supplier_id WHERE s.supplier_id IS NULL"
+
+  - id: dq_psa_005
+    subdomain: procurement_spend_analytics
+    table: procurement_spend_analytics.purchase_order
+    column: supplier_id
+    rule_type: foreign_key
+    expectation: "every purchase_order.supplier_id resolves in supplier"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM procurement_spend_analytics.purchase_order po LEFT JOIN procurement_spend_analytics.supplier s ON po.supplier_id = s.supplier_id WHERE s.supplier_id IS NULL"
+
+  - id: dq_psa_006
+    subdomain: procurement_spend_analytics
+    table: procurement_spend_analytics.purchase_order
+    column: status
+    rule_type: distribution
+    expectation: "purchase_order.status in canonical lifecycle enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM procurement_spend_analytics.purchase_order WHERE status NOT IN ('draft','approved','sent','partially_received','received','invoiced','closed','cancelled')"
+
+  - id: dq_psa_007
+    subdomain: procurement_spend_analytics
+    table: procurement_spend_analytics.po_line
+    column: po_id
+    rule_type: foreign_key
+    expectation: "every po_line.po_id resolves in purchase_order"
+    severity: critical
+    sql: "SELECT COUNT(*) FROM procurement_spend_analytics.po_line pl LEFT JOIN procurement_spend_analytics.purchase_order po ON pl.po_id = po.po_id WHERE po.po_id IS NULL"
+
+  - id: dq_psa_008
+    subdomain: procurement_spend_analytics
+    table: procurement_spend_analytics.po_line
+    column: line_amount
+    rule_type: invariant
+    expectation: "po_line.line_amount must be non-negative"
+    severity: high
+    sql: "SELECT COUNT(*) FROM procurement_spend_analytics.po_line WHERE line_amount IS NOT NULL AND line_amount < 0"
+
+  - id: dq_psa_009
+    subdomain: procurement_spend_analytics
+    table: procurement_spend_analytics.invoice
+    column: total_amount
+    rule_type: invariant
+    expectation: "invoice.total_amount must not exceed parent purchase_order.total_amount * 1.10 (tolerance band)"
+    severity: high
+    sql: "SELECT COUNT(*) FROM procurement_spend_analytics.invoice i JOIN procurement_spend_analytics.purchase_order po ON i.po_id = po.po_id WHERE i.total_amount IS NOT NULL AND po.total_amount IS NOT NULL AND i.total_amount > po.total_amount * 1.10"
+
+  - id: dq_psa_010
+    subdomain: procurement_spend_analytics
+    table: procurement_spend_analytics.invoice
+    column: match_type
+    rule_type: distribution
+    expectation: "invoice.match_type in canonical enum"
+    severity: medium
+    sql: "SELECT COUNT(*) FROM procurement_spend_analytics.invoice WHERE match_type NOT IN ('two_way','three_way','exception','none')"
+
+  - id: dq_psa_011
+    subdomain: procurement_spend_analytics
+    table: procurement_spend_analytics.invoice
+    column: matched
+    rule_type: invariant
+    expectation: "invoice.matched=true requires match_type in ('two_way','three_way') — internal consistency"
+    severity: high
+    sql: "SELECT COUNT(*) FROM procurement_spend_analytics.invoice WHERE matched = TRUE AND match_type NOT IN ('two_way','three_way')"
+
+  - id: dq_psa_012
+    subdomain: procurement_spend_analytics
+    table: procurement_spend_analytics.category_taxonomy
+    column: category_code
+    rule_type: format
+    expectation: "category_code must be a UNSPSC 8-digit code"
+    severity: high
+    sql: "SELECT COUNT(*) FROM procurement_spend_analytics.category_taxonomy WHERE NOT regexp_matches(category_code, '^[0-9]{8}$')"

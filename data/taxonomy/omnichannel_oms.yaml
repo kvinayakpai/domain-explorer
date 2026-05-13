@@ -1,0 +1,451 @@
+id: omnichannel_oms
+name: Omnichannel Order Management
+vertical: Retail
+oneLiner: Distributed order orchestration across stores, DCs, and digital — sourcing rules, available-to-promise, BOPIS / ship-from-store / curbside, and end-to-end order lifecycle from capture to settle.
+
+# Authoritative sources (mid-2026):
+#   Manhattan Active Omni / Manhattan Active Order Management
+#     https://www.manh.com/products/active-omni — distributed order management,
+#     enterprise inventory visibility, store fulfillment, customer engagement.
+#   IBM Sterling Order Management (Sterling OMS)
+#     https://www.ibm.com/products/order-management — global inventory visibility,
+#     business rule framework, omnichannel store fulfillment, supplier integration.
+#   Salesforce Order Management (Commerce Cloud OMS)
+#     https://www.salesforce.com/products/order-management — order routing, BOPIS,
+#     returns, payment capture from B2C Commerce.
+#   Shopify Order Management + Shopify Fulfillment Network
+#     https://shopify.dev/docs/api/admin/order — fulfillment orders, inventory
+#     locations, AssignedFulfillmentOrder grain.
+#   Oracle Retail Order Management System Cloud Service (ROMS / OROMS)
+#     https://www.oracle.com/retail/order-management/ — sourcing engine,
+#     fulfillment broker, returns and exchanges.
+#   Kibo Order Management (Kibo OMS)
+#     https://kibocommerce.com/order-management/ — fulfiller workflows,
+#     ATP cache, real-time sourcing.
+#   Fluent Commerce — Fluent Order Management
+#     https://fluentcommerce.com/products/fluent-order-management — event-sourced
+#     orders, rules-based orchestration on top of GraphQL.
+#   Deck Commerce OMS — DTC-focused.
+#     https://deckcommerce.com — multi-channel order routing, inventory aggregation.
+#   Aptos OMS / Aptos ONE
+#     https://www.aptos.com/products/order-management — store-of-record, endless aisle.
+#   Logiwa WMS+OMS for DTC fulfillment
+#     https://www.logiwa.com — cloud WMS with embedded OMS for high-velocity DTC.
+#   Manhattan WMS / JDA (Blue Yonder) WMS — paired warehouse execution.
+#   NCR Voyix and Toshiba TCx Elevate — POS endpoints feeding order capture.
+#   Carrier APIs: FedEx Web Services, UPS Developer Kit, USPS Web Tools, DHL XML PI.
+#   Standards: GS1 GTIN/GLN/SSCC; EDI 940 (Warehouse Shipping Order),
+#     EDI 943 (Warehouse Stock Transfer Shipment Advice),
+#     EDI 944 (Warehouse Stock Transfer Receipt Advice),
+#     EDI 945 (Warehouse Shipping Advice),
+#     EDI 846 (Inventory Inquiry/Advice),
+#     EDI 856 (Advance Ship Notice).
+#   OASIS OData v4 + JSON:API for retail inventory APIs.
+
+personas:
+  - { name: Head of Omnichannel, title: VP, Head of Omnichannel & Unified Commerce, level: VP }
+  - { name: OMS Product Manager, title: Director, Order Management Platform PM, level: Director }
+  - { name: Fulfillment Operations Director, title: Director, Distributed Fulfillment Operations, level: Director }
+  - { name: Store Ops Lead, title: Director, Store Fulfillment & BOPIS Operations, level: Director }
+  - { name: Customer Experience Lead, title: Senior Director, Order Experience & Promise, level: Director }
+  - { name: Inventory Visibility Manager, title: Manager, Enterprise Inventory Visibility, level: Manager }
+  - { name: Returns Lead, title: Director, Returns & Reverse Logistics, level: Director }
+
+decisions:
+  - { id: oms.d.sourcing_rule, statement: "When an order line drops, which node (store, DC, vendor drop-ship, dark store) sources it — by lowest cost-to-serve, fastest promise, or store-clearance pull?" }
+  - { id: oms.d.atp_safety_stock, statement: "Reserve a per-node safety buffer on the ATP feed to insulate online from store walk-in cannibalization, or expose unified ATP and accept some risk?" }
+  - { id: oms.d.split_shipment, statement: "Allow a single order to split across multiple ship-from nodes to keep a promise date, or hold for a single-shipment fulfillment to lower cost?" }
+  - { id: oms.d.promise_window, statement: "Quote a tight delivery promise (3-day) at checkout and risk SLA breach, or quote a wide window (5-7 day) and lose conversion to faster competitors?" }
+  - { id: oms.d.cancel_or_substitute, statement: "When an in-flight order has an inventory miss at the sourcing node, cancel the line, substitute a like SKU, or re-source from a higher-cost node?" }
+  - { id: oms.d.store_capacity, statement: "Throttle BOPIS / ship-from-store volume per store based on labor capacity, or accept all orders and risk pick-time SLA breach?" }
+  - { id: oms.d.return_reroute, statement: "Route a return to the nearest store for restock-and-resell, central returns hub for triage, or directly to vendor for credit?" }
+  - { id: oms.d.endless_aisle, statement: "Enable endless-aisle ordering at the POS so a store associate can promise a SKU not in that store from the enterprise inventory pool?" }
+  - { id: oms.d.dark_store_designation, statement: "Designate which under-performing stores convert to dark-store / micro-fulfillment-center mode, taking them off retail traffic but adding fulfillment capacity?" }
+  - { id: oms.d.carrier_selection, statement: "Pick the carrier and service level for each parcel — cheapest within promise, fastest, lowest-emission, or contract-volume-optimal?" }
+
+kpis:
+  - id: oms.kpi.order_cycle_time
+    name: Order Cycle Time
+    formula: avg(shipped_ts - order_capture_ts)
+    unit: hours
+    direction: lower_is_better
+    decisionsSupported: [oms.d.sourcing_rule, oms.d.split_shipment, oms.d.store_capacity]
+  - id: oms.kpi.pick_accuracy
+    name: Pick Accuracy
+    formula: lines_picked_correctly / total_lines_picked
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [oms.d.cancel_or_substitute, oms.d.store_capacity]
+  - id: oms.kpi.bopis_lead_time
+    name: BOPIS Lead Time (Order-to-Ready)
+    formula: avg(ready_for_pickup_ts - order_capture_ts)
+    unit: minutes
+    direction: lower_is_better
+    decisionsSupported: [oms.d.store_capacity, oms.d.sourcing_rule]
+  - id: oms.kpi.ship_from_store_mix
+    name: Ship-from-Store Mix %
+    formula: store_sourced_lines / total_sourced_lines
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [oms.d.sourcing_rule, oms.d.dark_store_designation]
+  - id: oms.kpi.atp_accuracy
+    name: ATP Accuracy
+    formula: 1 - mean_abs_error(atp_promised, atp_actual_at_pick)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [oms.d.atp_safety_stock, oms.d.endless_aisle]
+  - id: oms.kpi.inventory_visibility_unified_pct
+    name: Inventory Visibility (% Unified)
+    formula: skus_with_unified_position / total_skus
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [oms.d.atp_safety_stock, oms.d.endless_aisle]
+  - id: oms.kpi.order_split_rate
+    name: Order Split Rate
+    formula: orders_with_multiple_shipments / total_multi_line_orders
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [oms.d.split_shipment, oms.d.sourcing_rule]
+  - id: oms.kpi.cost_to_serve_per_channel
+    name: Cost-to-Serve per Channel
+    formula: sum(fulfillment_cost) / count(orders) by channel
+    unit: USD
+    direction: lower_is_better
+    decisionsSupported: [oms.d.sourcing_rule, oms.d.carrier_selection, oms.d.dark_store_designation]
+  - id: oms.kpi.on_time_delivery
+    name: On-Time Delivery %
+    formula: orders_delivered_by_promise / orders_delivered
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [oms.d.promise_window, oms.d.carrier_selection]
+  - id: oms.kpi.promise_vs_actual_gap
+    name: Promise vs Actual Gap
+    formula: avg(actual_delivery_ts - promised_delivery_ts)
+    unit: hours
+    direction: lower_is_better
+    decisionsSupported: [oms.d.promise_window]
+  - id: oms.kpi.cancellation_rate
+    name: Cancellation Rate
+    formula: cancelled_lines / accepted_lines
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [oms.d.cancel_or_substitute, oms.d.atp_safety_stock]
+  - id: oms.kpi.substitution_rate
+    name: Substitution Rate
+    formula: substituted_lines / cancelled_lines
+    unit: "%"
+    direction: target_band
+    decisionsSupported: [oms.d.cancel_or_substitute]
+  - id: oms.kpi.return_cycle_time
+    name: Return Cycle Time
+    formula: avg(refund_issued_ts - return_initiated_ts)
+    unit: days
+    direction: lower_is_better
+    decisionsSupported: [oms.d.return_reroute]
+  - id: oms.kpi.first_pick_fill_rate
+    name: First-Pick Fill Rate
+    formula: lines_filled_first_attempt / lines_picked
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [oms.d.sourcing_rule, oms.d.atp_safety_stock]
+
+dataModel:
+  entities:
+    - name: customer
+      description: Unified customer (golden record) collapsed across .com, store loyalty, and call-center identifiers. Drives the Visa/Mastercard cardholder linkage on returns + the loyalty linkage on BOPIS.
+      keys: [customer_id]
+      attributes:
+        - { name: customer_id, type: varchar(32), isPrimaryKey: true }
+        - { name: golden_record_id, type: varchar(32), description: "Cross-channel master ID stitched by Customer Identity Resolution" }
+        - { name: email_hash, type: varchar(64) }
+        - { name: phone_hash, type: varchar(64) }
+        - { name: loyalty_id, type: varchar(32) }
+        - { name: home_country_iso2, type: varchar(2) }
+        - { name: created_at, type: timestamp }
+        - { name: status, type: varchar(16), description: "active|merged|suppressed" }
+
+    - name: location
+      description: Any node that can hold inventory or fulfill an order — store, DC, dark store, vendor drop-ship, partner forward-stocking.
+      keys: [location_id]
+      attributes:
+        - { name: location_id, type: varchar(16), isPrimaryKey: true }
+        - { name: gln, type: varchar(13), description: "GS1 Global Location Number" }
+        - { name: name, type: varchar(255) }
+        - { name: location_type, type: varchar(16), description: "store|dc|dark_store|drop_ship|partner|locker" }
+        - { name: country_iso2, type: varchar(2) }
+        - { name: region, type: varchar(64) }
+        - { name: timezone, type: varchar(32) }
+        - { name: lat, type: "decimal(9,6)" }
+        - { name: lon, type: "decimal(9,6)" }
+        - { name: bopis_enabled, type: boolean }
+        - { name: ship_from_enabled, type: boolean }
+        - { name: pick_capacity_per_hour, type: integer, description: "labor-derived hourly pick budget" }
+        - { name: status, type: varchar(16) }
+
+    - name: product
+      description: SKU master mirrored from RMS; carries the GTIN-14 used for ATP keys. Distinct from the merchandising anchor's product to keep OMS deployable standalone.
+      keys: [product_id]
+      attributes:
+        - { name: product_id, type: varchar(32), isPrimaryKey: true }
+        - { name: gtin, type: varchar(14), description: "GS1 GTIN-14" }
+        - { name: sku, type: varchar(32) }
+        - { name: name, type: varchar(255) }
+        - { name: category_id, type: varchar(32) }
+        - { name: hazmat_flag, type: boolean, description: "Restricts carrier choice + parcel routing" }
+        - { name: weight_grams, type: integer }
+        - { name: dimensional_weight_grams, type: integer }
+        - { name: pack_type, type: varchar(16), description: "each|inner|case" }
+        - { name: status, type: varchar(16) }
+
+    - name: inventory_position
+      description: Effective-dated quantity at a location × product, separated by state (on_hand, allocated, in_transit, reserved). The atomic input to ATP.
+      keys: [position_id]
+      attributes:
+        - { name: position_id, type: varchar(32), isPrimaryKey: true }
+        - { name: location_id, type: varchar(16), isForeignKey: true, references: location.location_id }
+        - { name: product_id, type: varchar(32), isForeignKey: true, references: product.product_id }
+        - { name: on_hand_units, type: integer }
+        - { name: allocated_units, type: integer, description: "Reserved against open allocations" }
+        - { name: in_transit_units, type: integer, description: "Inbound from another node" }
+        - { name: reserved_safety_units, type: integer, description: "Safety stock the ATP engine refuses to promise" }
+        - { name: atp_units, type: integer, description: "Available-To-Promise = on_hand - allocated - reserved_safety" }
+        - { name: source_system, type: varchar(32), description: "Manhattan|Sterling|SFOMS|Shopify|RMS|Kibo|Fluent|WMS" }
+        - { name: as_of_ts, type: timestamp, description: "EDI 846 / inventory snapshot timestamp" }
+        - { name: refresh_lag_seconds, type: integer, description: "Lag from source change to OMS visibility" }
+
+    - name: order
+      description: Order header — channel of capture, customer, payment summary, and lifecycle state. Created by .com checkout, store POS endless-aisle, call-center, marketplace, or kiosk.
+      keys: [order_id]
+      attributes:
+        - { name: order_id, type: varchar(32), isPrimaryKey: true }
+        - { name: customer_id, type: varchar(32), isForeignKey: true, references: customer.customer_id }
+        - { name: capture_channel, type: varchar(16), description: "web|app|store_pos|kiosk|call_center|marketplace|agent" }
+        - { name: capture_location_id, type: varchar(16), description: "Store ID for endless-aisle / kiosk; null for web" }
+        - { name: order_total_minor, type: bigint }
+        - { name: currency, type: varchar(3) }
+        - { name: tax_minor, type: bigint }
+        - { name: shipping_minor, type: bigint }
+        - { name: discount_minor, type: bigint }
+        - { name: payment_status, type: varchar(16), description: "authorized|captured|partial|refunded|voided" }
+        - { name: order_status, type: varchar(16), description: "captured|sourced|in_fulfillment|partial_shipped|shipped|delivered|picked_up|cancelled|returned" }
+        - { name: promise_delivery_ts, type: timestamp, description: "Quoted at checkout per Manhattan Active Promise / Sterling OPP" }
+        - { name: captured_at, type: timestamp }
+        - { name: closed_at, type: timestamp }
+
+    - name: order_line
+      description: One SKU on an order — the fulfillment grain. Each line carries its own sourcing decision, promise, and lifecycle.
+      keys: [order_line_id]
+      attributes:
+        - { name: order_line_id, type: varchar(32), isPrimaryKey: true }
+        - { name: order_id, type: varchar(32), isForeignKey: true, references: order.order_id }
+        - { name: product_id, type: varchar(32), isForeignKey: true, references: product.product_id }
+        - { name: line_number, type: smallint }
+        - { name: quantity, type: integer }
+        - { name: unit_price_minor, type: bigint }
+        - { name: line_total_minor, type: bigint }
+        - { name: fulfillment_method, type: varchar(16), description: "ship_to_home|bopis|sfs|curbside|delivery|drop_ship|same_day" }
+        - { name: requested_location_id, type: varchar(16), description: "Customer-chosen pickup store for BOPIS" }
+        - { name: line_status, type: varchar(16), description: "open|sourced|allocated|picked|packed|shipped|delivered|picked_up|cancelled|substituted|returned" }
+        - { name: substitution_for_line_id, type: varchar(32), description: "If this line is the substitute for an out-of-stock original" }
+
+    - name: sourcing_rule
+      description: Configurable rule fragment used by the distributed-order broker. Order lines are scored against rules to pick a fulfillment node.
+      keys: [rule_id]
+      attributes:
+        - { name: rule_id, type: varchar(32), isPrimaryKey: true }
+        - { name: rule_name, type: varchar(128) }
+        - { name: priority, type: smallint, description: "Lower = evaluated first" }
+        - { name: condition_json, type: text, description: "Manhattan/Sterling/Fluent rule DSL — channel, region, weight, hazmat, etc." }
+        - { name: cost_weight, type: "decimal(5,4)" }
+        - { name: speed_weight, type: "decimal(5,4)" }
+        - { name: capacity_weight, type: "decimal(5,4)" }
+        - { name: clearance_pull_weight, type: "decimal(5,4)", description: "Bias to drain stores with surplus aging stock" }
+        - { name: effective_from, type: timestamp }
+        - { name: effective_to, type: timestamp }
+        - { name: status, type: varchar(16) }
+
+    - name: allocation
+      description: Concrete decision binding an order_line to a fulfillment node + inventory position. Issued by the Distributed Order Management broker after sourcing rules score the candidates.
+      keys: [allocation_id]
+      attributes:
+        - { name: allocation_id, type: varchar(32), isPrimaryKey: true }
+        - { name: order_line_id, type: varchar(32), isForeignKey: true, references: order_line.order_line_id }
+        - { name: location_id, type: varchar(16), isForeignKey: true, references: location.location_id }
+        - { name: rule_id, type: varchar(32), description: "Winning sourcing_rule.rule_id" }
+        - { name: allocated_quantity, type: integer }
+        - { name: estimated_cost_minor, type: bigint, description: "Predicted cost-to-serve at allocation time" }
+        - { name: estimated_ready_ts, type: timestamp, description: "BOPIS ready-for-pickup or ship-from-store ship-by" }
+        - { name: estimated_delivery_ts, type: timestamp }
+        - { name: status, type: varchar(16), description: "issued|accepted|rejected|reallocated|completed" }
+        - { name: allocated_at, type: timestamp }
+
+    - name: fulfillment_event
+      description: One state-transition or workflow event in the lifecycle of an allocation — pick_started, pick_complete, pack, ship, deliver, fail, reallocate. Event-sourced (Fluent Commerce style).
+      keys: [event_id]
+      attributes:
+        - { name: event_id, type: varchar(32), isPrimaryKey: true }
+        - { name: allocation_id, type: varchar(32), isForeignKey: true, references: allocation.allocation_id }
+        - { name: order_line_id, type: varchar(32), isForeignKey: true, references: order_line.order_line_id }
+        - { name: location_id, type: varchar(16), isForeignKey: true, references: location.location_id }
+        - { name: event_type, type: varchar(32), description: "pick_started|pick_complete|substitution|short_pick|pack|label|ship|in_transit|out_for_delivery|delivered|pickup_ready|pickup_complete|cancel|reallocate|return_initiated|return_received|refund_issued" }
+        - { name: occurred_at, type: timestamp }
+        - { name: actor_role, type: varchar(16), description: "system|store_associate|warehouse_picker|carrier|customer" }
+        - { name: actor_id, type: varchar(32) }
+        - { name: payload_json, type: text }
+
+    - name: shipment
+      description: Physical parcel handed to a carrier. Many-to-one with allocation when split across boxes; one-to-one with the EDI 945 ship advice.
+      keys: [shipment_id]
+      attributes:
+        - { name: shipment_id, type: varchar(32), isPrimaryKey: true }
+        - { name: allocation_id, type: varchar(32), isForeignKey: true, references: allocation.allocation_id }
+        - { name: tracking_number, type: varchar(64) }
+        - { name: carrier, type: varchar(16), description: "fedex|ups|usps|dhl|store_courier|ontrac|lasership|same_day" }
+        - { name: service_level, type: varchar(32), description: "ground|2day|next_day|same_day|economy|home_delivery" }
+        - { name: ship_from_location_id, type: varchar(16) }
+        - { name: ship_to_postal, type: varchar(16) }
+        - { name: ship_to_country_iso2, type: varchar(2) }
+        - { name: weight_grams, type: integer }
+        - { name: cost_minor, type: bigint }
+        - { name: shipped_at, type: timestamp }
+        - { name: delivered_at, type: timestamp }
+        - { name: status, type: varchar(16), description: "label_created|in_transit|out_for_delivery|delivered|exception|returned" }
+
+    - name: return_authorization
+      description: RMA covering a customer's return of one or more order_lines. Routes per oms.d.return_reroute decision; settles refund + restock.
+      keys: [rma_id]
+      attributes:
+        - { name: rma_id, type: varchar(32), isPrimaryKey: true }
+        - { name: order_id, type: varchar(32), isForeignKey: true, references: order.order_id }
+        - { name: customer_id, type: varchar(32), isForeignKey: true, references: customer.customer_id }
+        - { name: return_reason, type: varchar(32), description: "wrong_item|defective|too_small|too_large|did_not_like|late|damaged_in_transit|other" }
+        - { name: return_method, type: varchar(16), description: "in_store|mail|carrier_pickup|locker" }
+        - { name: return_location_id, type: varchar(16), description: "Selected return node" }
+        - { name: refund_method, type: varchar(16), description: "original_tender|store_credit|gift_card|exchange" }
+        - { name: refund_amount_minor, type: bigint }
+        - { name: restock_outcome, type: varchar(16), description: "restocked|damaged|donated|destroyed|return_to_vendor" }
+        - { name: initiated_at, type: timestamp }
+        - { name: received_at, type: timestamp }
+        - { name: refund_issued_at, type: timestamp }
+        - { name: status, type: varchar(16), description: "initiated|in_transit|received|inspected|refunded|cancelled" }
+
+  relationships:
+    - { from: order, to: customer, kind: many_to_one }
+    - { from: order_line, to: order, kind: many_to_one }
+    - { from: order_line, to: product, kind: many_to_one }
+    - { from: inventory_position, to: location, kind: many_to_one }
+    - { from: inventory_position, to: product, kind: many_to_one }
+    - { from: allocation, to: order_line, kind: many_to_one }
+    - { from: allocation, to: location, kind: many_to_one }
+    - { from: fulfillment_event, to: allocation, kind: many_to_one }
+    - { from: fulfillment_event, to: order_line, kind: many_to_one }
+    - { from: shipment, to: allocation, kind: many_to_one }
+    - { from: return_authorization, to: order, kind: many_to_one }
+    - { from: return_authorization, to: customer, kind: many_to_one }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/omnichannel_oms_3nf.sql
+  vault: modeling/ddl/omnichannel_oms_vault.sql
+  dimensional: modeling/ddl/omnichannel_oms_dim.sql
+
+sourceSystems:
+  - { vendor: Manhattan Associates, product: Manhattan Active Order Management, category: OMS }
+  - { vendor: IBM, product: Sterling Order Management, category: OMS }
+  - { vendor: Salesforce, product: Salesforce Order Management (Commerce Cloud OMS), category: OMS }
+  - { vendor: Shopify, product: Shopify Order Management + Fulfillment Network, category: OMS / Fulfillment Network }
+  - { vendor: Oracle, product: Oracle Retail Order Management Cloud Service, category: OMS }
+  - { vendor: Kibo Commerce, product: Kibo Order Management, category: OMS }
+  - { vendor: Fluent Commerce, product: Fluent Order Management, category: OMS (event-sourced) }
+  - { vendor: Deck Commerce, product: Deck Commerce OMS, category: DTC OMS }
+  - { vendor: Aptos, product: Aptos ONE / Aptos OMS, category: OMS / Endless Aisle }
+  - { vendor: Logiwa, product: Logiwa WMS+OMS, category: WMS+OMS (DTC) }
+  - { vendor: Manhattan Associates, product: Manhattan Active Warehouse Management, category: WMS }
+  - { vendor: Blue Yonder (JDA), product: Blue Yonder Warehouse Management, category: WMS }
+  - { vendor: NCR Voyix, product: NCR Voyix Commerce POS, category: POS / Order Capture }
+  - { vendor: Toshiba, product: Toshiba TCx Elevate POS, category: POS / Order Capture }
+  - { vendor: FedEx, product: FedEx Web Services, category: Carrier API }
+  - { vendor: UPS, product: UPS Developer Kit, category: Carrier API }
+  - { vendor: USPS, product: USPS Web Tools, category: Carrier API }
+
+connectors:
+  - { type: Manhattan Active OM REST, protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: Sterling OMS REST/JMS, protocol: HTTPS JSON / JMS, auth: OAuth2 / Mutual TLS }
+  - { type: Salesforce OMS Bulk + Platform Events, protocol: HTTPS / CometD, auth: OAuth2 + JWT }
+  - { type: Shopify Admin GraphQL + Webhook, protocol: HTTPS GraphQL, auth: OAuth2 + HMAC webhook }
+  - { type: Oracle ROMS REST + IXM, protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: Kibo OMS REST, protocol: HTTPS JSON, auth: OAuth2 + tenant key }
+  - { type: Fluent Commerce GraphQL + Webhooks, protocol: HTTPS GraphQL, auth: OAuth2 + signed events }
+  - { type: EDI 846 Inventory Inquiry/Advice, protocol: AS2, auth: PKI }
+  - { type: EDI 940 Warehouse Shipping Order, protocol: AS2, auth: PKI }
+  - { type: EDI 943 Warehouse Stock Transfer Shipment Advice, protocol: AS2, auth: PKI }
+  - { type: EDI 944 Warehouse Stock Transfer Receipt Advice, protocol: AS2, auth: PKI }
+  - { type: EDI 945 Warehouse Shipping Advice, protocol: AS2, auth: PKI }
+  - { type: EDI 856 Advance Ship Notice, protocol: AS2, auth: PKI }
+  - { type: FedEx/UPS/USPS REST, protocol: HTTPS JSON, auth: API key + OAuth2 }
+  - { type: POS event stream (NCR Voyix / Toshiba), protocol: Kafka, auth: SASL/SCRAM }
+  - { type: WMS event stream (Manhattan / Blue Yonder), protocol: Kafka / JMS, auth: SASL / TLS }
+
+ingestionChallenges:
+  - High-frequency inventory deltas — every store, DC, and dark store emits per-second on-hand movements; the OMS ingest must absorb 10k+ events/sec without lag drifting past the 60-second ATP staleness budget.
+  - Event-sourced order state with out-of-order arrival — Fluent Commerce / Sterling-style event journals can deliver `pick_complete` before `pick_started` under partition retries; the staging layer must idempotently replay events and reconstruct lifecycle.
+  - Multi-source inventory truth — Manhattan WMS, store handheld counts, and POS-side cycle counts disagree by 0.5-3% on any given day; reconciliation is a continuous process, not a batch.
+  - Carrier webhooks are noisy and partial — FedEx and UPS push tracking events with minute-scale duplicates; USPS only updates at sortation scans; correlation by tracking_number requires deduplication and gap-filling.
+  - Store-network partitions — store fulfillment workstations frequently lose VPN; queued events arrive in bursts when connectivity restores, with timestamps from the disconnected window.
+  - PII propagation in shipping payloads — every shipment record carries customer name + address; tokenization must happen at the OMS boundary before it lands in the data warehouse to avoid a CCPA / GDPR Art. 5 problem.
+
+integrationChallenges:
+  - name: ATP staleness vs availability latency
+    description: Surfacing fresh ATP at the storefront requires sub-second propagation from store on-hand mutations to the .com inventory cache. Most retailers settle at 30-90 second cache TTLs, which is fine until a flash promotion blows through 30s of demand at one store before the cache refreshes — then the same SKU is over-promised across 100 web sessions.
+    mitigation: Adopt a tiered ATP cache (per-node hot cache + chain-wide aggregate) with safety reservations sized by the store's peak per-second sell rate; promote a near-real-time inventory event bus (Manhattan Active Inventory or Kafka CDC) over polled snapshots; expose ATP as a streamed resource not a cached blob.
+  - name: Sourcing rule drift across vendors
+    description: Each OMS expresses sourcing rules in a different DSL — Manhattan's strategies, Sterling's business rule framework, Fluent's GraphQL rules, Salesforce OMS flows. Cross-vendor migration loses or distorts rule semantics, and consolidating multi-banner retailers ends up with three OMSes and three rule sets that disagree on edge cases.
+    mitigation: Maintain a vendor-neutral rule registry (sourcing_rule.condition_json) with a translation layer that round-trips through each vendor's DSL; cohort-test new rules in shadow mode before promoting to production; freeze rule semantics with a regression suite that replays last 30 days of orders.
+  - name: Split-shipment cost vs promise tradeoff
+    description: A two-line order can be sourced from one DC for a single ship-cost or split across two stores for a faster promise. The cost-versus-promise decision is the central economic question of distributed OMS; doing it badly bleeds margin.
+    mitigation: Quantify both sides in the allocation step — capture estimated_cost_minor and estimated_delivery_ts on every candidate node; let the per-rule weights (cost_weight, speed_weight) reflect channel-economic policy; report Order Split Rate against a per-banner target band.
+  - name: BOPIS pickup handoff data loss
+    description: Customer orders BOPIS, store associate picks the line at 2pm, but the in-store pickup-counter check-in system is a separate POS module. The store_pickup_complete event misses 5-15% of the time, leaving orders stuck in `ready_for_pickup` for days.
+    mitigation: Wire the in-store pickup-counter scanner directly to the OMS via a POS webhook; reconcile nightly against EOD store_credit settlement; auto-close orders aged >7 days in `ready_for_pickup` after a customer-reachout job.
+  - name: Carrier tracking event correlation
+    description: A single FedEx parcel emits 6-12 tracking events; UPS sometimes emits "out for delivery" twice; USPS often skips intermediate scans entirely. Correlating these into the canonical `delivered_at` for the `On-Time Delivery %` KPI requires per-carrier event normalization plus gap-filling logic.
+    mitigation: Build per-carrier event-mapping tables; deduplicate by (tracking_number, event_type, scan_ts) within a 60s window; treat a missing intermediate scan as inferred not absent; report OTD with confidence interval where carrier data is sparse.
+  - name: Returns reverse-logistics visibility
+    description: A customer drops a return at a UPS Store; UPS scans it days later; the package shows up at the retailer's central returns hub a week after that. Until inspection, the refund is held — but customers expect refunds within 48 hours.
+    mitigation: Trigger the refund on first carrier scan (return_initiated_at) for trusted-customer cohorts; settle to inspected-then-restocked outcome via a downstream true-up; per-RMA visibility on inspected vs in-transit vs awaiting-receipt.
+  - name: Endless aisle inventory commitment from POS
+    description: A store associate at register uses Aptos ONE's endless-aisle to promise a SKU not on the rack, sourced from the chain's pool. If the inventory commitment isn't atomic with the ATP read, two associates in different stores can promise the last unit at the same moment.
+    mitigation: Implement a strong allocation lock at ATP-decrement time (Manhattan Active OM commit semantics); fall back to soft reservation with a 10-minute hold that auto-releases if not confirmed; surface clear failure UX to the associate when the lock is denied.
+  - name: Distributed order state consistency
+    description: The order is `partial_shipped` after one of three lines ships, but the store-side pick app still shows it `open` because the partial-fulfillment event hasn't propagated. Customer service sees inconsistent state and either over-refunds or under-services.
+    mitigation: Adopt event-sourced order state (Fluent Commerce model); every consumer derives state from the event log rather than a cached header status; expose a read-model latency SLO and alert when consumer derived-state lags producer events.
+
+glossaryTerms:
+  - ATP (Available-To-Promise)
+  - OPP (Order Promise Provider)
+  - BOPIS (Buy-Online-Pickup-In-Store)
+  - BORIS (Buy-Online-Return-In-Store)
+  - Ship-from-Store
+  - RDC (Regional Distribution Center)
+  - Fulfillment-as-a-Service
+  - Sourcing Rules
+  - Allocation
+  - Drop-Ship
+  - EDI 940 / 945
+  - Distributed Order Management (DOM)
+  - Golden Record (Customer)
+  - Promise Window
+  - Endless Aisle
+  - Dark Store
+  - Curbside Pickup
+  - Reverse Logistics
+
+standards:
+  - { id: gs1_gtin, name: GS1 GTIN-14 / GLN, version: "GS1 GenSpec 2024", url: "https://www.gs1.org/standards/id-keys/gtin" }
+  - { id: gs1_sscc, name: GS1 SSCC (Serial Shipping Container Code), version: "GS1 GenSpec 2024", url: "https://www.gs1.org/standards/id-keys/sscc" }
+  - { id: edi_850_855, name: EDI 850 Purchase Order / EDI 855 PO Acknowledgment (X12), version: "X12 005010", url: "https://www.x12.org" }
+  - { id: edi_940, name: EDI 940 Warehouse Shipping Order (X12), version: "X12 005010", url: "https://www.x12.org" }
+  - { id: edi_945, name: EDI 945 Warehouse Shipping Advice (X12), version: "X12 005010", url: "https://www.x12.org" }
+  - { id: edi_846, name: EDI 846 Inventory Inquiry/Advice (X12), version: "X12 005010", url: "https://www.x12.org" }
+  - { id: edi_856, name: EDI 856 Advance Ship Notice (ASN), version: "X12 005010", url: "https://www.x12.org" }
+  - { id: odata_v4, name: OASIS OData v4, version: "v4.01", url: "https://www.odata.org" }
+  - { id: jsonapi, name: JSON:API specification, version: "1.1", url: "https://jsonapi.org" }

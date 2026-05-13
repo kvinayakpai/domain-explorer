@@ -22,7 +22,7 @@ select
         else 'other'
     end                                                 as reserve_category_norm,
     r.set_at,
-    cast(strftime(r.set_at, '%Y%m%d') as integer)       as set_date_key,
+    cast({{ format_date('r.set_at', '%Y%m%d') }} as integer)       as set_date_key,
     cast(r.set_at as date)                              as set_date
 from r
 left join hub_c     h on h.claim_bk      = r.claim_id

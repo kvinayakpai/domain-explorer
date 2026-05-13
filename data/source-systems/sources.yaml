@@ -72,3 +72,227 @@ sources:
   - { id: src.shopify_mcp, vendor: Shopify, product: Shopify MCP Server, category: MCP Server, primaryConnectors: [conn.mcp_jsonrpc] }
   - { id: src.auth0_rar, vendor: Auth0 (Okta), product: Auth0 with RFC 9396 RAR, category: OAuth 2.1 Authorization Server, primaryConnectors: [conn.oauth_rar] }
   - { id: src.paypal_mcp, vendor: PayPal, product: PayPal MCP Server, category: MCP Server, primaryConnectors: [conn.mcp_jsonrpc] }
+
+  # Predictive Maintenance (Manufacturing)
+  - { id: src.ptc_thingworx, vendor: PTC, product: ThingWorx (IIoT Platform), category: IIoT Platform, primaryConnectors: [conn.thingworx_rest, conn.opc_ua, conn.mqtt] }
+  - { id: src.siemens_mindsphere, vendor: Siemens, product: MindSphere / Industrial Edge, category: IIoT Platform, primaryConnectors: [conn.mindsphere_api, conn.opc_ua, conn.mqtt] }
+  - { id: src.siemens_senseye, vendor: Siemens, product: Senseye Predictive Maintenance, category: PdM SaaS, primaryConnectors: [conn.rest, conn.webhook] }
+  - { id: src.ge_predix_apm, vendor: GE Digital, product: Predix / APM, category: APM Platform, primaryConnectors: [conn.rest, conn.opc_ua, conn.sparkplug_b] }
+  - { id: src.aveva_pi, vendor: Aveva (OSIsoft), product: PI System / PI Asset Framework, category: Process Historian, primaryConnectors: [conn.pi_web_api, conn.opc_ua, conn.file_sftp] }
+  - { id: src.ibm_maximo_apm, vendor: IBM, product: Maximo Application Suite — APM, category: APM Platform, primaryConnectors: [conn.maximo_oslc, conn.rest] }
+  - { id: src.ibm_maximo_eam, vendor: IBM, product: Maximo EAM, category: EAM/CMMS, primaryConnectors: [conn.maximo_oslc, conn.rest] }
+  - { id: src.honeywell_forge, vendor: Honeywell, product: Forge for Industrial, category: APM Platform, primaryConnectors: [conn.rest, conn.opc_ua] }
+  - { id: src.aspentech_mtell, vendor: AspenTech, product: Aspen Mtell, category: Prescriptive PdM, primaryConnectors: [conn.rest, conn.pi_web_api] }
+  - { id: src.augury, vendor: Augury, product: Augury Machine Health, category: PdM SaaS (vibration/ultrasound), primaryConnectors: [conn.augury_rest, conn.webhook] }
+  - { id: src.uptake, vendor: Uptake, product: Uptake APM, category: APM Platform, primaryConnectors: [conn.rest, conn.webhook] }
+  - { id: src.sparkcognition, vendor: SparkCognition, product: SparkPredict, category: AI/ML PdM, primaryConnectors: [conn.rest, conn.opc_ua] }
+  - { id: src.skf_observer, vendor: SKF, product: SKF @ptitude Observer, category: Vibration Analytics, primaryConnectors: [conn.rest, conn.file_sftp] }
+  - { id: src.emerson_ams, vendor: Emerson, product: AMS Machine Works, category: Vibration Analytics, primaryConnectors: [conn.opc_ua, conn.rest] }
+  - { id: src.siemens_s7_plc, vendor: Siemens, product: SIMATIC S7 PLC, category: PLC/SCADA, primaryConnectors: [conn.opc_ua, conn.profinet, conn.modbus_tcp] }
+  - { id: src.rockwell_controllogix, vendor: Rockwell, product: ControlLogix PLC, category: PLC/SCADA, primaryConnectors: [conn.ethernet_ip, conn.opc_ua] }
+  - { id: src.schneider_ecostruxure_apm, vendor: Schneider Electric, product: EcoStruxure Asset Advisor, category: APM Platform, primaryConnectors: [conn.rest, conn.opc_ua, conn.mqtt] }
+  - { id: src.sap_pm, vendor: SAP, product: SAP S/4HANA Plant Maintenance (PM/EAM), category: EAM/CMMS, primaryConnectors: [conn.sap_idoc, conn.sap_rfc, conn.rest] }
+  - { id: src.bentley_assetwise, vendor: Bentley Systems, product: AssetWise APM / AssetWise ALIM, category: Linear Asset / APM, primaryConnectors: [conn.rest, conn.file_sftp] }
+  - { id: src.osisoft_pi_historian, vendor: OSIsoft (Aveva), product: PI Historian / Asset Framework, category: Process Historian, primaryConnectors: [conn.pi_web_api, conn.opc_ua, conn.file_sftp] }
+  - { id: src.rockwell_ftad, vendor: Rockwell Automation, product: FactoryTalk Analytics for Devices, category: Edge APM, primaryConnectors: [conn.rest, conn.opc_ua] }
+
+  # Pricing & Promotions (Retail anchor)
+  - { id: src.revionics, vendor: Revionics (Aptos), product: Revionics Lifecycle Pricing, category: Price Optimization, primaryConnectors: [conn.revionics_rest, conn.file_sftp] }
+  - { id: src.pros_pricing, vendor: PROS, product: PROS Pricing (Smart CPQ / RealPrice), category: Price Optimization, primaryConnectors: [conn.pros_rest] }
+  - { id: src.blueyonder_pricing, vendor: Blue Yonder, product: Blue Yonder Pricing & Promotion, category: Price & Promo Suite, primaryConnectors: [conn.blueyonder_luminate] }
+  - { id: src.blueyonder_markdown, vendor: Blue Yonder, product: Blue Yonder Markdown Optimization, category: Markdown Optimization, primaryConnectors: [conn.blueyonder_luminate, conn.file_sftp] }
+  - { id: src.eagleeye_air, vendor: Eagle Eye Solutions, product: Eagle Eye AIR, category: Promotion / Coupon Engine, primaryConnectors: [conn.eagleeye_air, conn.webhook] }
+  - { id: src.inmar_promotions, vendor: Inmar Intelligence, product: Inmar Digital Promotions (Quotient), category: Digital Coupon Settlement, primaryConnectors: [conn.inmar_promo_api] }
+  - { id: src.symphony_cinde, vendor: Symphony RetailAI, product: CINDE Pricing & Promotion, category: Promo Analytics, primaryConnectors: [conn.rest, conn.file_sftp] }
+  - { id: src.nielseniq_discover, vendor: NielsenIQ, product: NielsenIQ Discover (Price/Promo), category: Market Price/Promo Data, primaryConnectors: [conn.nielseniq_sftp] }
+  - { id: src.numerator_promo, vendor: Numerator, product: Numerator Promotions Intelligence, category: Competitive Promo Intel, primaryConnectors: [conn.numerator_api] }
+  - { id: src.wiser, vendor: Wiser Solutions, product: Wiser Commerce Execution Suite, category: Competitive Price Scraping, primaryConnectors: [conn.wiser_api] }
+  - { id: src.price2spy, vendor: Price2Spy, product: Price2Spy Monitoring, category: Competitive Price Scraping, primaryConnectors: [conn.rest] }
+  - { id: src.sap_car, vendor: SAP, product: SAP for Retail (IS-Retail + CAR), category: ERP / Price Catalog, primaryConnectors: [conn.sap_idoc, conn.sap_rfc] }
+  - { id: src.oracle_rpcs, vendor: Oracle, product: Oracle Retail Pricing Cloud Service, category: Pricing Platform, primaryConnectors: [conn.oracle_rpcs_rest, conn.file_sftp] }
+  - { id: src.ncr_voyix_pos, vendor: NCR Voyix, product: NCR Voyix Commerce POS, category: POS, primaryConnectors: [conn.cdc_kafka] }
+  - { id: src.toshiba_tcx, vendor: Toshiba, product: Toshiba TCx Elevate, category: POS, primaryConnectors: [conn.cdc_kafka] }
+
+  # Trade Promotion Management (CrossCutting — CPG)
+  - { id: src.sap_tpm, vendor: SAP, product: SAP TPM (S/4HANA CRM Trade Promotion Management), category: TPM Platform, primaryConnectors: [conn.sap_rfc, conn.sap_idoc, conn.rest] }
+  - { id: src.exceedra_tpx, vendor: Exceedra (Telus), product: Exceedra TPx, category: TPM/TPO Platform, primaryConnectors: [conn.exceedra_rest, conn.file_sftp] }
+  - { id: src.afs_tpm, vendor: AFS Technologies (Salient), product: AFS TPM + Retail Execution, category: Retail Execution / TPM, primaryConnectors: [conn.afs_rest, conn.file_sftp] }
+  - { id: src.tpro_tpx, vendor: T-Pro Solutions, product: T-Pro TPx, category: Trade Promo Optimization, primaryConnectors: [conn.tpro_rest, conn.file_sftp] }
+  - { id: src.blueplanner, vendor: BluePlanner (Upclear), product: BluePlanner Live Trade Management, category: TPM / RGM, primaryConnectors: [conn.blueplanner_rest, conn.webhook] }
+  - { id: src.anaplan_tpm, vendor: Anaplan, product: Anaplan TPM (Connected Planning), category: TPM Platform, primaryConnectors: [conn.anaplan_rest] }
+  - { id: src.sfdc_cgcloud, vendor: Salesforce / Accenture, product: Salesforce Consumer Goods Cloud (CAS), category: CRM + Retail Execution, primaryConnectors: [conn.salesforce_bulk, conn.rest] }
+  - { id: src.vistex_tpm, vendor: Vistex, product: Vistex Solutions for Trade Promotion, category: Pricing / Rebates / Settlements, primaryConnectors: [conn.vistex_rest, conn.webhook, conn.sap_rfc] }
+  - { id: src.circana_unify, vendor: Circana (formerly IRI), product: Circana Unify / Liquid Data, category: Syndicated POS & Panel, primaryConnectors: [conn.circana_liquid, conn.file_sftp] }
+  - { id: src.niq_connect, vendor: NielsenIQ, product: NielsenIQ Connect / Connect+ Retail, category: Syndicated POS Measurement, primaryConnectors: [conn.niq_connect_api, conn.file_sftp] }
+  - { id: src.numerator_promo_insights, vendor: Numerator, product: Numerator Promo Insights, category: Receipt Panel / Promo Intel, primaryConnectors: [conn.numerator_api] }
+  - { id: src.retailer_edi_van, vendor: VAN (Value-Added Network), product: Retailer EDI 852/867/810/820 feeds, category: EDI, primaryConnectors: [conn.edi_x12_852, conn.edi_x12_867, conn.edi_x12_820] }
+  - { id: src.sfdc_sales_cloud, vendor: Salesforce, product: Salesforce Sales Cloud, category: CRM, primaryConnectors: [conn.salesforce_bulk, conn.rest] }
+  - { id: src.sap_s4_sdfi, vendor: SAP, product: SAP S/4HANA ERP — SD/FI, category: ERP — Order/Invoice/Settlement, primaryConnectors: [conn.sap_rfc, conn.sap_idoc] }
+  - { id: src.blueyonder_esl, vendor: BlueYonder, product: BlueYonder Electronic Shelf Labels (ESL), category: Display Compliance Sensor, primaryConnectors: [conn.blueyonder_esl_telemetry] }
+
+  # Customer Loyalty & CDP (Retail anchor)
+  - { id: src.salesforce_data_cloud, vendor: Salesforce, product: Salesforce Data Cloud (Genie / Customer 360), category: CDP / Identity Graph, primaryConnectors: [conn.sf_data_cloud_ingest, conn.rest, conn.salesforce_bulk] }
+  - { id: src.adobe_rtcdp, vendor: Adobe, product: Adobe Real-Time CDP (RT-CDP), category: CDP, primaryConnectors: [conn.adobe_streaming_ingest, conn.adobe_batch_ingest] }
+  - { id: src.treasure_data, vendor: Treasure Data (Arm), product: Treasure Data CDP, category: CDP, primaryConnectors: [conn.treasure_data_rest, conn.file_sftp] }
+  - { id: src.mparticle, vendor: mParticle (Rokt), product: mParticle Customer Data Platform, category: CDP, primaryConnectors: [conn.mparticle_events, conn.mparticle_audience] }
+  - { id: src.tealium_audiencestream, vendor: Tealium, product: Tealium AudienceStream, category: CDP, primaryConnectors: [conn.tealium_collect] }
+  - { id: src.segment, vendor: Twilio Segment, product: Segment Connections + Personas + Engage, category: CDP / Activation, primaryConnectors: [conn.segment_track] }
+  - { id: src.twilio_engage, vendor: Twilio, product: Twilio Engage, category: Activation / Orchestration, primaryConnectors: [conn.rest, conn.webhook] }
+  - { id: src.blueshift, vendor: BlueShift, product: BlueShift Predictive CDP, category: Predictive CDP, primaryConnectors: [conn.rest, conn.webhook] }
+  - { id: src.klaviyo, vendor: Klaviyo, product: Klaviyo, category: Owned-Channel CRM (Email/SMS/Push), primaryConnectors: [conn.klaviyo_rest, conn.webhook] }
+  - { id: src.braze, vendor: Braze, product: Braze, category: Cross-Channel Engagement, primaryConnectors: [conn.braze_rest, conn.braze_currents] }
+  - { id: src.iterable, vendor: Iterable, product: Iterable, category: Cross-Channel Engagement, primaryConnectors: [conn.iterable_rest, conn.webhook] }
+  - { id: src.actioniq, vendor: ActionIQ, product: ActionIQ Composable CDP, category: Warehouse-Native CDP, primaryConnectors: [conn.rest, conn.cdc_kafka] }
+  - { id: src.amperity, vendor: Amperity, product: Amperity Customer Data Platform, category: Identity Resolution CDP, primaryConnectors: [conn.amperity_outbound, conn.file_sftp] }
+  - { id: src.epsilon_peoplecloud, vendor: Epsilon (Publicis), product: Epsilon PeopleCloud, category: People-Based Marketing, primaryConnectors: [conn.rest, conn.file_sftp] }
+  - { id: src.cordial, vendor: Cordial, product: Cordial Cross-Channel Messaging, category: Messaging Orchestration, primaryConnectors: [conn.rest, conn.webhook] }
+  - { id: src.eagleeye_loyalty, vendor: Eagle Eye Solutions, product: Eagle Eye AIR Loyalty, category: Loyalty Engine, primaryConnectors: [conn.eagleeye_air, conn.webhook] }
+  - { id: src.annexcloud, vendor: Annex Cloud, product: Annex Cloud Loyalty Experience, category: Loyalty Engine, primaryConnectors: [conn.rest, conn.webhook] }
+  - { id: src.comarch_loyalty, vendor: Comarch, product: Comarch Loyalty Management, category: Loyalty Engine, primaryConnectors: [conn.rest, conn.file_sftp] }
+  - { id: src.loyaltylion, vendor: LoyaltyLion, product: LoyaltyLion (Shopify), category: Loyalty Engine, primaryConnectors: [conn.rest, conn.webhook] }
+  - { id: src.smile_io, vendor: Smile.io, product: Smile.io Rewards, category: Loyalty Engine, primaryConnectors: [conn.rest, conn.webhook] }
+
+  # Revenue Growth Management (CPG anchor)
+  - { id: src.vistex_revopt, vendor: Vistex, product: Vistex Solutions for Revenue Optimization, category: Pricing / Rebates / Net Revenue, primaryConnectors: [conn.vistex_rest, conn.sap_rfc, conn.webhook] }
+  - { id: src.pricefx_suite, vendor: Pricefx, product: Pricefx Price Optimization & Management Suite (PriceBuilder, PriceOptimizer, PromotionManager, RebateManager), category: Pricing Platform, primaryConnectors: [conn.pricefx_rest] }
+  - { id: src.modeln_revcloud, vendor: Model N, product: Model N Revenue Management Cloud, category: Revenue Management / Channel Incentive, primaryConnectors: [conn.modeln_rest] }
+  - { id: src.pros_rgm, vendor: PROS, product: PROS RGM (Smart CPQ + RealPrice + Guidance), category: B2B Price Optimization, primaryConnectors: [conn.pros_rest] }
+  - { id: src.sap_s4_rm_ccm, vendor: SAP, product: SAP S/4HANA Revenue Management + Condition Contract Management, category: ERP / Net Revenue Settlement, primaryConnectors: [conn.sap_rfc, conn.sap_idoc] }
+  - { id: src.anaplan_pm, vendor: Anaplan, product: Anaplan Connected Planning — PM (Pricing & Mix), category: RGM Connected Planning, primaryConnectors: [conn.anaplan_rest] }
+  - { id: src.periscope_mckinsey, vendor: Periscope by McKinsey, product: Periscope Performance Lens / RGM apps, category: RGM Analytics, primaryConnectors: [conn.periscope_rest] }
+  - { id: src.bcg_os_rgm, vendor: Boston Consulting Group, product: BCG OS — RGM Toolkit, category: RGM Consulting Platform, primaryConnectors: [conn.bcg_os_rest] }
+  - { id: src.zilliant_rgm, vendor: Zilliant, product: Zilliant Price IQ / Sales IQ / Deal Manager, category: B2B Price Optimization, primaryConnectors: [conn.zilliant_rest] }
+  - { id: src.revenue_analytics, vendor: Revenue Analytics, product: Revenue Analytics Marketplace Pricing / RGM, category: Beverage/CPG RGM Analytics, primaryConnectors: [conn.rest, conn.file_sftp] }
+  - { id: src.vendavo_profit, vendor: Vendavo, product: Vendavo Profit Analyzer / Deal Manager / Promotion Planner, category: Price Waterfall / Margin Analytics, primaryConnectors: [conn.vendavo_rest] }
+  - { id: src.plytix_pim, vendor: Plytix, product: Plytix PIM, category: Product Information Management, primaryConnectors: [conn.plytix_rest] }
+  - { id: src.sap_s4_sd_rgm, vendor: SAP, product: SAP S/4HANA SD/FI (RGM source for invoicing & net revenue), category: ERP — Order / Invoice, primaryConnectors: [conn.sap_idoc, conn.sap_rfc] }
+  - { id: src.circana_rgm, vendor: Circana (formerly IRI), product: Circana Unify / Liquid Data (mix & pack-share for RGM), category: Syndicated POS & Panel — Mix, primaryConnectors: [conn.circana_liquid, conn.file_sftp] }
+  - { id: src.niq_rgm, vendor: NielsenIQ, product: NielsenIQ Connect (channel mix for RGM), category: Syndicated POS Measurement, primaryConnectors: [conn.niq_connect_api, conn.file_sftp] }
+
+  # Omnichannel Order Management (Retail anchor)
+  - { id: src.manh_active_om, vendor: Manhattan Associates, product: Manhattan Active Order Management, category: OMS, primaryConnectors: [conn.manh_active_om_rest, conn.cdc_kafka] }
+  - { id: src.ibm_sterling_oms, vendor: IBM, product: Sterling Order Management, category: OMS, primaryConnectors: [conn.sterling_oms_rest, conn.jms] }
+  - { id: src.sf_oms, vendor: Salesforce, product: Salesforce Order Management (Commerce Cloud OMS), category: OMS, primaryConnectors: [conn.salesforce_bulk, conn.sf_platform_events] }
+  - { id: src.shopify_oms, vendor: Shopify, product: Shopify Order Management + Fulfillment Network, category: OMS / Fulfillment Network, primaryConnectors: [conn.shopify_admin_graphql, conn.webhook] }
+  - { id: src.oracle_roms, vendor: Oracle, product: Oracle Retail Order Management Cloud Service (ROMS), category: OMS, primaryConnectors: [conn.oracle_roms_rest, conn.file_sftp] }
+  - { id: src.kibo_oms, vendor: Kibo Commerce, product: Kibo Order Management, category: OMS, primaryConnectors: [conn.kibo_oms_rest] }
+  - { id: src.fluent_oms, vendor: Fluent Commerce, product: Fluent Order Management, category: OMS (event-sourced), primaryConnectors: [conn.fluent_graphql, conn.webhook] }
+  - { id: src.deck_commerce_oms, vendor: Deck Commerce, product: Deck Commerce OMS, category: DTC OMS, primaryConnectors: [conn.rest, conn.webhook] }
+  - { id: src.aptos_one, vendor: Aptos, product: Aptos ONE / Aptos OMS (Endless Aisle), category: OMS / Endless Aisle, primaryConnectors: [conn.rest, conn.cdc_kafka] }
+  - { id: src.logiwa_wms_oms, vendor: Logiwa, product: Logiwa WMS+OMS, category: WMS+OMS (DTC), primaryConnectors: [conn.rest, conn.webhook] }
+  - { id: src.manh_wms, vendor: Manhattan Associates, product: Manhattan Active Warehouse Management, category: WMS, primaryConnectors: [conn.cdc_kafka, conn.edi_945] }
+  - { id: src.blueyonder_wms, vendor: Blue Yonder (JDA), product: Blue Yonder Warehouse Management, category: WMS, primaryConnectors: [conn.jms, conn.edi_945] }
+  - { id: src.ncr_voyix_pos_oms, vendor: NCR Voyix, product: NCR Voyix Commerce POS (order capture), category: POS / Order Capture, primaryConnectors: [conn.cdc_kafka] }
+  - { id: src.toshiba_tcx_oms, vendor: Toshiba, product: Toshiba TCx Elevate POS (order capture), category: POS / Order Capture, primaryConnectors: [conn.cdc_kafka] }
+  - { id: src.fedex_ws, vendor: FedEx, product: FedEx Web Services, category: Carrier API, primaryConnectors: [conn.carrier_rest] }
+  - { id: src.ups_dev, vendor: UPS, product: UPS Developer Kit, category: Carrier API, primaryConnectors: [conn.carrier_rest] }
+  - { id: src.usps_web, vendor: USPS, product: USPS Web Tools, category: Carrier API, primaryConnectors: [conn.carrier_rest] }
+
+  # Loss Prevention (Retail anchor)
+  - { id: src.zebra_reflexis_lp, vendor: Zebra, product: Zebra Reflexis / Workforce Connect (LP audit + tasks), category: Workforce + Task Execution, primaryConnectors: [conn.zebra_reflexis_rest] }
+  - { id: src.sensormatic_lp, vendor: Sensormatic Solutions (Johnson Controls), product: Sensormatic EAS + ShrinkVision, category: EAS / RFID / Visual LP, primaryConnectors: [conn.sensormatic_shrinkvision, conn.tyco_rfid_stream] }
+  - { id: src.ncr_voyix_lp, vendor: NCR Voyix, product: NCR Voyix Loss Prevention Analytics, category: POS Exception + Investigation, primaryConnectors: [conn.ncr_voyix_lp_rest, conn.pos_lp_stream] }
+  - { id: src.oracle_xstore_lp, vendor: Oracle, product: Oracle Retail XStore Loss Prevention (XBR), category: POS Exception Analytics, primaryConnectors: [conn.oracle_xstore_lp_rest, conn.pos_lp_stream] }
+  - { id: src.auror_orc, vendor: Auror, product: Auror ORC Platform, category: ORC Intelligence Sharing, primaryConnectors: [conn.auror_rest, conn.webhook] }
+  - { id: src.appriss_retail, vendor: Appriss Retail (formerly The Retail Equation), product: Appriss Retail Verify Return Authorization + Engage, category: Return Fraud Scoring, primaryConnectors: [conn.appriss_retail_api] }
+  - { id: src.profitect_zebra, vendor: Zebra, product: Profitect Prescriptive Analytics, category: Prescriptive Exception Engine, primaryConnectors: [conn.profitect_rest] }
+  - { id: src.aptos_lp, vendor: Aptos, product: Aptos Loss Prevention (Aptos Analytics + Aptos ONE), category: LP Analytics Suite, primaryConnectors: [conn.aptos_lp_rest, conn.file_sftp] }
+  - { id: src.tyco_rfid, vendor: Tyco (Sensormatic / JCI), product: Tyco RFID / Sensormatic ShrinkVision RFID, category: Item-Level RFID for Shrink, primaryConnectors: [conn.tyco_rfid_stream] }
+  - { id: src.alto_alliance, vendor: ALTO Alliance, product: ALTO Information Sharing Platform, category: Retailer-LE ORC Sharing, primaryConnectors: [conn.alto_case_packet] }
+  - { id: src.detego_cloud, vendor: Detego, product: Detego Cloud (item-level RFID), category: Item-Level RFID / On-Shelf Inference, primaryConnectors: [conn.detego_rest] }
+  - { id: src.indyme, vendor: Indyme, product: Indyme Smart Response / FreedomCase, category: Smart Lockable Display / Audio Deterrent, primaryConnectors: [conn.indyme_webhook] }
+  - { id: src.ncr_counterpoint, vendor: NCR, product: NCR Counterpoint POS + LP modules, category: SMB POS / LP, primaryConnectors: [conn.pos_lp_stream] }
+  - { id: src.honeywell_connected_retail, vendor: Honeywell, product: Honeywell Connected Retail (HCI), category: Connected-Store Inventory + Shrink, primaryConnectors: [conn.honeywell_hci_rest] }
+  - { id: src.retailnext_aurora, vendor: RetailNext, product: RetailNext Aurora (vision foot traffic + LP), category: Vision Analytics, primaryConnectors: [conn.retailnext_rest] }
+  - { id: src.datalogic_lp, vendor: Datalogic, product: Datalogic Magellan + Joya (scan-aware LP), category: Scanner / Lane Awareness, primaryConnectors: [conn.datalogic_scanner_mqtt] }
+
+  # Direct Store Delivery (CPG anchor)
+  - { id: src.sap_dsd, vendor: SAP, product: SAP DSD (S/4HANA Direct Store Delivery), category: DSD Platform, primaryConnectors: [conn.sap_rfc, conn.sap_idoc, conn.rest] }
+  - { id: src.aldata_apollo, vendor: SymphonyAI Retail/CPG (Aldata), product: Aldata Apollo Route Accounting, category: Route Accounting / Settlement, primaryConnectors: [conn.aldata_apollo_sftp, conn.rest] }
+  - { id: src.trimble_roadnet, vendor: Trimble, product: Roadnet Anywhere (FleetLoader, MobileCast), category: Route Optimization & Mobile Dispatch, primaryConnectors: [conn.trimble_roadnet_rest, conn.rest] }
+  - { id: src.trimble_peoplenet, vendor: Trimble, product: Trimble PeopleNet (ELD + Telematics), category: Vehicle Telematics / ELD, primaryConnectors: [conn.peoplenet_rest, conn.telematics_stream] }
+  - { id: src.epicor_dsd, vendor: Epicor, product: Epicor DSD (Apprise/Activant), category: DSD ERP / Mobile Sales Force, primaryConnectors: [conn.epicor_dsd_rest, conn.file_sftp] }
+  - { id: src.epicor_eagle, vendor: Epicor, product: Epicor Eagle, category: Independent Grocer POS, primaryConnectors: [conn.epicor_dsd_rest, conn.file_sftp] }
+  - { id: src.salient_cmx, vendor: Salient (AFS), product: Salient CMx (DSD profitability cubes), category: DSD Analytics / P&L, primaryConnectors: [conn.salient_cmx_rest, conn.file_sftp] }
+  - { id: src.afs_dsd, vendor: AFS Technologies (Salient), product: AFS DSD + Retail Execution + Distributor, category: DSD Platform / Retail Execution, primaryConnectors: [conn.afs_rest, conn.file_sftp] }
+  - { id: src.toolsgroup_so99, vendor: ToolsGroup, product: ToolsGroup SO99+ / JustEnough, category: Demand Forecasting / Truck-Load Planning, primaryConnectors: [conn.toolsgroup_rest, conn.file_sftp] }
+  - { id: src.descartes_route_planner, vendor: Descartes Systems Group, product: Descartes Route Planner OnDemand + Mobile, category: Route Optimization / EPOD, primaryConnectors: [conn.descartes_routeplanner_rest, conn.webhook] }
+  - { id: src.workwave_route, vendor: WorkWave (IFS), product: WorkWave Route Manager, category: Field Service Routing, primaryConnectors: [conn.workwave_rest, conn.webhook] }
+  - { id: src.manh_active_routing, vendor: Manhattan Associates, product: Manhattan Active Routing & Resource Management, category: Routing / Dock Scheduling, primaryConnectors: [conn.manh_active_routing_rest, conn.cdc_kafka] }
+  - { id: src.sap_s4_sdfi_dsd, vendor: SAP, product: SAP S/4HANA ERP — SD/FI (DSD invoice / settlement source), category: ERP — Order/Invoice/Settlement, primaryConnectors: [conn.sap_rfc, conn.sap_idoc] }
+  - { id: src.honeywell_handheld, vendor: Honeywell, product: Honeywell CN80 / CT45 rugged handhelds, category: Driver/Sales Mobile Device, primaryConnectors: [conn.handheld_sync] }
+  - { id: src.zebra_handheld, vendor: Zebra Technologies, product: Zebra MC9300 / TC78 rugged handhelds, category: Driver/Sales Mobile Device, primaryConnectors: [conn.handheld_sync] }
+  - { id: src.dsd_edi_van, vendor: VAN (Value-Added Network), product: Retailer EDI 894/895/940/945 feeds, category: EDI, primaryConnectors: [conn.edi_x12_894, conn.edi_x12_895, conn.edi_x12_940, conn.edi_x12_945] }
+
+  # Manufacturing — S&OP / IBP (anchor: sop_supply_chain_planning)
+  - { id: src.sap_ibp_sop, vendor: SAP, product: SAP IBP (Sales & Operations / Demand / Supply / Inventory / Response modules), category: S&OP/IBP Platform, primaryConnectors: [conn.sap_ibp_odata, conn.sap_rfc] }
+  - { id: src.kinaxis_rapidresponse, vendor: Kinaxis, product: Kinaxis RapidResponse / Maestro (concurrent planning), category: S&OP/IBP Platform, primaryConnectors: [conn.kinaxis_rapidresponse_rest, conn.file_sftp] }
+  - { id: src.o9_digital_brain, vendor: o9 Solutions, product: o9 Digital Brain (EKG-driven IBP), category: S&OP/IBP Platform, primaryConnectors: [conn.o9_connect, conn.rest] }
+  - { id: src.blueyonder_scp, vendor: Blue Yonder, product: Blue Yonder Supply Chain Planning (Luminate Planning), category: S&OP/IBP Platform, primaryConnectors: [conn.blueyonder_luminate_planning, conn.file_sftp] }
+  - { id: src.oracle_scp_cloud, vendor: Oracle, product: Oracle Supply Chain Planning Cloud (Demand/Supply/S&OP), category: S&OP/IBP Platform, primaryConnectors: [conn.oracle_scp_rest, conn.file_sftp] }
+  - { id: src.anaplan_scp, vendor: Anaplan, product: Anaplan Connected Planning — Supply Chain, category: S&OP/IBP Platform, primaryConnectors: [conn.anaplan_rest] }
+  - { id: src.logility_dsc, vendor: Logility, product: Logility Digital Supply Chain Platform, category: S&OP/IBP Platform, primaryConnectors: [conn.logility_rest, conn.file_sftp] }
+  - { id: src.toolsgroup_sop, vendor: ToolsGroup, product: ToolsGroup SO99+ (Demand + Inventory + S&OP), category: S&OP/IBP Platform, primaryConnectors: [conn.toolsgroup_rest, conn.file_sftp] }
+  - { id: src.demand_solutions_dsx, vendor: Demand Solutions, product: Demand Solutions DSX, category: Demand Planning / S&OP, primaryConnectors: [conn.demand_solutions_rest, conn.file_sftp] }
+  - { id: src.john_galt_atlas, vendor: John Galt, product: Atlas Planning Platform, category: Demand Planning / S&OP, primaryConnectors: [conn.john_galt_atlas_rest, conn.file_sftp] }
+  - { id: src.gainsystems_gains, vendor: GAINSystems, product: GAINS (Inventory + S&OP optimisation), category: S&OP / MEIO Platform, primaryConnectors: [conn.gainsystems_rest, conn.file_sftp] }
+  - { id: src.sap_s4_sop_source, vendor: SAP, product: SAP S/4HANA ERP — sales orders / shipments / inventory feeding S&OP, category: ERP — Source for S&OP, primaryConnectors: [conn.sap_rfc, conn.sap_idoc] }
+  - { id: src.oracle_ebs_sop_source, vendor: Oracle, product: Oracle EBS / Fusion ERP — orders + inventory feeding S&OP, category: ERP — Source for S&OP, primaryConnectors: [conn.rest, conn.file_sftp] }
+  - { id: src.mes_sop_feed, vendor: Multiple (Siemens Opcenter, Rockwell FactoryTalk, AVEVA MES), product: MES production confirmations / yield feed for S&OP supply side, category: MES — Source for S&OP, primaryConnectors: [conn.rest, conn.cdc_kafka] }
+  - { id: src.niq_circana_sop_feed, vendor: NielsenIQ / Circana, product: Syndicated POS / sell-through (drives demand sensing into S&OP), category: Syndicated POS — Source for S&OP, primaryConnectors: [conn.niq_circana_sftp, conn.file_sftp] }
+
+  # Returns & Reverse Logistics (RRL anchor)
+  - { id: src.optoro_optiturn, vendor: Optoro, product: OptiTurn (disposition optimization + forward-stocked returns), category: Reverse Logistics Platform, primaryConnectors: [conn.optoro_rest, conn.cdc_kafka, conn.file_sftp] }
+  - { id: src.loop_returns, vendor: Loop Returns, product: Loop, category: Shopify-Native Returns Portal, primaryConnectors: [conn.loop_rest, conn.webhook] }
+  - { id: src.happy_returns, vendor: PayPal (Happy Returns), product: Happy Returns Bar + Return Bar Network, category: Box-Free Returns Network, primaryConnectors: [conn.happy_returns_rest, conn.webhook] }
+  - { id: src.narvar_returns, vendor: Narvar, product: Narvar Return & Exchange, category: Post-Purchase + Returns Portal, primaryConnectors: [conn.narvar_rest, conn.webhook] }
+  - { id: src.sap_s4_returns, vendor: SAP, product: SAP S/4HANA Advanced Returns Management, category: ERP Returns Module, primaryConnectors: [conn.sap_rfc, conn.sap_idoc, conn.edi_x12_180] }
+  - { id: src.manh_active_returns, vendor: Manhattan Associates, product: Manhattan Active WMS — Returns, category: WMS Returns Module, primaryConnectors: [conn.manh_active_routing_rest, conn.cdc_kafka] }
+  - { id: src.sf_oms_returns, vendor: Salesforce, product: Salesforce Order Management — Returns, category: OMS Returns Module, primaryConnectors: [conn.rest, conn.cdc_kafka] }
+  - { id: src.rebound_returns, vendor: ReBound, product: ReBound Returns Platform, category: Cross-Border Returns / 3PL Network, primaryConnectors: [conn.rebound_rest, conn.file_sftp] }
+  - { id: src.zigzag_global, vendor: ZigZag Global, product: ZigZag Returns Platform, category: Cross-Border Returns Aggregator, primaryConnectors: [conn.zigzag_rest, conn.webhook] }
+  - { id: src.doddle_returns, vendor: Doddle (Blackbay/Yodel), product: Doddle Returns + QR Drop-Off, category: Carrier-Agnostic Returns Drop-Off, primaryConnectors: [conn.doddle_rest, conn.webhook] }
+  - { id: src.newmine_returnflow, vendor: Newmine, product: Newmine Chief Returns Officer + Returns Fraud Detect, category: Returns Reduction + Fraud Analytics, primaryConnectors: [conn.newmine_rest, conn.file_sftp] }
+  - { id: src.bstock_marketplace, vendor: B-Stock Solutions, product: B-Stock Supply (Liquidation Auctions), category: B2B Liquidation Marketplace, primaryConnectors: [conn.bstock_rest, conn.file_sftp] }
+  - { id: src.fedex_returns_api, vendor: FedEx, product: FedEx Returns Manager + Ship API, category: Carrier Returns API, primaryConnectors: [conn.fedex_rest, conn.webhook] }
+  - { id: src.ups_returns_api, vendor: UPS, product: UPS Returns + UPS Developer Kit, category: Carrier Returns API, primaryConnectors: [conn.ups_rest, conn.webhook] }
+  - { id: src.usps_returns_api, vendor: USPS, product: USPS Label Broker / Returns API, category: Carrier Returns API, primaryConnectors: [conn.usps_rest, conn.webhook] }
+
+  # Category Management (Retail/CPG anchor)
+  - { id: src.blue_yonder_cm, vendor: Blue Yonder (formerly JDA), product: Blue Yonder Category Management — Space Planning + Floor Planning + Assortment Optimization (Intactix lineage), category: Category Management / Planogram Authoring, primaryConnectors: [conn.rest, conn.file_sftp, conn.cdc_kafka] }
+  - { id: src.symphony_retailai_cm, vendor: Symphony RetailAI, product: Symphony Category Manager + CINDE AI, category: Category Management / Assortment + Planogram, primaryConnectors: [conn.rest, conn.file_sftp] }
+  - { id: src.relex_assortment, vendor: RELEX Solutions, product: RELEX Assortment + Space + Floor Planning, category: Unified Assortment & Space Planning, primaryConnectors: [conn.rest, conn.file_sftp, conn.cdc_kafka] }
+  - { id: src.circana_unify_cm, vendor: Circana (IRI + NPD merged 2023), product: Circana Unify / Liquid Data / Total Category View + Consumer Network Panel, category: Syndicated POS & Panel (Retail Measurement), primaryConnectors: [conn.circana_liquid, conn.file_sftp] }
+  - { id: src.niq_connect_cm, vendor: NielsenIQ, product: NielsenIQ Connect + Discover + Spectra + Homescan, category: Syndicated POS Measurement + Household Panel, primaryConnectors: [conn.niq_connect_api, conn.file_sftp] }
+  - { id: src.numerator_cm, vendor: Numerator, product: Numerator Receipt Panel + Category Measurement, category: Receipt-Based Purchase Panel, primaryConnectors: [conn.numerator_api, conn.file_sftp] }
+  - { id: src.kantar_worldpanel_cm, vendor: Kantar Worldpanel, product: Kantar Worldpanel (FMCG household panel + shopper switching), category: Household Panel — FMCG, primaryConnectors: [conn.kantar_rest, conn.file_sftp] }
+  - { id: src.dunnhumby_cm, vendor: dunnhumby, product: dunnhumby Shop / Assortment / Range Science (Tesco / Kroger 84.51° lineage), category: Customer Data Science for Range & Assortment, primaryConnectors: [conn.rest, conn.file_sftp] }
+  - { id: src.gfk_cm, vendor: GfK (part of NielsenIQ since 2023), product: GfK Durables & Tech Panel + select FMCG, category: Durables/Tech Panel, primaryConnectors: [conn.rest, conn.file_sftp] }
+  - { id: src.quad_tag_galleria, vendor: Quad (Tag Worldwide), product: Quad Tag Galleria (visual planogram + retail design), category: Visual Planogram Authoring, primaryConnectors: [conn.rest, conn.file_sftp] }
+  - { id: src.galileo_pricing_cm, vendor: Galileo Pricing, product: Galileo Pricing — pricing & promo into category strategy, category: Pricing Analytics into Range Review, primaryConnectors: [conn.rest, conn.file_sftp] }
+  - { id: src.edi_852_cm, vendor: Retailer (Walmart Retail Link / Kroger / Target POL), product: ASC X12 EDI 852 Product Activity Data (POS movement + on-hand), category: Retailer EDI POS Feed, primaryConnectors: [conn.edi_x12_852, conn.file_sftp, conn.as2] }
+  - { id: src.edi_867_cm, vendor: Retailer, product: ASC X12 EDI 867 Product Transfer & Resale Report, category: Retailer EDI Resale Feed, primaryConnectors: [conn.edi_x12_867, conn.as2] }
+  - { id: src.gs1_gdsn_cm, vendor: GS1 (1WorldSync / Syndigo data pool), product: GS1 GDSN (Global Data Synchronization Network) — GTIN / GLN / GPC attribute pool, category: Master Data Synchronization, primaryConnectors: [conn.gdsn_as2, conn.rest] }
+  - { id: src.sf_cg_cloud_cm, vendor: Salesforce, product: Salesforce Consumer Goods Cloud — store audit / planogram compliance capture, category: Retail Execution / Planogram Audit, primaryConnectors: [conn.rest, conn.cdc_kafka] }
+  - { id: src.afs_customer_connect_cm, vendor: AFS Technologies (Aptean), product: AFS Customer Connect / Retail Execution — handheld planogram audit, category: Retail Execution / DSD Audit, primaryConnectors: [conn.rest, conn.file_sftp] }
+  - { id: src.trax_image_recog_cm, vendor: Trax Retail, product: Trax Image Recognition — shelf compliance via store photos, category: Image-Recognition Shelf Audit, primaryConnectors: [conn.rest, conn.webhook] }
+
+  # Procurement & Spend Analytics (Manufacturing anchor — added 2026-Q2)
+  - { id: src.sap_ariba, vendor: SAP, product: SAP Ariba Network + Sourcing + Contracts + SLP + Buying & Invoicing, category: Source-to-Pay Suite, primaryConnectors: [conn.ariba_cig, conn.cxml_punchout, conn.rest] }
+  - { id: src.coupa_bsm, vendor: Coupa, product: Coupa Business Spend Management Platform (Procure / Sourcing / Contracts / Risk Assess), category: Source-to-Pay Suite, primaryConnectors: [conn.coupa_rest, conn.cxml_punchout, conn.webhook] }
+  - { id: src.jaggaer_one, vendor: Jaggaer, product: Jaggaer ONE — Sourcing + Contracts + Supplier Management + Advanced Sourcing Optimizer, category: Source-to-Pay Suite, primaryConnectors: [conn.jaggaer_rest, conn.file_sftp] }
+  - { id: src.ivalua_s2p, vendor: Ivalua, product: Ivalua Source-to-Pay — Sourcing / Contracts / Supplier 360 / AP Automation, category: Source-to-Pay Suite, primaryConnectors: [conn.ivalua_rest, conn.cxml_punchout] }
+  - { id: src.gep_smart, vendor: GEP, product: GEP SMART (and GEP NEXXE for supply chain), category: Source-to-Pay Suite, primaryConnectors: [conn.gep_rest, conn.cxml_punchout] }
+  - { id: src.oracle_procurement_cloud, vendor: Oracle, product: Oracle Fusion Cloud Procurement (Sourcing + Contracts + Purchasing + Self-Service Procurement), category: Procurement Cloud, primaryConnectors: [conn.oracle_scp_rest, conn.rest] }
+  - { id: src.workday_strategic_sourcing, vendor: Workday, product: Workday Strategic Sourcing (formerly Scout RFP), category: Strategic Sourcing, primaryConnectors: [conn.workday_rest] }
+  - { id: src.tradeshift_network, vendor: Tradeshift, product: Tradeshift Pay + Network (supplier network + e-invoicing), category: Supplier Network + e-Invoicing, primaryConnectors: [conn.tradeshift_rest, conn.peppol_as4] }
+  - { id: src.basware_network, vendor: Basware, product: Basware AP Automation + e-Invoicing Receipt, category: AP Automation, primaryConnectors: [conn.basware_rest, conn.peppol_as4, conn.file_sftp] }
+  - { id: src.zycus_s2p, vendor: Zycus, product: Zycus Source-to-Pay (Merlin AI negotiation), category: Source-to-Pay Suite, primaryConnectors: [conn.zycus_rest] }
+  - { id: src.ecovadis_ratings, vendor: EcoVadis, product: EcoVadis Sustainability Ratings (E/S/G + Ethics + Sustainable Procurement scorecards), category: Supplier Sustainability Ratings, primaryConnectors: [conn.ecovadis_rest] }
+  - { id: src.sievo_spend, vendor: Sievo, product: Sievo Spend Analytics + Emissions Analytics, category: Spend Analytics, primaryConnectors: [conn.sievo_connector, conn.file_sftp] }
+  - { id: src.resilinc_eventwatch, vendor: Resilinc, product: Resilinc EventWatchAI + Multi-Tier Mapping, category: Supplier Risk Monitoring, primaryConnectors: [conn.resilinc_rest] }
+  - { id: src.sphera_scrm, vendor: Sphera, product: Sphera SCRM (formerly Riskmethods) — supply-chain risk monitoring, category: Supplier Risk Monitoring, primaryConnectors: [conn.rest, conn.file_sftp] }
+  - { id: src.dnb_directplus, vendor: Dun & Bradstreet, product: D&B Direct+ (DUNS + Paydex + Failure Score + Corporate Family Tree), category: Supplier Master + Financial Risk, primaryConnectors: [conn.dnb_directplus_rest] }
+  - { id: src.bitsight_ratings, vendor: BitSight, product: BitSight Security Ratings (supplier cyber composite 250..900), category: Supplier Cyber Ratings, primaryConnectors: [conn.bitsight_rest] }
+  - { id: src.cdp_supply_chain, vendor: CDP (Carbon Disclosure Project), product: CDP Supply Chain Disclosure (supplier-level GHG + water + forest), category: Sustainability Disclosure, primaryConnectors: [conn.cdp_sftp, conn.rest] }
+  - { id: src.sap_s4_mmfi, vendor: SAP, product: SAP S/4HANA MM (Materials Management) + FI (AP/AR/GL) — procurement & invoice source, category: ERP — MM/FI, primaryConnectors: [conn.sap_rfc, conn.sap_idoc] }

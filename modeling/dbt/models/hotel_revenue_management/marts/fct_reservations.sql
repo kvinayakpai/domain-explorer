@@ -36,7 +36,7 @@ select
     md5(s.rate_plan_id)                                 as rate_plan_key,
     s.reservation_status,
     s.arrival_date,
-    cast(strftime(s.arrival_date, '%Y%m%d') as integer) as arrival_date_key,
+    cast({{ format_date('s.arrival_date', '%Y%m%d') }} as integer) as arrival_date_key,
     s.departure_date,
     s.nights,
     s.adr,
