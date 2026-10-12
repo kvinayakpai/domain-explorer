@@ -217,4 +217,4 @@ connectors:
   - { id: conn.dnb_directplus_rest, type: D&B Direct+ API, protocol: HTTPS JSON, auth: OAuth2 + product key, typicalSources: [Dun & Bradstreet Direct+], latency: near-realtime, modes: [pull] }
   - { id: conn.bitsight_rest, type: BitSight Ratings API, protocol: HTTPS JSON, auth: API key, typicalSources: [BitSight Security Ratings], latency: batch, modes: [pull] }
   - { id: conn.cdp_sftp, type: CDP Supply Chain export (SFTP + API), protocol: SFTP / HTTPS, auth: SSH key / OAuth2, typicalSources: [CDP Supply Chain Disclosure], latency: batch, modes: [pull, file] }
-  - { id: conn.oagis_bod, type: OAGIS Business Object Document (BOD — ProcessPurchaseOrder, AcknowledgePurchaseOrder), protocol: HTTPS XML / JMS, auth: WS-Security / PKI, typicalSources: [OAGIS-conformant suppliers and ERPs], latency: near-realtime, modes: [push, pull] }
+  - { id: "conn.oagis_bod", type: "OAGIS Business Object Document (BOD — ProcessPurchaseOrder, AcknowledgePurchaseOrder)", protocol: "HTTPS XML / JMS", auth: "WS-Security / PKI", typicalSources: [OAGIS-conformant suppliers and ERPs], latency: near-realtime, modes: [push, pull] }

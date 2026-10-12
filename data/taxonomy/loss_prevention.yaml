@@ -49,11 +49,11 @@ oneLiner: POS exception monitoring, organized retail crime (ORC) detection, retu
 #     https://ucr.fbi.gov
 
 personas:
-  - { name: VP Loss Prevention, title: VP, Loss Prevention & Asset Protection, level: VP }
+  - { name: "VP Loss Prevention", title: "VP, Loss Prevention & Asset Protection", level: "VP" }
   - { name: LP Investigator, title: Senior Loss Prevention Investigator, level: IC }
   - { name: Store LP Manager, title: Store Loss Prevention Manager, level: Manager }
   - { name: Fraud Analyst, title: Refund & Return Fraud Analyst, level: IC }
-  - { name: Compliance Officer, title: Director, Asset Protection Compliance, level: Director }
+  - { name: "Compliance Officer", title: "Director, Asset Protection Compliance", level: "Director" }
   - { name: Asset Protection Specialist, title: Asset Protection Specialist (in-store), level: IC }
   - { name: ORC Investigator, title: Organized Retail Crime Investigator, level: IC }
 

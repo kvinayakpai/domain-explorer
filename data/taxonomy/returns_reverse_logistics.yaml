@@ -50,11 +50,11 @@ oneLiner: End-to-end management of customer returns and reverse-logistics flows 
 #     ASCM / CSCMP Reverse Logistics best-practice references.
 
 personas:
-  - { name: VP Reverse Logistics, title: VP, Reverse Logistics & Returns, level: VP }
-  - { name: Returns Operations Manager, title: Director, Returns Operations, level: Director }
+  - { name: "VP Reverse Logistics", title: "VP, Reverse Logistics & Returns", level: "VP" }
+  - { name: "Returns Operations Manager", title: "Director, Returns Operations", level: "Director" }
   - { name: Refurb Center Manager, title: Refurb / Customer Return Center Manager, level: Manager }
   - { name: Returns Fraud Analyst, title: Returns Fraud Analyst, level: IC }
-  - { name: Sustainability / Circular Lead, title: Director, Circular Economy & Sustainability, level: Director }
+  - { name: "Sustainability / Circular Lead", title: "Director, Circular Economy & Sustainability", level: "Director" }
   - { name: Returns CX Lead, title: Returns Customer Experience Lead, level: Manager }
   - { name: Recovery Manager, title: Recovery & Liquidation Manager, level: Manager }
 
@@ -400,7 +400,7 @@ connectors:
   - { type: ASC X12 EDI 214 (Carrier Status), protocol: AS2, auth: PKI }
   - { type: GS1 EPCIS 2.0 (returned-goods events), protocol: HTTPS JSON over CBV 2.0, auth: OAuth2 + capability token }
   - { type: Good360 Donation Receipt API, protocol: HTTPS JSON, auth: API key }
-  - { type: Marketplace Returns CDC (Amazon Seller, eBay), protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: "Marketplace Returns CDC (Amazon Seller, eBay)", protocol: "HTTPS JSON", auth: "OAuth2" }
 
 ingestionChallenges:
   - High-fan-out RMA → return_item explosion — a single multi-line order can generate one RMA with 12+ return_items; the disposition decision is per-item, but every customer-facing surface is per-RMA. Need separate streams keyed on (rma_id, return_item_id).

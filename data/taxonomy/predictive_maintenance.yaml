@@ -50,14 +50,14 @@ oneLiner: Sensor-driven prediction of equipment failure, remaining useful life (
 #     SAE JA1011/JA1012 (Reliability-Centered Maintenance).
 
 personas:
-  - { name: Maintenance Director, title: Director, Plant Maintenance & Reliability, level: Director }
+  - { name: "Maintenance Director", title: "Director, Plant Maintenance & Reliability", level: "Director" }
   - { name: Reliability Engineer, title: Senior Reliability Engineer, level: IC }
   - { name: Vibration Analyst, title: ISO 18436-2 Cat-III Vibration Analyst, level: IC }
   - { name: Plant Manager, title: Plant Manager, level: Director }
-  - { name: Data Scientist (Time Series), title: Principal Data Scientist, Industrial AI, level: IC }
-  - { name: Asset Manager, title: VP, Asset Management, level: VP }
+  - { name: "Data Scientist (Time Series)", title: "Principal Data Scientist, Industrial AI", level: "IC" }
+  - { name: "Asset Manager", title: "VP, Asset Management", level: "VP" }
   - { name: Maintenance Planner/Scheduler, title: Maintenance Planner/Scheduler, level: IC }
-  - { name: Operations Excellence Lead, title: Senior Director, Operational Excellence, level: Director }
+  - { name: "Operations Excellence Lead", title: "Senior Director, Operational Excellence", level: "Director" }
 
 decisions:
   - { id: pm.d.intervention_now, statement: "Should we pull the line down now for intervention, run until the next planned shutdown, or push to the following window?" }
@@ -392,11 +392,6 @@ integrationChallenges:
     description: ISO 14224 codes vary across plants and vendors; SKF, Emerson, and Augury each use slightly different bearing-fault labels. Cross-fleet learning needs a canonical taxonomy.
     mitigation: Maintain a fault_code crosswalk to ISO 14224 codes; require vendor outputs to be mapped to the canonical failure_mode_id at ingest; reject unmapped codes for cross-fleet aggregation.
 
-dataModels:
-  threeNF: modeling/ddl/predictive_maintenance_3nf.sql
-  vault: modeling/ddl/predictive_maintenance_vault.sql
-  dimensional: modeling/ddl/predictive_maintenance_dim.sql
-
 glossaryTerms:
   - RUL
   - MTBF
@@ -426,7 +421,7 @@ standards:
   - { id: isa_95, name: ISA-95 (IEC 62264) Enterprise-Control System Integration, version: "Part 1-7", url: "https://www.isa.org/standards-and-publications/isa-standards/isa-standards-committees/isa95" }
   - { id: iec_61508, name: IEC 61508 Functional Safety, version: "2.0 (2010)", url: "https://webstore.iec.ch/publication/5515" }
   - { id: iec_62443, name: IEC 62443 OT Cybersecurity, version: "3-3:2013", url: "https://www.iec.ch/cyber-security" }
-  - { id: iso_13374, name: ISO 13374 Condition monitoring and diagnostics — Data processing, communication, and presentation, version: "Parts 1-4", url: "https://www.iso.org/standard/61322.html" }
+  - { id: "iso_13374", name: "ISO 13374 Condition monitoring and diagnostics — Data processing, communication, and presentation", version: "Parts 1-4", url: "https://www.iso.org/standard/61322.html" }
   - { id: iso_14224, name: ISO 14224 Reliability and maintenance data, version: "2016", url: "https://www.iso.org/standard/64076.html" }
   - { id: iso_10816, name: ISO 10816/20816 Mechanical vibration evaluation, version: "2016", url: "https://www.iso.org/standard/63439.html" }
   - { id: sae_ja1011, name: SAE JA1011 Reliability-Centered Maintenance, version: "JA1011/JA1012", url: "https://www.sae.org/standards/content/ja1011_200908/" }

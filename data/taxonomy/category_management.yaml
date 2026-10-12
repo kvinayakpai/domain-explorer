@@ -57,11 +57,11 @@ oneLiner: Joint manufacturer-retailer process to manage categories as strategic 
 personas:
   - { name: Category Manager, title: Category Manager, level: Manager }
   - { name: Space Planner, title: Senior Space Planner, level: IC }
-  - { name: Category Director, title: Director, Category Strategy, level: Director }
+  - { name: "Category Director", title: "Director, Category Strategy", level: "Director" }
   - { name: Buyer, title: Senior Buyer, level: Manager }
-  - { name: Insights Manager, title: Manager, Category Insights, level: Manager }
-  - { name: Range Strategist, title: Director, Range & Assortment Strategy, level: Director }
-  - { name: Shopper Insights Lead, title: Director, Shopper & Consumer Insights, level: Director }
+  - { name: "Insights Manager", title: "Manager, Category Insights", level: "Manager" }
+  - { name: "Range Strategist", title: "Director, Range & Assortment Strategy", level: "Director" }
+  - { name: "Shopper Insights Lead", title: "Director, Shopper & Consumer Insights", level: "Director" }
   - { name: Vendor Account Manager, title: National Account Manager (CatMan), level: Manager }
 
 decisions:
@@ -392,7 +392,7 @@ sourceSystems:
   - { vendor: GfK (NielsenIQ), product: GfK Tech + Durables Panel, category: Durables & Tech Panel }
   - { vendor: Quad / Tag Galleria, product: Quad Tag Galleria Planogram Suite, category: Visual Planogram & Retail Design }
   - { vendor: Galileo Pricing, product: Galileo Pricing & Promo for Category, category: Pricing/Promo Inputs to Category }
-  - { vendor: SAP, product: SAP S/4HANA ERP (article master, sales orders, COGS), category: ERP — Item Master / Cost / Order }
+  - { vendor: "SAP", product: "SAP S/4HANA ERP (article master, sales orders, COGS)", category: "ERP — Item Master / Cost / Order" }
   - { vendor: VAN (Value-Added Network), product: Retailer EDI 852/867/832/879 feeds, category: EDI }
   - { vendor: GS1, product: GS1 GDSN (Global Data Sync Network) + GPC + Attribute Standard, category: Product Master / Attribute Standard }
   - { vendor: Salesforce / Accenture, product: Salesforce Consumer Goods Cloud (audit + planogram compliance), category: Sales Force Effectiveness (SFE) }
@@ -412,7 +412,7 @@ connectors:
   - { type: AS2 EDI X12 (852/867/832/879), protocol: AS2, auth: PKI, typicalSources: [Walmart Retail Link, Kroger 84.51, Target Partners Online] }
   - { type: Quad Tag Galleria export, protocol: SFTP/REST, auth: API key, typicalSources: [Quad Tag Galleria] }
   - { type: Salesforce CG Cloud Bulk + CDC, protocol: HTTPS, auth: OAuth2 + JWT, typicalSources: [Salesforce Consumer Goods Cloud — planogram audits] }
-  - { type: SAP IDoc (MATMAS/ARTMAS, ORDERS), protocol: RFC/file, auth: SAP user, typicalSources: [SAP S/4HANA — article master] }
+  - { type: "SAP IDoc (MATMAS/ARTMAS, ORDERS)", protocol: "RFC/file", auth: "SAP user", typicalSources: [SAP S/4HANA — article master] }
 
 ingestionChallenges:
   - Syndicated panels (Circana, NielsenIQ, Numerator, Kantar) project to different geographies (TotalUS, TotalUS-Food, banner-specific, panel-only) at different cadences; union-vs-projection rules must be enforced per metric so velocity and share are not double-counted.
