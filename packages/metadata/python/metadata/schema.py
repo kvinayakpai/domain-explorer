@@ -26,13 +26,14 @@ class Vertical(str, Enum):
     PUBLIC_SECTOR = "PublicSector"
     HI_TECH = "HiTech"
     PROFESSIONAL_SERVICES = "ProfessionalServices"
+    CROSS_CUTTING = "CrossCutting"
 
 
 KpiDirection = Literal["higher_is_better", "lower_is_better", "target_band"]
 PersonaLevel = Literal["C-suite", "VP", "Director", "Manager", "IC"]
 ConnectorLatency = Literal["realtime", "near-realtime", "batch"]
 ConnectorMode = Literal["push", "pull", "stream", "file"]
-RelationshipKind = Literal["one_to_one", "one_to_many", "many_to_many"]
+RelationshipKind = Literal["one_to_one", "one_to_many", "many_to_one", "many_to_many"]
 
 
 class _Strict(BaseModel):
@@ -88,8 +89,31 @@ class DataModelArtifacts(_Strict):
     dimensional: str | None = None
 
 
+class DataModelRelationship(_Strict):
+    """Cardinality edge between two entities, declared at the data-model level.
+
+    `from` is a Python keyword, so the field is `from_` with a `from` alias.
+    """
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, populate_by_name=True)
+
+    from_: str = Field(..., min_length=1, alias="from")
+    to: str = Field(..., min_length=1)
+    kind: RelationshipKind
+
+
 class DataModel(_Strict):
     entities: list[Entity] = Field(default_factory=list)
+    relationships: list[DataModelRelationship] = Field(default_factory=list)
+
+
+class Standard(_Strict):
+    """An external standard or protocol a subdomain depends on."""
+
+    id: str = Field(..., min_length=1)
+    name: str = Field(..., min_length=1)
+    version: str | None = None
+    url: str | None = None
 
 
 class SourceSystem(_Strict):
@@ -102,6 +126,7 @@ class Connector(_Strict):
     type: str = Field(..., min_length=1)
     protocol: str = Field(..., min_length=1)
     auth: str = Field(..., min_length=1)
+    typicalSources: list[str] = Field(default_factory=list)
 
 
 class Subdomain(_Strict):
@@ -118,6 +143,8 @@ class Subdomain(_Strict):
     connectors: list[Connector] = Field(default_factory=list)
     ingestionChallenges: list[Union[str, Dict[str, Any]]] = Field(default_factory=list)
     integrationChallenges: list[Union[str, Dict[str, Any]]] = Field(default_factory=list)
+    standards: list[Standard] = Field(default_factory=list)
+    glossaryTerms: list[str] = Field(default_factory=list)
 
 
 class KpiRegistryEntry(Kpi):
@@ -161,3 +188,5 @@ class ConnectorPattern(_Strict):
     typicalSources: list[str] = Field(default_factory=list)
     latency: ConnectorLatency
     modes: list[ConnectorMode] = Field(default_factory=list)
+    # Directory of the runnable Python stub for this pattern, when one exists.
+    stubPath: str | None = None

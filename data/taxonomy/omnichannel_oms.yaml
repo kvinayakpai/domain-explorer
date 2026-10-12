@@ -43,13 +43,13 @@ oneLiner: Distributed order orchestration across stores, DCs, and digital — so
 #   OASIS OData v4 + JSON:API for retail inventory APIs.
 
 personas:
-  - { name: Head of Omnichannel, title: VP, Head of Omnichannel & Unified Commerce, level: VP }
-  - { name: OMS Product Manager, title: Director, Order Management Platform PM, level: Director }
-  - { name: Fulfillment Operations Director, title: Director, Distributed Fulfillment Operations, level: Director }
-  - { name: Store Ops Lead, title: Director, Store Fulfillment & BOPIS Operations, level: Director }
-  - { name: Customer Experience Lead, title: Senior Director, Order Experience & Promise, level: Director }
-  - { name: Inventory Visibility Manager, title: Manager, Enterprise Inventory Visibility, level: Manager }
-  - { name: Returns Lead, title: Director, Returns & Reverse Logistics, level: Director }
+  - { name: "Head of Omnichannel", title: "VP, Head of Omnichannel & Unified Commerce", level: "VP" }
+  - { name: "OMS Product Manager", title: "Director, Order Management Platform PM", level: "Director" }
+  - { name: "Fulfillment Operations Director", title: "Director, Distributed Fulfillment Operations", level: "Director" }
+  - { name: "Store Ops Lead", title: "Director, Store Fulfillment & BOPIS Operations", level: "Director" }
+  - { name: "Customer Experience Lead", title: "Senior Director, Order Experience & Promise", level: "Director" }
+  - { name: "Inventory Visibility Manager", title: "Manager, Enterprise Inventory Visibility", level: "Manager" }
+  - { name: "Returns Lead", title: "Director, Returns & Reverse Logistics", level: "Director" }
 
 decisions:
   - { id: oms.d.sourcing_rule, statement: "When an order line drops, which node (store, DC, vendor drop-ship, dark store) sources it — by lowest cost-to-serve, fastest promise, or store-clearance pull?" }

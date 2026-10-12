@@ -50,12 +50,12 @@ oneLiner: Net revenue management for CPG manufacturers — Price Pack Architectu
 
 personas:
   - { name: Chief Commercial Officer, title: Chief Commercial Officer, level: C-suite }
-  - { name: VP Revenue Management, title: VP, Revenue Growth Management, level: VP }
-  - { name: RGM Director, title: Director, Revenue Growth Management, level: Director }
-  - { name: Pricing Strategy Lead, title: Director, Pricing Strategy & Architecture, level: Director }
-  - { name: Mix Optimization Lead, title: Senior Manager, Mix & Portfolio Optimization, level: Manager }
-  - { name: Trade Investment Analyst, title: Senior Analyst, Trade Investment Optimization, level: IC }
-  - { name: Net Revenue Manager, title: Manager, Net Revenue Management & GTN, level: Manager }
+  - { name: "VP Revenue Management", title: "VP, Revenue Growth Management", level: "VP" }
+  - { name: "RGM Director", title: "Director, Revenue Growth Management", level: "Director" }
+  - { name: "Pricing Strategy Lead", title: "Director, Pricing Strategy & Architecture", level: "Director" }
+  - { name: "Mix Optimization Lead", title: "Senior Manager, Mix & Portfolio Optimization", level: "Manager" }
+  - { name: "Trade Investment Analyst", title: "Senior Analyst, Trade Investment Optimization", level: "IC" }
+  - { name: "Net Revenue Manager", title: "Manager, Net Revenue Management & GTN", level: "Manager" }
 
 decisions:
   - { id: rgm.d.pack_architecture, statement: "Lock the price-pack architecture for a category — entry/mainstream/premium pack ladder, gap spacing, and the SRP per pack tier — to maximize net revenue without leaving margin or volume on the table." }
@@ -419,7 +419,7 @@ integrationChallenges:
     mitigation: Persist all baselines side-by-side with model_name + model_version; require a single canonical baseline policy per account × category locked annually with CCO sign-off; expose baseline diff on the closeout layer so disagreement is visible, not hidden.
   - name: Innovation cannibalization vs incrementality
     description: A new pack introduction (the value 18-count) cannibalizes the mainstream 12-pack and the entry 6-pack. Innovation Sales % over-credits if it ignores cannibalization; under-credits if it folds in cannibalization broadly across unrelated SKUs.
-    mitigation: Define a cannibalization basket per innovation SKU at launch (default: same brand + adjacent pack tiers); compute Innovation Sales % net of basket cannibalization; require the launch business case to declare the basket and the cannibalization tolerance up-front.
+    mitigation: "Define a cannibalization basket per innovation SKU at launch (default: same brand + adjacent pack tiers); compute Innovation Sales % net of basket cannibalization; require the launch business case to declare the basket and the cannibalization tolerance up-front."
 
 glossaryTerms:
   - PPA (Price Pack Architecture)
