@@ -1,0 +1,796 @@
+<div id="app">
+<header class="top">
+  <a class="brand" href="#" data-go=""><i></i>Domain Explorer</a>
+  <div class="search">
+    <input id="q" type="search" placeholder="Search subdomains, KPIs, systems, terms  ( / )" autocomplete="off" aria-label="Search the explorer" role="combobox" aria-expanded="false" aria-controls="results">
+    <div id="results" role="listbox" hidden></div>
+  </div>
+  <nav class="lenses" id="lenses" aria-label="Lenses"></nav>
+</header>
+<div class="body">
+  <aside class="rail"><h4>Verticals</h4><nav id="rail" aria-label="Verticals"></nav></aside>
+  <main id="main" tabindex="-1"></main>
+</div>
+<footer id="foot"></footer>
+<div class="tip" id="tip" hidden></div>
+</div>
+<script>const DATA = /*__DATA__*/;</script>
+<script>
+(function () {
+'use strict';
+var D = DATA;
+var $ = function (s, r) { return (r || document).querySelector(s); };
+
+/* ---------- tiny DOM helpers (text only, never innerHTML) ---------- */
+function h(tag, props) {
+  var e = document.createElement(tag);
+  if (props) for (var k in props) {
+    var v = props[k];
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'text') e.textContent = v;
+    else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (var i = 2; i < arguments.length; i++) add(e, arguments[i]);
+  return e;
+}
+function add(e, kid) {
+  if (kid == null || kid === false) return;
+  if (Array.isArray(kid)) { kid.forEach(function (x) { add(e, x); }); return; }
+  e.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+}
+var NS = 'http://www.w3.org/2000/svg';
+function sv(tag, attrs) {
+  var e = document.createElementNS(NS, tag);
+  if (attrs) for (var k in attrs) if (attrs[k] != null) e.setAttribute(k, attrs[k]);
+  for (var i = 2; i < arguments.length; i++) add(e, arguments[i]);
+  return e;
+}
+function link(tok, props) {
+  var p = Object.assign({ href: '#' + tok, 'data-go': tok }, props || {});
+  var kids = Array.prototype.slice.call(arguments, 2);
+  return h.apply(null, ['a', p].concat(kids));
+}
+function pl(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
+function trunc(s, n) { s = String(s == null ? '' : s); return s.length > n ? s.slice(0, Math.max(1, n - 1)) + '…' : s; }
+function cmp(a, b) { return String(a).localeCompare(String(b)); }
+
+/* ---------- indexes ---------- */
+var VERT = new Map();
+D.verticals.forEach(function (v, i) { VERT.set(v.id, Object.assign({}, v, { i: i, hue: Math.round((i * 137.508) % 360) })); });
+var SUB = new Map(D.subs.map(function (s) { return [s.id, s]; }));
+var BYV = {};
+D.subs.forEach(function (s) { (BYV[s.v] = BYV[s.v] || []).push(s); });
+var ALLK = [];
+D.subs.forEach(function (s) { s.kpis.forEach(function (k) { ALLK.push(Object.assign({ sub: s }, k)); }); });
+var KBYID = new Map(); ALLK.forEach(function (k) { if (!KBYID.has(k.id)) KBYID.set(k.id, k); });
+var VEND = new Map();
+D.subs.forEach(function (s) {
+  s.src.forEach(function (x) {
+    var key = String(x.vendor).trim(), e = VEND.get(key);
+    if (!e) { e = { name: key, subs: new Map(), products: new Set(), cats: new Set() }; VEND.set(key, e); }
+    e.subs.set(s.id, s); e.products.add(x.product); e.cats.add(x.category);
+  });
+});
+var PERS = new Map();
+D.subs.forEach(function (s) {
+  s.personas.forEach(function (p) {
+    var e = PERS.get(p.name);
+    if (!e) { e = { name: p.name, levels: new Set(), titles: new Set(), subs: new Map() }; PERS.set(p.name, e); }
+    e.levels.add(p.level); e.titles.add(p.title); e.subs.set(s.id, s);
+  });
+});
+var GL = new Map();
+D.glossary.forEach(function (t) { GL.set(t.n.toLowerCase(), t); (t.al || []).forEach(function (a) { if (!GL.has(a.toLowerCase())) GL.set(a.toLowerCase(), t); }); });
+var CONN = new Map(D.connectors.map(function (c) { return [c.id, c]; }));
+var LEVELS = ['C-suite', 'VP', 'Director', 'Manager', 'IC'];
+var TIERS = { 1: 'Public standards available', 2: 'Vendor public data dictionary', 3: 'Mostly proprietary', 4: 'Standards exist but are paid or restricted' };
+var DIRS = { higher_is_better: ['▲', 'up', 'Higher is better'], lower_is_better: ['▼', 'down', 'Lower is better'], target_band: ['◆', 'band', 'Target band'] };
+var N_DEEP = D.subs.filter(function (s) { return s.deep; }).length;
+var N_SYNTH = D.subs.filter(function (s) { return s.synth; }).length;
+function vcol(vid) { return '--h:' + VERT.get(vid).hue; }
+function score(s) { return s.kpis.length + s.ents.length + s.src.length + s.decisions.length * 2; }
+
+/* ---------- router ---------- */
+var state = { view: 'home' }, lastTok = null;
+function parse(tok) {
+  tok = (tok || '').replace(/^#/, '');
+  var p = tok.split('.');
+  if (!tok) return { view: 'home' };
+  if (p[0] === 'v' && VERT.has(p[1])) return { view: 'vertical', id: p[1] };
+  if (p[0] === 's' && SUB.has(p[1])) return { view: 'sub', id: p[1], tab: p[2] || 'overview' };
+  if (p[0] === 'lens' && ['kpis', 'people', 'systems', 'glossary'].indexOf(p[1]) >= 0) return { view: p[1] };
+  return { view: 'home' };
+}
+function go(tok, extra) {
+  var st = parse(tok);
+  if (extra) Object.assign(st, extra);
+  state = st; lastTok = tok || '';
+  try { if (location.hash.replace(/^#/, '') !== lastTok) location.hash = lastTok; } catch (e) {}
+  render();
+  try { window.scrollTo(0, 0); } catch (e) {}
+}
+window.addEventListener('hashchange', function () {
+  var t = location.hash.replace(/^#/, '');
+  if (t !== lastTok) go(t);
+});
+document.addEventListener('click', function (ev) {
+  var a = ev.target.closest && ev.target.closest('[data-go]');
+  if (!a) return;
+  if (ev.metaKey || ev.ctrlKey || ev.shiftKey) return;
+  ev.preventDefault();
+  var extra = a.getAttribute('data-sel') ? { sel: a.getAttribute('data-sel') } : null;
+  closeResults();
+  go(a.getAttribute('data-go'), extra);
+});
+
+/* ---------- chrome ---------- */
+function renderLenses() {
+  var nav = $('#lenses'); nav.replaceChildren();
+  [['', 'Atlas', ['home', 'vertical', 'sub']], ['lens.kpis', 'KPIs', ['kpis']], ['lens.people', 'People', ['people']],
+   ['lens.systems', 'Systems', ['systems']], ['lens.glossary', 'Glossary', ['glossary']]].forEach(function (l) {
+    nav.append(link(l[0], l[2].indexOf(state.view) >= 0 ? { 'aria-current': 'page' } : null, l[1]));
+  });
+}
+function renderRail() {
+  var nav = $('#rail'); nav.replaceChildren();
+  var cur = state.view === 'vertical' ? state.id : state.view === 'sub' ? SUB.get(state.id).v : null;
+  D.verticals.forEach(function (v) {
+    var n = (BYV[v.id] || []).length; if (!n) return;
+    nav.append(link('v.' + v.id, cur === v.id ? { 'aria-current': 'page' } : null,
+      h('i', { class: 'dot', style: vcol(v.id) }), VERT.get(v.id).label, h('span', { class: 'ct num', text: n })));
+  });
+}
+function render() {
+  renderLenses(); renderRail();
+  var m = $('#main'); m.replaceChildren();
+  ({ home: viewHome, vertical: viewVertical, sub: viewSub, kpis: viewKpis, people: viewPeople, systems: viewSystems, glossary: viewGlossary })[state.view](m);
+  renderFoot();
+}
+function renderFoot() {
+  var f = $('#foot'); f.replaceChildren(
+    h('p', { text: 'Built from the repository data files: data/taxonomy (128 subdomains), data/kpis, data/glossary, data/source-systems, data/connectors and data/quality. Repository snapshot ' + D.commit + '.' }),
+    h('p', { text: 'Deeply modelled means a subdomain carries hand-written decisions plus ingestion and integration challenges (' + N_DEEP + ' of ' + D.subs.length + '). Runnable means a synthetic data generator and DDL exist for it (' + N_SYNTH + '). The rest are survey level: personas, KPIs, entities and source systems only.' }));
+}
+
+/* ---------- treemap ---------- */
+function squarify(items, x, y, w, hh) {
+  var out = [], rest = items.slice(), total = rest.reduce(function (a, b) { return a + b.value; }, 0);
+  if (!rest.length || total <= 0 || w <= 0 || hh <= 0) return out;
+  var sc = w * hh / total; rest.forEach(function (i) { i.area = i.value * sc; });
+  var row = [], rx = x, ry = y, rw = w, rh = hh;
+  function worst(r, side) {
+    var s = r.reduce(function (a, b) { return a + b.area; }, 0);
+    var mx = Math.max.apply(null, r.map(function (q) { return q.area; })), mn = Math.min.apply(null, r.map(function (q) { return q.area; }));
+    return Math.max(side * side * mx / (s * s), s * s / (side * side * mn));
+  }
+  function lay(r) {
+    var s = r.reduce(function (a, b) { return a + b.area; }, 0);
+    if (rw >= rh) { var cw = s / rh, cy = ry; r.forEach(function (q) { var ch = q.area / cw; out.push({ item: q, x: rx, y: cy, w: cw, h: ch }); cy += ch; }); rx += cw; rw -= cw; }
+    else { var rh2 = s / rw, cx = rx; r.forEach(function (q) { var cw2 = q.area / rh2; out.push({ item: q, x: cx, y: ry, w: cw2, h: rh2 }); cx += cw2; }); ry += rh2; rh -= rh2; }
+  }
+  while (rest.length) {
+    var side = Math.min(rw, rh), next = rest[0];
+    if (!row.length || worst(row.concat([next]), side) <= worst(row, side)) { row.push(next); rest.shift(); }
+    else { lay(row); row = []; }
+  }
+  if (row.length) lay(row);
+  return out;
+}
+
+var atlasSize = 'kpis', atlasColor = 'vertical';
+var METRICS = { kpis: ['KPIs', function (s) { return s.kpis.length; }], ents: ['Entities', function (s) { return s.ents.length; }],
+  src: ['Systems', function (s) { return s.src.length; }], pers: ['Personas', function (s) { return s.personas.length; }] };
+
+function drawAtlas() {
+  var wrap = $('#atlasWrap'); if (!wrap) return;
+  var W = Math.max(300, wrap.clientWidth - 20), H = W < 640 ? 640 : Math.round(Math.max(440, W * 0.5));
+  var metric = METRICS[atlasSize][1];
+  var groups = D.verticals.map(function (v) {
+    var subs = (BYV[v.id] || []).slice().sort(function (a, b) { return metric(b) - metric(a) || cmp(a.name, b.name); });
+    return { v: v, subs: subs, value: subs.reduce(function (a, s) { return a + Math.max(metric(s), 0.6); }, 0) };
+  }).filter(function (g) { return g.subs.length; }).sort(function (a, b) { return b.value - a.value; });
+  var svg = sv('svg', { id: 'atlas', class: 'by-' + atlasColor, viewBox: '0 0 ' + W + ' ' + H, role: 'group', 'aria-label': 'Treemap of all subdomains grouped by vertical, sized by ' + METRICS[atlasSize][0].toLowerCase() });
+  squarify(groups.map(function (g) { return { g: g, value: g.value }; }), 0, 0, W, H).forEach(function (o) {
+    var g = o.item.g, band = 17, pad = 3;
+    svg.append(sv('rect', { class: 'grp', x: o.x, y: o.y, width: o.w, height: o.h, rx: 4 }));
+    if (o.w > 56) svg.append(sv('text', { class: 'gl', x: o.x + 6, y: o.y + 12 }, trunc(VERT.get(g.v.id).label, Math.floor((o.w - 10) / 7.2))));
+    var ix = o.x + pad, iy = o.y + band, iw = o.w - 2 * pad, ih = o.h - band - pad;
+    if (iw < 8 || ih < 8) return;
+    squarify(g.subs.map(function (s) { return { s: s, value: Math.max(metric(s), 0.6) }; }), ix, iy, iw, ih).forEach(function (c) {
+      var s = c.item.s, cls = 'cell';
+      if (atlasColor === 'depth') cls += s.deep ? ' mark-on' : ' mark-off';
+      else if (atlasColor === 'data') cls += s.synth ? ' mark-on' : ' mark-off';
+      else if (!s.deep) cls += ' shallow';
+      var a = sv('a', { href: '#s.' + s.id, 'data-go': 's.' + s.id, 'data-id': s.id, 'aria-label': s.name + ', ' + VERT.get(s.v).label });
+      a.append(sv('rect', { class: cls, x: c.x, y: c.y, width: Math.max(c.w, 0), height: Math.max(c.h, 0), rx: 2, style: vcol(s.v) }));
+      if (c.w > 62 && c.h > 24) {
+        a.append(sv('text', { class: 'ct', x: c.x + 5, y: c.y + 14 }, trunc(s.name, Math.floor((c.w - 8) / 6.1))));
+        if (c.h > 40 && c.w > 70) a.append(sv('text', { class: 'cs', x: c.x + 5, y: c.y + 27 }, metric(s) + ' ' + METRICS[atlasSize][0].toLowerCase()));
+      }
+      svg.append(a);
+    });
+  });
+  wrap.replaceChildren(svg);
+  var tip = $('#tip');
+  svg.addEventListener('pointermove', function (ev) {
+    var a = ev.target.closest && ev.target.closest('a[data-id]');
+    if (!a || ev.pointerType === 'touch') { tip.hidden = true; return; }
+    var s = SUB.get(a.getAttribute('data-id'));
+    tip.replaceChildren(h('b', { text: s.name }), VERT.get(s.v).label + ' · ' + pl(s.kpis.length, 'KPI') + ', ' + pl(s.ents.length, 'entity', 'entities') + ', ' + pl(s.src.length, 'system'),
+      h('div', { text: (s.deep ? 'Deeply modelled' : 'Survey level') + (s.synth ? ' · runnable data' : '') }));
+    tip.hidden = false;
+    tip.style.left = Math.min(ev.clientX + 14, window.innerWidth - 280) + 'px'; tip.style.top = (ev.clientY + 16) + 'px';
+  });
+  svg.addEventListener('pointerleave', function () { tip.hidden = true; });
+}
+function legendFor() {
+  var box = h('div', { class: 'legend' });
+  if (atlasColor === 'vertical') {
+    D.verticals.forEach(function (v) { if ((BYV[v.id] || []).length) box.append(link('v.' + v.id, null, h('i', { style: vcol(v.id) }), VERT.get(v.id).label)); });
+    box.append(h('span', { class: 'muted', text: 'Paler cells are survey level.' }));
+  } else if (atlasColor === 'depth') {
+    box.append(h('span', null, h('i', { class: 'on' }), 'Deeply modelled (' + N_DEEP + ')'), h('span', null, h('i', { class: 'off' }), 'Survey level (' + (D.subs.length - N_DEEP) + ')'));
+  } else {
+    box.append(h('span', null, h('i', { class: 'on' }), 'Runnable synthetic data and DDL (' + N_SYNTH + ')'), h('span', null, h('i', { class: 'off' }), 'Model only (' + (D.subs.length - N_SYNTH) + ')'));
+  }
+  return box;
+}
+function seg(label, opts, cur, onpick) {
+  var box = h('div', { class: 'ctl' }, label), g = h('div', { class: 'seg', role: 'group', 'aria-label': label });
+  opts.forEach(function (o) { g.append(h('button', { type: 'button', 'aria-pressed': String(cur === o[0]), onclick: function () { onpick(o[0]); } }, o[1])); });
+  box.append(g); return box;
+}
+
+/* ---------- home ---------- */
+function topList(items, cls) {
+  var ul = h('ul', { class: 'rank' });
+  items.forEach(function (i) { ul.append(h('li', null, i[0], h('span', { class: 'n num', text: i[1] }))); });
+  return ul;
+}
+function viewHome(m) {
+  var nv = D.verticals.filter(function (v) { return (BYV[v.id] || []).length; }).length;
+  var nEnt = D.subs.reduce(function (a, s) { return a + s.ents.length; }, 0);
+  m.append(
+    h('div', { class: 'page-h' }, h('h1', { text: 'Industry data domains, end to end' })),
+    h('p', { class: 'lede', text: 'Each cell is a subdomain. Open one to see who decides, which KPIs they watch, the entities behind those KPIs and the systems the data comes from.' }),
+    h('ul', { class: 'census num' },
+      [[nv, 'verticals'], [D.subs.length, 'subdomains'], [ALLK.length, 'KPI entries'], [nEnt, 'entities'], [VEND.size, 'vendors named'], [N_DEEP, 'deeply modelled'], [N_SYNTH, 'with runnable data']]
+        .map(function (c) { return h('li', null, h('b', { text: c[0] }), ' ' + c[1]); })),
+    h('div', { class: 'row-flex', style: 'margin-top:14px;gap:10px 24px' },
+      seg('Size by', Object.keys(METRICS).map(function (k) { return [k, METRICS[k][0]]; }), atlasSize, function (k) { atlasSize = k; drawAtlas(); refreshSegs(); }),
+      seg('Color by', [['vertical', 'Vertical'], ['depth', 'Depth'], ['data', 'Runnable data']], atlasColor, function (k) { atlasColor = k; drawAtlas(); refreshLegend(); refreshSegs(); })),
+    h('div', { class: 'atlas-wrap', id: 'atlasWrap' }),
+    h('div', { id: 'legendBox' }, legendFor()));
+  var deep = D.subs.filter(function (s) { return s.deep; }).sort(function (a, b) { return score(b) - score(a); }).slice(0, 8);
+  var vend = Array.from(VEND.values()).sort(function (a, b) { return b.subs.size - a.subs.size || cmp(a.name, b.name); }).slice(0, 8);
+  var pers = Array.from(PERS.values()).sort(function (a, b) { return b.subs.size - a.subs.size || cmp(a.name, b.name); }).slice(0, 8);
+  m.append(h('div', { class: 'sec cols3' },
+    h('div', null, h('h2', { text: 'Deepest models' }), topList(deep.map(function (s) { return [link('s.' + s.id, null, s.name), pl(s.kpis.length, 'KPI') + ' · ' + pl(s.ents.length, 'entity', 'entities')]; }))),
+    h('div', null, h('h2', { text: 'Most reused systems' }), topList(vend.map(function (v) { return [link('lens.systems', { 'data-sel': v.name }, v.name), pl(v.subs.size, 'subdomain')]; }))),
+    h('div', null, h('h2', { text: 'Most common personas' }), topList(pers.map(function (p) { return [link('lens.people', { 'data-sel': p.name }, p.name), pl(p.subs.size, 'subdomain')]; })))));
+  requestAnimationFrame(drawAtlas);
+}
+function refreshSegs() { var wrap = $('.row-flex'); if (!wrap) return; /* re-render controls */
+  var parent = wrap.parentNode, fresh = h('div', { class: 'row-flex', style: 'margin-top:14px;gap:10px 24px' },
+    seg('Size by', Object.keys(METRICS).map(function (k) { return [k, METRICS[k][0]]; }), atlasSize, function (k) { atlasSize = k; drawAtlas(); refreshSegs(); }),
+    seg('Color by', [['vertical', 'Vertical'], ['depth', 'Depth'], ['data', 'Runnable data']], atlasColor, function (k) { atlasColor = k; drawAtlas(); refreshLegend(); refreshSegs(); }));
+  parent.replaceChild(fresh, wrap);
+}
+function refreshLegend() { var b = $('#legendBox'); if (b) b.replaceChildren(legendFor()); }
+var rzT; window.addEventListener('resize', function () { clearTimeout(rzT); rzT = setTimeout(function () { if (state.view === 'home') drawAtlas(); }, 120); });
+
+/* ---------- vertical ---------- */
+var vFilter = 'all', vSort = 'name';
+function badges(s) {
+  var a = [];
+  a.push(h('span', { class: 'chip' + (s.deep ? ' good' : ' off'), text: s.deep ? 'Deeply modelled' : 'Survey level' }));
+  if (s.synth) a.push(h('span', { class: 'chip good', text: 'Runnable data' }));
+  if (s.tier) a.push(h('span', { class: 'chip', title: TIERS[s.tier], text: 'Tier ' + s.tier }));
+  return a;
+}
+function viewVertical(m) {
+  var v = VERT.get(state.id), list = (BYV[v.id] || []).slice();
+  var nk = list.reduce(function (a, s) { return a + s.kpis.length; }, 0), ne = list.reduce(function (a, s) { return a + s.ents.length; }, 0);
+  m.append(
+    h('div', { class: 'crumbs' }, link('', null, 'Atlas'), ' / ', h('span', { text: v.label })),
+    h('div', { class: 'page-h' }, h('h1', { text: v.label })),
+    h('p', { class: 'lede', text: v.tag }),
+    h('ul', { class: 'census num' }, [[list.length, 'subdomains'], [nk, 'KPI entries'], [ne, 'entities'],
+      [list.filter(function (s) { return s.deep; }).length, 'deeply modelled'], [list.filter(function (s) { return s.synth; }).length, 'runnable']]
+      .map(function (c) { return h('li', null, h('b', { text: c[0] }), ' ' + c[1]); })));
+  var out = h('div');
+  function paint() {
+    var rows = list.filter(function (s) { return vFilter === 'all' || (vFilter === 'deep' && s.deep) || (vFilter === 'synth' && s.synth); });
+    rows.sort(function (a, b) {
+      if (vSort === 'name') return cmp(a.name, b.name);
+      var f = { kpis: function (s) { return s.kpis.length; }, ents: function (s) { return s.ents.length; }, src: function (s) { return s.src.length; } }[vSort];
+      return f(b) - f(a) || cmp(a.name, b.name);
+    });
+    var box = h('div', { class: 'list' });
+    if (!rows.length) box.append(h('p', { class: 'note', style: 'margin-top:14px', text: 'No subdomains in this vertical match that filter.' }));
+    rows.forEach(function (s) {
+      box.append(link('s.' + s.id, { class: 'item' }, h('div', { class: 't', text: s.name }), h('div', { class: 'd', text: s.one }),
+        h('div', { class: 'm' }, h('div', { class: 'pill-row' }, badges(s)), h('div', { class: 'num', text: pl(s.kpis.length, 'KPI') + ' · ' + pl(s.ents.length, 'entity', 'entities') + ' · ' + pl(s.src.length, 'system') }))));
+    });
+    out.replaceChildren(box);
+  }
+  var fsel = h('select', { id: 'vsort', 'aria-label': 'Sort subdomains', onchange: function (e) { vSort = e.target.value; paint(); } },
+    [['name', 'Name'], ['kpis', 'Most KPIs'], ['ents', 'Most entities'], ['src', 'Most systems']].map(function (o) { return h('option', { value: o[0], selected: vSort === o[0] }, o[1]); }));
+  var filt = h('div', { class: 'filters' });
+  function paintFilt() {
+    filt.replaceChildren(seg('Show', [['all', 'All'], ['deep', 'Deeply modelled'], ['synth', 'Runnable data']], vFilter, function (k) { vFilter = k; paintFilt(); paint(); }),
+      h('label', { class: 'ctl', for: 'vsort' }, 'Sort', fsel));
+  }
+  paintFilt(); m.append(filt, out); paint();
+}
+
+/* ---------- subdomain ---------- */
+var sqlStyle = 'threeNF';
+function viewSub(m) {
+  var s = SUB.get(state.id), v = VERT.get(s.v);
+  var tabs = [['overview', 'Overview', null], ['kpis', 'KPIs', s.kpis.length], ['model', 'Data model', s.ents.length],
+    ['systems', 'Systems', s.src.length + s.con.length]];
+  if (s.std.length || s.terms.length || s.gloss.length) tabs.push(['standards', 'Standards & terms', s.std.length + Math.max(s.terms.length, s.gloss.length)]);
+  if (s.ingest.length || s.integ.length) tabs.push(['challenges', 'Challenges', s.ingest.length + s.integ.length]);
+  if (!tabs.some(function (t) { return t[0] === state.tab; })) state.tab = 'overview';
+  m.append(
+    h('div', { class: 'crumbs' }, link('', null, 'Atlas'), ' / ', link('v.' + v.id, null, v.label), ' / ', h('span', { text: s.name })),
+    h('div', { class: 'page-h' }, h('h1', { text: s.name }), h('div', { class: 'pill-row' }, badges(s))),
+    h('p', { class: 'lede', text: s.one }));
+  var tb = h('div', { class: 'tabs', role: 'tablist' });
+  tabs.forEach(function (t) {
+    tb.append(h('button', { role: 'tab', type: 'button', 'aria-selected': String(state.tab === t[0]), 'data-go': 's.' + s.id + '.' + t[0] },
+      t[1], t[2] != null ? h('span', { class: 'n num', text: t[2] }) : null));
+  });
+  var panel = h('div', { class: 'panel', role: 'tabpanel' });
+  ({ overview: tabOverview, kpis: tabKpis, model: tabModel, systems: tabSystems, standards: tabStandards, challenges: tabChallenges })[state.tab](panel, s);
+  m.append(tb, panel);
+}
+function related(s) {
+  var mine = new Set(s.src.map(function (x) { return String(x.vendor).trim(); })), kn = new Set(s.kpis.map(function (k) { return k.name.toLowerCase(); }));
+  var pn = new Set(s.personas.map(function (p) { return p.name; })), out = [];
+  D.subs.forEach(function (o) {
+    if (o.id === s.id) return;
+    var sv2 = 0, sk = 0, sp = 0;
+    o.src.forEach(function (x) { if (mine.has(String(x.vendor).trim())) sv2++; });
+    o.kpis.forEach(function (k) { if (kn.has(k.name.toLowerCase())) sk++; });
+    o.personas.forEach(function (p) { if (pn.has(p.name)) sp++; });
+    var sc = sv2 * 2 + sk * 3 + sp; if (sc > 0) out.push({ o: o, sc: sc, sv: sv2, sk: sk, sp: sp });
+  });
+  return out.sort(function (a, b) { return b.sc - a.sc || cmp(a.o.name, b.o.name); }).slice(0, 6);
+}
+function tabOverview(p, s) {
+  var left = h('div'), right = h('div');
+  left.append(h('h2', { text: 'Who decides' }));
+  var lad = h('div', { class: 'ladder' });
+  LEVELS.forEach(function (lv) {
+    var ps = s.personas.filter(function (x) { return x.level === lv; }); if (!ps.length) return;
+    var col = h('div', null, h('h4', { text: lv }));
+    ps.forEach(function (x) { col.append(link('lens.people', { class: 'p', 'data-sel': x.name }, x.name, h('small', { text: x.title }))); });
+    lad.append(col);
+  });
+  left.append(lad);
+  left.append(h('h2', { style: 'margin-top:28px', text: 'Decisions' }));
+  if (s.decisions.length) {
+    s.decisions.forEach(function (d) {
+      var ks = s.kpis.filter(function (k) { return k.dec.indexOf(d.id) >= 0; });
+      left.append(h('div', { class: 'decision' }, h('p', { text: d.statement }),
+        h('div', { class: 'chips' }, ks.length ? ks.map(function (k) { return link('s.' + s.id + '.kpis', { class: 'chip', 'data-sel': k.id }, k.name); }) : h('span', { class: 'muted', text: 'No KPI linked yet' }))));
+    });
+  } else left.append(h('p', { class: 'note', text: 'Decisions are only written for the ' + N_DEEP + ' deeply modelled subdomains. This one is modelled at survey level, so start from its KPIs and data model.' }));
+  var rel = related(s);
+  right.append(h('h2', { text: 'Readiness' }));
+  var dq = s.dqRun;
+  var dl = h('dl', { class: 'dl' });
+  function row(k, v2) { dl.append(h('dt', { text: k }), h('dd', null, v2)); }
+  row('Depth', s.deep ? 'Deeply modelled' : 'Survey level');
+  row('Data availability', s.tier ? 'Tier ' + s.tier + ': ' + TIERS[s.tier] : 'Not audited');
+  if (s.anchor) row('Reference anchor', 'Yes');
+  row('Synthetic data', s.synth ? 'Generator available' : 'None yet');
+  row('DDL', s.ddl ? '3NF, Data Vault and dimensional' : 'None yet');
+  row('Quality rules', s.dq ? pl(s.dq, 'rule') + (dq ? ' (last run: ' + dq.passed + ' passed, ' + dq.failed + ' failed, ' + dq.pending + ' pending)' : '') : 'None yet');
+  right.append(dl);
+  if (s.cites.length) {
+    right.append(h('h3', { style: 'margin:18px 0 6px', text: 'Public references' }));
+    var ul = h('ul', { style: 'margin:0;padding-left:18px' });
+    s.cites.forEach(function (c) { ul.append(h('li', null, h('a', { href: c.url, target: '_blank', rel: 'noopener noreferrer', text: c.name }))); });
+    right.append(ul);
+  }
+  if (rel.length) {
+    right.append(h('h2', { style: 'margin-top:28px', text: 'Related subdomains' }));
+    var rl = h('ul', { class: 'rank' });
+    rel.forEach(function (r) {
+      var why = []; if (r.sv) why.push(pl(r.sv, 'shared system')); if (r.sk) why.push(pl(r.sk, 'shared KPI')); if (r.sp) why.push(pl(r.sp, 'shared persona'));
+      rl.append(h('li', null, link('s.' + r.o.id, null, r.o.name), h('span', { class: 'n', text: why.join(', ') })));
+    });
+    right.append(rl);
+  }
+  p.append(h('div', { class: 'two' }, left, right));
+}
+function copyText(txt, btn, pre) {
+  function fallback() { try { var r = document.createRange(); r.selectNodeContents(pre); var g = getSelection(); g.removeAllRanges(); g.addRange(r); btn.textContent = 'Selected'; } catch (e) {} }
+  function done() { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy'; }, 1400); }
+  try { navigator.clipboard.writeText(txt).then(done, fallback); } catch (e) { fallback(); }
+}
+function tabKpis(p, s) {
+  if (!s.kpis.length) { p.append(h('p', { class: 'note', text: 'No KPIs are modelled for this subdomain yet.' })); return; }
+  var tbody = h('tbody');
+  s.kpis.forEach(function (k) {
+    var d = DIRS[k.dir] || ['–', 'band', 'Direction not set'];
+    var open = state.sel === k.id;
+    tbody.append(h('tr', { class: 'kr', tabindex: '0', 'data-go': 's.' + s.id + '.kpis', 'data-sel': open ? '' : k.id, 'aria-expanded': String(open) },
+      h('td', null, h('b', { text: k.name }), h('div', { class: 'mono muted', text: k.id })),
+      h('td', { text: k.unit || '' }),
+      h('td', { class: 'dir ' + d[1], title: d[2] }, d[0] + ' ' + d[2]),
+      h('td', null, h('span', { class: 'mono', text: k.formula || '' })),
+      h('td', null, k.sql ? h('span', { class: 'chip good', text: 'SQL' }) : null)));
+    if (open) {
+      var box = h('div');
+      if (k.def) box.append(h('p', { style: 'margin:0 0 10px;max-width:75ch', text: k.def }));
+      var meta = h('div', { class: 'chips', style: 'margin-bottom:6px' });
+      k.pers.forEach(function (n) { meta.append(link('lens.people', { class: 'chip', 'data-sel': n }, n)); });
+      k.dec.forEach(function (id) { var d2 = s.decisions.filter(function (x) { return x.id === id; })[0]; meta.append(h('span', { class: 'chip k', title: d2 ? d2.statement : id, text: id })); });
+      box.append(meta);
+      var sq = D.kpiSql[k.id];
+      if (sq) {
+        var styles = [['threeNF', '3NF'], ['vault', 'Data Vault'], ['dimensional', 'Dimensional']].filter(function (x) { return sq[x[0]]; });
+        if (!sq[sqlStyle]) sqlStyle = styles[0][0];
+        var pre = h('pre', { class: 'sql', text: sq[sqlStyle] });
+        var sbox = h('div', { class: 'sqlbox' }, h('div', { class: 'sqltabs' },
+          h('div', { class: 'seg', role: 'group', 'aria-label': 'Modelling style' }, styles.map(function (x) {
+            return h('button', { type: 'button', 'aria-pressed': String(sqlStyle === x[0]), onclick: function (e) { e.stopPropagation(); sqlStyle = x[0]; pre.textContent = sq[x[0]]; Array.prototype.forEach.call(e.currentTarget.parentNode.children, function (b) { b.setAttribute('aria-pressed', String(b === e.currentTarget)); }); } }, x[1]);
+          })),
+          h('button', { type: 'button', class: 'btn copy', onclick: function (e) { e.stopPropagation(); copyText(pre.textContent, e.currentTarget, pre); } }, 'Copy')), pre);
+        box.append(h('p', { class: 'muted', style: 'margin:10px 0 0', text: 'The same KPI written against three modelling styles.' }), sbox);
+        if (sq.notes) box.append(h('p', { class: 'muted', style: 'margin:8px 0 0', text: sq.notes }));
+      } else box.append(h('p', { class: 'muted', style: 'margin:0', text: 'No SQL specification for this KPI yet.' }));
+      tbody.append(h('tr', { class: 'kd' }, h('td', { colspan: '5' }, box)));
+    }
+  });
+  p.append(h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['KPI', 'Unit', 'Direction', 'Formula', ''].map(function (x) { return h('th', { text: x }); }))), tbody)));
+  p.append(h('p', { class: 'muted', style: 'margin-top:10px', text: 'Select a row for its definition, the personas who track it and any SQL.' }));
+}
+document.addEventListener('keydown', function (ev) {
+  if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches && ev.target.matches('tr.kr')) { ev.preventDefault(); ev.target.click(); }
+});
+
+/* entity diagram */
+var KIND = { one_to_one: '1:1', one_to_many: '1:N', many_to_one: 'N:1', many_to_many: 'N:M' };
+function layoutER(ents, edges, W, H) {
+  var n = ents.length, pos = {}, idx = {};
+  ents.forEach(function (e, i) { idx[e.n] = i; var a = 2 * Math.PI * i / n; pos[e.n] = { x: W / 2 + Math.cos(a) * W * 0.34, y: H / 2 + Math.sin(a) * H * 0.34, dx: 0, dy: 0 }; });
+  var k = Math.sqrt(W * H / Math.max(n, 1)) * 0.85;
+  for (var it = 0; it < 280; it++) {
+    var t = (1 - it / 280) * 0.12 * W;
+    ents.forEach(function (a) { pos[a.n].dx = 0; pos[a.n].dy = 0; });
+    for (var i = 0; i < n; i++) for (var j = i + 1; j < n; j++) {
+      var A = pos[ents[i].n], B = pos[ents[j].n], dx = A.x - B.x, dy = A.y - B.y, d = Math.sqrt(dx * dx + dy * dy) || 0.01, f = k * k / d;
+      A.dx += dx / d * f; A.dy += dy / d * f; B.dx -= dx / d * f; B.dy -= dy / d * f;
+    }
+    edges.forEach(function (e) {
+      var A = pos[e.a], B = pos[e.b], dx = A.x - B.x, dy = A.y - B.y, d = Math.sqrt(dx * dx + dy * dy) || 0.01, f = d * d / k;
+      A.dx -= dx / d * f; A.dy -= dy / d * f; B.dx += dx / d * f; B.dy += dy / d * f;
+    });
+    ents.forEach(function (e) {
+      var q = pos[e.n]; q.dx += (W / 2 - q.x) * 0.9; q.dy += (H / 2 - q.y) * 0.9;
+      var d = Math.sqrt(q.dx * q.dx + q.dy * q.dy) || 0.01, m = Math.min(d, t);
+      q.x += q.dx / d * m; q.y += q.dy / d * m;
+      var hw = Math.max(34, e.n.length * 3.4 + 10);
+      q.x = Math.max(hw + 6, Math.min(W - hw - 6, q.x)); q.y = Math.max(22, Math.min(H - 22, q.y));
+    });
+  }
+  return pos;
+}
+function tabModel(p, s) {
+  if (!s.ents.length) { p.append(h('p', { class: 'note', text: 'No entities are modelled for this subdomain yet.' })); return; }
+  var names = new Set(s.ents.map(function (e) { return e.n; })), seen = new Set(), edges = [];
+  function addEdge(a, b, kind) { if (!names.has(a) || !names.has(b) || a === b) return; var key = [a, b].sort().join('|') + kind; if (seen.has(key)) return; seen.add(key); edges.push({ a: a, b: b, kind: kind }); }
+  s.ents.forEach(function (e) { e.r.forEach(function (r) { addEdge(e.n, r[0], r[1]); }); });
+  s.rels.forEach(function (r) { addEdge(r[0], r[1], r[2]); });
+  var detail = h('div');
+  var sel = state.sel && names.has(state.sel) ? state.sel : (s.ents.slice().sort(function (a, b) { return b.a.length - a.a.length; })[0].n);
+  var nodeEls = {}, edgeEls = [];
+  function showEntity(name) {
+    sel = name;
+    var e = s.ents.filter(function (x) { return x.n === name; })[0];
+    var nb = new Set(); edges.forEach(function (ed) { if (ed.a === name) nb.add(ed.b); if (ed.b === name) nb.add(ed.a); });
+    for (var k in nodeEls) nodeEls[k].setAttribute('class', 'node' + (k === name ? ' sel' : nb.has(k) ? ' nb' : edges.length > 0 && nb.size ? ' dim' : ''));
+    edgeEls.forEach(function (x) { var hot = x.ed.a === name || x.ed.b === name; x.line.setAttribute('class', 'edge' + (hot ? ' hot' : '')); x.label.style.display = hot ? '' : 'none'; });
+    detail.replaceChildren(h('h2', { text: e.n }), e.d ? h('p', { style: 'margin:0 0 10px', text: e.d }) : null,
+      e.keys.length ? h('p', { class: 'muted', style: 'margin:0 0 10px' }, 'Key: ', h('span', { class: 'mono', text: e.keys.join(', ') })) : null);
+    if (e.a.length) {
+      detail.append(h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Column', 'Type', ''].map(function (x) { return h('th', { text: x }); }))),
+        h('tbody', null, e.a.map(function (a) { return h('tr', null, h('td', null, h('span', { class: 'mono', text: a[0] })), h('td', null, h('span', { class: 'mono muted', text: a[1] || '' })), h('td', null, a[2] ? h('span', { class: 'pk', title: 'Primary key', text: 'PK' }) : null, a[3] ? h('span', { class: 'fk', title: 'Foreign key', text: ' FK' }) : null)); })))));
+    } else detail.append(h('p', { class: 'note', text: 'Column-level attributes are not modelled at this tier.' }));
+    var rs = edges.filter(function (ed) { return ed.a === name || ed.b === name; });
+    if (rs.length) {
+      detail.append(h('h3', { style: 'margin:16px 0 6px', text: 'Relationships' }));
+      var ul = h('ul', { style: 'margin:0;padding-left:18px' });
+      rs.forEach(function (ed) { var other = ed.a === name ? ed.b : ed.a; ul.append(h('li', null, h('button', { type: 'button', class: 'chip', onclick: function () { showEntity(other); } }, other), ' ', h('span', { class: 'mono muted', text: (ed.a === name ? '' : 'from ') + KIND[ed.kind] }))); });
+      detail.append(ul);
+    }
+  }
+  var chips = h('div', { class: 'chips', style: 'margin-top:12px' }, s.ents.map(function (e) { return h('button', { type: 'button', class: 'chip', onclick: function () { showEntity(e.n); } }, e.n); }));
+  var left = h('div');
+  if (s.ents.length > 1 && edges.length) {
+    var narrow = window.innerWidth < 900;
+    var W = narrow ? Math.max(300, window.innerWidth - 34) : Math.max(520, Math.min(720, Math.round(window.innerWidth * 0.5)));
+    var H = narrow ? Math.max(440, Math.min(900, 220 + s.ents.length * 48)) : Math.max(380, Math.min(760, 240 + s.ents.length * 30));
+    var pos = layoutER(s.ents, edges, W, H);
+    var svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'group', 'aria-label': 'Entity relationship diagram for ' + s.name });
+    var gE = sv('g'), gN = sv('g'); svg.append(gE, gN);
+    edges.forEach(function (ed) {
+      var line = sv('line', { class: 'edge' }), label = sv('text', { class: 'elab', 'text-anchor': 'middle' }, KIND[ed.kind]);
+      label.style.display = 'none'; gE.append(line, label); edgeEls.push({ ed: ed, line: line, label: label });
+    });
+    function place() {
+      edgeEls.forEach(function (x) { var A = pos[x.ed.a], B = pos[x.ed.b]; x.line.setAttribute('x1', A.x); x.line.setAttribute('y1', A.y); x.line.setAttribute('x2', B.x); x.line.setAttribute('y2', B.y); x.label.setAttribute('x', (A.x + B.x) / 2); x.label.setAttribute('y', (A.y + B.y) / 2 - 4); });
+      s.ents.forEach(function (e) { nodeEls[e.n].setAttribute('transform', 'translate(' + pos[e.n].x + ',' + pos[e.n].y + ')'); });
+    }
+    s.ents.forEach(function (e) {
+      var w = Math.max(68, e.n.length * 6.6 + 18), g = sv('g', { class: 'node', tabindex: '0', role: 'button', 'aria-label': e.n });
+      g.append(sv('rect', { x: -w / 2, y: -13, width: w, height: 26, rx: 6 }), sv('text', { 'text-anchor': 'middle', y: 4 }, e.n));
+      g.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); showEntity(e.n); } });
+      nodeEls[e.n] = g; gN.append(g);
+    });
+    var drag = null;
+    function toSvg(ev) { var pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+    s.ents.forEach(function (e) {
+      nodeEls[e.n].addEventListener('pointerdown', function (ev) { var q = toSvg(ev); drag = { n: e.n, ox: pos[e.n].x - q.x, oy: pos[e.n].y - q.y, sx: ev.clientX, sy: ev.clientY, moved: false }; try { svg.setPointerCapture(ev.pointerId); } catch (x) {} });
+    });
+    svg.addEventListener('pointermove', function (ev) { if (!drag) return; if (Math.abs(ev.clientX - drag.sx) + Math.abs(ev.clientY - drag.sy) > 4) drag.moved = true; if (!drag.moved) return; var q = toSvg(ev); pos[drag.n].x = Math.max(30, Math.min(W - 30, q.x + drag.ox)); pos[drag.n].y = Math.max(16, Math.min(H - 16, q.y + drag.oy)); place(); });
+    svg.addEventListener('pointerup', function () { if (drag && !drag.moved) showEntity(drag.n); drag = null; });
+    place();
+    left.append(h('div', { class: 'er' }, svg), h('p', { class: 'muted', style: 'margin:8px 0 0', text: 'Select an entity to read its columns and relationships. Drag to rearrange.' }));
+  } else left.append(h('p', { class: 'note', text: 'This subdomain lists entities without relationships between them yet.' }));
+  left.append(chips);
+  p.append(h('div', { class: 'er-grid' }, left, detail));
+  showEntity(sel);
+}
+function tabSystems(p, s) {
+  var cats = {}; s.src.forEach(function (x) { (cats[x.category] = cats[x.category] || []).push(x); });
+  p.append(h('h2', { text: 'Source systems' }));
+  Object.keys(cats).sort(cmp).forEach(function (c) {
+    p.append(h('h3', { style: 'margin:14px 0 6px', text: c }), h('div', { class: 'chips' }, cats[c].map(function (x) { return link('lens.systems', { class: 'chip', 'data-sel': String(x.vendor).trim() }, x.vendor + ' · ' + x.product); })));
+  });
+  if (s.con.length) {
+    p.append(h('h2', { style: 'margin-top:28px', text: 'Connectors' }));
+    p.append(h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Connector', 'Protocol', 'Auth', 'Typical sources'].map(function (x) { return h('th', { text: x }); }))),
+      h('tbody', null, s.con.map(function (c) { return h('tr', null, h('td', { text: c.type }), h('td', { text: c.protocol }), h('td', { text: c.auth }), h('td', { text: (c.typicalSources || []).join(', ') })); })))));
+  }
+}
+function tabStandards(p, s) {
+  if (s.std.length) {
+    p.append(h('h2', { text: 'Standards' }));
+    p.append(h('div', { class: 'stdgrid' }, s.std.map(function (x) {
+      return h('div', { class: 'std' }, h('b', { text: x.name }), x.version ? h('div', { class: 'muted', text: x.version }) : null,
+        x.url ? h('a', { href: x.url, target: '_blank', rel: 'noopener noreferrer', text: x.url.replace(/^https?:\/\//, '') }) : null);
+    })));
+  }
+  var names = []; s.terms.concat(s.gloss).forEach(function (n) { if (names.indexOf(n) < 0) names.push(n); });
+  if (names.length) {
+    p.append(h('h2', { style: 'margin-top:28px', text: 'Glossary' }));
+    names.forEach(function (n) {
+      var t = GL.get(String(n).toLowerCase());
+      p.append(h('div', { class: 'term' }, t ? link('lens.glossary', { 'data-sel': t.n }, h('b', { text: n })) : h('b', { text: n }),
+        t && t.d ? h('div', { class: 'muted', text: t.d }) : null));
+    });
+  }
+}
+function tabChallenges(p, s) {
+  function list(title, arr) { if (!arr.length) return; p.append(h('h2', { style: 'margin:0 0 8px', text: title }), h('ul', { style: 'margin:0 0 26px;padding-left:20px;max-width:80ch' }, arr.map(function (x) { return h('li', { style: 'margin-bottom:6px', text: x }); }))); }
+  list('Ingestion challenges', s.ingest); list('Integration challenges', s.integ);
+}
+
+/* ---------- lenses ---------- */
+function pickList(items, selName, onpick, render) {
+  var box = h('div', { class: 'pick', role: 'listbox' });
+  items.forEach(function (it) { box.append(h('button', { type: 'button', 'aria-pressed': String(it.name === selName), onclick: function () { onpick(it.name); } }, render(it))); });
+  if (!items.length) box.append(h('p', { class: 'note', style: 'margin:10px', text: 'Nothing matches that search.' }));
+  return box;
+}
+var kQ = '', kDir = '', kV = '', kSql = false, kLimit = 100;
+function viewKpis(m) {
+  m.append(h('div', { class: 'page-h' }, h('h1', { text: 'Every KPI' })),
+    h('p', { class: 'lede', text: 'All ' + ALLK.length + ' KPI entries across the subdomains. Filter by direction or vertical, or keep only those with a written SQL specification.' }));
+  var out = h('div');
+  function paint() {
+    var q = kQ.trim().toLowerCase();
+    var rows = ALLK.filter(function (k) {
+      return (!q || (k.name + ' ' + k.id + ' ' + (k.formula || '')).toLowerCase().indexOf(q) >= 0) && (!kDir || k.dir === kDir) && (!kV || k.sub.v === kV) && (!kSql || k.sql);
+    });
+    var tb = h('tbody');
+    rows.slice(0, kLimit).forEach(function (k) {
+      var d = DIRS[k.dir] || ['–', 'band', ''];
+      tb.append(h('tr', null,
+        h('td', null, link('s.' + k.sub.id + '.kpis', { 'data-sel': k.id }, h('b', { text: k.name })), h('div', { class: 'mono muted', text: k.id })),
+        h('td', null, link('s.' + k.sub.id, null, k.sub.name), h('div', { class: 'muted', style: 'font-size:12.5px', text: VERT.get(k.sub.v).label })),
+        h('td', { text: k.unit || '' }), h('td', { class: 'dir ' + d[1], title: d[2], text: d[0] }), h('td', null, h('span', { class: 'mono', text: k.formula || '' })),
+        h('td', null, k.sql ? h('span', { class: 'chip good', text: 'SQL' }) : null)));
+    });
+    out.replaceChildren(h('p', { class: 'muted num', text: pl(rows.length, 'entry', 'entries') + (rows.length > kLimit ? ', showing the first ' + kLimit : '') }),
+      rows.length ? h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['KPI', 'Subdomain', 'Unit', 'Dir', 'Formula', ''].map(function (x) { return h('th', { text: x }); }))), tb)) : h('p', { class: 'note', text: 'No KPIs match those filters.' }),
+      rows.length > kLimit ? h('button', { type: 'button', class: 'btn more', onclick: function () { kLimit += 150; paint(); } }, 'Show more') : null);
+  }
+  m.append(h('div', { class: 'filters' },
+    h('input', { class: 'inp', id: 'kq', type: 'search', placeholder: 'Filter by name, id or formula', 'aria-label': 'Filter KPIs', value: kQ, oninput: function (e) { kQ = e.target.value; kLimit = 100; paint(); } }),
+    h('select', { id: 'kdir', 'aria-label': 'Direction', onchange: function (e) { kDir = e.target.value; kLimit = 100; paint(); } },
+      [['', 'Any direction'], ['higher_is_better', 'Higher is better'], ['lower_is_better', 'Lower is better'], ['target_band', 'Target band']].map(function (o) { return h('option', { value: o[0], selected: kDir === o[0] }, o[1]); })),
+    h('select', { id: 'kv', 'aria-label': 'Vertical', onchange: function (e) { kV = e.target.value; kLimit = 100; paint(); } },
+      [h('option', { value: '' }, 'Any vertical')].concat(D.verticals.filter(function (v) { return (BYV[v.id] || []).length; }).map(function (v) { return h('option', { value: v.id, selected: kV === v.id }, VERT.get(v.id).label); }))),
+    h('label', { class: 'ctl' }, h('input', { type: 'checkbox', id: 'ksql', checked: kSql, onchange: function (e) { kSql = e.target.checked; kLimit = 100; paint(); } }), 'Has SQL')), out);
+  paint();
+}
+
+var pQ = '', pLv = '';
+function viewPeople(m) {
+  var all = Array.from(PERS.values()).sort(function (a, b) { return b.subs.size - a.subs.size || cmp(a.name, b.name); });
+  m.append(h('div', { class: 'page-h' }, h('h1', { text: 'People' })),
+    h('p', { class: 'lede', text: 'Personas as the subdomains name them. Pick one to see where they appear and which KPIs they are linked to.' }));
+  var host = h('div');
+  function paint() {
+    var q = pQ.trim().toLowerCase();
+    var list = all.filter(function (p) { return (!q || p.name.toLowerCase().indexOf(q) >= 0) && (!pLv || p.levels.has(pLv)); });
+    var sel = state.sel && PERS.has(state.sel) ? state.sel : (list[0] && list[0].name);
+    var right = h('div');
+    if (sel) {
+      var P = PERS.get(sel), byv = {};
+      P.subs.forEach(function (s) { (byv[s.v] = byv[s.v] || []).push(s); });
+      right.append(h('h2', { text: sel }),
+        h('div', { class: 'chips', style: 'margin-bottom:12px' }, Array.from(P.levels).map(function (l) { return h('span', { class: 'chip on', text: l }); }), Array.from(P.titles).slice(0, 6).map(function (t) { return h('span', { class: 'chip', text: t }); })),
+        h('h3', { style: 'margin:6px 0', text: 'Appears in ' + pl(P.subs.size, 'subdomain') }));
+      Object.keys(byv).sort(cmp).forEach(function (v) {
+        right.append(h('div', { style: 'margin:8px 0' }, h('div', { class: 'muted', style: 'font-size:12.5px;margin-bottom:4px', text: VERT.get(v).label }),
+          h('div', { class: 'chips' }, byv[v].sort(function (a, b) { return cmp(a.name, b.name); }).map(function (s) { return link('s.' + s.id, { class: 'chip' }, s.name); }))));
+      });
+      var ks = ALLK.filter(function (k) { return k.pers.indexOf(sel) >= 0; });
+      right.append(h('h3', { style: 'margin:18px 0 6px', text: ks.length ? 'Linked KPIs (' + ks.length + ')' : 'Linked KPIs' }));
+      if (ks.length) {
+        var ul = h('ul', { class: 'rank' });
+        ks.slice(0, 40).forEach(function (k) { ul.append(h('li', null, link('s.' + k.sub.id + '.kpis', { 'data-sel': k.id }, k.name), h('span', { class: 'n', text: k.sub.name }))); });
+        right.append(ul);
+      } else right.append(h('p', { class: 'note', text: 'No KPI is linked to this persona by name in the KPI master list.' }));
+    }
+    host.replaceChildren(h('div', { class: 'split' }, pickList(list, sel, function (n) { state.sel = n; paint(); }, function (p) { return [h('span', { text: p.name }), h('span', { class: 'n num', text: p.subs.size })]; }), right));
+  }
+  m.append(h('div', { class: 'filters' },
+    h('input', { class: 'inp', id: 'pq', type: 'search', placeholder: 'Find a persona', 'aria-label': 'Find a persona', value: pQ, oninput: function (e) { pQ = e.target.value; paint(); } }),
+    seg('Level', [['', 'All']].concat(LEVELS.map(function (l) { return [l, l]; })), pLv, function (k) { pLv = k; render(); })), host);
+  paint();
+}
+
+var yQ = '';
+function viewSystems(m) {
+  var all = Array.from(VEND.values()).sort(function (a, b) { return b.subs.size - a.subs.size || cmp(a.name, b.name); });
+  m.append(h('div', { class: 'page-h' }, h('h1', { text: 'Systems' })),
+    h('p', { class: 'lede', text: 'Source-system vendors across all subdomains. The same platform often feeds many domains, which is where integration effort can be shared.' }));
+  var host = h('div');
+  function paint() {
+    var q = yQ.trim().toLowerCase();
+    var list = all.filter(function (v) { return !q || (v.name + ' ' + Array.from(v.products).join(' ')).toLowerCase().indexOf(q) >= 0; });
+    var sel = state.sel && VEND.has(state.sel) ? state.sel : (list[0] && list[0].name);
+    var right = h('div');
+    if (sel) {
+      var V = VEND.get(sel), byv = {};
+      V.subs.forEach(function (s) { (byv[s.v] = byv[s.v] || []).push(s); });
+      right.append(h('h2', { text: sel }),
+        h('p', { class: 'muted', style: 'margin:0 0 10px', text: Array.from(V.cats).sort(cmp).join(' · ') }),
+        h('div', { class: 'chips', style: 'margin-bottom:14px' }, Array.from(V.products).sort(cmp).map(function (x) { return h('span', { class: 'chip', text: x }); })),
+        h('h3', { style: 'margin:6px 0', text: 'Used in ' + pl(V.subs.size, 'subdomain') }));
+      Object.keys(byv).sort(cmp).forEach(function (v) {
+        right.append(h('div', { style: 'margin:8px 0' }, h('div', { class: 'muted', style: 'font-size:12.5px;margin-bottom:4px', text: VERT.get(v).label }),
+          h('div', { class: 'chips' }, byv[v].sort(function (a, b) { return cmp(a.name, b.name); }).map(function (s) { return link('s.' + s.id + '.systems', { class: 'chip' }, s.name); }))));
+      });
+      var cat = D.sources.filter(function (x) { return String(x.vendor).trim() === sel; });
+      if (cat.length) {
+        right.append(h('h3', { style: 'margin:18px 0 6px', text: 'Catalogued connectors' }));
+        var ul = h('ul', { style: 'margin:0;padding-left:18px' });
+        cat.forEach(function (x) { ul.append(h('li', null, h('b', { text: x.product }), ' ', (x.primaryConnectors || []).map(function (id) { var c = CONN.get(id); return h('span', { class: 'chip k', style: 'margin-left:4px', title: c ? c.type : id, text: id.replace(/^conn\./, '') }); }))); });
+        right.append(ul);
+      }
+    }
+    host.replaceChildren(h('div', { class: 'split' }, pickList(list, sel, function (n) { state.sel = n; paint(); }, function (v) { return [h('span', { text: v.name }), h('span', { class: 'n num', text: v.subs.size })]; }), right));
+  }
+  m.append(h('div', { class: 'filters' }, h('input', { class: 'inp', id: 'yq', type: 'search', placeholder: 'Find a vendor or product', 'aria-label': 'Find a vendor or product', value: yQ, oninput: function (e) { yQ = e.target.value; paint(); } })), host);
+  paint();
+}
+
+var gQ = '', gLimit = 160;
+function viewGlossary(m) {
+  var all = D.glossary.slice().sort(function (a, b) { return cmp(a.n, b.n); });
+  m.append(h('div', { class: 'page-h' }, h('h1', { text: 'Glossary' })),
+    h('p', { class: 'lede', text: pl(all.length, 'term') + ' with definitions, aliases and the subdomains and KPIs each one touches.' }));
+  var host = h('div');
+  function paint() {
+    var q = gQ.trim().toLowerCase();
+    var list = all.filter(function (t) { return !q || (t.n + ' ' + t.al.join(' ')).toLowerCase().indexOf(q) >= 0; });
+    var sel = state.sel && GL.has(String(state.sel).toLowerCase()) ? GL.get(String(state.sel).toLowerCase()).n : (list[0] && list[0].n);
+    var right = h('div');
+    if (sel) {
+      var t = GL.get(sel.toLowerCase());
+      right.append(h('h2', { text: t.n }), t.al.length ? h('div', { class: 'chips', style: 'margin-bottom:10px' }, t.al.map(function (a) { return h('span', { class: 'chip', text: a }); })) : null,
+        h('p', { style: 'max-width:70ch', text: t.d || '' }), t.steward ? h('p', { class: 'muted', text: 'Steward: ' + t.steward }) : null);
+      var subs = t.subs.map(function (id) { return SUB.get(id); }).filter(Boolean);
+      if (subs.length) right.append(h('h3', { style: 'margin:16px 0 6px', text: 'Subdomains' }), h('div', { class: 'chips' }, subs.map(function (s) { return link('s.' + s.id, { class: 'chip' }, s.name); })));
+      var ks = t.kpis.map(function (id) { return KBYID.get(id); }).filter(Boolean);
+      if (ks.length) right.append(h('h3', { style: 'margin:16px 0 6px', text: 'KPIs' }), h('div', { class: 'chips' }, ks.map(function (k) { return link('s.' + k.sub.id + '.kpis', { class: 'chip', 'data-sel': k.id }, k.name); })));
+    }
+    var shown = list.slice(0, gLimit);
+    var pk = pickList(shown.map(function (t2) { return { name: t2.n }; }), sel, function (n) { state.sel = n; paint(); }, function (it) { return h('span', { text: it.name }); });
+    if (list.length > gLimit) pk.append(h('button', { type: 'button', class: 'btn', style: 'margin:10px', onclick: function () { gLimit += 200; paint(); } }, 'Show more (' + (list.length - gLimit) + ' left)'));
+    host.replaceChildren(h('div', { class: 'split' }, pk, right));
+  }
+  m.append(h('div', { class: 'filters' }, h('input', { class: 'inp', id: 'gq', type: 'search', placeholder: 'Find a term or alias', 'aria-label': 'Find a glossary term', value: gQ, oninput: function (e) { gQ = e.target.value; gLimit = 160; paint(); } })), host);
+  paint();
+}
+
+/* ---------- search ---------- */
+var INDEX = null, hits = [], cur = -1;
+function buildIndex() {
+  var a = [];
+  D.subs.forEach(function (s) {
+    a.push({ t: 'Subdomains', label: s.name, sub: VERT.get(s.v).label, hay: (s.name + ' ' + s.one + ' ' + s.id).toLowerCase(), go: 's.' + s.id });
+    s.kpis.forEach(function (k) { a.push({ t: 'KPIs', label: k.name, sub: s.name, hay: (k.name + ' ' + k.id).toLowerCase(), go: 's.' + s.id + '.kpis', sel: k.id }); });
+    s.decisions.forEach(function (d) { a.push({ t: 'Decisions', label: d.statement, sub: s.name, hay: d.statement.toLowerCase(), go: 's.' + s.id }); });
+    s.ents.forEach(function (e) { a.push({ t: 'Entities', label: e.n, sub: s.name, hay: (e.n + ' ' + (e.d || '')).toLowerCase(), go: 's.' + s.id + '.model', sel: e.n }); });
+  });
+  PERS.forEach(function (p) { a.push({ t: 'Personas', label: p.name, sub: pl(p.subs.size, 'subdomain'), hay: p.name.toLowerCase(), go: 'lens.people', sel: p.name }); });
+  VEND.forEach(function (v) { a.push({ t: 'Systems', label: v.name, sub: pl(v.subs.size, 'subdomain'), hay: (v.name + ' ' + Array.from(v.products).join(' ')).toLowerCase(), go: 'lens.systems', sel: v.name }); });
+  D.glossary.forEach(function (t) { a.push({ t: 'Glossary', label: t.n, sub: t.al.slice(0, 2).join(', '), hay: (t.n + ' ' + t.al.join(' ')).toLowerCase(), go: 'lens.glossary', sel: t.n }); });
+  return a;
+}
+var ORDER = ['Subdomains', 'KPIs', 'Personas', 'Systems', 'Glossary', 'Entities', 'Decisions'], CAP = { Decisions: 3 };
+function closeResults() { var r = $('#results'); r.hidden = true; $('#q').setAttribute('aria-expanded', 'false'); hits = []; cur = -1; }
+function runSearch() {
+  var q = $('#q').value.trim().toLowerCase(), r = $('#results');
+  if (!q) { closeResults(); return; }
+  if (!INDEX) INDEX = buildIndex();
+  var toks = q.split(/\s+/), groups = {};
+  INDEX.forEach(function (it) {
+    for (var i = 0; i < toks.length; i++) if (it.hay.indexOf(toks[i]) < 0) return;
+    var lab = it.label.toLowerCase(), sc;
+    if (lab.indexOf(q) === 0) sc = 0;
+    else if (lab.indexOf(q) >= 0) sc = 1;
+    else if (toks.every(function (t) { return lab.indexOf(t) >= 0; })) sc = 2;
+    else sc = 3;
+    (groups[it.t] = groups[it.t] || []).push({ it: it, sc: sc + Math.min(it.label.length, 80) / 100 });
+  });
+  r.replaceChildren(); hits = []; cur = -1;
+  var best = {};
+  Object.keys(groups).forEach(function (t) { groups[t].sort(function (a, b) { return a.sc - b.sc; }); best[t] = Math.floor(groups[t][0].sc); });
+  ORDER.slice().sort(function (a, b) {
+    var x = best[a] == null ? 9 : best[a], y = best[b] == null ? 9 : best[b];
+    return x - y || ORDER.indexOf(a) - ORDER.indexOf(b);
+  }).forEach(function (t) {
+    var g = groups[t]; if (!g) return;
+    r.append(h('h4', { text: t + ' (' + g.length + ')' }));
+    g.slice(0, CAP[t] || 5).forEach(function (x) {
+      var b = h('button', { type: 'button', role: 'option', 'aria-selected': 'false' }, h('span', { text: trunc(x.it.label, 80) }), h('span', { class: 'where', text: trunc(x.it.sub, 34) }));
+      b.addEventListener('click', function () { pick(x.it); }); hits.push({ b: b, it: x.it }); r.append(b);
+    });
+  });
+  if (!hits.length) r.append(h('div', { class: 'empty', text: 'Nothing matches "' + $('#q').value.trim() + '".' }));
+  r.hidden = false; $('#q').setAttribute('aria-expanded', 'true');
+}
+function pick(it) { closeResults(); $('#q').value = ''; $('#q').blur(); go(it.go, it.sel ? { sel: it.sel } : null); }
+function mark(i) { hits.forEach(function (x, j) { x.b.setAttribute('aria-selected', String(j === i)); }); if (hits[i]) hits[i].b.scrollIntoView({ block: 'nearest' }); }
+$('#q').addEventListener('input', runSearch);
+$('#q').addEventListener('focus', function () { if ($('#q').value.trim()) runSearch(); });
+$('#q').addEventListener('keydown', function (ev) {
+  if (ev.key === 'ArrowDown') { ev.preventDefault(); if (hits.length) { cur = (cur + 1) % hits.length; mark(cur); } }
+  else if (ev.key === 'ArrowUp') { ev.preventDefault(); if (hits.length) { cur = (cur - 1 + hits.length) % hits.length; mark(cur); } }
+  else if (ev.key === 'Enter') { if (hits.length) { ev.preventDefault(); pick(hits[cur >= 0 ? cur : 0].it); } }
+  else if (ev.key === 'Escape') { closeResults(); $('#q').blur(); }
+});
+document.addEventListener('keydown', function (ev) {
+  var tag = (ev.target.tagName || '').toLowerCase();
+  if (ev.key === '/' && tag !== 'input' && tag !== 'select' && tag !== 'textarea') { ev.preventDefault(); $('#q').focus(); }
+});
+document.addEventListener('click', function (ev) { if (!ev.target.closest('.search')) closeResults(); });
+
+/* ---------- boot ---------- */
+go(location.hash.replace(/^#/, ''));
+})();
+</script>
