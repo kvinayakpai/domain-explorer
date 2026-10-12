@@ -243,7 +243,7 @@ dataModel:
         - { name: settlement_method, type: varchar(16), description: "off_invoice|deduction|check|emc|edi820" }
 
     - name: deduction
-      description: A retailer-issued chargeback claim against a manufacturer invoice. Lifecycle: open → matched → disputed | paid | written-off. Often arrives via EDI 812/820 or as a remittance line item.
+      description: "A retailer-issued chargeback claim against a manufacturer invoice. Lifecycle: open → matched → disputed | paid | written-off. Often arrives via EDI 812/820 or as a remittance line item."
       keys: [deduction_id]
       attributes:
         - { name: deduction_id, type: varchar(32), isPrimaryKey: true }

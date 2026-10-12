@@ -228,7 +228,7 @@ dataModel:
         - { name: ingested_at, type: timestamp }
 
     - name: forecast
-      description: Time-phased demand forecast — one row per item-location-customer-period per forecast_version. Multi-version: statistical_baseline, sales_input, marketing_input, finance_aligned, consensus.
+      description: "Time-phased demand forecast — one row per item-location-customer-period per forecast_version. Multi-version: statistical_baseline, sales_input, marketing_input, finance_aligned, consensus."
       keys: [forecast_id]
       attributes:
         - { name: forecast_id, type: bigint, isPrimaryKey: true }

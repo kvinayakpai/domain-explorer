@@ -145,13 +145,13 @@ kpis:
     direction: lower_is_better
     decisionsSupported: [pm.d.model_retrain, pm.d.intervention_now]
   - id: pm.kpi.pct_failures_predicted
-    name: % of Failures Predicted (advance-warning coverage)
+    name: "% of Failures Predicted (advance-warning coverage)"
     formula: predicted_failure_events / total_failure_events
     unit: "%"
     direction: higher_is_better
     decisionsSupported: [pm.d.alert_threshold, pm.d.model_retrain]
   - id: pm.kpi.production_loss_avoided_pct
-    name: % Production Loss Avoided
+    name: "% Production Loss Avoided"
     formula: avoided_production_loss_units / (avoided_production_loss_units + actual_production_loss_units)
     unit: "%"
     direction: higher_is_better

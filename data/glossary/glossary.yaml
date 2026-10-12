@@ -1571,13 +1571,13 @@ terms:
     steward: Reliability Engineer
   - name: SCADA
     aliases: [Supervisory Control and Data Acquisition]
-    definition: Software layer that aggregates real-time data from PLCs across a plant and provides operator HMI screens, alarms, and historian feeds. Common SCADA: Wonderware (Aveva System Platform), Rockwell FactoryTalk View, Siemens WinCC.
+    definition: "Software layer that aggregates real-time data from PLCs across a plant and provides operator HMI screens, alarms, and historian feeds. Common SCADA: Wonderware (Aveva System Platform), Rockwell FactoryTalk View, Siemens WinCC."
     related_subdomains: [predictive_maintenance, mes_quality]
     related_kpis: []
     steward: Plant Manager
   - name: PLC
     aliases: [Programmable Logic Controller]
-    definition: Industrial computer that executes ladder logic or function-block code at deterministic scan rates (typically 10–100ms) to control discrete or continuous plant equipment. Vendors: Siemens (SIMATIC S7), Rockwell (ControlLogix), Mitsubishi, Schneider.
+    definition: "Industrial computer that executes ladder logic or function-block code at deterministic scan rates (typically 10–100ms) to control discrete or continuous plant equipment. Vendors: Siemens (SIMATIC S7), Rockwell (ControlLogix), Mitsubishi, Schneider."
     related_subdomains: [predictive_maintenance, mes_quality]
     related_kpis: []
     steward: Plant Manager
@@ -2391,7 +2391,7 @@ terms:
     steward: Returns CX Lead
   - name: Reverse Logistics (Industry)
     aliases: [Reverse Supply Chain Industry, RL Industry]
-    definition: The $700B+/yr global industry covering the flow of returned, recalled, refurbed, or recycled product back through the supply chain. Anchor vendors: Optoro, Loop Returns, Happy Returns (PayPal), Narvar, ZigZag, ReBound, Doddle, Newmine.
+    definition: "The $700B+/yr global industry covering the flow of returned, recalled, refurbed, or recycled product back through the supply chain. Anchor vendors: Optoro, Loop Returns, Happy Returns (PayPal), Narvar, ZigZag, ReBound, Doddle, Newmine."
     related_subdomains: [returns_reverse_logistics]
     related_kpis: [rrl.kpi.return_rate_pct, rrl.kpi.cost_to_process_return]
     steward: VP Reverse Logistics

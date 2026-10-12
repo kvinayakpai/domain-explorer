@@ -419,7 +419,7 @@ integrationChallenges:
     mitigation: Persist all baselines side-by-side with model_name + model_version; require a single canonical baseline policy per account × category locked annually with CCO sign-off; expose baseline diff on the closeout layer so disagreement is visible, not hidden.
   - name: Innovation cannibalization vs incrementality
     description: A new pack introduction (the value 18-count) cannibalizes the mainstream 12-pack and the entry 6-pack. Innovation Sales % over-credits if it ignores cannibalization; under-credits if it folds in cannibalization broadly across unrelated SKUs.
-    mitigation: Define a cannibalization basket per innovation SKU at launch (default: same brand + adjacent pack tiers); compute Innovation Sales % net of basket cannibalization; require the launch business case to declare the basket and the cannibalization tolerance up-front.
+    mitigation: "Define a cannibalization basket per innovation SKU at launch (default: same brand + adjacent pack tiers); compute Innovation Sales % net of basket cannibalization; require the launch business case to declare the basket and the cannibalization tolerance up-front."
 
 glossaryTerms:
   - PPA (Price Pack Architecture)

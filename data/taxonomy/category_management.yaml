@@ -446,7 +446,7 @@ integrationChallenges:
     mitigation: Maintain a per-banner must_have_skus list per range review; compute the union/intersection in a dedicated mart with policy-tagged thresholds; surface the disagreement matrix as a buyer-facing diff before range-review presentation.
   - name: Innovation slot vs incumbent cannibalization
     description: Launching a new flavor takes a slot that has to come from somewhere — usually from a slower-velocity incumbent in the same brand. The cannibalization math is rarely declared up front, so post-launch the innovation looks accretive when it is actually mostly migrating volume from the brand's other SKUs.
-    mitigation: Define a cannibalization basket per innovation SKU at launch (default: same brand + adjacent attribute tree); compute Innovation Sales % net of basket cannibalization; require the launch business case to declare basket and tolerance up-front; revisit at first range review.
+    mitigation: "Define a cannibalization basket per innovation SKU at launch (default: same brand + adjacent attribute tree); compute Innovation Sales % net of basket cannibalization; require the launch business case to declare basket and tolerance up-front; revisit at first range review."
   - name: Category captain vs validator manufacturer alignment
     description: One manufacturer holds the captain seat in a category (e.g. Coke in CSDs); a competing validator manufacturer (e.g. Pepsi) reviews and challenges captain recommendations. Both work off the same Circana / NielsenIQ data but with different incentive structures, and the retailer ultimately decides. Data must be presented with vendor-neutral attribution and audit trail.
     mitigation: Persist captain vs validator role on every range-review record; expose the same syndicated_measurement view to both; record contested recommendations and decision rationale to keep the process auditable.
@@ -474,8 +474,7 @@ glossaryTerms:
   - EDI 852 (Product Activity Data)
   - Total Store
   - Category Captain
-  - %ACV Distribution
-
+  - "%ACV Distribution"
 standards:
   - { id: gs1_gtin, name: "GS1 GTIN (Global Trade Item Number)", version: "GTIN-14 (GS1 GenSpec 2024)", url: "https://www.gs1.org/standards/id-keys/gtin" }
   - { id: gs1_gln, name: "GS1 GLN (Global Location Number)", version: "GLN", url: "https://www.gs1.org/standards/id-keys/gln" }
