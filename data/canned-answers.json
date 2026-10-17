@@ -187,7 +187,7 @@
   {
     "matchSubstring": "grid ops",
     "vertical": "Utilities",
-    "response": "Grid operations centre on reliability and balancing. KPIs: SAIDI (system-average interruption duration), SAIFI (frequency), CAIDI (customer-average duration), and Frequency Excursion events. The control loop: SCADA → EMS (state estimation) → AGC (regulation) → market dispatch. DER (distributed energy resource) growth makes the historical assumption "load and generation are at separate sides" obsolete — distribution-level OMS now needs ADMS-grade visibility.",
+    "response": "Grid operations centre on reliability and balancing. KPIs: SAIDI (system-average interruption duration), SAIFI (frequency), CAIDI (customer-average duration), and Frequency Excursion events. The control loop: SCADA → EMS (state estimation) → AGC (regulation) → market dispatch. DER (distributed energy resource) growth makes the historical assumption \"load and generation are at separate sides\" obsolete — distribution-level OMS now needs ADMS-grade visibility.",
     "citations": ["grid.kpi.saidi", "grid.kpi.saifi"]
   },
   {
