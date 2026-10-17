@@ -100,7 +100,7 @@ function parse(tok) {
   if (!tok) return { view: 'home' };
   if (p[0] === 'v' && VERT.has(p[1])) return { view: 'vertical', id: p[1] };
   if (p[0] === 's' && SUB.has(p[1])) return { view: 'sub', id: p[1], tab: p[2] || 'overview' };
-  if (p[0] === 'lens' && ['kpis', 'people', 'systems', 'glossary'].indexOf(p[1]) >= 0) return { view: p[1] };
+  if (p[0] === 'lens' && ['map', 'ask', 'lineage', 'kpis', 'people', 'systems', 'glossary'].indexOf(p[1]) >= 0) return { view: p[1] };
   return { view: 'home' };
 }
 function go(tok, extra) {
@@ -128,7 +128,7 @@ document.addEventListener('click', function (ev) {
 /* ---------- chrome ---------- */
 function renderLenses() {
   var nav = $('#lenses'); nav.replaceChildren();
-  [['', 'Atlas', ['home', 'vertical', 'sub']], ['lens.kpis', 'KPIs', ['kpis']], ['lens.people', 'People', ['people']],
+  [['', 'Atlas', ['home', 'vertical', 'sub']], ['lens.map', 'Map', ['map']], ['lens.ask', 'Ask', ['ask']], ['lens.lineage', 'Lineage', ['lineage']], ['lens.kpis', 'KPIs', ['kpis']], ['lens.people', 'People', ['people']],
    ['lens.systems', 'Systems', ['systems']], ['lens.glossary', 'Glossary', ['glossary']]].forEach(function (l) {
     nav.append(link(l[0], l[2].indexOf(state.view) >= 0 ? { 'aria-current': 'page' } : null, l[1]));
   });
@@ -143,14 +143,14 @@ function renderRail() {
   });
 }
 function render() {
-  renderLenses(); renderRail();
+  stopMap(); renderLenses(); renderRail();
   var m = $('#main'); m.replaceChildren();
-  ({ home: viewHome, vertical: viewVertical, sub: viewSub, kpis: viewKpis, people: viewPeople, systems: viewSystems, glossary: viewGlossary })[state.view](m);
+  ({ home: viewHome, vertical: viewVertical, sub: viewSub, map: viewMap, ask: viewAsk, lineage: viewLineage, kpis: viewKpis, people: viewPeople, systems: viewSystems, glossary: viewGlossary })[state.view](m);
   renderFoot();
 }
 function renderFoot() {
   var f = $('#foot'); f.replaceChildren(
-    h('p', { text: 'Built from the repository data files: data/taxonomy (128 subdomains), data/kpis, data/glossary, data/source-systems, data/connectors and data/quality. Repository snapshot ' + D.commit + '.' }),
+    h('p', { text: 'Built from the repository data files: data/taxonomy (128 subdomains), data/kpis, data/glossary, data/source-systems, data/connectors, data/quality and data/canned-answers.json. Repository snapshot ' + D.commit + '.' }),
     h('p', { text: 'Deeply modelled means a subdomain carries hand-written decisions plus ingestion and integration challenges (' + N_DEEP + ' of ' + D.subs.length + '). Runnable means a synthetic data generator and DDL exist for it (' + N_SYNTH + '). The rest are survey level: personas, KPIs, entities and source systems only.' }));
 }
 
@@ -724,6 +724,548 @@ function viewGlossary(m) {
   }
   m.append(h('div', { class: 'filters' }, h('input', { class: 'inp', id: 'gq', type: 'search', placeholder: 'Find a term or alias', 'aria-label': 'Find a glossary term', value: gQ, oninput: function (e) { gQ = e.target.value; gLimit = 160; paint(); } })), host);
   paint();
+}
+
+/* ---------- map ---------- */
+var mapLayers = { sys: true, per: false, term: false }, mapSelId = null, MAP = null;
+var REDUCED = false;
+try { REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+function stopMap() {
+  if (!MAP) return;
+  MAP.dead = true; cancelAnimationFrame(MAP.raf);
+  if (MAP.ro) MAP.ro.disconnect();
+  if (MAP.mo) MAP.mo.disconnect();
+  if (MAP.mq && MAP.mq.removeEventListener) MAP.mq.removeEventListener('change', MAP.onScheme);
+  MAP = null;
+}
+var KIND_LABEL = { vertical: 'Vertical', sub: 'Subdomain', sys: 'System', per: 'Persona', term: 'Glossary term' };
+function buildGraph() {
+  var nodes = [], idx = {}, edges = [], seed = 11;
+  function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+  function addNode(id, kind, label, r, extra) {
+    var n = Object.assign({ id: id, kind: kind, label: label, r: r, x: 0, y: 0, vx: 0, vy: 0, nb: [] }, extra || {});
+    idx[id] = nodes.length; nodes.push(n); return n;
+  }
+  function addEdge(a, b, t) { var i = idx[a], j = idx[b]; if (i == null || j == null) return; edges.push({ a: i, b: j, t: t }); nodes[i].nb.push(j); nodes[j].nb.push(i); }
+  var verts = D.verticals.filter(function (v) { return (BYV[v.id] || []).length; });
+  verts.forEach(function (v, i) {
+    var a = 2 * Math.PI * i / verts.length, n = addNode('v:' + v.id, 'vertical', VERT.get(v.id).label, 10 + Math.sqrt(BYV[v.id].length) * 2.4, { v: v.id });
+    n.x = Math.cos(a) * 300; n.y = Math.sin(a) * 300;
+  });
+  D.subs.forEach(function (s) {
+    var vn = nodes[idx['v:' + s.v]], n = addNode('s:' + s.id, 'sub', s.name, 3.5 + Math.min(6, Math.sqrt(s.kpis.length) * 1.5), { v: s.v, sub: s });
+    n.x = vn.x + (rnd() - 0.5) * 90; n.y = vn.y + (rnd() - 0.5) * 90;
+    addEdge('v:' + s.v, 's:' + s.id, 'own');
+  });
+  function place(n) {
+    var sx = 0, sy = 0, c = 0; n.nb.forEach(function (j) { sx += nodes[j].x; sy += nodes[j].y; c++; });
+    n.x = (c ? sx / c : 0) + (rnd() - 0.5) * 60; n.y = (c ? sy / c : 0) + (rnd() - 0.5) * 60;
+  }
+  function layer(prefix, kind, items, labelOf, rOf, subsOf, t) {
+    items.forEach(function (it) {
+      var subs = subsOf(it); if (!subs.length) return;
+      var n = addNode(prefix + labelOf(it), kind, labelOf(it), rOf(subs.length), { ref: it });
+      subs.forEach(function (s) { addEdge(prefix + labelOf(it), 's:' + s.id, t); });
+      place(n);
+    });
+  }
+  if (mapLayers.sys) layer('y:', 'sys', Array.from(VEND.values()).filter(function (v) { return v.subs.size >= 2; }),
+    function (v) { return v.name; }, function (c) { return 3 + Math.sqrt(c) * 1.3; }, function (v) { return Array.from(v.subs.values()); }, 'sys');
+  if (mapLayers.per) layer('p:', 'per', Array.from(PERS.values()).filter(function (p) { return p.subs.size >= 3; }),
+    function (p) { return p.name; }, function (c) { return 3 + Math.sqrt(c) * 1.3; }, function (p) { return Array.from(p.subs.values()); }, 'per');
+  if (mapLayers.term) layer('t:', 'term', D.glossary.filter(function (t) { return t.subs.filter(function (id) { return SUB.has(id); }).length >= 2; }),
+    function (t) { return t.n; }, function (c) { return 2.6 + Math.sqrt(c) * 0.9; }, function (t) { return t.subs.map(function (id) { return SUB.get(id); }).filter(Boolean); }, 'term');
+  return { nodes: nodes, edges: edges, idx: idx };
+}
+var LINK_LEN = { own: 46, sys: 78, per: 88, term: 96 }, LINK_K = { own: 0.09, sys: 0.035, per: 0.03, term: 0.025 };
+function simTick(G, alpha) {
+  var N = G.nodes, n = N.length, i, j, a, b, dx, dy, d2, d, f, ax = G.ax, ay = G.ay;
+  for (i = 0; i < n; i++) { ax[i] = -N[i].x * 0.004; ay[i] = -N[i].y * 0.004; }
+  for (i = 0; i < n; i++) {
+    a = N[i];
+    for (j = i + 1; j < n; j++) {
+      b = N[j]; dx = a.x - b.x; dy = a.y - b.y; d2 = dx * dx + dy * dy;
+      if (d2 > 52900) continue;
+      if (d2 < 0.01) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; d2 = dx * dx + dy * dy + 0.01; }
+      d = Math.sqrt(d2); f = 70 * (1 + (a.r + b.r) / 14) / d2;
+      ax[i] += dx * f; ay[i] += dy * f; ax[j] -= dx * f; ay[j] -= dy * f;
+    }
+  }
+  G.edges.forEach(function (e) {
+    a = N[e.a]; b = N[e.b]; dx = b.x - a.x; dy = b.y - a.y; d = Math.sqrt(dx * dx + dy * dy) || 0.01;
+    f = (d - LINK_LEN[e.t]) * LINK_K[e.t] / d;
+    ax[e.a] += dx * f; ay[e.a] += dy * f; ax[e.b] -= dx * f; ay[e.b] -= dy * f;
+  });
+  for (i = 0; i < n; i++) {
+    a = N[i]; if (a.pin) { a.vx = 0; a.vy = 0; continue; }
+    a.vx = (a.vx + ax[i] * alpha) * 0.78; a.vy = (a.vy + ay[i] * alpha) * 0.78;
+    a.x += Math.max(-30, Math.min(30, a.vx)); a.y += Math.max(-30, Math.min(30, a.vy));
+  }
+}
+function startMap(canvas) {
+  stopMap();
+  var G = buildGraph(); G.ax = new Float32Array(G.nodes.length); G.ay = new Float32Array(G.nodes.length);
+  var ctx = canvas.getContext('2d');
+  MAP = { G: G, canvas: canvas, ctx: ctx, k: 1, tx: 0, ty: 0, W: 0, H: 0, dpr: 1, alpha: 1, dirty: true, sel: null, hover: null, match: null, ptrs: new Map(), drag: null, col: {} };
+  var M = MAP;
+  function refreshColors() {
+    var cs = getComputedStyle(document.documentElement), g = function (n) { return cs.getPropertyValue(n).trim(); };
+    M.col = { ink: g('--ink'), ink2: g('--ink-2'), line: g('--line'), surface: g('--surface'), accent: g('--accent'), vs: g('--vs'), vl: g('--vl') };
+    M.dirty = true;
+  }
+  function vfill(hue, a) { return 'hsla(' + hue + ',' + M.col.vs + ',' + M.col.vl + ',' + a + ')'; }
+  M.onScheme = refreshColors;
+  try { M.mq = window.matchMedia('(prefers-color-scheme: dark)'); if (M.mq.addEventListener) M.mq.addEventListener('change', M.onScheme); } catch (e) {}
+  try { M.mo = new MutationObserver(refreshColors); M.mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] }); } catch (e) {}
+  refreshColors();
+  function resize() {
+    var r = canvas.getBoundingClientRect(); if (!r.width) return;
+    M.dpr = window.devicePixelRatio || 1; M.W = r.width; M.H = r.height;
+    canvas.width = Math.round(r.width * M.dpr); canvas.height = Math.round(r.height * M.dpr); M.dirty = true;
+  }
+  function fit() {
+    var minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9;
+    G.nodes.forEach(function (n) { minx = Math.min(minx, n.x - n.r); maxx = Math.max(maxx, n.x + n.r); miny = Math.min(miny, n.y - n.r); maxy = Math.max(maxy, n.y + n.r); });
+    var w = Math.max(maxx - minx, 1), h = Math.max(maxy - miny, 1);
+    M.k = Math.max(0.2, Math.min(3, Math.min((M.W - 40) / w, (M.H - 40) / h)));
+    M.tx = M.W / 2 - (minx + maxx) / 2 * M.k; M.ty = M.H / 2 - (miny + maxy) / 2 * M.k; M.dirty = true;
+  }
+  M.fit = fit;
+  resize();
+  var warm = REDUCED ? 380 : 220, al = 1, t;
+  for (t = 0; t < warm; t++) { simTick(G, al); al *= 0.985; }
+  M.alpha = REDUCED ? 0 : 0.25;
+  fit();
+  M.ro = new ResizeObserver(function () { var ow = M.W, oh = M.H; resize(); if (ow && M.W) { M.tx += (M.W - ow) / 2; M.ty += (M.H - oh) / 2; } });
+  M.ro.observe(canvas);
+
+  function sx(n) { return n.x * M.k + M.tx; } function sy(n) { return n.y * M.k + M.ty; }
+  function rs(n) { return n.r * Math.pow(M.k, 0.6); }
+  function activeSet() {
+    if (M.sel) { var s = new Set([M.sel.i]); M.sel.nb.forEach(function (j) { s.add(j); }); return s; }
+    return M.match;
+  }
+  function draw() {
+    var c = ctx, col = M.col, act = activeSet(), N = G.nodes;
+    c.setTransform(M.dpr, 0, 0, M.dpr, 0, 0); c.fillStyle = col.surface; c.fillRect(0, 0, M.W, M.H);
+    c.lineWidth = 1;
+    G.edges.forEach(function (e) {
+      var a = N[e.a], b = N[e.b], on = !act || (act.has(e.a) && act.has(e.b));
+      if (M.sel && !(e.a === M.sel.i || e.b === M.sel.i)) on = false;
+      c.globalAlpha = act ? (on ? 0.9 : 0.06) : 0.32; c.strokeStyle = on && act ? col.accent : col.ink2;
+      c.beginPath(); c.moveTo(sx(a), sy(a)); c.lineTo(sx(b), sy(b)); c.stroke();
+    });
+    var order = ['term', 'per', 'sys', 'sub', 'vertical'];
+    order.forEach(function (kind) {
+      N.forEach(function (n, i) {
+        if (n.kind !== kind) return;
+        var x = sx(n), y = sy(n); if (x < -30 || y < -30 || x > M.W + 30 || y > M.H + 30) return;
+        var r = rs(n), on = !act || act.has(i); c.globalAlpha = on ? 1 : 0.14;
+        var hue = n.v != null ? VERT.get(n.v).hue : 0;
+        c.beginPath();
+        if (kind === 'sub') { c.arc(x, y, r, 0, 6.2832); c.fillStyle = vfill(hue, n.sub.deep ? 1 : 0.5); c.fill(); }
+        else if (kind === 'vertical') { c.arc(x, y, r, 0, 6.2832); c.fillStyle = vfill(hue, 1); c.fill(); c.lineWidth = 2; c.strokeStyle = col.ink; c.stroke(); }
+        else if (kind === 'sys') { c.rect(x - r, y - r, 2 * r, 2 * r); c.fillStyle = col.ink2; c.fill(); }
+        else if (kind === 'per') { c.moveTo(x, y - r * 1.2); c.lineTo(x + r * 1.1, y + r * 0.85); c.lineTo(x - r * 1.1, y + r * 0.85); c.closePath(); c.fillStyle = col.accent; c.fill(); }
+        else { c.arc(x, y, r, 0, 6.2832); c.fillStyle = col.surface; c.fill(); c.lineWidth = 1.4; c.strokeStyle = col.ink2; c.stroke(); }
+        if (M.sel === n || M.hover === n) { c.globalAlpha = 1; c.lineWidth = 2.5; c.strokeStyle = col.accent; c.beginPath(); c.arc(x, y, r + 3.5, 0, 6.2832); c.stroke(); }
+      });
+    });
+    c.globalAlpha = 1; c.font = '11px "Public Sans", system-ui, sans-serif'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+    N.forEach(function (n, i) {
+      var inAct = act && act.has(i), strong = n.kind === 'vertical' || M.sel === n || M.hover === n || (inAct && (M.sel ? n.kind === 'sub' || M.k > 0.9 : true));
+      var auto = M.k >= 1.7 && !act && (n.kind === 'sub' || n.kind === 'sys' || n.kind === 'per') || M.k >= 2.6 && !act;
+      if (!strong && !auto) return;
+      var x = sx(n), y = sy(n); if (x < -60 || y < -20 || x > M.W + 60 || y > M.H + 20) return;
+      if (act && !inAct) return;
+      var txt = n.kind === 'vertical' ? n.label.toUpperCase() : n.label; if (txt.length > 34) txt = txt.slice(0, 33) + '…';
+      c.font = (n.kind === 'vertical' ? '700 11px' : '11px') + ' "Public Sans", system-ui, sans-serif';
+      var off = rs(n) + 5; c.lineWidth = 3.5; c.strokeStyle = col.surface; c.strokeText(txt, x + off, y); c.fillStyle = col.ink; c.fillText(txt, x + off, y);
+    });
+    c.globalAlpha = 1;
+  }
+  function hit(px, py) {
+    var best = null, bd = 1e9;
+    for (var i = G.nodes.length - 1; i >= 0; i--) {
+      var n = G.nodes[i], dx = sx(n) - px, dy = sy(n) - py, d = Math.sqrt(dx * dx + dy * dy), lim = rs(n) + 4;
+      if (d <= lim && d < bd) { best = n; bd = d; }
+    }
+    return best;
+  }
+  function frame() {
+    if (M.dead) return;
+    if (M.alpha > 0.02) { simTick(G, M.alpha); M.alpha *= 0.985; M.dirty = true; }
+    if (M.dirty) { M.dirty = false; draw(); }
+    M.raf = requestAnimationFrame(frame);
+  }
+  G.nodes.forEach(function (n, i) { n.i = i; });
+  M.raf = requestAnimationFrame(frame);
+
+  M.select = function (n, center) {
+    M.sel = n || null; mapSelId = n ? n.id : null;
+    if (n && center) { M.k = Math.max(M.k, 1.6); M.tx = M.W / 2 - n.x * M.k; M.ty = M.H / 2 - n.y * M.k; }
+    M.dirty = true; renderMapPanel(n);
+  };
+  M.zoom = function (cx, cy, f) {
+    var nk = Math.max(0.2, Math.min(7, M.k * f)), r = nk / M.k;
+    M.tx = cx - (cx - M.tx) * r; M.ty = cy - (cy - M.ty) * r; M.k = nk; M.dirty = true;
+  };
+  M.setMatch = function (set) { M.match = set; M.dirty = true; };
+  M.byId = function (id) { var i = G.idx[id]; return i == null ? null : G.nodes[i]; };
+
+  function pos(ev) { var r = canvas.getBoundingClientRect(); return { x: ev.clientX - r.left, y: ev.clientY - r.top }; }
+  var tip = $('#tip');
+  canvas.addEventListener('pointerdown', function (ev) {
+    canvas.focus({ preventScroll: true }); var p = pos(ev); M.ptrs.set(ev.pointerId, p);
+    try { canvas.setPointerCapture(ev.pointerId); } catch (e) {}
+    if (M.ptrs.size === 2) { var a = Array.from(M.ptrs.values()); M.drag = { mode: 'pinch', d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) }; return; }
+    var n = hit(p.x, p.y);
+    M.drag = { mode: n ? 'node' : 'pan', n: n, sx: p.x, sy: p.y, ox: M.tx, oy: M.ty, moved: false };
+    if (n) { n.pin = true; }
+    canvas.classList.add('grabbing');
+  });
+  canvas.addEventListener('pointermove', function (ev) {
+    var p = pos(ev); if (M.ptrs.has(ev.pointerId)) M.ptrs.set(ev.pointerId, p); var d = M.drag;
+    if (d && d.mode === 'pinch' && M.ptrs.size === 2) {
+      var a = Array.from(M.ptrs.values()), nd = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y);
+      if (d.d > 0) M.zoom((a[0].x + a[1].x) / 2, (a[0].y + a[1].y) / 2, nd / d.d); d.d = nd; return;
+    }
+    if (d && (d.mode === 'node' || d.mode === 'pan')) {
+      if (Math.abs(p.x - d.sx) + Math.abs(p.y - d.sy) > 4) d.moved = true;
+      if (d.moved && d.mode === 'pan') { M.tx = d.ox + (p.x - d.sx); M.ty = d.oy + (p.y - d.sy); M.dirty = true; }
+      if (d.moved && d.mode === 'node') { d.n.x = (p.x - M.tx) / M.k; d.n.y = (p.y - M.ty) / M.k; if (!REDUCED) M.alpha = Math.max(M.alpha, 0.2); M.dirty = true; }
+      tip.hidden = true; return;
+    }
+    var h2 = hit(p.x, p.y);
+    if (h2 !== M.hover) { M.hover = h2; M.dirty = true; canvas.style.cursor = h2 ? 'pointer' : ''; }
+    if (h2 && ev.pointerType !== 'touch') {
+      tip.replaceChildren(h('b', { text: h2.label }), KIND_LABEL[h2.kind] + ' · ' + pl(h2.nb.length, 'link')); tip.hidden = false;
+      tip.style.left = Math.min(ev.clientX + 14, window.innerWidth - 280) + 'px'; tip.style.top = (ev.clientY + 16) + 'px';
+    } else tip.hidden = true;
+  });
+  function up(ev) {
+    var d = M.drag; M.ptrs.delete(ev.pointerId); canvas.classList.remove('grabbing');
+    if (M.ptrs.size < 2 && d && d.mode === 'pinch') { M.drag = null; return; }
+    if (d && d.mode !== 'pinch') {
+      if (d.n) d.n.pin = false;
+      if (!d.moved) { if (d.n) M.select(d.n, false); else if (M.sel) M.select(null, false); }
+    }
+    M.drag = null;
+  }
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('pointerleave', function () { tip.hidden = true; if (M.hover) { M.hover = null; M.dirty = true; } });
+  canvas.addEventListener('dblclick', function (ev) { var p = pos(ev), n = hit(p.x, p.y); if (n && n.kind === 'sub') go('s.' + n.sub.id); });
+  canvas.addEventListener('wheel', function (ev) { ev.preventDefault(); var p = pos(ev); M.zoom(p.x, p.y, Math.exp(-ev.deltaY * 0.0015)); }, { passive: false });
+  canvas.addEventListener('keydown', function (ev) {
+    var k = ev.key, step = 50;
+    if (k === 'ArrowLeft') M.tx += step; else if (k === 'ArrowRight') M.tx -= step; else if (k === 'ArrowUp') M.ty += step; else if (k === 'ArrowDown') M.ty -= step;
+    else if (k === '+' || k === '=') M.zoom(M.W / 2, M.H / 2, 1.25); else if (k === '-') M.zoom(M.W / 2, M.H / 2, 0.8); else if (k === '0') fit();
+    else if (k === 'Escape') M.select(null, false); else if (k === 'Enter' && M.sel && M.sel.kind === 'sub') go('s.' + M.sel.sub.id); else return;
+    ev.preventDefault(); M.dirty = true;
+  });
+  if (mapSelId && M.byId(mapSelId)) M.select(M.byId(mapSelId), false); else renderMapPanel(null);
+  return M;
+}
+function renderMapPanel(n) {
+  var box = $('#mapPanel'); if (!box) return; box.replaceChildren();
+  var M = MAP;
+  function nbs(kind) { return n.nb.map(function (j) { return M.G.nodes[j]; }).filter(function (x) { return x.kind === kind; }).sort(function (a, b) { return cmp(a.label, b.label); }); }
+  function selChips(arr, cap) {
+    var wrap = h('div', { class: 'chips' });
+    arr.slice(0, cap || 60).forEach(function (x) { wrap.append(h('button', { type: 'button', class: 'chip', onclick: function () { M.select(x, true); } }, x.label)); });
+    if (arr.length > (cap || 60)) wrap.append(h('span', { class: 'muted', text: '+' + (arr.length - (cap || 60)) + ' more' }));
+    return wrap;
+  }
+  if (!n) {
+    box.append(h('h2', { text: 'How to read the map' }),
+      h('p', { class: 'muted', style: 'margin:0 0 12px', text: 'Circles are verticals and subdomains. Squares are systems, triangles are personas and open circles are glossary terms. A system, persona or term sits between the subdomains that share it, so tight clusters show where one platform or role spans several domains.' }),
+      h('p', { class: 'muted', style: 'margin:0 0 12px', text: 'Select a node to see what it connects to. Drag a node to move it, drag the background to pan, scroll or pinch to zoom, and double-click a subdomain to open it.' }),
+      h('p', { class: 'muted num', style: 'margin:0', text: pl(M.G.nodes.length, 'node') + ', ' + pl(M.G.edges.length, 'link') + ' with the layers shown.' }));
+    return;
+  }
+  box.append(h('div', { class: 'row-flex', style: 'margin-bottom:6px' }, h('span', { class: 'chip on', text: KIND_LABEL[n.kind] }),
+    n.kind === 'sub' ? h('span', { class: 'chip' + (n.sub.deep ? ' good' : ' off'), text: n.sub.deep ? 'Deeply modelled' : 'Survey level' }) : null,
+    h('button', { type: 'button', class: 'btn', style: 'margin-left:auto;padding:3px 10px', onclick: function () { M.select(null, false); } }, 'Clear')),
+    h('h2', { style: 'font-size:20px', text: n.label }));
+  if (n.kind === 'sub') {
+    var s = n.sub;
+    box.append(h('p', { style: 'margin:0 0 8px', text: s.one }),
+      h('p', { class: 'muted num', style: 'margin:0 0 12px', text: VERT.get(s.v).label + ' · ' + pl(s.kpis.length, 'KPI') + ' · ' + pl(s.ents.length, 'entity', 'entities') + ' · ' + pl(s.src.length, 'system') }),
+      link('s.' + s.id, { class: 'btn', style: 'display:inline-block;text-decoration:none;margin-bottom:14px' }, 'Open subdomain'));
+    [['sys', 'Shared systems'], ['per', 'Shared personas'], ['term', 'Shared terms']].forEach(function (g) {
+      var a = nbs(g[0]); if (a.length) box.append(h('h3', { style: 'margin:12px 0 6px', text: g[1] + ' (' + a.length + ')' }), selChips(a));
+    });
+    if (!nbs('sys').length && !nbs('per').length && !nbs('term').length) box.append(h('p', { class: 'note', text: 'No shared systems, personas or terms are shown for this subdomain with the current layers. Turn on another layer above.' }));
+  } else if (n.kind === 'vertical') {
+    box.append(h('p', { style: 'margin:0 0 10px', text: VERT.get(n.v).tag }), link('v.' + n.v, { class: 'btn', style: 'display:inline-block;text-decoration:none;margin-bottom:12px' }, 'Open vertical'),
+      h('h3', { style: 'margin:8px 0 6px', text: 'Subdomains (' + nbs('sub').length + ')' }), selChips(nbs('sub')));
+  } else {
+    var subs = nbs('sub');
+    if (n.kind === 'term') { var t = GL.get(n.label.toLowerCase()); if (t && t.d) box.append(h('p', { style: 'margin:0 0 10px', text: t.d })); }
+    var dest = { sys: ['lens.systems', 'Open in Systems'], per: ['lens.people', 'Open in People'], term: ['lens.glossary', 'Open in Glossary'] }[n.kind];
+    box.append(link(dest[0], { class: 'btn', style: 'display:inline-block;text-decoration:none;margin-bottom:12px', 'data-sel': n.label }, dest[1]),
+      h('h3', { style: 'margin:8px 0 6px', text: 'Shared by ' + pl(subs.length, 'subdomain') }), selChips(subs));
+  }
+}
+function viewMap(m) {
+  m.append(h('div', { class: 'page-h' }, h('h1', { text: 'Map' })),
+    h('p', { class: 'lede', text: 'Every subdomain, placed near the others it shares systems, people or terms with. Use it to see where one platform or role crosses domains.' }));
+  var layers = h('div', { class: 'row-flex', style: 'margin:14px 0 4px' }, h('span', { class: 'ctl', text: 'Show' }));
+  [['sys', 'Systems (2+ subdomains)'], ['per', 'Personas (3+)'], ['term', 'Glossary terms (2+)']].forEach(function (l) {
+    layers.append(h('button', { type: 'button', class: 'chip' + (mapLayers[l[0]] ? ' on' : ''), 'aria-pressed': String(mapLayers[l[0]]), onclick: function (e) {
+      mapLayers[l[0]] = !mapLayers[l[0]]; e.currentTarget.classList.toggle('on', mapLayers[l[0]]); e.currentTarget.setAttribute('aria-pressed', String(mapLayers[l[0]]));
+      mapStatus.textContent = ''; $('#mq').value = ''; startMap($('#mapc'));
+    } }, l[1]));
+  });
+  var mapStatus = h('span', { class: 'muted', style: 'font-size:13px', role: 'status' });
+  var search = h('form', { class: 'row-flex', style: 'margin:8px 0 12px', onsubmit: function (e) {
+    e.preventDefault(); var q = $('#mq').value.trim().toLowerCase(); if (!q || !MAP) return;
+    var best = null, bs = 9; MAP.G.nodes.forEach(function (n) { var l = n.label.toLowerCase(), s = l === q ? 0 : l.indexOf(q) === 0 ? 1 : l.indexOf(q) >= 0 ? 2 : 9; if (s < bs) { bs = s; best = n; } });
+    if (best) { mapStatus.textContent = ''; MAP.select(best, true); } else mapStatus.textContent = 'Nothing named that is on the map. A system, persona or term appears only when enough subdomains share it.';
+  } }, h('input', { class: 'inp', id: 'mq', type: 'search', placeholder: 'Find a node by name', 'aria-label': 'Find a node on the map', style: 'min-width:min(260px,100%)', oninput: function (e) {
+    var q = e.target.value.trim().toLowerCase(); if (!MAP) return; mapStatus.textContent = '';
+    if (!q) { MAP.setMatch(null); return; }
+    var s = new Set(); MAP.G.nodes.forEach(function (n, i) { if (n.label.toLowerCase().indexOf(q) >= 0) s.add(i); }); MAP.setMatch(s.size ? s : new Set([-1]));
+  } }), h('button', { type: 'submit', class: 'btn' }, 'Go to'), mapStatus);
+  var cv = h('canvas', { id: 'mapc', tabindex: '0', role: 'img', 'aria-label': 'Network map of subdomains and the systems, personas and terms they share. Select a node for details in the panel beside the map. Arrow keys pan, plus and minus zoom.' });
+  var tools = h('div', { class: 'map-tools' },
+    h('button', { type: 'button', 'aria-label': 'Zoom in', onclick: function () { if (MAP) MAP.zoom(MAP.W / 2, MAP.H / 2, 1.3); } }, '+'),
+    h('button', { type: 'button', 'aria-label': 'Zoom out', onclick: function () { if (MAP) MAP.zoom(MAP.W / 2, MAP.H / 2, 1 / 1.3); } }, '−'),
+    h('button', { type: 'button', 'aria-label': 'Fit the whole map', title: 'Fit', onclick: function () { if (MAP) MAP.fit(); } }, '□'));
+  m.append(layers, search, h('div', { class: 'map-grid' }, h('div', { class: 'map-box' }, cv, tools), h('aside', { class: 'map-panel', id: 'mapPanel', 'aria-live': 'polite' })));
+  requestAnimationFrame(function () { startMap(cv); });
+}
+
+/* ---------- ask ---------- */
+var DEC = new Map();
+D.subs.forEach(function (s) { s.decisions.forEach(function (d) { DEC.set(d.id, { d: d, s: s }); }); });
+var STOP = new Set('the a an of in for to and or on with about me show tell list give my our we can should when why there any all that this it be by at from as care what which who whom how does do is are track tracks tracked kpi kpis please'.split(' '));
+function stem(w) { if (w.length > 4 && /ies$/.test(w)) return w.slice(0, -3) + 'y'; if (w.length > 3 && /[^s]s$/.test(w)) return w.slice(0, -1); return w; }
+function words(q) { return (q.toLowerCase().match(/[a-z0-9][a-z0-9&+\/\-]*/g) || []).filter(function (w) { return w.length > 1 && !STOP.has(w); }).map(stem); }
+var ASKIDX = null;
+function askIndex() {
+  if (ASKIDX) return ASKIDX;
+  ASKIDX = D.subs.map(function (s) {
+    var j = function (a) { return a.join(' ').toLowerCase(); };
+    return { s: s, name: s.name.toLowerCase(), one: s.one.toLowerCase(), pers: j(s.personas.map(function (p) { return p.name + ' ' + p.title; })),
+      kpis: j(s.kpis.map(function (k) { return k.name; })), dec: j(s.decisions.map(function (d) { return d.statement; })),
+      ents: j(s.ents.map(function (e) { return e.n.replace(/_/g, ' '); })), vend: j(s.src.map(function (x) { return x.vendor + ' ' + x.product; })) };
+  });
+  return ASKIDX;
+}
+function searchAnswer(q) {
+  var ql = q.toLowerCase();
+  var gl = [], seen = new Set();
+  D.glossary.forEach(function (t) {
+    var names = [t.n].concat(t.al || []);
+    for (var i = 0; i < names.length; i++) {
+      var nm = names[i].toLowerCase(); if (nm.length < 3) continue;
+      var re = new RegExp('(^|[^a-z0-9])' + nm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z0-9]|$)');
+      if (re.test(ql) && !seen.has(t.n)) { seen.add(t.n); gl.push({ t: t, len: nm.length }); break; }
+    }
+  });
+  gl.sort(function (a, b) { return b.len - a.len; }); gl = gl.slice(0, 2);
+  var vend = [], pers = [];
+  VEND.forEach(function (v) { var nm = v.name.toLowerCase(); if (nm.length >= 4 && ql.indexOf(nm) >= 0) vend.push(v); });
+  PERS.forEach(function (p) { var nm = p.name.toLowerCase(); if (nm.length >= 4 && ql.indexOf(nm) >= 0) pers.push(p); });
+  vend = vend.slice(0, 3); pers = pers.slice(0, 2);
+  var phraseToks = new Set();
+  pers.concat(vend).forEach(function (x) { words(x.name).forEach(function (w) { phraseToks.add(w); }); });
+  gl.forEach(function (g) { words(g.t.n).forEach(function (w) { phraseToks.add(w); }); });
+  var toks = words(q).filter(function (w) { return !phraseToks.has(w); });
+  var boost = new Map();
+  pers.forEach(function (p) { p.subs.forEach(function (s) { boost.set(s.id, (boost.get(s.id) || 0) + 10); }); });
+  vend.forEach(function (v) { v.subs.forEach(function (s) { boost.set(s.id, (boost.get(s.id) || 0) + 5); }); });
+  var need = Math.max(1, Math.ceil(toks.length * 0.5)), phrase = toks.join(' '), subs = [];
+  if (toks.length || boost.size) {
+    subs = askIndex().map(function (x) {
+      var sc = boost.get(x.s.id) || 0, hit = 0;
+      toks.forEach(function (t) {
+        var w = 0;
+        if (x.name.indexOf(t) >= 0) w = 6; else if (x.pers.indexOf(t) >= 0 || x.kpis.indexOf(t) >= 0 || x.vend.indexOf(t) >= 0) w = 3;
+        else if (x.one.indexOf(t) >= 0 || x.dec.indexOf(t) >= 0 || x.ents.indexOf(t) >= 0) w = 2;
+        if (w) { hit++; sc += w; }
+      });
+      if (phrase.length > 3 && x.name.indexOf(phrase) >= 0) sc += 8;
+      return { x: x, sc: sc, hit: hit };
+    }).filter(function (r) { return boost.size && !toks.length ? r.sc > 0 : r.hit >= need && r.sc > 0; })
+      .sort(function (a, b) { return b.sc - a.sc || cmp(a.x.s.name, b.x.s.name); }).slice(0, 4);
+  }
+  var kpis = [];
+  if (toks.length) {
+    kpis = ALLK.map(function (k) {
+      var nm = k.name.toLowerCase(), df = (k.def || '').toLowerCase(), hit = 0, sc = 0;
+      toks.forEach(function (t) { if (nm.indexOf(t) >= 0) { hit++; sc += 3; } else if (df.indexOf(t) >= 0) { hit += 0.5; sc += 1; } });
+      return { k: k, sc: sc, hit: hit };
+    }).filter(function (r) { return r.hit >= need; }).sort(function (a, b) { return b.sc - a.sc || a.k.name.length - b.k.name.length; }).slice(0, 6);
+  }
+  var persKpis = [];
+  pers.forEach(function (p) { ALLK.forEach(function (k) { if (k.pers.indexOf(p.name) >= 0) persKpis.push({ k: k, p: p }); }); });
+  if (!subs.length && !kpis.length && !gl.length && !vend.length && !pers.length) return null;
+  return { subs: subs, kpis: kpis, gl: gl, vend: vend, pers: pers, persKpis: persKpis.slice(0, 10) };
+}
+function refChip(id) {
+  var k = KBYID.get(id), d = DEC.get(id);
+  if (k) return link('s.' + k.sub.id + '.kpis', { class: 'chip', 'data-sel': k.id, title: k.id }, k.name);
+  if (d) return link('s.' + d.s.id, { class: 'chip', title: d.d.statement }, trunc(d.d.statement, 46));
+  if (SUB.has(id)) return link('s.' + id, { class: 'chip' }, SUB.get(id).name);
+  var g = /^glossary\./.test(id) ? GL.get(id.slice(9).replace(/_/g, ' ')) : null;
+  if (g) return link('lens.glossary', { class: 'chip', 'data-sel': g.n }, g.n);
+  return h('span', { class: 'chip off', title: 'Cited in the answer but not found in the current data', text: id.replace(/^(glossary|src)\./, '').replace(/_/g, ' ') });
+}
+function cannedFor(q) {
+  var ql = q.toLowerCase(), best = null, bl = 0;
+  D.canned.forEach(function (e) { var m = e.q.toLowerCase(); if (ql.indexOf(m) >= 0 && m.length > bl) { best = e; bl = m.length; } });
+  return best;
+}
+function renderRefsText(text, into) {
+  text.split(/\n{2,}/).forEach(function (para) {
+    var p = h('p', { style: 'margin:0 0 10px;max-width:72ch;white-space:pre-wrap' });
+    para.split(/(\[REF:[^\]]+\])/).forEach(function (part) {
+      var m = /^\[REF:([^\]]+)\]$/.exec(part);
+      if (m) { p.append(' ', refChip(m[1])); } else p.append(part);
+    });
+    into.append(p);
+  });
+}
+function answerNode(q) {
+  var card = h('div', { class: 'a-card' }), can = cannedFor(q), r = searchAnswer(q);
+  if (can) {
+    card.append(h('div', { class: 'a-tag', text: 'Prepared answer from the repository' }));
+    renderRefsText(can.a, card);
+    if (can.c.length) card.append(h('div', { class: 'chips', style: 'margin:4px 0 12px' }, h('span', { class: 'muted', text: 'Cited:' }), can.c.map(refChip)));
+  }
+  if (r) {
+    card.append(h('div', { class: 'a-tag', text: can ? 'Also in the data files' : 'From the data files' }));
+    r.gl.forEach(function (g) {
+      card.append(h('div', { class: 'a-sec' }, h('b', null, link('lens.glossary', { 'data-sel': g.t.n }, g.t.n)), g.t.al.length ? h('span', { class: 'muted', text: '  (' + g.t.al.slice(0, 2).join(', ') + ')' }) : null,
+        h('div', { text: g.t.d || '' })));
+    });
+    r.pers.forEach(function (p) {
+      card.append(h('div', { class: 'a-sec' }, h('b', null, link('lens.people', { 'data-sel': p.name }, p.name)), ' appears in ' + pl(p.subs.size, 'subdomain') + ':',
+        h('div', { class: 'chips', style: 'margin-top:6px' }, Array.from(p.subs.values()).slice(0, 12).map(function (s) { return link('s.' + s.id, { class: 'chip' }, s.name); }))));
+    });
+    if (r.persKpis.length) {
+      card.append(h('div', { class: 'a-sec' }, h('span', { class: 'muted', text: 'KPIs linked to ' + r.pers.map(function (p) { return p.name; }).join(' and ') }),
+        h('div', { class: 'chips', style: 'margin-top:6px' }, r.persKpis.map(function (x) { return link('s.' + x.k.sub.id + '.kpis', { class: 'chip', 'data-sel': x.k.id, title: x.k.sub.name }, x.k.name + ' \u00B7 ' + x.k.sub.name); }))));
+    }
+    r.vend.forEach(function (v) {
+      card.append(h('div', { class: 'a-sec' }, h('b', null, link('lens.systems', { 'data-sel': v.name }, v.name)), ' is named in ' + pl(v.subs.size, 'subdomain') + ':',
+        h('div', { class: 'chips', style: 'margin-top:6px' }, Array.from(v.subs.values()).slice(0, 12).map(function (s) { return link('s.' + s.id + '.systems', { class: 'chip' }, s.name); }))));
+    });
+    if (r.subs.length) {
+      var top = r.subs[0].x.s, toks = words(q);
+      card.append(h('div', { class: 'a-sec' }, h('b', null, 'Closest subdomain: ', link('s.' + top.id, null, top.name)), h('div', { class: 'muted', text: VERT.get(top.v).label + '. ' + top.one })));
+      var ps = top.personas.slice().sort(function (a, b) { return LEVELS.indexOf(a.level) - LEVELS.indexOf(b.level); }).slice(0, 5);
+      if (ps.length) card.append(h('div', { class: 'a-sec' }, h('span', { class: 'muted', text: 'Who decides' }), h('div', { class: 'chips', style: 'margin-top:6px' }, ps.map(function (p) { return link('lens.people', { class: 'chip', 'data-sel': p.name, title: p.title }, p.name); }))));
+      var ks = top.kpis.map(function (k) { var nm = k.name.toLowerCase(); return { k: k, hit: toks.filter(function (t) { return nm.indexOf(t) >= 0; }).length }; }).sort(function (a, b) { return b.hit - a.hit; }).slice(0, 6);
+      if (ks.length) card.append(h('div', { class: 'a-sec' }, h('span', { class: 'muted', text: 'KPIs' }), h('div', { class: 'chips', style: 'margin-top:6px' }, ks.map(function (x) { return link('s.' + top.id + '.kpis', { class: 'chip', 'data-sel': x.k.id }, x.k.name); }))));
+      if (top.decisions.length) {
+        var ds = top.decisions.slice(0, 2);
+        card.append(h('div', { class: 'a-sec' }, h('span', { class: 'muted', text: 'Decisions' }), h('ul', { style: 'margin:6px 0 0;padding-left:18px;max-width:72ch' }, ds.map(function (d) { return h('li', { text: d.statement }); }))));
+      }
+      if (top.src.length) card.append(h('div', { class: 'a-sec' }, h('span', { class: 'muted', text: 'Systems' }), h('div', { class: 'chips', style: 'margin-top:6px' }, top.src.slice(0, 8).map(function (x) { return link('lens.systems', { class: 'chip', 'data-sel': String(x.vendor).trim() }, x.vendor + ' · ' + x.product); }))));
+      if (r.subs.length > 1) card.append(h('div', { class: 'a-sec' }, h('span', { class: 'muted', text: 'Also relevant' }), h('div', { class: 'chips', style: 'margin-top:6px' }, r.subs.slice(1).map(function (x) { return link('s.' + x.x.s.id, { class: 'chip' }, x.x.s.name); }))));
+    }
+    if (r.kpis.length) {
+      card.append(h('div', { class: 'a-sec' }, h('span', { class: 'muted', text: 'KPIs matching your words' }),
+        h('div', { class: 'chips', style: 'margin-top:6px' }, r.kpis.map(function (x) { return link('s.' + x.k.sub.id + '.kpis', { class: 'chip', 'data-sel': x.k.id, title: x.k.sub.name }, x.k.name + ' · ' + x.k.sub.name); }))));
+    }
+  }
+  if (!can && !r) {
+    card.append(h('p', { style: 'margin:0 0 8px', text: 'Nothing in the repository data matches that.' }),
+      h('p', { class: 'muted', style: 'margin:0', text: 'Try a KPI (chargeback ratio), a role (Head of Payments), a system (Temenos), an industry area (reinsurance treaty) or a term (STP).' }));
+  }
+  return card;
+}
+var askLog = [], askSeeded = false;
+var ASK_EXAMPLES = ['What KPIs does the Head of Payments care about?', 'What is straight-through processing?', 'Difference between 3NF and Data Vault', 'Tell me about churn', 'Which systems feed outage management?', 'Who decides on reinsurance treaty?', 'chargeback ratio'];
+function viewAsk(m) {
+  m.append(h('div', { class: 'page-h' }, h('h1', { text: 'Ask' })),
+    h('p', { class: 'lede', text: 'Ask about a KPI, a role, a system, a term or an industry area. Answers are assembled only from this repository’s data files and its prepared answers. Nothing comes from outside them, and no network call is made.' }));
+  var log = h('div', { class: 'ask-log', 'aria-live': 'polite' });
+  function paint() {
+    log.replaceChildren();
+    askLog.forEach(function (t) { log.append(h('div', { class: 'turn' }, h('div', { class: 'q-bubble', text: t.q }), t.node)); });
+  }
+  function ask(q) {
+    q = q.trim(); if (!q) return;
+    askLog.push({ q: q, node: answerNode(q) }); paint();
+    var last = log.lastElementChild; if (last && last.scrollIntoView) last.scrollIntoView({ block: 'nearest', behavior: REDUCED ? 'auto' : 'smooth' });
+  }
+  var input = h('input', { class: 'inp', id: 'aq', type: 'text', placeholder: 'Ask about the data, for example: Which systems feed outage management?', 'aria-label': 'Your question', autocomplete: 'off', style: 'flex:1 1 280px;min-width:0' });
+  var form = h('form', { class: 'ask-form', onsubmit: function (e) { e.preventDefault(); ask(input.value); input.value = ''; input.focus(); } }, input, h('button', { type: 'submit', class: 'btn' }, 'Ask'),
+    h('button', { type: 'button', class: 'btn', onclick: function () { askLog = []; paint(); } }, 'Clear'));
+  var ex = h('div', { class: 'chips', style: 'margin:10px 0 18px' }, h('span', { class: 'muted', text: 'Try:' }), ASK_EXAMPLES.map(function (e) { return h('button', { type: 'button', class: 'chip', onclick: function () { ask(e); } }, e); }));
+  m.append(form, ex, log);
+  if (!askSeeded && !askLog.length) { askSeeded = true; askLog.push({ q: ASK_EXAMPLES[0], node: answerNode(ASK_EXAMPLES[0]) }); }
+  paint();
+}
+
+/* ---------- lineage ---------- */
+var lnQ = '', lnSqlOnly = true, lnLimit = 150;
+var TABLE_RE = /\b(?:FROM|JOIN)\s+([A-Za-z_]\w*)\.([A-Za-z_]\w*)/gi;
+function tablesOf(sq) {
+  var out = {};
+  [['threeNF', '3NF'], ['vault', 'Data Vault'], ['dimensional', 'Dimensional']].forEach(function (st) {
+    var txt = sq && sq[st[0]]; if (!txt) return; var seen = [], m; TABLE_RE.lastIndex = 0;
+    while ((m = TABLE_RE.exec(txt))) { var key = m[1] + '.' + m[2]; if (seen.indexOf(key) < 0) seen.push(key); }
+    if (seen.length) out[st[1]] = seen;
+  });
+  return out;
+}
+function viewLineage(m) {
+  m.append(h('div', { class: 'page-h' }, h('h1', { text: 'Lineage' })),
+    h('p', { class: 'lede', text: 'Follow one KPI from the people who track it, through the decisions it informs and the tables its SQL reads, to the systems in its subdomain.' }));
+  var host = h('div');
+  function paint() {
+    var q = lnQ.trim().toLowerCase();
+    var list = ALLK.filter(function (k) { return (!lnSqlOnly || k.sql) && (!q || (k.name + ' ' + k.id + ' ' + k.sub.name).toLowerCase().indexOf(q) >= 0); });
+    var rich = function (k) { return k.sql && Object.keys(tablesOf(D.kpiSql[k.id])).length; };
+    var withTables = list.filter(function (k) { return rich(k) && k.pers.length && k.dec.length; })[0] || list.filter(rich)[0];
+    var sel = state.sel && KBYID.has(state.sel) && list.some(function (k) { return k.id === state.sel; }) ? state.sel : ((withTables || list[0]) && (withTables || list[0]).id);
+    var K = sel ? KBYID.get(sel) : null, right = h('div');
+    if (K) right.append(lineageFlow(K));
+    else right.append(h('p', { class: 'note', text: lnSqlOnly ? 'No KPI with an SQL specification matches that. Clear the box, or untick "Only KPIs with SQL" to search all ' + ALLK.length + '.' : 'No KPI matches that.' }));
+    var items = list.slice(0, lnLimit).map(function (k) { return { name: k.id, k: k }; });
+    var pk = pickList(items, sel, function (n) { state.sel = n; paint(); }, function (it) { return [h('span', null, it.k.name, h('div', { class: 'muted', style: 'font-size:12px', text: it.k.sub.name })), h('span', { class: 'n mono', text: it.k.sql ? 'SQL' : '' })]; });
+    if (list.length > lnLimit) pk.append(h('button', { type: 'button', class: 'btn', style: 'margin:10px', onclick: function () { lnLimit += 200; paint(); } }, 'Show more (' + (list.length - lnLimit) + ' left)'));
+    host.replaceChildren(h('div', { class: 'split' }, pk, right));
+  }
+  m.append(h('div', { class: 'filters' },
+    h('input', { class: 'inp', id: 'lq', type: 'search', placeholder: 'Find a KPI', 'aria-label': 'Find a KPI', value: lnQ, oninput: function (e) { lnQ = e.target.value; lnLimit = 150; paint(); } }),
+    h('label', { class: 'ctl' }, h('input', { type: 'checkbox', id: 'lsql', checked: lnSqlOnly, onchange: function (e) { lnSqlOnly = e.target.checked; lnLimit = 150; paint(); } }), 'Only KPIs with SQL (' + Object.keys(D.kpiSql).length + ')')), host);
+  paint();
+}
+function stage(title, hint, kids) { return h('section', { class: 'stage' }, h('h3', { text: title }), hint ? h('div', { class: 'muted', style: 'font-size:12.5px;margin:-2px 0 8px', text: hint }) : null, kids); }
+function lineageFlow(k) {
+  var s = k.sub, d = DIRS[k.dir] || ['–', 'band', 'Direction not set'], tabs = tablesOf(D.kpiSql[k.id]);
+  var who = k.pers.length ? h('div', { class: 'chips' }, k.pers.map(function (n) { return link('lens.people', { class: 'chip', 'data-sel': n }, n); })) : h('p', { class: 'note', text: 'No persona is linked to this KPI in the KPI master list.' });
+  var decs = k.dec.length ? k.dec.map(function (id) { var x = DEC.get(id); return h('p', { style: 'margin:0 0 8px' }, x ? x.d.statement : h('span', { class: 'mono', text: id })); }) : h('p', { class: 'note', text: 'No decision is linked to this KPI yet.' });
+  var kp = h('div', null, h('b', { style: 'font-family:var(--f-display);font-stretch:108%;font-size:17px', text: k.name }), h('div', { class: 'mono muted', text: k.id }),
+    h('div', { class: 'mono', style: 'margin:8px 0', text: k.formula || '' }), h('div', { class: 'row-flex', style: 'gap:6px' }, h('span', { class: 'chip', text: k.unit || 'no unit' }), h('span', { class: 'chip dir ' + d[1], text: d[0] + ' ' + d[2] })),
+    k.def ? h('p', { class: 'muted', style: 'margin:8px 0 0', text: k.def }) : null);
+  var ents = new Map(s.ents.map(function (e) { return [e.n.toLowerCase(), e.n]; }));
+  var tb;
+  if (Object.keys(tabs).length) {
+    tb = h('div');
+    Object.keys(tabs).forEach(function (st) {
+      tb.append(h('div', { class: 'muted', style: 'font-size:12.5px;margin:6px 0 4px', text: st }), h('div', { class: 'chips' }, tabs[st].map(function (t) {
+        var nm = t.split('.')[1].toLowerCase(), en = ents.get(nm);
+        return en ? link('s.' + s.id + '.model', { class: 'chip k', 'data-sel': en, title: 'Open ' + en + ' in the data model' }, t) : h('span', { class: 'chip k', text: t });
+      })));
+    });
+  } else tb = h('p', { class: 'note', text: k.sql ? 'The SQL does not name tables in a schema.table form.' : 'No SQL specification for this KPI yet.' });
+  var cats = {}; s.src.forEach(function (x) { (cats[x.category] = cats[x.category] || []).push(x); });
+  var sys = h('div');
+  Object.keys(cats).sort(cmp).slice(0, 8).forEach(function (c) { sys.append(h('div', { class: 'muted', style: 'font-size:12.5px;margin:6px 0 4px', text: c }), h('div', { class: 'chips' }, cats[c].map(function (x) { return link('lens.systems', { class: 'chip', 'data-sel': String(x.vendor).trim() }, x.vendor); }))); });
+  if (Object.keys(cats).length > 8) sys.append(h('p', { class: 'muted', style: 'margin:8px 0 0', text: '+' + (Object.keys(cats).length - 8) + ' more categories in the subdomain.' }));
+  return h('div', null,
+    h('div', { class: 'row-flex', style: 'margin-bottom:12px' }, h('span', { class: 'muted', text: VERT.get(s.v).label + ' /' }), link('s.' + s.id, null, h('b', { text: s.name })),
+      link('s.' + s.id + '.kpis', { class: 'btn', style: 'text-decoration:none;margin-left:auto', 'data-sel': k.id }, 'Open KPI and SQL')),
+    h('div', { class: 'flow' }, stage('Who tracks it', null, who), stage('Decisions it informs', null, decs), stage('The KPI', null, kp),
+      stage('Tables its SQL reads', 'Taken from the SQL text', tb), stage('Systems in the subdomain', 'Listed for the whole subdomain', sys)),
+    h('p', { class: 'muted', style: 'margin:14px 0 0;max-width:72ch', text: 'The data records systems per subdomain, not per KPI, so it does not say which system feeds this KPI. The table names come from the SQL specification, not from a lineage catalog.' }));
 }
 
 /* ---------- search ---------- */

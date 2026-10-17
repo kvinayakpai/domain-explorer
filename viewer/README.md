@@ -1,10 +1,14 @@
 # Static viewer
 
-`index.html` is a single self-contained page (data embedded, no server, no build step to open it).
-Open it in a browser, or serve the repo with GitHub Pages and point at `viewer/`.
+`viewer.html` (repo root) is a single self-contained page: data embedded, no server, no build step to open it.
+Open it in a browser, or serve the repo with GitHub Pages. The root `index.html` redirects to it.
 
-It reads from `data/` at build time: the taxonomy (one file per subdomain), KPI master and SQL specs,
-glossary, source systems, connectors and data-quality results.
+Views: Atlas (treemap, verticals, subdomain dossiers with KPI SQL and entity diagrams), Map (force graph of shared
+systems, personas and terms), Ask (answers assembled only from the data files and `data/canned-answers.json`),
+Lineage (KPI to personas, decisions, SQL tables and systems), and KPI, People, Systems and Glossary lenses.
+
+It reads from `data/` at build time: the taxonomy (one file per subdomain), KPI master and SQL specs, glossary,
+source systems, connectors, data-quality results and the prepared answers.
 
 Rebuild after changing any data file:
 

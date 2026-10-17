@@ -1,6 +1,6 @@
 """Inline the dataset into the viewer template and write one self-contained index.html.
 
-Usage: python viewer/assemble.py <dataset.json> <output index.html>
+Usage: python viewer/assemble.py <dataset.json> <output viewer.html>
 """
 import pathlib
 import re

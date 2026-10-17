@@ -114,10 +114,12 @@ out = {
                   "subs": t.get("related_subdomains") or [], "kpis": t.get("related_kpis") or [],
                   "steward": t.get("steward")} for t in glossary],
     "sources": sources, "connectors": connectors,
+    "canned": [{"q": e["matchSubstring"], "v": e.get("vertical"), "a": e["response"], "c": e.get("citations") or []}
+               for e in json.loads((D / "canned-answers.json").read_text(encoding="utf-8"))],
     "dqTotals": {k: last[k] for k in ("ran_at", "total_rules", "passed", "failed", "pending", "pass_rate")},
 }
 OUT.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 print("subs", len(subs), "kpis", sum(len(s["kpis"]) for s in subs), "ents", sum(len(s["ents"]) for s in subs),
       "deep", sum(s["deep"] for s in subs), "synth", sum(s["synth"] for s in subs), "ddl", sum(s["ddl"] for s in subs),
-      "glossary", len(glossary), "sources", len(sources), "connectors", len(connectors),
+      "canned", len(out["canned"]), "glossary", len(glossary), "sources", len(sources), "connectors", len(connectors),
       "KB", OUT.stat().st_size // 1024)
