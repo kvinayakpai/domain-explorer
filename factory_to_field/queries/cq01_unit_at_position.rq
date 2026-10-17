@@ -1,0 +1,11 @@
+# question: Which unit was installed at position ?pos on date ?on?
+# bindings: ?pos (IRI), ?on (xsd:date)
+PREFIX ftf: <https://domain-explorer.dev/ftf#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?unit ?serial ?from ?to WHERE {
+  ?i a ftf:Installation ; ftf:position ?pos ; ftf:unit ?unit ; ftf:from_date ?from .
+  OPTIONAL { ?i ftf:to_date ?to }
+  ?unit ftf:serial ?serial .
+  FILTER (?from <= ?on && (!BOUND(?to) || ?on < ?to))
+}

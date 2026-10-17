@@ -1,0 +1,1958 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ftf: <https://domain-explorer.dev/ftf#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+ftf:BuildRecord a sh:NodeShape ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n170 ;
+	sh:property _:c14n109 , _:c14n25 , _:c14n254 , _:c14n324 , _:c14n370 , _:c14n391 , _:c14n52 ;
+	sh:targetClass ftf:BuildRecord .
+ftf:Case a sh:NodeShape ;
+	rdfs:comment "An investigation opened by an alarm or a question. Holds findings and drafts." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n35 ;
+	sh:property _:c14n192 , _:c14n22 , _:c14n270 , _:c14n336 , _:c14n40 , _:c14n99 ;
+	sh:targetClass ftf:Case .
+ftf:Deferment a sh:NodeShape ;
+	rdfs:comment "Production lost or at risk while a well runs degraded or is down." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n199 ;
+	sh:property _:c14n282 , _:c14n343 , _:c14n6 ;
+	sh:targetClass ftf:Deferment .
+ftf:Document a sh:NodeShape ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n39 ;
+	sh:property _:c14n116 , _:c14n129 , _:c14n213 , _:c14n23 , _:c14n3 , _:c14n325 , _:c14n399 , _:c14n4 , _:c14n56 ;
+	sh:targetClass ftf:Document .
+ftf:Draft a sh:NodeShape ;
+	rdfs:comment "A proposed write to a system of record. Never applied without a named approver." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n194 ;
+	sh:property _:c14n165 , _:c14n190 , _:c14n263 , _:c14n330 , _:c14n36 , _:c14n360 , _:c14n366 , _:c14n374 ;
+	sh:targetClass ftf:Draft .
+ftf:ESPComponent a sh:NodeShape ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n345 ;
+	sh:property _:c14n111 , _:c14n123 , _:c14n15 , _:c14n201 , _:c14n261 , _:c14n296 , _:c14n309 , _:c14n314 , _:c14n397 , _:c14n69 ;
+	sh:targetClass ftf:ESPComponent .
+ftf:ESPPosition a sh:NodeShape ;
+	rdfs:comment "The artificial-lift position in a well (the ESP slot), under the Well." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n306 ;
+	sh:property _:c14n103 , _:c14n141 , _:c14n175 , _:c14n278 , _:c14n338 , _:c14n358 , _:c14n367 , _:c14n393 , _:c14n64 ;
+	sh:targetClass ftf:ESPPosition .
+ftf:ESPString a sh:NodeShape ;
+	rdfs:comment "A complete submersible pump string as run in a well." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n24 ;
+	sh:property _:c14n105 , _:c14n12 , _:c14n157 , _:c14n160 , _:c14n200 , _:c14n222 , _:c14n250 , _:c14n331 , _:c14n38 , _:c14n62 ;
+	sh:targetClass ftf:ESPString .
+ftf:EightD a sh:NodeShape ;
+	rdfs:comment "Corrective-action report (8D). Always created as a draft by agents." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n100 ;
+	sh:property _:c14n145 , _:c14n152 , _:c14n246 , _:c14n26 , _:c14n295 , _:c14n55 ;
+	sh:targetClass ftf:EightD .
+ftf:EngineeringChange a sh:NodeShape ;
+	rdfs:comment "An ECO. The route says how it was approved." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n140 ;
+	sh:property _:c14n101 , _:c14n131 , _:c14n144 , _:c14n242 , _:c14n299 , _:c14n341 , _:c14n73 ;
+	sh:targetClass ftf:EngineeringChange .
+ftf:Entity a sh:NodeShape ;
+	sh:closed false ;
+	sh:ignoredProperties _:c14n321 ;
+	sh:property _:c14n20 , _:c14n206 , _:c14n380 ;
+	sh:targetClass ftf:Entity .
+ftf:Event a sh:NodeShape ;
+	sh:closed false ;
+	sh:ignoredProperties _:c14n211 ;
+	sh:property _:c14n280 , _:c14n49 , _:c14n57 , _:c14n59 ;
+	sh:targetClass ftf:Event .
+ftf:FailureEvent a sh:NodeShape ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n379 ;
+	sh:property _:c14n151 , _:c14n172 , _:c14n224 , _:c14n303 , _:c14n307 , _:c14n326 , _:c14n369 , _:c14n375 , _:c14n61 ;
+	sh:targetClass ftf:FailureEvent .
+ftf:FunctionalLocation a sh:NodeShape ;
+	rdfs:comment "A POSITION. Where equipment is needed; defined by the engineering design and survives swaps." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n216 ;
+	sh:property _:c14n193 , _:c14n218 , _:c14n351 , _:c14n398 , _:c14n400 , _:c14n68 , _:c14n70 , _:c14n76 ;
+	sh:targetClass ftf:FunctionalLocation .
+ftf:Installation a sh:NodeShape ;
+	rdfs:comment "A unit at a position over a period. The only place unit and position meet." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n143 ;
+	sh:property _:c14n10 , _:c14n11 , _:c14n113 , _:c14n198 , _:c14n265 , _:c14n285 , _:c14n85 ;
+	sh:targetClass ftf:Installation .
+ftf:KpiDefinition a sh:NodeShape ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n104 ;
+	sh:property _:c14n122 , _:c14n168 , _:c14n191 , _:c14n256 , _:c14n267 , _:c14n272 , _:c14n274 , _:c14n44 ;
+	sh:targetClass ftf:KpiDefinition .
+ftf:LinkAssertion a sh:NodeShape ;
+	rdfs:comment "Provenance of one identity or relationship link between source records." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n396 ;
+	sh:property _:c14n13 , _:c14n161 , _:c14n255 , _:c14n386 , _:c14n81 , _:c14n98 ;
+	sh:targetClass ftf:LinkAssertion .
+ftf:ManagementOfChange a sh:NodeShape ;
+	rdfs:comment "A plant change request; ties engineering changes to positions." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n135 ;
+	sh:property _:c14n148 , _:c14n28 , _:c14n320 , _:c14n43 , _:c14n77 ;
+	sh:targetClass ftf:ManagementOfChange .
+ftf:MaterialLot a sh:NodeShape ;
+	rdfs:comment "A homogeneous batch of a purchased material (bearing set, elastomer compound)." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n126 ;
+	sh:property _:c14n133 , _:c14n19 , _:c14n230 , _:c14n340 , _:c14n376 , _:c14n89 ;
+	sh:targetClass ftf:MaterialLot .
+ftf:NonConformance a sh:NodeShape ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n18 ;
+	sh:property _:c14n179 , _:c14n266 , _:c14n27 , _:c14n353 , _:c14n53 , _:c14n71 ;
+	sh:targetClass ftf:NonConformance .
+ftf:Notification a sh:NodeShape ;
+	rdfs:comment "A maintenance notification or malfunction report." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n217 ;
+	sh:property _:c14n149 , _:c14n177 , _:c14n197 , _:c14n205 , _:c14n288 , _:c14n289 , _:c14n373 ;
+	sh:targetClass ftf:Notification .
+ftf:OilField a sh:NodeShape ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n30 ;
+	sh:property _:c14n209 , _:c14n210 , _:c14n240 , _:c14n349 , _:c14n392 , _:c14n394 ;
+	sh:targetClass ftf:OilField .
+ftf:Organization a sh:NodeShape ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n112 ;
+	sh:property _:c14n120 , _:c14n134 , _:c14n383 , _:c14n51 ;
+	sh:targetClass ftf:Organization .
+ftf:PhysicalEquipment a sh:NodeShape ;
+	rdfs:comment "A UNIT. A serial-numbered thing that can be built, installed, moved, repaired and scrapped." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n322 ;
+	sh:property _:c14n1 , _:c14n121 , _:c14n249 , _:c14n31 , _:c14n317 , _:c14n318 , _:c14n329 , _:c14n47 , _:c14n60 ;
+	sh:targetClass ftf:PhysicalEquipment .
+ftf:ProcessUnit a sh:NodeShape ;
+	rdfs:comment "A process unit such as a crude distillation unit; positions hang under it." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n364 ;
+	sh:property _:c14n128 , _:c14n208 , _:c14n231 , _:c14n275 , _:c14n291 , _:c14n312 , _:c14n337 , _:c14n395 , _:c14n83 ;
+	sh:targetClass ftf:ProcessUnit .
+ftf:PumpPosition a sh:NodeShape ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n37 ;
+	sh:property _:c14n136 , _:c14n146 , _:c14n203 , _:c14n245 , _:c14n247 , _:c14n262 , _:c14n284 , _:c14n350 , _:c14n362 , _:c14n368 , _:c14n9 ;
+	sh:targetClass ftf:PumpPosition .
+ftf:RunRecord a sh:NodeShape ;
+	rdfs:comment "One run of a string in a well. Run life belongs to the string, not to the well." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n332 ;
+	sh:property _:c14n14 , _:c14n153 , _:c14n185 , _:c14n221 , _:c14n238 , _:c14n33 , _:c14n72 , _:c14n82 ;
+	sh:targetClass ftf:RunRecord .
+ftf:Shipment a sh:NodeShape ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n319 ;
+	sh:property _:c14n106 , _:c14n107 , _:c14n132 , _:c14n16 , _:c14n183 , _:c14n7 ;
+	sh:targetClass ftf:Shipment .
+ftf:Signal a sh:NodeShape ;
+	rdfs:comment "A measured or computed time series (historian tag, SCADA point)." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n323 ;
+	sh:property _:c14n117 , _:c14n142 , _:c14n159 , _:c14n313 , _:c14n328 , _:c14n347 , _:c14n402 , _:c14n63 ;
+	sh:targetClass ftf:Signal .
+ftf:Site a sh:NodeShape ;
+	rdfs:comment "A refinery, a field, or a factory." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n372 ;
+	sh:property _:c14n269 , _:c14n333 , _:c14n334 , _:c14n67 , _:c14n87 , _:c14n88 ;
+	sh:targetClass ftf:Site .
+ftf:SourceIdentifier a sh:NodeShape ;
+	rdfs:comment "One name for one thing in one system." ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n182 ;
+	sh:property _:c14n167 , _:c14n244 , _:c14n304 , _:c14n90 ;
+	sh:targetClass ftf:SourceIdentifier .
+ftf:Stream a sh:NodeShape ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n389 ;
+	sh:property _:c14n127 , _:c14n188 , _:c14n232 , _:c14n356 , _:c14n388 , _:c14n97 ;
+	sh:targetClass ftf:Stream .
+ftf:TestRecord a sh:NodeShape ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n17 ;
+	sh:property _:c14n189 , _:c14n223 , _:c14n234 , _:c14n259 , _:c14n305 , _:c14n32 , _:c14n390 , _:c14n46 ;
+	sh:targetClass ftf:TestRecord .
+ftf:WarrantyClaim a sh:NodeShape ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n166 ;
+	sh:property _:c14n114 , _:c14n119 , _:c14n308 , _:c14n342 , _:c14n348 , _:c14n5 ;
+	sh:targetClass ftf:WarrantyClaim .
+ftf:Well a sh:NodeShape ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n252 ;
+	sh:property _:c14n118 , _:c14n162 , _:c14n174 , _:c14n195 , _:c14n239 , _:c14n248 , _:c14n257 , _:c14n365 , _:c14n45 , _:c14n78 , _:c14n96 ;
+	sh:targetClass ftf:Well .
+ftf:Workover a sh:NodeShape ;
+	sh:closed true ;
+	sh:ignoredProperties _:c14n66 ;
+	sh:property _:c14n184 , _:c14n220 , _:c14n276 , _:c14n281 , _:c14n301 , _:c14n310 , _:c14n344 , _:c14n54 ;
+	sh:targetClass ftf:Workover .
+_:c14n0 rdf:first ftf:target_system ;
+	rdf:rest _:c14n164 .
+_:c14n1 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 8 ;
+	sh:path ftf:identifiers .
+_:c14n10 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 5 ;
+	sh:path ftf:label .
+_:c14n100 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n101 sh:datatype xsd:boolean ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:qualification_test_waived .
+_:c14n102 rdf:first ftf:position ;
+	rdf:rest _:c14n427 .
+_:c14n103 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 8 ;
+	sh:path ftf:identifiers .
+_:c14n104 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n105 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:model .
+_:c14n106 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:label .
+_:c14n107 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:id .
+_:c14n108 rdf:first ftf:root_cause ;
+	rdf:rest _:c14n171 .
+_:c14n109 sh:datatype xsd:date ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:built_on .
+_:c14n11 sh:class ftf:PhysicalEquipment ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 3 ;
+	sh:path ftf:unit .
+_:c14n110 rdf:first ftf:time_zone ;
+	rdf:rest _:c14n258 .
+_:c14n111 sh:class ftf:MaterialLot ;
+	sh:description "Material lots built into this unit (maker genealogy)" ;
+	sh:nodeKind sh:IRI ;
+	sh:order 6 ;
+	sh:path ftf:build_lots .
+_:c14n112 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n113 sh:datatype xsd:date ;
+	sh:description "Start of validity (inclusive)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:from_date .
+_:c14n114 sh:class ftf:Organization ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 0 ;
+	sh:path ftf:raised_by .
+_:c14n115 rdf:first ftf:summary ;
+	rdf:rest _:c14n233 .
+_:c14n116 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 6 ;
+	sh:path ftf:id .
+_:c14n117 sh:datatype xsd:string ;
+	sh:description "mm/s | degC | bar ..." ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:engineering_unit .
+_:c14n118 sh:class ftf:FunctionalLocation ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 4 ;
+	sh:path ftf:parent .
+_:c14n119 sh:datatype xsd:date ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:opened_on .
+_:c14n12 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 7 ;
+	sh:path ftf:id .
+_:c14n120 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:label .
+_:c14n121 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 6 ;
+	sh:path ftf:id .
+_:c14n122 sh:datatype xsd:string ;
+	sh:description "unit | position | fleet | lot" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:grain .
+_:c14n123 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 8 ;
+	sh:path ftf:label .
+_:c14n124 rdf:first ftf:opened_at ;
+	rdf:rest _:c14n196 .
+_:c14n125 rdf:first ftf:design_datasheet ;
+	rdf:rest _:c14n298 .
+_:c14n126 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n127 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 5 ;
+	sh:path ftf:identifiers .
+_:c14n128 sh:class ftf:Document ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 4 ;
+	sh:path ftf:design_datasheet .
+_:c14n129 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 7 ;
+	sh:path ftf:label .
+_:c14n13 sh:datatype xsd:float ;
+	sh:maxCount 1 ;
+	sh:maxInclusive 1 ;
+	sh:minCount 1 ;
+	sh:minInclusive 0 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:confidence .
+_:c14n130 rdf:first ftf:site_kind ;
+	rdf:rest _:c14n335 .
+_:c14n131 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 6 ;
+	sh:path ftf:identifiers .
+_:c14n132 sh:class ftf:PhysicalEquipment ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 0 ;
+	sh:path ftf:unit .
+_:c14n133 sh:class ftf:Organization ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 1 ;
+	sh:path ftf:supplier .
+_:c14n134 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:id .
+_:c14n135 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n136 sh:datatype xsd:string ;
+	sh:description "API 610 type, e.g. BB2" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:api_type .
+_:c14n137 rdf:first ftf:alarm_high ;
+	rdf:rest _:c14n435 .
+_:c14n138 rdf:first ftf:build_lots ;
+	rdf:rest _:c14n229 .
+_:c14n139 rdf:first "NOI" ;
+	rdf:rest _:c14n339 .
+_:c14n14 sh:in _:c14n41 ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:order 3 ;
+	sh:path ftf:end_state .
+_:c14n140 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n141 sh:class ftf:Site ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 1 ;
+	sh:path ftf:site .
+_:c14n142 sh:class ftf:FunctionalLocation ;
+	sh:nodeKind sh:IRI ;
+	sh:order 0 ;
+	sh:path ftf:measures_position .
+_:c14n143 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n144 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:id .
+_:c14n145 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:root_cause .
+_:c14n146 sh:datatype xsd:string ;
+	sh:description "Pumped service" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:service .
+_:c14n147 rdf:first ftf:occurred_on ;
+	rdf:rest _:c14n432 .
+_:c14n148 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:id .
+_:c14n149 sh:datatype xsd:string ;
+	sh:description "Free text as typed; treat as untrusted data" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:text .
+_:c14n15 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 7 ;
+	sh:path ftf:id .
+_:c14n150 rdf:first ftf:case ;
+	rdf:rest _:c14n363 .
+_:c14n151 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 8 ;
+	sh:path ftf:identifiers .
+_:c14n152 sh:class ftf:PhysicalEquipment ;
+	sh:nodeKind sh:IRI ;
+	sh:order 2 ;
+	sh:path ftf:containment_units .
+_:c14n153 sh:datatype xsd:integer ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:run_days .
+_:c14n154 rdf:first ftf:severity ;
+	rdf:rest _:c14n202 .
+_:c14n155 rdf:first ftf:work_order ;
+	rdf:rest rdf:nil .
+_:c14n156 rdf:first ftf:quantity ;
+	rdf:rest _:c14n225 .
+_:c14n157 sh:class ftf:Organization ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 3 ;
+	sh:path ftf:manufacturer .
+_:c14n158 rdf:first "approved" ;
+	rdf:rest _:c14n283 .
+_:c14n159 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 7 ;
+	sh:path ftf:identifiers .
+_:c14n16 sh:class ftf:Organization ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 1 ;
+	sh:path ftf:customer .
+_:c14n160 sh:class ftf:MaterialLot ;
+	sh:description "Material lots built into this unit (maker genealogy)" ;
+	sh:nodeKind sh:IRI ;
+	sh:order 6 ;
+	sh:path ftf:build_lots .
+_:c14n161 sh:in _:c14n228 ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:order 3 ;
+	sh:path ftf:method .
+_:c14n162 sh:class ftf:Site ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 3 ;
+	sh:path ftf:site .
+_:c14n163 rdf:first ftf:lots ;
+	rdf:rest _:c14n91 .
+_:c14n164 rdf:first ftf:test_kind ;
+	rdf:rest _:c14n286 .
+_:c14n165 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:target_system .
+_:c14n166 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n167 sh:datatype xsd:string ;
+	sh:description "What the key is: tag, serial, floc, equipment_no, document ..." ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:kind .
+_:c14n168 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 6 ;
+	sh:path ftf:label .
+_:c14n169 rdf:first ftf:approved_by ;
+	rdf:rest _:c14n50 .
+_:c14n17 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n170 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n171 rdf:first ftf:route ;
+	rdf:rest _:c14n204 .
+_:c14n172 sh:class ftf:FunctionalLocation ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 2 ;
+	sh:path ftf:at_position .
+_:c14n173 rdf:first ftf:site ;
+	rdf:rest _:c14n130 .
+_:c14n174 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 8 ;
+	sh:path ftf:id .
+_:c14n175 sh:class ftf:FunctionalLocation ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 2 ;
+	sh:path ftf:parent .
+_:c14n176 rdf:first ftf:end_state ;
+	rdf:rest _:c14n264 .
+_:c14n177 sh:datatype xsd:date ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:occurred_on .
+_:c14n178 rdf:first ftf:containment_units ;
+	rdf:rest _:c14n21 .
+_:c14n179 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 5 ;
+	sh:path ftf:identifiers .
+_:c14n18 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n180 rdf:first ftf:parent ;
+	rdf:rest _:c14n293 .
+_:c14n181 rdf:first "SER" ;
+	rdf:rest rdf:nil .
+_:c14n182 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n183 sh:datatype xsd:date ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:shipped_on .
+_:c14n184 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:rig .
+_:c14n185 sh:datatype xsd:date ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:end .
+_:c14n186 rdf:first "tag_rule" ;
+	rdf:rest _:c14n34 .
+_:c14n187 rdf:first ftf:setting_depth_m ;
+	rdf:rest rdf:nil .
+_:c14n188 sh:class ftf:FunctionalLocation ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 0 ;
+	sh:path ftf:from_position .
+_:c14n189 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 6 ;
+	sh:path ftf:label .
+_:c14n19 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:material .
+_:c14n190 sh:in _:c14n74 ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:order 1 ;
+	sh:path ftf:status .
+_:c14n191 sh:datatype xsd:string ;
+	sh:description "How it is computed, in one sentence" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:method .
+_:c14n192 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 5 ;
+	sh:path ftf:identifiers .
+_:c14n193 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 6 ;
+	sh:path ftf:label .
+_:c14n194 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n195 sh:class ftf:FunctionalLocation ;
+	sh:description "This position is the installed spare of another" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 7 ;
+	sh:path ftf:installed_spare_of .
+_:c14n196 rdf:first ftf:opened_on ;
+	rdf:rest _:c14n79 .
+_:c14n197 sh:class ftf:PhysicalEquipment ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 1 ;
+	sh:path ftf:about_unit .
+_:c14n198 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 6 ;
+	sh:path ftf:identifiers .
+_:c14n199 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n2 rdf:first "running" ;
+	rdf:rest _:c14n290 .
+_:c14n20 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:label .
+_:c14n200 sh:class ftf:PhysicalEquipment ;
+	sh:description "Set when this is a component of another unit" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 5 ;
+	sh:path ftf:parent_unit .
+_:c14n201 sh:in _:c14n378 ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:order 0 ;
+	sh:path ftf:kind .
+_:c14n202 rdf:first ftf:shipped_on ;
+	rdf:rest _:c14n173 .
+_:c14n203 sh:datatype xsd:float ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:rated_flow_m3h .
+_:c14n204 rdf:first ftf:run_days ;
+	rdf:rest _:c14n381 .
+_:c14n205 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:id .
+_:c14n206 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:id .
+_:c14n207 rdf:first ftf:measures_position ;
+	rdf:rest _:c14n385 .
+_:c14n208 sh:class ftf:FunctionalLocation ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 2 ;
+	sh:path ftf:parent .
+_:c14n209 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:label .
+_:c14n21 rdf:first ftf:covers_claims ;
+	rdf:rest _:c14n86 .
+_:c14n210 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:id .
+_:c14n211 rdf:first rdf:type ;
+	rdf:rest _:c14n423 .
+_:c14n212 rdf:first ftf:grain ;
+	rdf:rest _:c14n438 .
+_:c14n213 sh:class ftf:FunctionalLocation ;
+	sh:nodeKind sh:IRI ;
+	sh:order 2 ;
+	sh:path ftf:depicts .
+_:c14n214 rdf:first ftf:trigger ;
+	rdf:rest _:c14n382 .
+_:c14n215 rdf:first ftf:material ;
+	rdf:rest _:c14n207 .
+_:c14n216 rdf:first rdf:type ;
+	rdf:rest _:c14n411 .
+_:c14n217 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n218 sh:class ftf:Document ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 3 ;
+	sh:path ftf:design_datasheet .
+_:c14n219 rdf:first "OT" ;
+	rdf:rest _:c14n237 .
+_:c14n22 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:label .
+_:c14n220 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 6 ;
+	sh:path ftf:label .
+_:c14n221 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 5 ;
+	sh:path ftf:id .
+_:c14n222 sh:class ftf:ESPComponent ;
+	sh:nodeKind sh:IRI ;
+	sh:order 0 ;
+	sh:path ftf:components .
+_:c14n223 sh:datatype xsd:boolean ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:passed .
+_:c14n224 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:description .
+_:c14n225 rdf:first ftf:query ;
+	rdf:rest _:c14n277 .
+_:c14n226 rdf:first ftf:raised_by ;
+	rdf:rest _:c14n412 .
+_:c14n227 rdf:first "STP" ;
+	rdf:rest _:c14n139 .
+_:c14n228 rdf:first "exact_key" ;
+	rdf:rest _:c14n186 .
+_:c14n229 rdf:first ftf:built_on ;
+	rdf:rest _:c14n425 .
+_:c14n23 sh:datatype xsd:string ;
+	sh:description "Findings or abstract, as written" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:summary .
+_:c14n230 sh:class ftf:EngineeringChange ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 2 ;
+	sh:path ftf:introduced_by .
+_:c14n231 sh:class ftf:Site ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 1 ;
+	sh:path ftf:site .
+_:c14n232 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:medium .
+_:c14n233 rdf:first ftf:supplier ;
+	rdf:rest _:c14n0 .
+_:c14n234 sh:datatype xsd:string ;
+	sh:description "performance | leak | press_fit_force" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:test_kind .
+_:c14n235 rdf:first ftf:from_date ;
+	rdf:rest _:c14n48 .
+_:c14n236 rdf:first "ELU" ;
+	rdf:rest _:c14n279 .
+_:c14n237 rdf:first "IT" ;
+	rdf:rest _:c14n29 .
+_:c14n238 sh:datatype xsd:date ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:start .
+_:c14n239 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:pad .
+_:c14n24 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n240 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 5 ;
+	sh:path ftf:identifiers .
+_:c14n241 rdf:first ftf:to_position ;
+	rdf:rest _:c14n214 .
+_:c14n242 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 5 ;
+	sh:path ftf:label .
+_:c14n243 rdf:first "ERO" ;
+	rdf:rest _:c14n181 .
+_:c14n244 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:value .
+_:c14n245 sh:class ftf:FunctionalLocation ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 4 ;
+	sh:path ftf:parent .
+_:c14n246 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 5 ;
+	sh:path ftf:identifiers .
+_:c14n247 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 8 ;
+	sh:path ftf:id .
+_:c14n248 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 9 ;
+	sh:path ftf:label .
+_:c14n249 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:model .
+_:c14n25 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 6 ;
+	sh:path ftf:identifiers .
+_:c14n250 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 9 ;
+	sh:path ftf:identifiers .
+_:c14n251 rdf:first ftf:kind ;
+	rdf:rest _:c14n436 .
+_:c14n252 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n253 rdf:first ftf:org_kind ;
+	rdf:rest _:c14n431 .
+_:c14n254 sh:class ftf:PhysicalEquipment ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 0 ;
+	sh:path ftf:unit .
+_:c14n255 sh:datatype xsd:string ;
+	sh:description "Rule name or the record pair the link came from" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 5 ;
+	sh:path ftf:evidence .
+_:c14n256 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 5 ;
+	sh:path ftf:id .
+_:c14n257 sh:datatype xsd:string ;
+	sh:description "What the position does, e.g. crude charge pump" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 5 ;
+	sh:path ftf:function .
+_:c14n258 rdf:first ftf:to_date ;
+	rdf:rest _:c14n241 .
+_:c14n259 sh:datatype xsd:float ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:value .
+_:c14n26 sh:class ftf:WarrantyClaim ;
+	sh:nodeKind sh:IRI ;
+	sh:order 0 ;
+	sh:path ftf:covers_claims .
+_:c14n260 rdf:first "critical" ;
+	rdf:rest rdf:nil .
+_:c14n261 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 9 ;
+	sh:path ftf:identifiers .
+_:c14n262 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 9 ;
+	sh:path ftf:label .
+_:c14n263 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 5 ;
+	sh:path ftf:id .
+_:c14n264 rdf:first ftf:engineering_unit ;
+	rdf:rest _:c14n235 .
+_:c14n265 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:id .
+_:c14n266 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:label .
+_:c14n267 sh:datatype xsd:string ;
+	sh:description "Standard it follows, if any" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:standard .
+_:c14n268 rdf:first ftf:customer ;
+	rdf:rest _:c14n92 .
+_:c14n269 sh:datatype xsd:string ;
+	sh:description "refinery | field | factory" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:site_kind .
+_:c14n27 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:description .
+_:c14n270 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:id .
+_:c14n271 rdf:first "ELP" ;
+	rdf:rest _:c14n236 .
+_:c14n272 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 7 ;
+	sh:path ftf:identifiers .
+_:c14n273 rdf:first ftf:installed_spare_of ;
+	rdf:rest _:c14n65 .
+_:c14n274 sh:datatype xsd:string ;
+	sh:description "The decision the KPI supports" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:question .
+_:c14n275 sh:class ftf:FunctionalLocation ;
+	sh:description "This position is the installed spare of another" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 5 ;
+	sh:path ftf:installed_spare_of .
+_:c14n276 sh:class ftf:PhysicalEquipment ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 1 ;
+	sh:path ftf:pulled_unit .
+_:c14n277 rdf:first ftf:question ;
+	rdf:rest _:c14n226 .
+_:c14n278 sh:datatype xsd:float ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:setting_depth_m .
+_:c14n279 rdf:first "OHE" ;
+	rdf:rest _:c14n352 .
+_:c14n28 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 4 ;
+	sh:path ftf:identifiers .
+_:c14n280 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:label .
+_:c14n281 sh:datatype xsd:date ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:occurred_on .
+_:c14n282 sh:datatype xsd:float ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:barrels_per_day .
+_:c14n283 rdf:first "rejected" ;
+	rdf:rest rdf:nil .
+_:c14n284 sh:class ftf:Site ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 3 ;
+	sh:path ftf:site .
+_:c14n285 sh:class ftf:FunctionalLocation ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 2 ;
+	sh:path ftf:position .
+_:c14n286 rdf:first ftf:text ;
+	rdf:rest _:c14n110 .
+_:c14n287 rdf:first ftf:affects ;
+	rdf:rest _:c14n137 .
+_:c14n288 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 5 ;
+	sh:path ftf:label .
+_:c14n289 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 6 ;
+	sh:path ftf:identifiers .
+_:c14n29 rdf:first "ET" ;
+	rdf:rest rdf:nil .
+_:c14n290 rdf:first "pulled_for_other" ;
+	rdf:rest rdf:nil .
+_:c14n291 sh:datatype xsd:integer ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:capacity_bpd .
+_:c14n292 rdf:first "human" ;
+	rdf:rest rdf:nil .
+_:c14n293 rdf:first ftf:parent_unit ;
+	rdf:rest _:c14n354 .
+_:c14n294 rdf:first ftf:revision ;
+	rdf:rest _:c14n426 .
+_:c14n295 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:label .
+_:c14n296 sh:datatype xsd:date ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:built_on .
+_:c14n297 rdf:first "medium" ;
+	rdf:rest _:c14n58 .
+_:c14n298 rdf:first ftf:doc_kind ;
+	rdf:rest _:c14n42 .
+_:c14n299 sh:datatype xsd:string ;
+	sh:description "standard | expedited" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:route .
+_:c14n3 sh:class ftf:PhysicalEquipment ;
+	sh:nodeKind sh:IRI ;
+	sh:order 3 ;
+	sh:path ftf:about_unit .
+_:c14n30 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n300 rdf:first ftf:start ;
+	rdf:rest _:c14n327 .
+_:c14n301 sh:class ftf:PhysicalEquipment ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 2 ;
+	sh:path ftf:set_unit .
+_:c14n302 rdf:first ftf:qualification_test_waived ;
+	rdf:rest _:c14n156 .
+_:c14n303 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 6 ;
+	sh:path ftf:id .
+_:c14n304 sh:datatype xsd:string ;
+	sh:description "Source system, e.g. SAP-PM, PI, P&ID, MES, PLM" ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:system .
+_:c14n305 sh:class ftf:PhysicalEquipment ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 0 ;
+	sh:path ftf:unit .
+_:c14n306 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n307 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 7 ;
+	sh:path ftf:label .
+_:c14n308 sh:class ftf:PhysicalEquipment ;
+	sh:nodeKind sh:IRI ;
+	sh:order 1 ;
+	sh:path ftf:covers_units .
+_:c14n309 sh:class ftf:PhysicalEquipment ;
+	sh:description "Set when this is a component of another unit" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 5 ;
+	sh:path ftf:parent_unit .
+_:c14n31 sh:class ftf:PhysicalEquipment ;
+	sh:description "Set when this is a component of another unit" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 4 ;
+	sh:path ftf:parent_unit .
+_:c14n310 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 7 ;
+	sh:path ftf:identifiers .
+_:c14n311 rdf:first ftf:model ;
+	rdf:rest _:c14n147 .
+_:c14n312 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 8 ;
+	sh:path ftf:identifiers .
+_:c14n313 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 6 ;
+	sh:path ftf:label .
+_:c14n314 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:model .
+_:c14n315 rdf:first ftf:function ;
+	rdf:rest _:c14n212 .
+_:c14n316 rdf:first ftf:method ;
+	rdf:rest _:c14n424 .
+_:c14n317 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:serial .
+_:c14n318 sh:class ftf:Organization ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 2 ;
+	sh:path ftf:manufacturer .
+_:c14n319 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n32 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 5 ;
+	sh:path ftf:id .
+_:c14n320 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:label .
+_:c14n321 rdf:first rdf:type ;
+	rdf:rest _:c14n430 .
+_:c14n322 rdf:first rdf:type ;
+	rdf:rest _:c14n433 .
+_:c14n323 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n324 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 5 ;
+	sh:path ftf:label .
+_:c14n325 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:revision .
+_:c14n326 sh:in _:c14n377 ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:order 0 ;
+	sh:path ftf:mode .
+_:c14n327 rdf:first ftf:status ;
+	rdf:rest _:c14n115 .
+_:c14n328 sh:datatype xsd:string ;
+	sh:description "vibration_velocity | motor_temperature | intake_pressure ..." ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:quantity .
+_:c14n329 sh:datatype xsd:date ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:built_on .
+_:c14n33 sh:class ftf:Installation ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 0 ;
+	sh:path ftf:installation .
+_:c14n330 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 6 ;
+	sh:path ftf:label .
+_:c14n331 sh:datatype xsd:date ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:built_on .
+_:c14n332 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n333 sh:datatype xsd:string ;
+	sh:description "IANA zone the local records are written in" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:time_zone .
+_:c14n334 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:label .
+_:c14n335 rdf:first ftf:standard ;
+	rdf:rest _:c14n300 .
+_:c14n336 sh:in _:c14n93 ;
+	sh:maxCount 1 ;
+	sh:order 2 ;
+	sh:path ftf:severity .
+_:c14n337 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 7 ;
+	sh:path ftf:label .
+_:c14n338 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 7 ;
+	sh:path ftf:label .
+_:c14n339 rdf:first "PDE" ;
+	rdf:rest _:c14n401 .
+_:c14n34 rdf:first "alias_table" ;
+	rdf:rest _:c14n80 .
+_:c14n340 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:label .
+_:c14n341 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:change_summary .
+_:c14n342 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 5 ;
+	sh:path ftf:identifiers .
+_:c14n343 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:reason .
+_:c14n344 sh:class ftf:FunctionalLocation ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 3 ;
+	sh:path ftf:at_position .
+_:c14n345 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n346 rdf:first ftf:serial ;
+	rdf:rest _:c14n403 .
+_:c14n347 sh:datatype xsd:float ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:alarm_high .
+_:c14n348 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:id .
+_:c14n349 sh:datatype xsd:string ;
+	sh:description "IANA zone the local records are written in" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:time_zone .
+_:c14n35 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n350 sh:class ftf:Document ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 6 ;
+	sh:path ftf:design_datasheet .
+_:c14n351 sh:class ftf:FunctionalLocation ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 1 ;
+	sh:path ftf:parent .
+_:c14n352 rdf:first "BRD" ;
+	rdf:rest _:c14n8 .
+_:c14n353 sh:class ftf:MaterialLot ;
+	sh:nodeKind sh:IRI ;
+	sh:order 0 ;
+	sh:path ftf:lots .
+_:c14n354 rdf:first ftf:passed ;
+	rdf:rest _:c14n102 .
+_:c14n355 rdf:first ftf:required_role ;
+	rdf:rest _:c14n294 .
+_:c14n356 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:id .
+_:c14n357 rdf:first ftf:text ;
+	rdf:rest rdf:nil .
+_:c14n358 sh:datatype xsd:string ;
+	sh:description "What the position does, e.g. crude charge pump" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:function .
+_:c14n359 rdf:first "sensor" ;
+	rdf:rest rdf:nil .
+_:c14n36 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 7 ;
+	sh:path ftf:identifiers .
+_:c14n360 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:required_role .
+_:c14n361 rdf:first "intake" ;
+	rdf:rest _:c14n371 .
+_:c14n362 sh:class ftf:FunctionalLocation ;
+	sh:description "This position is the installed spare of another" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 7 ;
+	sh:path ftf:installed_spare_of .
+_:c14n363 rdf:first ftf:change_summary ;
+	rdf:rest _:c14n434 .
+_:c14n364 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n365 sh:class ftf:Document ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 6 ;
+	sh:path ftf:design_datasheet .
+_:c14n366 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:approved_by .
+_:c14n367 sh:class ftf:Document ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 4 ;
+	sh:path ftf:design_datasheet .
+_:c14n368 sh:datatype xsd:string ;
+	sh:description "What the position does, e.g. crude charge pump" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 5 ;
+	sh:path ftf:function .
+_:c14n369 sh:class ftf:PhysicalEquipment ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 1 ;
+	sh:path ftf:of_unit .
+_:c14n37 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n370 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:work_order .
+_:c14n371 rdf:first "seal_section" ;
+	rdf:rest _:c14n75 .
+_:c14n372 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n373 sh:class ftf:FunctionalLocation ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 0 ;
+	sh:path ftf:about_position .
+_:c14n374 sh:class ftf:Case ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 4 ;
+	sh:path ftf:case .
+_:c14n375 sh:class ftf:Installation ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 3 ;
+	sh:path ftf:installation .
+_:c14n376 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 5 ;
+	sh:path ftf:identifiers .
+_:c14n377 rdf:first "VIB" ;
+	rdf:rest _:c14n271 .
+_:c14n378 rdf:first "pump" ;
+	rdf:rest _:c14n361 .
+_:c14n379 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n38 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 8 ;
+	sh:path ftf:label .
+_:c14n380 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 2 ;
+	sh:path ftf:identifiers .
+_:c14n381 rdf:first ftf:sample_seconds ;
+	rdf:rest _:c14n346 .
+_:c14n382 rdf:first ftf:unit ;
+	rdf:rest _:c14n95 .
+_:c14n383 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 3 ;
+	sh:path ftf:identifiers .
+_:c14n384 rdf:first ftf:kind ;
+	rdf:rest rdf:nil .
+_:c14n385 rdf:first ftf:medium ;
+	rdf:rest _:c14n316 .
+_:c14n386 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:subject .
+_:c14n387 rdf:first "cable" ;
+	rdf:rest _:c14n359 .
+_:c14n388 sh:class ftf:FunctionalLocation ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 1 ;
+	sh:path ftf:to_position .
+_:c14n389 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n39 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n390 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 7 ;
+	sh:path ftf:identifiers .
+_:c14n391 sh:class ftf:MaterialLot ;
+	sh:nodeKind sh:IRI ;
+	sh:order 3 ;
+	sh:path ftf:lots .
+_:c14n392 sh:class ftf:Organization ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 1 ;
+	sh:path ftf:operated_by .
+_:c14n393 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 6 ;
+	sh:path ftf:id .
+_:c14n394 sh:datatype xsd:string ;
+	sh:description "refinery | field | factory" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:site_kind .
+_:c14n395 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 6 ;
+	sh:path ftf:id .
+_:c14n396 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n397 sh:class ftf:Organization ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 3 ;
+	sh:path ftf:manufacturer .
+_:c14n398 sh:datatype xsd:string ;
+	sh:description "What the position does, e.g. crude charge pump" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:function .
+_:c14n399 sh:datatype xsd:string ;
+	sh:description "P&ID | datasheet | completion schematic | procedure" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:doc_kind .
+_:c14n4 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 8 ;
+	sh:path ftf:identifiers .
+_:c14n40 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:trigger .
+_:c14n400 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 5 ;
+	sh:path ftf:id .
+_:c14n401 rdf:first "INL" ;
+	rdf:rest _:c14n243 .
+_:c14n402 sh:datatype xsd:integer ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:sample_seconds .
+_:c14n403 rdf:first ftf:service ;
+	rdf:rest _:c14n404 .
+_:c14n404 rdf:first ftf:set_unit ;
+	rdf:rest _:c14n84 .
+_:c14n405 rdf:first ftf:service ;
+	rdf:rest _:c14n187 .
+_:c14n406 rdf:first ftf:rated_flow_m3h ;
+	rdf:rest _:c14n405 .
+_:c14n407 rdf:first ftf:producing ;
+	rdf:rest _:c14n406 .
+_:c14n408 rdf:first ftf:pad ;
+	rdf:rest _:c14n407 .
+_:c14n409 rdf:first ftf:lift_method ;
+	rdf:rest _:c14n408 .
+_:c14n41 rdf:first "failed" ;
+	rdf:rest _:c14n2 .
+_:c14n410 rdf:first ftf:capacity_bpd ;
+	rdf:rest _:c14n409 .
+_:c14n411 rdf:first ftf:api_type ;
+	rdf:rest _:c14n410 .
+_:c14n412 rdf:first ftf:rated_flow_m3h ;
+	rdf:rest _:c14n355 .
+_:c14n413 rdf:first ftf:at_position ;
+	rdf:rest _:c14n138 .
+_:c14n414 rdf:first ftf:at_position ;
+	rdf:rest _:c14n415 .
+_:c14n415 rdf:first ftf:description ;
+	rdf:rest _:c14n416 .
+_:c14n416 rdf:first ftf:installation ;
+	rdf:rest _:c14n417 .
+_:c14n417 rdf:first ftf:mode ;
+	rdf:rest _:c14n418 .
+_:c14n418 rdf:first ftf:of_unit ;
+	rdf:rest _:c14n419 .
+_:c14n419 rdf:first ftf:pulled_unit ;
+	rdf:rest _:c14n420 .
+_:c14n42 rdf:first ftf:end ;
+	rdf:rest _:c14n176 .
+_:c14n420 rdf:first ftf:rig ;
+	rdf:rest _:c14n421 .
+_:c14n421 rdf:first ftf:set_unit ;
+	rdf:rest _:c14n357 .
+_:c14n422 rdf:first ftf:about_unit ;
+	rdf:rest _:c14n414 .
+_:c14n423 rdf:first ftf:about_position ;
+	rdf:rest _:c14n422 .
+_:c14n424 rdf:first ftf:mode ;
+	rdf:rest _:c14n311 .
+_:c14n425 rdf:first ftf:capacity_bpd ;
+	rdf:rest _:c14n150 .
+_:c14n426 rdf:first ftf:rig ;
+	rdf:rest _:c14n108 .
+_:c14n427 rdf:first ftf:producing ;
+	rdf:rest _:c14n428 .
+_:c14n428 rdf:first ftf:pulled_unit ;
+	rdf:rest _:c14n302 .
+_:c14n429 rdf:first ftf:about_unit ;
+	rdf:rest _:c14n287 .
+_:c14n43 sh:datatype xsd:date ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:approved_on .
+_:c14n430 rdf:first ftf:about_position ;
+	rdf:rest _:c14n429 .
+_:c14n431 rdf:first ftf:pad ;
+	rdf:rest _:c14n180 .
+_:c14n432 rdf:first ftf:of_unit ;
+	rdf:rest _:c14n124 .
+_:c14n433 rdf:first ftf:components ;
+	rdf:rest _:c14n384 .
+_:c14n434 rdf:first ftf:components ;
+	rdf:rest _:c14n178 .
+_:c14n435 rdf:first ftf:api_type ;
+	rdf:rest _:c14n169 .
+_:c14n436 rdf:first ftf:lift_method ;
+	rdf:rest _:c14n163 .
+_:c14n437 rdf:first ftf:description ;
+	rdf:rest _:c14n125 .
+_:c14n438 rdf:first ftf:installation ;
+	rdf:rest _:c14n273 .
+_:c14n44 sh:datatype xsd:string ;
+	sh:description "Name of the SPARQL file that computes it" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:query .
+_:c14n45 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 10 ;
+	sh:path ftf:identifiers .
+_:c14n46 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:engineering_unit .
+_:c14n47 sh:class ftf:MaterialLot ;
+	sh:description "Material lots built into this unit (maker genealogy)" ;
+	sh:nodeKind sh:IRI ;
+	sh:order 5 ;
+	sh:path ftf:build_lots .
+_:c14n48 rdf:first ftf:from_position ;
+	rdf:rest _:c14n315 .
+_:c14n49 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 3 ;
+	sh:path ftf:identifiers .
+_:c14n5 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:label .
+_:c14n50 rdf:first ftf:approved_on ;
+	rdf:rest _:c14n413 .
+_:c14n51 sh:datatype xsd:string ;
+	sh:description "operator | oem | supplier | contractor" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:org_kind .
+_:c14n52 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:id .
+_:c14n53 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:id .
+_:c14n54 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 5 ;
+	sh:path ftf:id .
+_:c14n55 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:id .
+_:c14n56 sh:datatype xsd:date ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 5 ;
+	sh:path ftf:issued_on .
+_:c14n57 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:id .
+_:c14n58 rdf:first "high" ;
+	rdf:rest _:c14n260 .
+_:c14n59 sh:datatype xsd:date ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:occurred_on .
+_:c14n6 sh:class ftf:Well ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 0 ;
+	sh:path ftf:well .
+_:c14n60 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 7 ;
+	sh:path ftf:label .
+_:c14n61 sh:datatype xsd:date ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 5 ;
+	sh:path ftf:occurred_on .
+_:c14n62 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:serial .
+_:c14n63 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 5 ;
+	sh:path ftf:id .
+_:c14n64 sh:class ftf:FunctionalLocation ;
+	sh:description "This position is the installed spare of another" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 5 ;
+	sh:path ftf:installed_spare_of .
+_:c14n65 rdf:first ftf:introduced_by ;
+	rdf:rest _:c14n94 .
+_:c14n66 rdf:first rdf:type ;
+	rdf:rest rdf:nil .
+_:c14n67 sh:class ftf:Organization ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 1 ;
+	sh:path ftf:operated_by .
+_:c14n68 sh:class ftf:Site ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 0 ;
+	sh:path ftf:site .
+_:c14n69 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:serial .
+_:c14n7 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 5 ;
+	sh:path ftf:identifiers .
+_:c14n70 sh:class ftf:FunctionalLocation ;
+	sh:description "This position is the installed spare of another" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:IRI ;
+	sh:order 4 ;
+	sh:path ftf:installed_spare_of .
+_:c14n71 sh:datatype xsd:date ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:opened_on .
+_:c14n72 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 6 ;
+	sh:path ftf:label .
+_:c14n73 sh:datatype xsd:date ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 0 ;
+	sh:path ftf:approved_on .
+_:c14n74 rdf:first "pending" ;
+	rdf:rest _:c14n158 .
+_:c14n75 rdf:first "motor" ;
+	rdf:rest _:c14n387 .
+_:c14n76 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 7 ;
+	sh:path ftf:identifiers .
+_:c14n77 sh:class ftf:FunctionalLocation ;
+	sh:nodeKind sh:IRI ;
+	sh:order 0 ;
+	sh:path ftf:affects .
+_:c14n78 sh:datatype xsd:string ;
+	sh:description "esp | gas_lift | rod_pump" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:lift_method .
+_:c14n79 rdf:first ftf:operated_by ;
+	rdf:rest _:c14n253 .
+_:c14n8 rdf:first "FTS" ;
+	rdf:rest _:c14n227 .
+_:c14n80 rdf:first "fuzzy" ;
+	rdf:rest _:c14n292 .
+_:c14n81 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:object .
+_:c14n82 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 7 ;
+	sh:path ftf:identifiers .
+_:c14n83 sh:datatype xsd:string ;
+	sh:description "What the position does, e.g. crude charge pump" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:function .
+_:c14n84 rdf:first ftf:setting_depth_m ;
+	rdf:rest _:c14n154 .
+_:c14n85 sh:datatype xsd:date ;
+	sh:description "End of validity (exclusive); empty means still current" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:to_date .
+_:c14n86 rdf:first ftf:covers_units ;
+	rdf:rest _:c14n268 .
+_:c14n87 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 5 ;
+	sh:path ftf:identifiers .
+_:c14n88 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:id .
+_:c14n89 sh:datatype xsd:string ;
+	sh:description "Stable graph identifier (a CURIE-like local name)" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 3 ;
+	sh:path ftf:id .
+_:c14n9 sh:class ftf:SourceIdentifier ;
+	sh:description "The names this thing has in each source system (the crosswalk)." ;
+	sh:nodeKind sh:BlankNodeOrIRI ;
+	sh:order 10 ;
+	sh:path ftf:identifiers .
+_:c14n90 sh:in _:c14n219 ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:order 1 ;
+	sh:path ftf:world .
+_:c14n91 rdf:first ftf:manufacturer ;
+	rdf:rest _:c14n215 .
+_:c14n92 rdf:first ftf:depicts ;
+	rdf:rest _:c14n437 .
+_:c14n93 rdf:first "low" ;
+	rdf:rest _:c14n297 .
+_:c14n94 rdf:first ftf:issued_on ;
+	rdf:rest _:c14n251 .
+_:c14n95 rdf:first ftf:value ;
+	rdf:rest _:c14n155 .
+_:c14n96 sh:datatype xsd:boolean ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 2 ;
+	sh:path ftf:producing .
+_:c14n97 sh:datatype xsd:string ;
+	sh:description "Human-readable label" ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 4 ;
+	sh:path ftf:label .
+_:c14n98 sh:datatype xsd:string ;
+	sh:maxCount 1 ;
+	sh:minCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:predicate .
+_:c14n99 sh:datatype xsd:dateTime ;
+	sh:maxCount 1 ;
+	sh:nodeKind sh:Literal ;
+	sh:order 1 ;
+	sh:path ftf:opened_at .
+

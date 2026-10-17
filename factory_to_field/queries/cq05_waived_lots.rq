@@ -1,0 +1,8 @@
+# question: Which material lots were introduced by an engineering change that used the expedited route with the qualification test waived?
+PREFIX ftf: <https://domain-explorer.dev/ftf#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?lot ?material ?eco ?approved WHERE {
+  ?lot a ftf:MaterialLot ; ftf:material ?material ; ftf:introduced_by ?eco .
+  ?eco ftf:route "expedited" ; ftf:qualification_test_waived true ; ftf:approved_on ?approved .
+} ORDER BY ?approved ?lot

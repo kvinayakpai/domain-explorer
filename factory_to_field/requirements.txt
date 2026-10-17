@@ -1,0 +1,11 @@
+linkml==1.12.1
+pyshacl==0.40.1
+pyoxigraph==0.5.11
+rdflib==7.6.0
+mcp==2.3.0
+numpy==2.4.6
+pydantic==2.14.1
+pyyaml==6.0.3
+pytest==9.1.1
+# optional: the model-driven planner (agents/llm.py) takes any client with messages.create; tests use a scripted fake
+# anthropic

@@ -1,0 +1,38 @@
+id: https://domain-explorer.dev/ftf/refinery
+name: ftf_refinery
+title: Factory to Field — refinery module
+description: Downstream process plant concepts. Aligns with DEXPI (P&ID), CFIHOS (tags, documents), ISO 14224 (failure data).
+version: 0.1.0
+prefixes:
+  ftf: https://domain-explorer.dev/ftf#
+  linkml: https://w3id.org/linkml/
+default_prefix: ftf
+default_range: string
+imports:
+  - linkml:types
+  - core
+
+classes:
+  ProcessUnit:
+    is_a: FunctionalLocation
+    description: A process unit such as a crude distillation unit; positions hang under it.
+    attributes:
+      capacity_bpd: {range: integer}
+  PumpPosition:
+    is_a: FunctionalLocation
+    attributes:
+      service: {description: "Pumped service"}
+      rated_flow_m3h: {range: float}
+      api_type: {description: "API 610 type, e.g. BB2"}
+  Stream:
+    is_a: Entity
+    attributes:
+      from_position: {range: FunctionalLocation}
+      to_position: {range: FunctionalLocation}
+      medium: {}
+  ManagementOfChange:
+    is_a: Entity
+    description: A plant change request; ties engineering changes to positions.
+    attributes:
+      affects: {range: FunctionalLocation, multivalued: true}
+      approved_on: {range: date}

@@ -1,0 +1,11 @@
+# question: Which units were built with lot ?lot, who owns them and where are they installed now?
+# bindings: ?lot (IRI)
+PREFIX ftf: <https://domain-explorer.dev/ftf#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT DISTINCT ?unit ?serial ?model ?built ?customer ?cname ?pos ?postag WHERE {
+  ?unit ftf:build_lots ?lot ; ftf:serial ?serial ; ftf:model ?model ; ftf:built_on ?built .
+  ?unit ftf:parent_unit? ?top .
+  OPTIONAL { ?s a ftf:Shipment ; ftf:unit ?top ; ftf:customer ?customer . ?customer ftf:label ?cname }
+  OPTIONAL { ?i a ftf:Installation ; ftf:unit ?top ; ftf:position ?pos ; ftf:from_date ?f . FILTER NOT EXISTS { ?i ftf:to_date ?t } ?pos ftf:label ?postag }
+} ORDER BY ?built ?serial

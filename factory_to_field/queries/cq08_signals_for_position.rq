@@ -1,0 +1,10 @@
+# question: Which signals, in which systems, measure position ?pos?
+# bindings: ?pos (IRI)
+PREFIX ftf: <https://domain-explorer.dev/ftf#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?sig ?label ?quantity ?unit ?system WHERE {
+  ?sig a ftf:Signal ; ftf:measures_position ?pos ; ftf:quantity ?quantity ; ftf:label ?label .
+  OPTIONAL { ?sig ftf:engineering_unit ?unit }
+  ?sig ftf:identifiers ?x . ?x ftf:system ?system .
+} ORDER BY ?quantity ?label

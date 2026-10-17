@@ -1,0 +1,8 @@
+extend = "../pyproject.toml"
+line-length = 160
+extend-exclude = ["ontology/generated"]
+
+[lint]
+# the simulator and the playbooks are long, data-shaped scripts: keep the real-bug rules, drop style noise
+select = ["E", "F", "I", "UP", "B006", "B008", "B904"]
+ignore = ["E501", "E701", "E702", "E402", "E731", "E741", "UP037", "UP035"]

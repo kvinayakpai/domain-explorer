@@ -1,0 +1,1932 @@
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix ftf: <https://domain-explorer.dev/ftf#> .
+@prefix linkml: <https://w3id.org/linkml/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix pav: <http://purl.org/pav/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ftf:Deferment a owl:Class ;
+    rdfs:label "Deferment" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:well ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:reason ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:well ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:reason ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:reason ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:Well ;
+            owl:onProperty ftf:well ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:barrels_per_day ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:barrels_per_day ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:float ;
+            owl:onProperty ftf:barrels_per_day ] ;
+    skos:definition "Production lost or at risk while a well runs degraded or is down." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:ESPPosition a owl:Class ;
+    rdfs:label "ESPPosition" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:setting_depth_m ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:setting_depth_m ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:float ;
+            owl:onProperty ftf:setting_depth_m ],
+        ftf:FunctionalLocation ;
+    skos:definition "The artificial-lift position in a well (the ESP slot), under the Well." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:ESPString a owl:Class ;
+    rdfs:label "ESPString" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:components ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:ESPComponent ;
+            owl:onProperty ftf:components ],
+        ftf:PhysicalEquipment ;
+    skos:definition "A complete submersible pump string as run in a well." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:LinkAssertion a owl:Class ;
+    rdfs:label "LinkAssertion" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:allValuesFrom [ a rdfs:Datatype ;
+                    owl:intersectionOf ( xsd:float [ a rdfs:Datatype ;
+                                owl:onDatatype xsd:integer ;
+                                owl:withRestrictions ( [ xsd:minInclusive 0 ] ) ] [ a rdfs:Datatype ;
+                                owl:onDatatype xsd:integer ;
+                                owl:withRestrictions ( [ xsd:maxInclusive 1 ] ) ] ) ] ;
+            owl:onProperty ftf:confidence ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:LinkMethod ;
+            owl:onProperty ftf:method ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:evidence ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:predicate ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:predicate ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:evidence ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:object ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:evidence ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:object ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:confidence ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:predicate ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:method ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:object ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:subject ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:confidence ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:subject ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:method ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:subject ] ;
+    skos:definition "Provenance of one identity or relationship link between source records." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:OilField a owl:Class ;
+    rdfs:label "OilField" ;
+    rdfs:subClassOf ftf:Site ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:ProcessUnit a owl:Class ;
+    rdfs:label "ProcessUnit" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:capacity_bpd ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:capacity_bpd ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:integer ;
+            owl:onProperty ftf:capacity_bpd ],
+        ftf:FunctionalLocation ;
+    skos:definition "A process unit such as a crude distillation unit; positions hang under it." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/refinery> .
+
+ftf:PumpPosition a owl:Class ;
+    rdfs:label "PumpPosition" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:api_type ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:api_type ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:api_type ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:rated_flow_m3h ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:rated_flow_m3h ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:service ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:float ;
+            owl:onProperty ftf:rated_flow_m3h ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:service ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:service ],
+        ftf:FunctionalLocation ;
+    skos:inScheme <https://domain-explorer.dev/ftf/refinery> .
+
+<https://domain-explorer.dev/ftf.owl.ttl> a owl:Ontology ;
+    rdfs:label "ftf" ;
+    dcterms:title "Factory to Field ontology v0.1" ;
+    pav:version "0.1.0" ;
+    skos:definition "Umbrella schema. Import this one to get every module." .
+
+ftf:BuildRecord a owl:Class ;
+    rdfs:label "BuildRecord" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:lots ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:date ;
+            owl:onProperty ftf:built_on ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:work_order ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:built_on ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:work_order ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:work_order ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:unit ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:built_on ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:PhysicalEquipment ;
+            owl:onProperty ftf:unit ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:MaterialLot ;
+            owl:onProperty ftf:lots ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:unit ],
+        ftf:Entity ;
+    skos:inScheme <https://domain-explorer.dev/ftf/factory> .
+
+ftf:Draft a owl:Class ;
+    rdfs:label "Draft" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:case ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:DraftStatus ;
+            owl:onProperty ftf:status ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:target_system ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:Case ;
+            owl:onProperty ftf:case ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:approved_by ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:case ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:status ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:target_system ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:required_role ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:target_system ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:approved_by ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:approved_by ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:status ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:required_role ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:required_role ],
+        ftf:Entity ;
+    skos:definition "A proposed write to a system of record. Never applied without a named approver." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:ESPComponent a owl:Class ;
+    rdfs:label "ESPComponent" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:kind ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:kind ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:ESPComponentKind ;
+            owl:onProperty ftf:kind ],
+        ftf:PhysicalEquipment ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:EightD a owl:Class ;
+    rdfs:label "EightD" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:root_cause ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:root_cause ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:root_cause ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:covers_claims ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:containment_units ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:WarrantyClaim ;
+            owl:onProperty ftf:covers_claims ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:PhysicalEquipment ;
+            owl:onProperty ftf:containment_units ],
+        ftf:Entity ;
+    skos:definition "Corrective-action report (8D). Always created as a draft by agents." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/factory> .
+
+ftf:FailureEvent a owl:Class ;
+    rdfs:label "FailureEvent" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:allValuesFrom ftf:FailureMode ;
+            owl:onProperty ftf:mode ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:description ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:installation ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:description ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:description ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:mode ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:installation ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:mode ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:Installation ;
+            owl:onProperty ftf:installation ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:of_unit ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:PhysicalEquipment ;
+            owl:onProperty ftf:of_unit ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:at_position ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:of_unit ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:at_position ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:FunctionalLocation ;
+            owl:onProperty ftf:at_position ],
+        ftf:Event ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:KpiDefinition a owl:Class ;
+    rdfs:label "KpiDefinition" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:grain ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:grain ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:grain ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:question ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:question ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:standard ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:question ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:method ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:standard ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:method ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:standard ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:method ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:query ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:query ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:query ],
+        ftf:Entity ;
+    skos:inScheme <https://domain-explorer.dev/ftf/kpi> .
+
+ftf:ManagementOfChange a owl:Class ;
+    rdfs:label "ManagementOfChange" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:allValuesFrom xsd:date ;
+            owl:onProperty ftf:approved_on ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:approved_on ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:affects ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:approved_on ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:FunctionalLocation ;
+            owl:onProperty ftf:affects ],
+        ftf:Entity ;
+    skos:definition "A plant change request; ties engineering changes to positions." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/refinery> .
+
+ftf:NonConformance a owl:Class ;
+    rdfs:label "NonConformance" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:lots ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:description ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:description ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:description ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:date ;
+            owl:onProperty ftf:opened_on ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:opened_on ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:MaterialLot ;
+            owl:onProperty ftf:lots ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:opened_on ],
+        ftf:Entity ;
+    skos:inScheme <https://domain-explorer.dev/ftf/factory> .
+
+ftf:Notification a owl:Class ;
+    rdfs:label "Notification" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:text ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:about_position ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:text ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:about_unit ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:text ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:about_position ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:about_unit ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:PhysicalEquipment ;
+            owl:onProperty ftf:about_unit ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:FunctionalLocation ;
+            owl:onProperty ftf:about_position ],
+        ftf:Event ;
+    skos:definition "A maintenance notification or malfunction report." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:RunRecord a owl:Class ;
+    rdfs:label "RunRecord" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:allValuesFrom xsd:date ;
+            owl:onProperty ftf:start ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:date ;
+            owl:onProperty ftf:end ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:start ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:installation ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:end ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:end_state ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:EndState ;
+            owl:onProperty ftf:end_state ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:start ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:run_days ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:installation ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:end ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:end_state ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:run_days ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:Installation ;
+            owl:onProperty ftf:installation ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:integer ;
+            owl:onProperty ftf:run_days ],
+        ftf:Entity ;
+    skos:definition "One run of a string in a well. Run life belongs to the string, not to the well." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:Shipment a owl:Class ;
+    rdfs:label "Shipment" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:unit ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:date ;
+            owl:onProperty ftf:shipped_on ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:unit ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:PhysicalEquipment ;
+            owl:onProperty ftf:unit ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:customer ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:shipped_on ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:customer ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:Organization ;
+            owl:onProperty ftf:customer ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:shipped_on ],
+        ftf:Entity ;
+    skos:inScheme <https://domain-explorer.dev/ftf/factory> .
+
+ftf:Signal a owl:Class ;
+    rdfs:label "Signal" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:engineering_unit ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:sample_seconds ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:quantity ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:engineering_unit ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:engineering_unit ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:measures_position ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:sample_seconds ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:quantity ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:quantity ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:integer ;
+            owl:onProperty ftf:sample_seconds ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:alarm_high ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:FunctionalLocation ;
+            owl:onProperty ftf:measures_position ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:alarm_high ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:float ;
+            owl:onProperty ftf:alarm_high ],
+        ftf:Entity ;
+    skos:definition "A measured or computed time series (historian tag, SCADA point)." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:SourceIdentifier a owl:Class ;
+    rdfs:label "SourceIdentifier" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:value ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:value ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:system ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:system ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:value ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:kind ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:system ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:kind ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:kind ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:world ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:World ;
+            owl:onProperty ftf:world ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:world ] ;
+    skos:definition "One name for one thing in one system." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:Stream a owl:Class ;
+    rdfs:label "Stream" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:to_position ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:from_position ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:to_position ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:from_position ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:medium ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:medium ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:FunctionalLocation ;
+            owl:onProperty ftf:to_position ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:medium ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:FunctionalLocation ;
+            owl:onProperty ftf:from_position ],
+        ftf:Entity ;
+    skos:inScheme <https://domain-explorer.dev/ftf/refinery> .
+
+ftf:TestRecord a owl:Class ;
+    rdfs:label "TestRecord" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:engineering_unit ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:test_kind ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:passed ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:value ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:engineering_unit ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:engineering_unit ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:test_kind ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:unit ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:test_kind ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:passed ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:value ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:float ;
+            owl:onProperty ftf:value ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:boolean ;
+            owl:onProperty ftf:passed ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:unit ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:PhysicalEquipment ;
+            owl:onProperty ftf:unit ],
+        ftf:Entity ;
+    skos:inScheme <https://domain-explorer.dev/ftf/factory> .
+
+ftf:Well a owl:Class ;
+    rdfs:label "Well" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:pad ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:pad ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:pad ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:producing ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:lift_method ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:producing ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:boolean ;
+            owl:onProperty ftf:producing ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:lift_method ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:lift_method ],
+        ftf:FunctionalLocation ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:Workover a owl:Class ;
+    rdfs:label "Workover" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:rig ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:pulled_unit ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:rig ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:rig ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:pulled_unit ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:PhysicalEquipment ;
+            owl:onProperty ftf:pulled_unit ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:set_unit ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:at_position ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:set_unit ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:PhysicalEquipment ;
+            owl:onProperty ftf:set_unit ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:at_position ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:FunctionalLocation ;
+            owl:onProperty ftf:at_position ],
+        ftf:Event ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:Case a owl:Class ;
+    rdfs:label "Case" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:opened_at ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:severity ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:Severity ;
+            owl:onProperty ftf:severity ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:trigger ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:opened_at ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:severity ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:dateTime ;
+            owl:onProperty ftf:opened_at ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:trigger ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:trigger ],
+        ftf:Entity ;
+    skos:definition "An investigation opened by an alarm or a question. Holds findings and drafts." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:Document a owl:Class ;
+    rdfs:label "Document" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:allValuesFrom xsd:date ;
+            owl:onProperty ftf:issued_on ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:issued_on ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:issued_on ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:about_unit ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:revision ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:depicts ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:revision ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:revision ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:PhysicalEquipment ;
+            owl:onProperty ftf:about_unit ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:summary ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:doc_kind ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:summary ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:summary ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:doc_kind ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:doc_kind ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:FunctionalLocation ;
+            owl:onProperty ftf:depicts ],
+        ftf:Entity ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+<https://domain-explorer.dev/ftf#DraftStatus#approved> a owl:Class ;
+    rdfs:label "approved" ;
+    rdfs:subClassOf ftf:DraftStatus ;
+    skos:definition "Approved by a named person with the right role" .
+
+<https://domain-explorer.dev/ftf#DraftStatus#pending> a owl:Class ;
+    rdfs:label "pending" ;
+    rdfs:subClassOf ftf:DraftStatus ;
+    skos:definition "Written by an agent, waiting for a named human" .
+
+<https://domain-explorer.dev/ftf#DraftStatus#rejected> a owl:Class ;
+    rdfs:label "rejected" ;
+    rdfs:subClassOf ftf:DraftStatus ;
+    skos:definition "Rejected by a named person" .
+
+<https://domain-explorer.dev/ftf#ESPComponentKind#cable> a owl:Class ;
+    rdfs:label "cable" ;
+    rdfs:subClassOf ftf:ESPComponentKind .
+
+<https://domain-explorer.dev/ftf#ESPComponentKind#intake> a owl:Class ;
+    rdfs:label "intake" ;
+    rdfs:subClassOf ftf:ESPComponentKind .
+
+<https://domain-explorer.dev/ftf#ESPComponentKind#motor> a owl:Class ;
+    rdfs:label "motor" ;
+    rdfs:subClassOf ftf:ESPComponentKind .
+
+<https://domain-explorer.dev/ftf#ESPComponentKind#pump> a owl:Class ;
+    rdfs:label "pump" ;
+    rdfs:subClassOf ftf:ESPComponentKind .
+
+<https://domain-explorer.dev/ftf#ESPComponentKind#seal_section> a owl:Class ;
+    rdfs:label "seal_section" ;
+    rdfs:subClassOf ftf:ESPComponentKind .
+
+<https://domain-explorer.dev/ftf#ESPComponentKind#sensor> a owl:Class ;
+    rdfs:label "sensor" ;
+    rdfs:subClassOf ftf:ESPComponentKind .
+
+<https://domain-explorer.dev/ftf#EndState#failed> a owl:Class ;
+    rdfs:label "failed" ;
+    rdfs:subClassOf ftf:EndState .
+
+<https://domain-explorer.dev/ftf#EndState#pulled_for_other> a owl:Class ;
+    rdfs:label "pulled_for_other" ;
+    rdfs:subClassOf ftf:EndState ;
+    skos:definition "Pulled for a reason unrelated to the string" .
+
+<https://domain-explorer.dev/ftf#EndState#running> a owl:Class ;
+    rdfs:label "running" ;
+    rdfs:subClassOf ftf:EndState ;
+    skos:definition "Still in the well; the run life is censored" .
+
+ftf:EngineeringChange a owl:Class ;
+    rdfs:label "EngineeringChange" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:qualification_test_waived ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:route ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:date ;
+            owl:onProperty ftf:approved_on ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:route ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:qualification_test_waived ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:route ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:approved_on ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:boolean ;
+            owl:onProperty ftf:qualification_test_waived ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:change_summary ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:approved_on ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:change_summary ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:change_summary ],
+        ftf:Entity ;
+    skos:definition "An ECO. The route says how it was approved." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+<https://domain-explorer.dev/ftf#FailureMode#BRD> a owl:Class ;
+    rdfs:label "BRD" ;
+    rdfs:subClassOf ftf:FailureMode ;
+    skos:definition "Breakdown" .
+
+<https://domain-explorer.dev/ftf#FailureMode#ELP> a owl:Class ;
+    rdfs:label "ELP" ;
+    rdfs:subClassOf ftf:FailureMode ;
+    skos:definition "External leakage, process medium" .
+
+<https://domain-explorer.dev/ftf#FailureMode#ELU> a owl:Class ;
+    rdfs:label "ELU" ;
+    rdfs:subClassOf ftf:FailureMode ;
+    skos:definition "External leakage, utility medium" .
+
+<https://domain-explorer.dev/ftf#FailureMode#ERO> a owl:Class ;
+    rdfs:label "ERO" ;
+    rdfs:subClassOf ftf:FailureMode ;
+    skos:definition "Erratic output" .
+
+<https://domain-explorer.dev/ftf#FailureMode#FTS> a owl:Class ;
+    rdfs:label "FTS" ;
+    rdfs:subClassOf ftf:FailureMode ;
+    skos:definition "Fail to start on demand" .
+
+<https://domain-explorer.dev/ftf#FailureMode#INL> a owl:Class ;
+    rdfs:label "INL" ;
+    rdfs:subClassOf ftf:FailureMode ;
+    skos:definition "Internal leakage" .
+
+<https://domain-explorer.dev/ftf#FailureMode#NOI> a owl:Class ;
+    rdfs:label "NOI" ;
+    rdfs:subClassOf ftf:FailureMode ;
+    skos:definition "Noise" .
+
+<https://domain-explorer.dev/ftf#FailureMode#OHE> a owl:Class ;
+    rdfs:label "OHE" ;
+    rdfs:subClassOf ftf:FailureMode ;
+    skos:definition "Overheating" .
+
+<https://domain-explorer.dev/ftf#FailureMode#PDE> a owl:Class ;
+    rdfs:label "PDE" ;
+    rdfs:subClassOf ftf:FailureMode ;
+    skos:definition "Parameter deviation" .
+
+<https://domain-explorer.dev/ftf#FailureMode#SER> a owl:Class ;
+    rdfs:label "SER" ;
+    rdfs:subClassOf ftf:FailureMode ;
+    skos:definition "Minor in-service problems" .
+
+<https://domain-explorer.dev/ftf#FailureMode#STP> a owl:Class ;
+    rdfs:label "STP" ;
+    rdfs:subClassOf ftf:FailureMode ;
+    skos:definition "Unexpected shutdown" .
+
+<https://domain-explorer.dev/ftf#FailureMode#VIB> a owl:Class ;
+    rdfs:label "VIB" ;
+    rdfs:subClassOf ftf:FailureMode ;
+    skos:definition "Vibration" .
+
+<https://domain-explorer.dev/ftf#LinkMethod#alias_table> a owl:Class ;
+    rdfs:label "alias_table" ;
+    rdfs:subClassOf ftf:LinkMethod ;
+    skos:definition "Governed alias or rename table" .
+
+<https://domain-explorer.dev/ftf#LinkMethod#exact_key> a owl:Class ;
+    rdfs:label "exact_key" ;
+    rdfs:subClassOf ftf:LinkMethod ;
+    skos:definition "Identical normalised key (serial, lot, document number)" .
+
+<https://domain-explorer.dev/ftf#LinkMethod#fuzzy> a owl:Class ;
+    rdfs:label "fuzzy" ;
+    rdfs:subClassOf ftf:LinkMethod ;
+    skos:definition "String similarity above the auto-accept threshold" .
+
+<https://domain-explorer.dev/ftf#LinkMethod#human> a owl:Class ;
+    rdfs:label "human" ;
+    rdfs:subClassOf ftf:LinkMethod ;
+    skos:definition "Confirmed in the review queue" .
+
+<https://domain-explorer.dev/ftf#LinkMethod#tag_rule> a owl:Class ;
+    rdfs:label "tag_rule" ;
+    rdfs:subClassOf ftf:LinkMethod ;
+    skos:definition "Tag grammar rule (e.g. 10P101A.* → P-101A)" .
+
+<https://domain-explorer.dev/ftf#Severity#critical> a owl:Class ;
+    rdfs:label "critical" ;
+    rdfs:subClassOf ftf:Severity .
+
+<https://domain-explorer.dev/ftf#Severity#high> a owl:Class ;
+    rdfs:label "high" ;
+    rdfs:subClassOf ftf:Severity .
+
+<https://domain-explorer.dev/ftf#Severity#low> a owl:Class ;
+    rdfs:label "low" ;
+    rdfs:subClassOf ftf:Severity .
+
+<https://domain-explorer.dev/ftf#Severity#medium> a owl:Class ;
+    rdfs:label "medium" ;
+    rdfs:subClassOf ftf:Severity .
+
+ftf:WarrantyClaim a owl:Class ;
+    rdfs:label "WarrantyClaim" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:raised_by ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:covers_units ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:raised_by ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:PhysicalEquipment ;
+            owl:onProperty ftf:covers_units ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:date ;
+            owl:onProperty ftf:opened_on ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:Organization ;
+            owl:onProperty ftf:raised_by ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:opened_on ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:opened_on ],
+        ftf:Entity ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+<https://domain-explorer.dev/ftf#World#ET> a owl:Class ;
+    rdfs:label "ET" ;
+    rdfs:subClassOf ftf:World ;
+    skos:definition "Engineering technology: P&IDs, datasheets, completion schematics, PLM" .
+
+<https://domain-explorer.dev/ftf#World#IT> a owl:Class ;
+    rdfs:label "IT" ;
+    rdfs:subClassOf ftf:World ;
+    skos:definition "Information technology: ERP, CMMS/EAM, QMS, supply chain" .
+
+<https://domain-explorer.dev/ftf#World#OT> a owl:Class ;
+    rdfs:label "OT" ;
+    rdfs:subClassOf ftf:World ;
+    skos:definition "Operational technology: control systems, historians, SCADA, MES, test benches" .
+
+ftf:affects a owl:ObjectProperty ;
+    rdfs:label "affects" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/refinery> .
+
+ftf:build_lots a owl:ObjectProperty ;
+    rdfs:label "build_lots" ;
+    skos:definition "Material lots built into this unit (maker genealogy)" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:components a owl:ObjectProperty ;
+    rdfs:label "components" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:containment_units a owl:ObjectProperty ;
+    rdfs:label "containment_units" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/factory> .
+
+ftf:covers_claims a owl:ObjectProperty ;
+    rdfs:label "covers_claims" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/factory> .
+
+ftf:covers_units a owl:ObjectProperty ;
+    rdfs:label "covers_units" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:depicts a owl:ObjectProperty ;
+    rdfs:label "depicts" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:identifiers a owl:ObjectProperty ;
+    rdfs:label "identifiers" ;
+    skos:definition "The names this thing has in each source system (the crosswalk)." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:measures_position a owl:ObjectProperty ;
+    rdfs:label "measures_position" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:Installation a owl:Class ;
+    rdfs:label "Installation" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:allValuesFrom xsd:date ;
+            owl:onProperty ftf:from_date ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:date ;
+            owl:onProperty ftf:to_date ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:from_date ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:to_date ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:position ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:from_date ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:unit ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:PhysicalEquipment ;
+            owl:onProperty ftf:unit ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:to_date ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:position ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:unit ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:FunctionalLocation ;
+            owl:onProperty ftf:position ],
+        ftf:Entity ;
+    skos:definition "A unit at a position over a period. The only place unit and position meet." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:Site a owl:Class ;
+    rdfs:label "Site" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:site_kind ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:site_kind ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:site_kind ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:time_zone ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:time_zone ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:time_zone ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:operated_by ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:operated_by ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:Organization ;
+            owl:onProperty ftf:operated_by ],
+        ftf:Entity ;
+    skos:definition "A refinery, a field, or a factory." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:about_position a owl:ObjectProperty ;
+    rdfs:label "about_position" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:alarm_high a owl:DatatypeProperty ;
+    rdfs:label "alarm_high" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:api_type a owl:DatatypeProperty ;
+    rdfs:label "api_type" ;
+    skos:definition "API 610 type, e.g. BB2" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/refinery> .
+
+ftf:approved_by a owl:DatatypeProperty ;
+    rdfs:label "approved_by" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:barrels_per_day a owl:DatatypeProperty ;
+    rdfs:label "barrels_per_day" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:capacity_bpd a owl:DatatypeProperty ;
+    rdfs:label "capacity_bpd" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/refinery> .
+
+ftf:case a owl:ObjectProperty ;
+    rdfs:label "case" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:change_summary a owl:DatatypeProperty ;
+    rdfs:label "change_summary" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:confidence a owl:DatatypeProperty ;
+    rdfs:label "confidence" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:customer a owl:ObjectProperty ;
+    rdfs:label "customer" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/factory> .
+
+ftf:design_datasheet a owl:ObjectProperty ;
+    rdfs:label "design_datasheet" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:doc_kind a owl:DatatypeProperty ;
+    rdfs:label "doc_kind" ;
+    skos:definition "P&ID | datasheet | completion schematic | procedure" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:end a owl:DatatypeProperty ;
+    rdfs:label "end" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:end_state a owl:ObjectProperty ;
+    rdfs:label "end_state" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:evidence a owl:DatatypeProperty ;
+    rdfs:label "evidence" ;
+    skos:definition "Rule name or the record pair the link came from" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:from_date a owl:DatatypeProperty ;
+    rdfs:label "from_date" ;
+    rdfs:range xsd:date ;
+    skos:definition "Start of validity (inclusive)" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:from_position a owl:ObjectProperty ;
+    rdfs:label "from_position" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/refinery> .
+
+ftf:function a owl:DatatypeProperty ;
+    rdfs:label "function" ;
+    skos:definition "What the position does, e.g. crude charge pump" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:grain a owl:DatatypeProperty ;
+    rdfs:label "grain" ;
+    skos:definition "unit | position | fleet | lot" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/kpi> .
+
+ftf:id a owl:DatatypeProperty ;
+    rdfs:label "id" ;
+    skos:definition "Stable graph identifier (a CURIE-like local name)" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:installed_spare_of a owl:ObjectProperty ;
+    rdfs:label "installed_spare_of" ;
+    skos:definition "This position is the installed spare of another" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:introduced_by a owl:ObjectProperty ;
+    rdfs:label "introduced_by" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:issued_on a owl:DatatypeProperty ;
+    rdfs:label "issued_on" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:label a owl:DatatypeProperty ;
+    rdfs:label "label" ;
+    skos:definition "Human-readable label" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:lift_method a owl:DatatypeProperty ;
+    rdfs:label "lift_method" ;
+    skos:definition "esp | gas_lift | rod_pump" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:manufacturer a owl:ObjectProperty ;
+    rdfs:label "manufacturer" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:material a owl:DatatypeProperty ;
+    rdfs:label "material" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:medium a owl:DatatypeProperty ;
+    rdfs:label "medium" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/refinery> .
+
+ftf:mode a owl:ObjectProperty ;
+    rdfs:label "mode" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:model a owl:DatatypeProperty ;
+    rdfs:label "model" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:object a owl:DatatypeProperty ;
+    rdfs:label "object" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:occurred_on a owl:DatatypeProperty ;
+    rdfs:label "occurred_on" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:of_unit a owl:ObjectProperty ;
+    rdfs:label "of_unit" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:opened_at a owl:DatatypeProperty ;
+    rdfs:label "opened_at" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:operated_by a owl:ObjectProperty ;
+    rdfs:label "operated_by" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:org_kind a owl:DatatypeProperty ;
+    rdfs:label "org_kind" ;
+    skos:definition "operator | oem | supplier | contractor" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:pad a owl:DatatypeProperty ;
+    rdfs:label "pad" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:parent a owl:ObjectProperty ;
+    rdfs:label "parent" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:parent_unit a owl:ObjectProperty ;
+    rdfs:label "parent_unit" ;
+    skos:definition "Set when this is a component of another unit" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:passed a owl:DatatypeProperty ;
+    rdfs:label "passed" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/factory> .
+
+ftf:position a owl:ObjectProperty ;
+    rdfs:label "position" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:predicate a owl:DatatypeProperty ;
+    rdfs:label "predicate" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:producing a owl:DatatypeProperty ;
+    rdfs:label "producing" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:pulled_unit a owl:ObjectProperty ;
+    rdfs:label "pulled_unit" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:qualification_test_waived a owl:DatatypeProperty ;
+    rdfs:label "qualification_test_waived" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:quantity a owl:DatatypeProperty ;
+    rdfs:label "quantity" ;
+    skos:definition "vibration_velocity | motor_temperature | intake_pressure ..." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:query a owl:DatatypeProperty ;
+    rdfs:label "query" ;
+    skos:definition "Name of the SPARQL file that computes it" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/kpi> .
+
+ftf:question a owl:DatatypeProperty ;
+    rdfs:label "question" ;
+    skos:definition "The decision the KPI supports" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/kpi> .
+
+ftf:raised_by a owl:ObjectProperty ;
+    rdfs:label "raised_by" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:rated_flow_m3h a owl:DatatypeProperty ;
+    rdfs:label "rated_flow_m3h" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/refinery> .
+
+ftf:reason a owl:DatatypeProperty ;
+    rdfs:label "reason" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:required_role a owl:DatatypeProperty ;
+    rdfs:label "required_role" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:revision a owl:DatatypeProperty ;
+    rdfs:label "revision" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:rig a owl:DatatypeProperty ;
+    rdfs:label "rig" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:root_cause a owl:DatatypeProperty ;
+    rdfs:label "root_cause" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/factory> .
+
+ftf:route a owl:DatatypeProperty ;
+    rdfs:label "route" ;
+    skos:definition "standard | expedited" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:run_days a owl:DatatypeProperty ;
+    rdfs:label "run_days" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:sample_seconds a owl:DatatypeProperty ;
+    rdfs:label "sample_seconds" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:serial a owl:DatatypeProperty ;
+    rdfs:label "serial" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:service a owl:DatatypeProperty ;
+    rdfs:label "service" ;
+    skos:definition "Pumped service" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/refinery> .
+
+ftf:set_unit a owl:ObjectProperty ;
+    rdfs:label "set_unit" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:setting_depth_m a owl:DatatypeProperty ;
+    rdfs:label "setting_depth_m" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:severity a owl:ObjectProperty ;
+    rdfs:label "severity" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:shipped_on a owl:DatatypeProperty ;
+    rdfs:label "shipped_on" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/factory> .
+
+ftf:site a owl:ObjectProperty ;
+    rdfs:label "site" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:site_kind a owl:DatatypeProperty ;
+    rdfs:label "site_kind" ;
+    skos:definition "refinery | field | factory" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:standard a owl:DatatypeProperty ;
+    rdfs:label "standard" ;
+    skos:definition "Standard it follows, if any" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/kpi> .
+
+ftf:start a owl:DatatypeProperty ;
+    rdfs:label "start" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:status a owl:ObjectProperty ;
+    rdfs:label "status" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:subject a owl:DatatypeProperty ;
+    rdfs:label "subject" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:summary a owl:DatatypeProperty ;
+    rdfs:label "summary" ;
+    skos:definition "Findings or abstract, as written" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:supplier a owl:ObjectProperty ;
+    rdfs:label "supplier" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:system a owl:DatatypeProperty ;
+    rdfs:label "system" ;
+    skos:definition "Source system, e.g. SAP-PM, PI, P&ID, MES, PLM" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:target_system a owl:DatatypeProperty ;
+    rdfs:label "target_system" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:test_kind a owl:DatatypeProperty ;
+    rdfs:label "test_kind" ;
+    skos:definition "performance | leak | press_fit_force" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/factory> .
+
+ftf:text a owl:DatatypeProperty ;
+    rdfs:label "text" ;
+    skos:definition "Free text as typed; treat as untrusted data" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:time_zone a owl:DatatypeProperty ;
+    rdfs:label "time_zone" ;
+    skos:definition "IANA zone the local records are written in" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:to_date a owl:DatatypeProperty ;
+    rdfs:label "to_date" ;
+    rdfs:range xsd:date ;
+    skos:definition "End of validity (exclusive); empty means still current" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:to_position a owl:ObjectProperty ;
+    rdfs:label "to_position" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/refinery> .
+
+ftf:trigger a owl:DatatypeProperty ;
+    rdfs:label "trigger" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:well a owl:ObjectProperty ;
+    rdfs:label "well" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> .
+
+ftf:work_order a owl:DatatypeProperty ;
+    rdfs:label "work_order" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/factory> .
+
+ftf:world a owl:ObjectProperty ;
+    rdfs:label "world" ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:DraftStatus a owl:Class ;
+    rdfs:label "DraftStatus" ;
+    owl:unionOf ( <https://domain-explorer.dev/ftf#DraftStatus#pending> <https://domain-explorer.dev/ftf#DraftStatus#approved> <https://domain-explorer.dev/ftf#DraftStatus#rejected> ) ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> ;
+    linkml:permissible_values <https://domain-explorer.dev/ftf#DraftStatus#approved>,
+        <https://domain-explorer.dev/ftf#DraftStatus#pending>,
+        <https://domain-explorer.dev/ftf#DraftStatus#rejected> .
+
+ftf:EndState a owl:Class ;
+    rdfs:label "EndState" ;
+    owl:unionOf ( <https://domain-explorer.dev/ftf#EndState#failed> <https://domain-explorer.dev/ftf#EndState#running> <https://domain-explorer.dev/ftf#EndState#pulled_for_other> ) ;
+    skos:definition "How a run of a string ended." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> ;
+    linkml:permissible_values <https://domain-explorer.dev/ftf#EndState#failed>,
+        <https://domain-explorer.dev/ftf#EndState#pulled_for_other>,
+        <https://domain-explorer.dev/ftf#EndState#running> .
+
+ftf:Event a owl:Class ;
+    rdfs:label "Event" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:allValuesFrom xsd:date ;
+            owl:onProperty ftf:occurred_on ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:occurred_on ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:occurred_on ],
+        [ owl:unionOf ( ftf:FailureEvent ftf:Notification ftf:Workover ) ],
+        ftf:Entity ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:MaterialLot a owl:Class ;
+    rdfs:label "MaterialLot" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:material ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:supplier ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:material ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:material ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:supplier ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:Organization ;
+            owl:onProperty ftf:supplier ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:introduced_by ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:introduced_by ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:EngineeringChange ;
+            owl:onProperty ftf:introduced_by ],
+        ftf:Entity ;
+    skos:definition "A homogeneous batch of a purchased material (bearing set, elastomer compound)." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:World a owl:Class ;
+    rdfs:label "World" ;
+    owl:unionOf ( <https://domain-explorer.dev/ftf#World#OT> <https://domain-explorer.dev/ftf#World#IT> <https://domain-explorer.dev/ftf#World#ET> ) ;
+    skos:definition "Which of the three data worlds a record comes from (OT / IT / ET)." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> ;
+    linkml:permissible_values <https://domain-explorer.dev/ftf#World#ET>,
+        <https://domain-explorer.dev/ftf#World#IT>,
+        <https://domain-explorer.dev/ftf#World#OT> .
+
+ftf:lots a owl:ObjectProperty .
+
+ftf:Severity a owl:Class ;
+    rdfs:label "Severity" ;
+    owl:unionOf ( <https://domain-explorer.dev/ftf#Severity#low> <https://domain-explorer.dev/ftf#Severity#medium> <https://domain-explorer.dev/ftf#Severity#high> <https://domain-explorer.dev/ftf#Severity#critical> ) ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> ;
+    linkml:permissible_values <https://domain-explorer.dev/ftf#Severity#critical>,
+        <https://domain-explorer.dev/ftf#Severity#high>,
+        <https://domain-explorer.dev/ftf#Severity#low>,
+        <https://domain-explorer.dev/ftf#Severity#medium> .
+
+ftf:about_unit a owl:ObjectProperty .
+
+ftf:LinkMethod a owl:Class ;
+    rdfs:label "LinkMethod" ;
+    owl:unionOf ( <https://domain-explorer.dev/ftf#LinkMethod#exact_key> <https://domain-explorer.dev/ftf#LinkMethod#tag_rule> <https://domain-explorer.dev/ftf#LinkMethod#alias_table> <https://domain-explorer.dev/ftf#LinkMethod#fuzzy> <https://domain-explorer.dev/ftf#LinkMethod#human> ) ;
+    skos:definition "How an identity link between two source records was established." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> ;
+    linkml:permissible_values <https://domain-explorer.dev/ftf#LinkMethod#alias_table>,
+        <https://domain-explorer.dev/ftf#LinkMethod#exact_key>,
+        <https://domain-explorer.dev/ftf#LinkMethod#fuzzy>,
+        <https://domain-explorer.dev/ftf#LinkMethod#human>,
+        <https://domain-explorer.dev/ftf#LinkMethod#tag_rule> .
+
+ftf:Organization a owl:Class ;
+    rdfs:label "Organization" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:org_kind ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:org_kind ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:org_kind ],
+        ftf:Entity ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:approved_on a owl:DatatypeProperty .
+
+ftf:at_position a owl:ObjectProperty .
+
+ftf:built_on a owl:DatatypeProperty .
+
+ftf:description a owl:DatatypeProperty .
+
+ftf:engineering_unit a owl:DatatypeProperty .
+
+ftf:installation a owl:ObjectProperty .
+
+ftf:kind a owl:DatatypeProperty,
+        owl:ObjectProperty .
+
+ftf:method a owl:DatatypeProperty,
+        owl:ObjectProperty .
+
+ftf:opened_on a owl:DatatypeProperty .
+
+ftf:value a owl:DatatypeProperty .
+
+ftf:ESPComponentKind a owl:Class ;
+    rdfs:label "ESPComponentKind" ;
+    owl:unionOf ( <https://domain-explorer.dev/ftf#ESPComponentKind#pump> <https://domain-explorer.dev/ftf#ESPComponentKind#intake> <https://domain-explorer.dev/ftf#ESPComponentKind#seal_section> <https://domain-explorer.dev/ftf#ESPComponentKind#motor> <https://domain-explorer.dev/ftf#ESPComponentKind#cable> <https://domain-explorer.dev/ftf#ESPComponentKind#sensor> ) ;
+    skos:inScheme <https://domain-explorer.dev/ftf/oilfield> ;
+    linkml:permissible_values <https://domain-explorer.dev/ftf#ESPComponentKind#cable>,
+        <https://domain-explorer.dev/ftf#ESPComponentKind#intake>,
+        <https://domain-explorer.dev/ftf#ESPComponentKind#motor>,
+        <https://domain-explorer.dev/ftf#ESPComponentKind#pump>,
+        <https://domain-explorer.dev/ftf#ESPComponentKind#seal_section>,
+        <https://domain-explorer.dev/ftf#ESPComponentKind#sensor> .
+
+ftf:unit a owl:ObjectProperty .
+
+ftf:FailureMode a owl:Class ;
+    rdfs:label "FailureMode" ;
+    owl:unionOf ( <https://domain-explorer.dev/ftf#FailureMode#VIB> <https://domain-explorer.dev/ftf#FailureMode#ELP> <https://domain-explorer.dev/ftf#FailureMode#ELU> <https://domain-explorer.dev/ftf#FailureMode#OHE> <https://domain-explorer.dev/ftf#FailureMode#BRD> <https://domain-explorer.dev/ftf#FailureMode#FTS> <https://domain-explorer.dev/ftf#FailureMode#STP> <https://domain-explorer.dev/ftf#FailureMode#NOI> <https://domain-explorer.dev/ftf#FailureMode#PDE> <https://domain-explorer.dev/ftf#FailureMode#INL> <https://domain-explorer.dev/ftf#FailureMode#ERO> <https://domain-explorer.dev/ftf#FailureMode#SER> ) ;
+    skos:definition "Failure modes after ISO 14224 (codes as used in the Annex B equipment tables)." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> ;
+    linkml:permissible_values <https://domain-explorer.dev/ftf#FailureMode#BRD>,
+        <https://domain-explorer.dev/ftf#FailureMode#ELP>,
+        <https://domain-explorer.dev/ftf#FailureMode#ELU>,
+        <https://domain-explorer.dev/ftf#FailureMode#ERO>,
+        <https://domain-explorer.dev/ftf#FailureMode#FTS>,
+        <https://domain-explorer.dev/ftf#FailureMode#INL>,
+        <https://domain-explorer.dev/ftf#FailureMode#NOI>,
+        <https://domain-explorer.dev/ftf#FailureMode#OHE>,
+        <https://domain-explorer.dev/ftf#FailureMode#PDE>,
+        <https://domain-explorer.dev/ftf#FailureMode#SER>,
+        <https://domain-explorer.dev/ftf#FailureMode#STP>,
+        <https://domain-explorer.dev/ftf#FailureMode#VIB> .
+
+ftf:PhysicalEquipment a owl:Class ;
+    rdfs:label "PhysicalEquipment" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:parent_unit ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:date ;
+            owl:onProperty ftf:built_on ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:serial ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:serial ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:built_on ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:parent_unit ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:PhysicalEquipment ;
+            owl:onProperty ftf:parent_unit ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:serial ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:model ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:manufacturer ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:built_on ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:model ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:model ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:build_lots ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:manufacturer ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:Organization ;
+            owl:onProperty ftf:manufacturer ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:MaterialLot ;
+            owl:onProperty ftf:build_lots ],
+        ftf:Entity ;
+    skos:definition "A UNIT. A serial-numbered thing that can be built, installed, moved, repaired and scrapped." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:FunctionalLocation a owl:Class ;
+    rdfs:label "FunctionalLocation" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:function ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:site ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:Site ;
+            owl:onProperty ftf:site ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:Document ;
+            owl:onProperty ftf:design_datasheet ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:function ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:function ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:site ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:parent ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:design_datasheet ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:installed_spare_of ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:parent ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:design_datasheet ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:installed_spare_of ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:FunctionalLocation ;
+            owl:onProperty ftf:parent ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:FunctionalLocation ;
+            owl:onProperty ftf:installed_spare_of ],
+        ftf:Entity ;
+    skos:definition "A POSITION. Where equipment is needed; defined by the engineering design and survives swaps." ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+ftf:Entity a owl:Class ;
+    rdfs:label "Entity" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:identifiers ],
+        [ a owl:Restriction ;
+            owl:minCardinality 0 ;
+            owl:onProperty ftf:label ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:id ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom xsd:string ;
+            owl:onProperty ftf:label ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:id ],
+        [ a owl:Restriction ;
+            owl:maxCardinality 1 ;
+            owl:onProperty ftf:label ],
+        [ a owl:Restriction ;
+            owl:allValuesFrom ftf:SourceIdentifier ;
+            owl:onProperty ftf:identifiers ],
+        [ a owl:Restriction ;
+            owl:minCardinality 1 ;
+            owl:onProperty ftf:id ],
+        [ owl:unionOf ( ftf:BuildRecord ftf:Case ftf:Document ftf:Draft ftf:EightD ftf:EngineeringChange ftf:Event ftf:FunctionalLocation ftf:Installation ftf:KpiDefinition ftf:ManagementOfChange ftf:MaterialLot ftf:NonConformance ftf:Organization ftf:PhysicalEquipment ftf:RunRecord ftf:Shipment ftf:Signal ftf:Site ftf:Stream ftf:TestRecord ftf:WarrantyClaim ) ] ;
+    skos:inScheme <https://domain-explorer.dev/ftf/core> .
+
+

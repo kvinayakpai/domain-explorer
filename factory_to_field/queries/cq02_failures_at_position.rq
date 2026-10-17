@@ -1,0 +1,9 @@
+# question: Which failures happened at position ?pos, and which unit was in it when they did?
+# bindings: ?pos (IRI)
+PREFIX ftf: <https://domain-explorer.dev/ftf#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?fe ?on ?mode ?unit ?serial WHERE {
+  ?fe a ftf:FailureEvent ; ftf:at_position ?pos ; ftf:of_unit ?unit ; ftf:mode ?mode ; ftf:occurred_on ?on .
+  ?unit ftf:serial ?serial .
+} ORDER BY ?on

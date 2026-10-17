@@ -1,0 +1,9 @@
+# question: What does the name ?value in system ?system refer to, and what other names does it have?
+# bindings: ?system (string), ?value (string)
+PREFIX ftf: <https://domain-explorer.dev/ftf#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?node ?label ?othersys ?kind ?othervalue WHERE {
+  ?node ftf:identifiers ?x . ?x ftf:system ?system ; ftf:value ?value .
+  ?node ftf:label ?label ; ftf:identifiers ?y . ?y ftf:system ?othersys ; ftf:kind ?kind ; ftf:value ?othervalue .
+} ORDER BY ?othersys ?kind

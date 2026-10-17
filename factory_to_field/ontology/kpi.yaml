@@ -1,0 +1,23 @@
+id: https://domain-explorer.dev/ftf/kpi
+name: ftf_kpi
+title: Factory to Field — KPI module
+description: KPIs are defined once, with the question they answer and how they are computed, so every track reports them the same way.
+version: 0.1.0
+prefixes:
+  ftf: https://domain-explorer.dev/ftf#
+  linkml: https://w3id.org/linkml/
+default_prefix: ftf
+default_range: string
+imports:
+  - linkml:types
+  - core
+
+classes:
+  KpiDefinition:
+    is_a: Entity
+    attributes:
+      question: {description: "The decision the KPI supports"}
+      grain: {description: "unit | position | fleet | lot"}
+      method: {description: "How it is computed, in one sentence"}
+      standard: {description: "Standard it follows, if any"}
+      query: {description: "Name of the SPARQL file that computes it"}

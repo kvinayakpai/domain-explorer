@@ -1,0 +1,10 @@
+# question: How many units carry lot ?lot, and how many distinct customers received them?
+# bindings: ?lot (IRI)
+PREFIX ftf: <https://domain-explorer.dev/ftf#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT (COUNT(DISTINCT ?unit) AS ?units) (COUNT(DISTINCT ?customer) AS ?customers) WHERE {
+  ?unit ftf:build_lots ?lot .
+  ?unit ftf:parent_unit? ?top .
+  ?s a ftf:Shipment ; ftf:unit ?top ; ftf:customer ?customer .
+}

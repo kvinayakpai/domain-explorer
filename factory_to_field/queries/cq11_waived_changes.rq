@@ -1,0 +1,6 @@
+# question: Which engineering changes used the expedited route with the qualification test waived?
+PREFIX ftf: <https://domain-explorer.dev/ftf#>
+SELECT ?eco ?title ?approved ?summary WHERE {
+  ?eco a ftf:EngineeringChange ; ftf:label ?title ; ftf:route "expedited" ; ftf:qualification_test_waived true ; ftf:approved_on ?approved .
+  OPTIONAL { ?eco ftf:change_summary ?summary }
+} ORDER BY ?approved
