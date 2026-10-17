@@ -10,9 +10,10 @@ Branch `feat/oge-parallel-tracks`. Supersedes the 12-week single-track plan. Ref
 | 1 Ontology | LinkML modules (core, refinery, oilfield, factory, kpi); generated OWL, closed SHACL, Pydantic, TypeScript, JSON-LD | Done | `ontology.build --check` clean; 11 competency questions as SPARQL (`queries/cq01-cq11`) |
 | 2 Digital world | Seeded simulator (seed 42): 3 refineries, 12 ESP wells + 10 gas-lift wells, 2,568 factory build records; rendered into 15 source files with realistic mess (UTC vs local time, typos, blank serials, retired tags, mixed units) | Done | 14 realism checks; `answer_key.json` computed from the world |
 | 3 Instance KG | pyoxigraph store, 109,591 triples, 11,508 nodes; identity resolution with methods, confidence, provenance graph, review queue | Done | links recall 0.9995, precision 1.000 (gate 0.95 / 0.98); SHACL conforms; 3 orphan historian tags in review queue |
+| 4b System simulators | PI Web API, OPC UA gateway, CMS, SAP PM OData, OSDU, PLM, MES, QMS and production planning as local REST services; read-only agent credential; writes only with a release token and named approver; `HttpSource` and `FileSource` are interchangeable | Done | Same answers over HTTP and from files; 10 of 10 gold cases pass through the simulators; `python -m factory_to_field.demo` runs the whole loop |
 | 4 Agents | 7 tool servers (also as MCP), orchestrator with deterministic playbooks, optional model planner, draft store with named-role approval, OT-write refusal, evidence verifier, case viewer | Done | 10 of 10 gold cases, 57 of 57 checks |
 
-Tests: 27 in `factory_to_field/tests` (world 5, KG 9, agents 13); a separate CI job runs ruff, the ontology freshness check, pytest and the gold scorer.
+Tests: 33 in `factory_to_field/tests` (world 5, KG 9, agents 13, simulators 5 plus the gold run through them); a separate CI job runs ruff, the ontology freshness check, pytest and the gold scorer.
 
 ## Gates (as built)
 
@@ -43,7 +44,7 @@ CASE-1042 (refinery bearing alarm), CASE-2077 (ESP motor temperature), CASE-3001
 
 ## Remaining work (towards G5)
 
-1. Replace file-based sources with connectors (SAP PM OData, PI Web API, OSDU, PLM/MES) behind the same tool interfaces; keep the simulator for regression.
+1. Real connectors: implement the `Source` interface (`agents/sources.py`) against SAP PM OData, PI Web API, OSDU and PLM/MES; the simulators speak the same dialects and stay as the regression target. There are no real systems today, so this is not needed for the demo.
 2. Run the model planner against a live model on the 10 gold cases plus new adversarial cases; track pass rate and cost.
 3. Review workflow for the identity-resolution queue with real users; measure reviewer time per link.
 4. Identity provider for approvers; audit log persisted outside memory.

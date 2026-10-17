@@ -25,7 +25,7 @@ from .core import DEFAULT_KG, DEFAULT_WORLD, REGISTRY, Ctx
 SERVERS = sorted({t.server for t in REGISTRY.values()})
 
 
-def build(server: str, as_of: str | None = None, kg: KG | None = None) -> FastMCP:
+def build(server: str, as_of: str | None = None, kg: KG | None = None, src=None) -> FastMCP:
     mcp = FastMCP(f"ftf-{server}")
     kg = kg or KG(DEFAULT_KG, read_only=True)
     clock = datetime.fromisoformat((as_of or "2026-10-17T06:00:00+00:00").replace("Z", "+00:00"))
@@ -53,4 +53,7 @@ if __name__ == "__main__":
     which = sys.argv[1] if len(sys.argv) > 1 else "kg"
     if which not in SERVERS:
         raise SystemExit(f"server must be one of {SERVERS}")
-    build(which).run()
+    import os
+
+    from .sources import make_source
+    build(which, src=make_source(DEFAULT_WORLD, os.environ.get("FTF_SIM_URL"))).run()  # FTF_SIM_URL=http://127.0.0.1:8765 to use the simulators

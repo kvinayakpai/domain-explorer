@@ -23,13 +23,14 @@ Finish with ONLY a JSON object: {"summary": str, "findings": [{"text": str, "evi
 
 
 class LLMAgent:
-    def __init__(self, client, model: str = "claude-sonnet-5-5", kg: KG | None = None, world: Path | None = None, max_turns: int = 24) -> None:
+    def __init__(self, client, model: str = "claude-sonnet-5-5", kg: KG | None = None, world: Path | None = None, max_turns: int = 24, src=None) -> None:
+        self.src = src
         self.client, self.model, self.max_turns = client, model, max_turns
         self.kg = kg or KG(DEFAULT_KG, read_only=True)
         self.world = world or DEFAULT_WORLD
 
     def run(self, c: Case) -> tuple[Report, Session]:
-        s = Session(Ctx(self.kg, self.world, parse_ts(c.as_of)))
+        s = Session(Ctx(self.kg, self.world, parse_ts(c.as_of), self.src))
         tools = anthropic_tools()
         msgs = [{"role": "user", "content": f"Case {c.id} (clock {c.as_of}). Position: {c.position}. Trigger tag: {c.trigger_tag}.\n{c.question}"}]
         text = ""

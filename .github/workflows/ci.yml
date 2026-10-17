@@ -97,3 +97,4 @@ jobs:
           python -m factory_to_field.world.build
           python -m factory_to_field.kg.build
           python -m factory_to_field.agents.gold
+          python -m factory_to_field.demo

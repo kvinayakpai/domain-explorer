@@ -69,9 +69,10 @@ def _p(x: str) -> str:
 
 
 class Agent(FieldPlaybooks):
-    def __init__(self, kg: KG | None = None, world: Path | None = None, planner: str = "playbook") -> None:
+    def __init__(self, kg: KG | None = None, world: Path | None = None, planner: str = "playbook", src=None) -> None:
         self.kg = kg or KG(DEFAULT_KG, read_only=True)
         self.world = world or DEFAULT_WORLD
+        self.src = src  # FileSource by default; pass an HttpSource to work through the system simulators
 
     # ------------------------------------------------------------------ routing
     def route(self, c: Case) -> str:
@@ -95,7 +96,7 @@ class Agent(FieldPlaybooks):
         return "alarm"
 
     def run(self, c: Case) -> tuple[Report, Session]:
-        s = Session(Ctx(self.kg, self.world, parse_ts(c.as_of)))
+        s = Session(Ctx(self.kg, self.world, parse_ts(c.as_of), self.src))
         pb = self.route(c)
         rep = Report(c.id, pb)
         getattr(self, "pb_" + pb)(c, s, rep)

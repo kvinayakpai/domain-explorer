@@ -62,6 +62,9 @@ class FieldPlaybooks:
             rep.answer.update(eco=lc.data.get("eco_no"), lot_sections=lu.data["units"], lot_section_operators=lu.data["customers"])
             self._add(rep, "quality", f"Lot {elot.split(':')[1]} came in under {lc.data['eco_no']} ({lc.data['title']}): route {lc.data['route']}, qualification test waived = {lc.data['qualification_test_waived']}. "
                       f"It went into {lu.data['units']} seal sections for {lu.data['customers']} operators.", lc.evidence + lu.evidence, eco=lc.data["eco_no"], sections=lu.data["units"], operators=lu.data["customers"])
+        wm = s.call("osdu.well_master", well=well)
+        if wm.data.get("LiftMethod"):
+            self._add(rep, "asset", f"OSDU master data: {well} is an {wm.data['LiftMethod']} well on {wm.data['Pad']} in {wm.data['Field']}, spud {wm.data['Spud']}.", wm.evidence, lift=wm.data["LiftMethod"], pad=wm.data["Pad"], spud=wm.data["Spud"])
         out = s.call("plant.well_output", well=well)
         rg = s.call("plant.rigs")
         e = rg.data["earliest"]

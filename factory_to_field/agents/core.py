@@ -26,6 +26,12 @@ class Ctx:
     kg: KG
     world: Path
     as_of: datetime
+    src: object = None   # a Source (FileSource or HttpSource); defaults to the generated files
+
+    def __post_init__(self) -> None:
+        if self.src is None:
+            from .sources import FileSource
+            self.src = FileSource(self.world)
 
     @property
     def today(self) -> date:

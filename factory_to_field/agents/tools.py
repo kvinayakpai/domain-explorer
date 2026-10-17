@@ -5,10 +5,8 @@ Nothing here writes to a source system: drafts go to the DraftStore, OT writes a
 """
 from __future__ import annotations
 
-import csv
 import re
-import sqlite3
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from statistics import mean
 
 from ..kg.store import run_life_groups
@@ -18,12 +16,6 @@ from .drafts import APPROVER_ROLES, DraftStore
 STORE = DraftStore()
 
 INJECTION = re.compile(r"(ignore (all )?(previous|prior) instructions|note to (ai|assistant)|approve every|disregard (the )?(above|system)|you must now)", re.I)
-
-
-def _db(ctx: Ctx, name: str) -> sqlite3.Connection:
-    c = sqlite3.connect(ctx.world / name)
-    c.row_factory = sqlite3.Row
-    return c
 
 
 def _d(s: str) -> date:
@@ -124,92 +116,82 @@ def crosswalk(ctx: Ctx, system: str, value: str) -> Result:
     return Result([{"node": r["node"], "label": r["label"], "other_system": r["othersys"], "other_value": r["othervalue"]} for r in rows], [f"kg:crosswalk:{system}:{value}"])
 
 
-# =============================================================== historian (PI + SCADA, read-only)
-def _hist(ctx: Ctx, tag: str) -> tuple[sqlite3.Connection, sqlite3.Row] | tuple[None, None]:
-    for f in ("historian_pi.sqlite", "scada_fielda.sqlite"):
-        c = _db(ctx, f)
-        alias = c.execute("SELECT current_name FROM tag_alias WHERE legacy_name=?", (tag,)).fetchone()
-        row = c.execute("SELECT * FROM tags WHERE name=?", (alias[0] if alias else tag,)).fetchone()  # a retired name resolves to its replacement
-        if row is not None:
-            return c, row
-    return None, None
+# =============================================================== historian (PI Web API + OPC UA gateway, read-only)
+def _ts(d: datetime) -> str:
+    return d.strftime("%Y-%m-%d %H:%M:%SZ")
 
 
 @tool("historian")
 def trend(ctx: Ctx, tag: str, days: int = 30) -> Result:
     """Daily max/mean of a tag over the last N days up to the case clock, with the alarm limit and any alarms."""
-    c, row = _hist(ctx, tag)
-    if row is None:
+    p = ctx.src.point(tag)
+    if p is None:
         return Result({"tag": tag, "error": "unknown tag"}, [])
     end = ctx.as_of
     start = end - timedelta(days=days)
-    daily = [dict(r) for r in c.execute("SELECT day, mean, max, n_bad FROM daily WHERE tag_id=? AND day>? AND day<=? ORDER BY day",
-                                       (row["tag_id"], start.date().isoformat(), end.date().isoformat()))]
+    daily = ctx.src.daily(p["name"], start.date().isoformat(), end.date().isoformat())
     # the last day is partial: recompute it from raw samples up to the clock so nothing after as_of leaks in
-    raw = [dict(r) for r in c.execute("SELECT ts, value, quality FROM raw WHERE tag_id=? AND ts<=? ORDER BY ts", (row["tag_id"], end.strftime("%Y-%m-%d %H:%M:%SZ")))]
     last_day = end.date().isoformat()
-    todays = [r["value"] for r in raw if r["ts"].startswith(last_day) and r["quality"] == "Good"]
+    raw = ctx.src.raw(p["name"], f"{last_day} 00:00:00Z", _ts(end))
+    todays = [r["value"] for r in raw if r["quality"] == "Good"]
     daily = [d for d in daily if d["day"] != last_day]
     if todays:
-        daily.append({"day": last_day, "mean": round(mean(todays), 4), "max": round(max(todays), 4), "n_bad": 0})
+        daily.append({"day": last_day, "mean": round(mean(todays), 4), "max": round(max(todays), 4)})
     # stitch the history that sits under the retired name(s) before the migration date
-    for leg in c.execute("SELECT t.tag_id, a.migrated_on FROM tag_alias a JOIN tags t ON t.name=a.legacy_name WHERE a.current_name=?", (row["name"],)).fetchall():
-        old = [dict(r) for r in c.execute("SELECT day, mean, max, n_bad FROM daily WHERE tag_id=? AND day>? AND day<? AND day<=? ORDER BY day",
-                                         (leg["tag_id"], start.date().isoformat(), leg["migrated_on"], end.date().isoformat()))]
+    for leg in p["legacy"]:
+        old = ctx.src.daily(leg["name"], start.date().isoformat(), end.date().isoformat(), before_day=leg["migrated_on"])
         have = {d["day"] for d in daily}
         daily = sorted([d for d in old if d["day"] not in have] + daily, key=lambda d: d["day"])
-    alarms = [dict(r) for r in c.execute("SELECT ts, value, limit_value, state FROM alarms WHERE tag_id=? AND ts<=? ORDER BY ts", (row["tag_id"], end.strftime("%Y-%m-%d %H:%M:%SZ")))]
-    data = {"tag": row["name"], "descriptor": row["descriptor"], "unit": row["engunits"], "alarm_high": row["alarm_high"], "retired": row["retired"],
+    alarms = ctx.src.alarms(p["name"], _ts(end))
+    data = {"tag": p["name"], "descriptor": p["descriptor"], "unit": p["unit"], "alarm_high": p["alarm_high"], "retired": p["retired"],
             "days": len(daily), "first_day": daily[0]["day"] if daily else None, "last_day": daily[-1]["day"] if daily else None,
             "last_max": daily[-1]["max"] if daily else None, "last_mean": daily[-1]["mean"] if daily else None,
             "max_in_window": max((d["max"] for d in daily), default=None), "first_max": daily[0]["max"] if daily else None,
-            "recent_alarms": alarms[-3:], "series_max": [d["max"] for d in daily]}
-    return Result(data, [f"hist:{row['name']}:{data['first_day']}..{data['last_day']}"] + ([f"hist:{row['name']}:alarm:{alarms[-1]['ts']}"] if alarms else []))
+            "recent_alarms": [{k: a[k] for k in ("ts", "value", "limit_value", "state")} for a in alarms[-3:]], "series_max": [d["max"] for d in daily]}
+    return Result(data, [f"hist:{p['name']}:{data['first_day']}..{data['last_day']}"] + ([f"hist:{p['name']}:alarm:{alarms[-1]['ts']}"] if alarms else []))
 
 
 @tool("historian")
 def sensor_health(ctx: Ctx, tag: str, days: int = 14) -> Result:
-    """Is the tag alive? Flat-lined (zero variance) good-quality samples, or mostly bad quality, mean a stuck or failed sensor."""
-    c, row = _hist(ctx, tag)
-    if row is None:
+    """Is the tag alive? Flat-lined (zero variance) samples, or mostly bad quality, mean a stuck or failed sensor."""
+    p = ctx.src.point(tag)
+    if p is None:
         return Result({"tag": tag, "error": "unknown tag"}, [])
-    start = (ctx.as_of - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%SZ")
-    rows = [dict(r) for r in c.execute("SELECT value, quality FROM raw WHERE tag_id=? AND ts>? AND ts<=? ORDER BY ts", (row["tag_id"], start, ctx.as_of.strftime("%Y-%m-%d %H:%M:%SZ")))]
+    start = ctx.as_of - timedelta(days=days)
+    rows = ctx.src.raw(p["name"], _ts(start), _ts(ctx.as_of))
     vals = [r["value"] for r in rows]
     bad = sum(r["quality"] != "Good" for r in rows)
     spread = (max(vals) - min(vals)) if vals else None
     stuck = bool(vals) and len(vals) >= 20 and spread < 1e-6
-    daily = [dict(r) for r in c.execute("SELECT day, max, n_good, n_bad FROM daily WHERE tag_id=? AND day>? AND day<=? ORDER BY day", (row["tag_id"], start[:10], ctx.as_of.date().isoformat()))]
+    daily = ctx.src.daily(p["name"], start.date().isoformat(), ctx.as_of.date().isoformat())
     flat_daily = len(daily) >= 5 and len({round(d["max"], 6) for d in daily}) == 1
-    data = {"tag": row["name"], "samples": len(rows), "not_good_quality": bad, "spread": spread, "stuck": bool(stuck or flat_daily), "flat_daily": flat_daily}
-    return Result(data, [f"hist:{row['name']}:health:{ctx.as_of.date()}"])
+    data = {"tag": p["name"], "samples": len(rows), "not_good_quality": bad, "spread": spread, "stuck": bool(stuck or flat_daily), "flat_daily": flat_daily}
+    return Result(data, [f"hist:{p['name']}:health:{ctx.as_of.date()}"])
 
 
 @tool("historian")
 def spectrum(ctx: Ctx, tag: str) -> Result:
     """Latest condition-monitoring vibration spectrum for the tag: bearing defect-frequency amplitudes and the overall level."""
-    c = _db(ctx, "historian_pi.sqlite")
-    rows = [dict(r) for r in c.execute("SELECT * FROM cms_spectra WHERE tag=? AND day<=? ORDER BY day DESC LIMIT 12", (tag, ctx.as_of.date().isoformat()))]
+    rows = ctx.src.spectra(tag, ctx.as_of.date().isoformat(), limit=12)
     if not rows:
         return Result({"tag": tag, "error": "no spectra"}, [])
     last = rows[0]
     comps = {k: last[k] for k in ("f1x", "f2x", "bpfo", "bpfi", "bsf")}
     dom = max(("bpfo", "bpfi", "bsf"), key=lambda k: comps[k])
     baseline = next((r for r in reversed(rows)), last)
-    share = [r["bpfo"] / max(r["overall"], 1e-6) for r in c.execute("SELECT bpfo, overall FROM cms_spectra WHERE tag=? AND day>? AND day<=?", (tag, (ctx.as_of - timedelta(days=150)).date().isoformat(), ctx.as_of.date().isoformat()))]
+    share = [r["bpfo"] / max(r["overall"], 1e-6) for r in ctx.src.spectra(tag, ctx.as_of.date().isoformat(), after_day=(ctx.as_of - timedelta(days=150)).date().isoformat())]
     data = {"tag": tag, "day": last["day"], "bpfo_share_max_150d": round(max(share), 2) if share else None, "components": comps, "overall": last["overall"], "dominant_bearing_component": dom,
             "bpfo_growth_x": round(comps["bpfo"] / max(baseline["bpfo"], 1e-6), 1), "baseline_day": baseline["day"]}
     return Result(data, [f"hist:{tag}:spectrum:{last['day']}"])
 
 
-# =============================================================== eam (SAP PM, read-only)
+# =============================================================== eam (SAP PM OData, read-only)
 @tool("eam")
 def open_work(ctx: Ctx, position: str) -> Result:
     """Open maintenance orders and notifications on the position (by the SAP functional-location code)."""
     tag = position.split(":", 2)[-1]
-    c = _db(ctx, "sap_pm.sqlite")
-    fl = [r["tplnr"] for r in c.execute("SELECT tplnr FROM IFLOT WHERE tplnr LIKE ?", (f"%{tag}",))] or [tag]
-    orders = [dict(r) for r in c.execute(f"SELECT aufnr, ktext, istat, gstrp FROM AUFK WHERE tplnr IN ({','.join('?' * len(fl))}) AND istat NOT IN ('TECO','CLSD') AND gstrp<=?", (*fl, ctx.today.isoformat()))]
+    fl = ctx.src.flocs(tag) or [tag]
+    orders = ctx.src.open_orders(fl, ctx.today.isoformat())
     return Result({"position": position, "floc": fl, "open_orders": orders, "count": len(orders)}, [f"sap:open_work:{fl[0]}:{ctx.today}"])
 
 
@@ -217,8 +199,7 @@ def open_work(ctx: Ctx, position: str) -> Result:
 def notification_history(ctx: Ctx, position: str, limit: int = 8) -> Result:
     """Recent maintenance notifications on the position. Long text is free text typed by people: it is returned as untrusted."""
     tag = position.split(":", 2)[-1]
-    c = _db(ctx, "sap_pm.sqlite")
-    rows = [dict(r) for r in c.execute("SELECT qmnum, qmart, qmtxt, ltxt, qmdat, fecod, qmst FROM QMEL WHERE tplnr LIKE ? AND qmdat<=? ORDER BY qmdat DESC LIMIT ?", (f"%{tag}", ctx.today.isoformat(), limit))]
+    rows = ctx.src.notifications(tag, ctx.today.isoformat(), limit)
     untrusted, flagged = [], []
     for r in rows:
         lt = r.pop("ltxt") or ""
@@ -234,8 +215,7 @@ def notification_history(ctx: Ctx, position: str, limit: int = 8) -> Result:
 @tool("eam")
 def stock(ctx: Ctx, material_text: str, site: str) -> Result:
     """Spare-parts stock for a material description at a site's central store."""
-    c = _db(ctx, "sap_pm.sqlite")
-    rows = [dict(r) for r in c.execute("SELECT matnr, maktx, werks, lgort, labst, wzeit FROM MARD WHERE maktx LIKE ? AND werks=?", (f"%{material_text}%", site))]
+    rows = ctx.src.stock(material_text, site)
     return Result({"site": site, "items": [{"matnr": r["matnr"], "text": r["maktx"], "store": r["lgort"], "qty": r["labst"], "lead_days": r["wzeit"]} for r in rows]},
                   [f"sap:MARD:{r['matnr']}/{r['werks']}" for r in rows])
 
@@ -244,87 +224,74 @@ def stock(ctx: Ctx, material_text: str, site: str) -> Result:
 @tool("plant")
 def windows(ctx: Ctx, site: str) -> Result:
     """Next planned maintenance windows for the site's units."""
-    c = _db(ctx, "production.sqlite")
-    rows = [dict(r) for r in c.execute("SELECT unit, opens, closes, kind FROM windows WHERE site=? AND opens>=? ORDER BY opens", (site, ctx.today.isoformat()))]
+    rows = ctx.src.windows(site, ctx.today.isoformat())
     return Result({"site": site, "windows": rows, "next": rows[0] if rows else None}, [f"plant:windows:{site}"])
 
 
 @tool("plant")
 def rigs(ctx: Ctx) -> Result:
     """Workover rigs and when each is free."""
-    c = _db(ctx, "production.sqlite")
-    rows = [dict(r) for r in c.execute("SELECT rig, free_from, note FROM rigs ORDER BY free_from")]
+    rows = ctx.src.rigs()
     return Result({"rigs": rows, "earliest": rows[0] if rows else None}, ["plant:rigs"])
 
 
 @tool("plant")
 def well_output(ctx: Ctx, well: str) -> Result:
     """Latest daily oil allocation for the well (what is deferred while it is down)."""
-    c = _db(ctx, "production.sqlite")
-    r = c.execute("SELECT day, oil_bbl_d FROM allocation WHERE well=? AND day<=? ORDER BY day DESC LIMIT 1", (well, ctx.today.isoformat())).fetchone()
+    r = ctx.src.allocation(well, ctx.today.isoformat())
     return Result({"well": well, "day": r["day"], "oil_bbl_d": r["oil_bbl_d"]} if r else {"well": well}, [f"prod:allocation:{well}:{r['day']}"] if r else [])
 
 
-# =============================================================== maker (MES / PLM / QMS / ERP) and reliability
+@tool("osdu")
+def well_master(ctx: Ctx, well: str) -> Result:
+    """OSDU master data for a well: field, pad, lift method, spud date."""
+    r = ctx.src.well_master(well)
+    return Result({"well": well, **{k: r[k] for k in ("WellID", "Field", "Pad", "LiftMethod", "Spud")}} if r else {"well": well, "error": "not in OSDU"}, [f"osdu:{r['WellID']}"] if r else [])
+
+
+# =============================================================== maker (MES / PLM / QMS) and reliability
 @tool("maker")
 def eco(ctx: Ctx, eco_no: str) -> Result:
     """An engineering change: route, whether the qualification test was waived, supplier switch, summary."""
-    r = _db(ctx, "kestrel_plm.sqlite").execute("SELECT * FROM eco WHERE eco_no=?", (eco_no,)).fetchone()
-    return Result(dict(r) if r else {"eco_no": eco_no, "error": "not found"}, [f"plm:eco:{eco_no}"] if r else [])
+    r = ctx.src.eco(eco_no)
+    return Result(r if r else {"eco_no": eco_no, "error": "not found"}, [f"plm:eco:{eco_no}"] if r else [])
 
 
 @tool("maker")
 def lot_change(ctx: Ctx, lot: str) -> Result:
     """The engineering change that put this material lot into use (same material, supplier and effectivity date), with its route and waiver status."""
-    m = _db(ctx, "kestrel_mes.sqlite").execute("SELECT * FROM lots WHERE lot_id=?", (lot,)).fetchone()
-    if not m:
+    d = ctx.src.lot_change(lot)
+    if d is None:
         return Result({"lot": lot, "error": "unknown lot"}, [])
-    p = _db(ctx, "kestrel_plm.sqlite")
-    e = p.execute("""SELECT e.eco_no, e.title, e.route, e.qualification_test_waived, e.approved, e.summary, f.effective_from FROM eco_effectivity f JOIN eco e ON e.eco_no=f.eco_no
-                     WHERE f.part=? AND f.supplier_code=? AND f.effective_from<=? ORDER BY f.effective_from DESC LIMIT 1""", (m["material"], m["supplier_code"], m["received"])).fetchone()
-    data = {"lot": lot, "material": m["material"], "supplier_code": m["supplier_code"], "received": m["received"], **(dict(e) if e else {"eco_no": None})}
-    return Result(data, [f"mes:lot:{lot}"] + ([f"plm:eco:{e['eco_no']}"] if e else []))
+    return Result(d, [f"mes:lot:{lot}"] + ([f"plm:eco:{d['eco_no']}"] if d.get("eco_no") else []))
 
 
 @tool("maker")
 def test_records(ctx: Ctx, serial: str) -> Result:
     """Factory test records for a serial (press-fit, run-in, hydro...)."""
-    rows = [dict(r) for r in _db(ctx, "kestrel_mes.sqlite").execute("SELECT test_kind, value, unit, passed, tested FROM test_records WHERE serial=?", (serial,))]
-    return Result({"serial": serial, "tests": rows}, [f"mes:tests:{serial}"])
+    return Result({"serial": serial, "tests": ctx.src.test_records(serial)}, [f"mes:tests:{serial}"])
 
 
 @tool("maker")
 def lot_tests(ctx: Ctx, lot: str, test_kind: str = "press_fit_force") -> Result:
     """Average of a factory test across all units built with a lot, against units built with other lots of the same material."""
-    c = _db(ctx, "kestrel_mes.sqlite")
-    mat = c.execute("SELECT material FROM lots WHERE lot_id=?", (lot,)).fetchone()
-    if not mat:
+    d = ctx.src.lot_tests(lot, test_kind)
+    if d is None:
         return Result({"lot": lot, "error": "unknown lot"}, [])
-    q = """SELECT AVG(t.value) v, COUNT(*) n FROM test_records t JOIN genealogy g ON g.serial=t.serial JOIN lots l ON l.lot_id=g.lot_id
-           WHERE t.test_kind=? AND l.material=? AND {}"""
-    a = c.execute(q.format("g.lot_id=?"), (test_kind, mat[0], lot)).fetchone()
-    b = c.execute(q.format("g.lot_id<>?"), (test_kind, mat[0], lot)).fetchone()
-    data = {"lot": lot, "test_kind": test_kind, "lot_avg": a["v"], "lot_n": a["n"], "other_avg": b["v"], "other_n": b["n"],
-            "deficit_pct": round((1 - a["v"] / b["v"]) * 100, 1) if a["n"] and b["n"] and b["v"] else None}
-    return Result(data, [f"mes:lot_tests:{lot}:{test_kind}"])
+    d["deficit_pct"] = round((1 - d["lot_avg"] / d["other_avg"]) * 100, 1) if d["lot_n"] and d["other_n"] and d["other_avg"] else None
+    return Result(d, [f"mes:lot_tests:{lot}:{test_kind}"])
 
 
 @tool("maker")
 def warranty_claims(ctx: Ctx, serial: str | None = None) -> Result:
     """Warranty claims on file (optionally for one serial)."""
-    c = _db(ctx, "kestrel_qms.sqlite")
-    rows = [dict(r) for r in (c.execute("SELECT w.* FROM warranty_claims w JOIN claim_units u ON u.claim_no=w.claim_no WHERE u.serial_no=?", (serial,)) if serial else c.execute("SELECT * FROM warranty_claims"))]
-    return Result({"claims": rows}, [f"qms:claims:{serial or 'all'}"])
+    return Result({"claims": ctx.src.claims(serial)}, [f"qms:claims:{serial or 'all'}"])
 
 
 @tool("maker")
 def difa(ctx: Ctx, well: str | None = None, seal_built_since: str | None = None) -> Result:
     """Dismantle inspection and failure analysis (DIFA) reports, optionally for one well."""
-    rows = []
-    with open(ctx.world / "difa_reports.csv", newline="") as f:
-        for r in csv.DictReader(f):
-            if r["report_date"] <= ctx.today.isoformat() and (well is None or r["well"] == well):
-                rows.append(r)
+    rows = ctx.src.difa(well, ctx.today.isoformat())
     sw = [r for r in rows if "elastomers swollen" in r["finding"]]
     return Result({"reports": len(rows), "elastomer_findings": len(sw), "items": [{"difa": r["difa_no"], "string": r["string_serial"], "well": r["well"], "date": r["report_date"], "finding": r["finding"]} for r in rows]},
                   [f"difa:{r['difa_no']}" for r in rows])

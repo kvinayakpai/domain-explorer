@@ -138,8 +138,9 @@ def detail(rep: Report, s: Session) -> dict:
     }
 
 
-def score(agent: Agent | None = None, world: Path | None = None) -> dict:
-    agent = agent or Agent(world=world)
+def score(agent: Agent | None = None, world: Path | None = None, sim_url: str | None = None) -> dict:
+    from .sources import make_source
+    agent = agent or Agent(world=world, src=make_source(world or DEFAULT_WORLD, sim_url))
     key = json.loads(((world or DEFAULT_WORLD) / "answer_key.json").read_text())
     out, total, passed = [], 0, 0
     for g in GOLD:
@@ -154,7 +155,8 @@ def score(agent: Agent | None = None, world: Path | None = None) -> dict:
 
 
 if __name__ == "__main__":
-    r = score()
+    import os
+    r = score(sim_url=os.environ.get("FTF_SIM_URL"))
     for c in r["cases"]:
         print(("PASS " if c["ok"] else "FAIL ") + c["case"], c["title"], f"({c['tool_calls']} tool calls)")
         for k, v in c["checks"].items():
