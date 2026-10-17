@@ -219,3 +219,16 @@ export const GlossaryTerm = z.object({
   steward: z.string().optional(),
 });
 export type GlossaryTerm = z.infer<typeof GlossaryTerm>;
+
+/**
+ * Challenges are authored either as plain strings or as `{name, description}` objects
+ * (and, in a few files, as single-key maps). Always render them through this helper.
+ */
+export function challengeText(c: string | Record<string, unknown>): { title?: string; body: string } {
+  if (typeof c === "string") return { body: c };
+  if (typeof c.name === "string") {
+    return { title: c.name, body: typeof c.description === "string" ? c.description : "" };
+  }
+  const [k, v] = Object.entries(c)[0] ?? ["", ""];
+  return { title: String(k), body: String(v) };
+}

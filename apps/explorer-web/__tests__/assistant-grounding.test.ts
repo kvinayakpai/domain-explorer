@@ -353,7 +353,7 @@ describe("assistant-suggestions library shape", () => {
 
   it("returns the curated tour when no vertical is supplied", () => {
     const out = suggestionsForVertical(undefined, 6);
-    expect(out).toBe(tourSuggestions);
+    expect(out).toEqual(tourSuggestions.slice(0, 6));
   });
 });
 

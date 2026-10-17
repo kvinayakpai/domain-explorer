@@ -33,6 +33,7 @@
     "cli:build": "pnpm --filter @domain-explorer/init build || echo \"(no build step; CLI is plain ESM)\""
   },
   "devDependencies": {
+    "@types/node": "22",
     "playwright": "~1.48.2",
     "prettier": "^3.3.3",
     "typescript": "^5.5.4"
