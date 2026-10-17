@@ -28,7 +28,11 @@ def val(t: ox.Term | None) -> Any:
         return None
     if isinstance(t, ox.NamedNode):
         s = t.value
-        return s[len(BASE):].replace("/", ":") if s.startswith(BASE) else s
+        if not s.startswith(BASE):
+            return s
+        kind, _, rest = s[len(BASE):].partition("/")
+        # position ids are kind:site:tag; every other id keeps any slash that is part of the serial (e.g. TF/21/56593)
+        return f"{kind}:{rest.replace('/', ':')}" if kind == "pos" else f"{kind}:{rest}"
     if isinstance(t, ox.Literal):
         dt = t.datatype.value if t.datatype else ""
         if dt.endswith("#date"):

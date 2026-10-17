@@ -140,5 +140,5 @@ def test_mcp_servers_list_and_call(kg):
         o = await build("ot", kg=kg).call_tool("write_setpoint", {"tag": "x", "value": 1.0})
         return names, json.loads(r.content[0].text), json.loads(o.content[0].text)
     names, r, o = asyncio.run(go())
-    assert {"drafts", "eam", "historian", "kg", "maker", "ot", "plant"} == set(SERVERS)
+    assert {"drafts", "eam", "historian", "kg", "maker", "ot", "osdu", "plant"} == set(SERVERS)
     assert "unit_at" in names and r["data"]["serial"] == "OEM-24-0412" and o["refused"]
