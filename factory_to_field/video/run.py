@@ -171,7 +171,7 @@ def build_scenes(v: Voice) -> list[Scene]:
     # 9 demo cli
     async def d_demo(r):
         await r.sync(0)
-        cmd, lines = term_lines(CAP / "demo.txt", 40)
+        cmd, lines = term_lines(CAP / "demo.txt", 13)
         lines = [(x[:170], c) for x, c in lines]
         await play_term(r, cmd, lines, r.scene.total - 1.6, "end-to-end demo")
     scenes.append(S("09_demo_cli", [
