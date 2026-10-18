@@ -29,13 +29,13 @@ oneLiner: Discovery, authorization, payment, and fulfillment of transactions whe
 #   ISO 20022 (still applies to underlying rails) and PCI DSS v4.0 for token vaults.
 
 personas:
-  - { name: Head of Agentic Commerce, title: VP, Head of Agentic Commerce, level: VP }
-  - { name: Agent Trust & Safety Lead, title: Director, Agent Trust & Safety, level: Director }
-  - { name: Payments Risk Officer, title: Senior Director, Agent Payments Risk, level: Director }
-  - { name: Agent Experience PM, title: Principal PM, Agent Experience, level: Manager }
-  - { name: Merchant Agent Integration Engineer, title: Staff Engineer, Merchant Agent Integration, level: IC }
+  - { name: "Head of Agentic Commerce", title: "VP, Head of Agentic Commerce", level: "VP" }
+  - { name: "Agent Trust & Safety Lead", title: "Director, Agent Trust & Safety", level: "Director" }
+  - { name: "Payments Risk Officer", title: "Senior Director, Agent Payments Risk", level: "Director" }
+  - { name: "Agent Experience PM", title: "Principal PM, Agent Experience", level: "Manager" }
+  - { name: "Merchant Agent Integration Engineer", title: "Staff Engineer, Merchant Agent Integration", level: "IC" }
   - { name: Chief Privacy Officer, title: Chief Privacy Officer, level: C-suite }
-  - { name: Open Agent Standards Architect, title: Principal Architect, Open Agent Standards, level: IC }
+  - { name: "Open Agent Standards Architect", title: "Principal Architect, Open Agent Standards", level: "IC" }
 
 decisions:
   - { id: ac.d.stepup_threshold, statement: "Should we accept agent-initiated purchases above $X without step-up authentication of the human principal?" }

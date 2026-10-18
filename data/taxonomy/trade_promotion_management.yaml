@@ -41,14 +41,14 @@ oneLiner: Plan, fund, execute, measure, and settle the >$1T global trade-promoti
 #   Salesforce CRM, SAP S/4HANA ERP — order, ship, invoice anchors for redemption.
 
 personas:
-  - { name: Trade Marketing Director, title: Director, Trade Marketing, level: Director }
-  - { name: Customer Marketing Manager, title: Senior Manager, Customer Marketing, level: Manager }
-  - { name: Trade Spend Analyst, title: Senior Analyst, Trade Spend Finance, level: IC }
-  - { name: Key Account Manager, title: Director, National Accounts (Walmart/Kroger), level: Director }
-  - { name: Deductions Manager, title: Manager, Deductions & Claims, level: Manager }
-  - { name: Revenue Growth Manager, title: Director, Revenue Growth Management, level: Director }
-  - { name: Finance Controller (Trade), title: Controller, Trade & Promotional Accounting, level: VP }
-  - { name: VP Sales, title: VP Sales, North America, level: VP }
+  - { name: "Trade Marketing Director", title: "Director, Trade Marketing", level: "Director" }
+  - { name: "Customer Marketing Manager", title: "Senior Manager, Customer Marketing", level: "Manager" }
+  - { name: "Trade Spend Analyst", title: "Senior Analyst, Trade Spend Finance", level: "IC" }
+  - { name: "Key Account Manager", title: "Director, National Accounts (Walmart/Kroger)", level: "Director" }
+  - { name: "Deductions Manager", title: "Manager, Deductions & Claims", level: "Manager" }
+  - { name: "Revenue Growth Manager", title: "Director, Revenue Growth Management", level: "Director" }
+  - { name: "Finance Controller (Trade)", title: "Controller, Trade & Promotional Accounting", level: "VP" }
+  - { name: "VP Sales", title: "VP Sales, North America", level: "VP" }
 
 decisions:
   - { id: tpm.d.promo_calendar, statement: "Lock the next 13-week promo calendar across the top-20 accounts: which weeks get a feature, which get a TPR, which carry a display." }
@@ -243,7 +243,7 @@ dataModel:
         - { name: settlement_method, type: varchar(16), description: "off_invoice|deduction|check|emc|edi820" }
 
     - name: deduction
-      description: A retailer-issued chargeback claim against a manufacturer invoice. Lifecycle: open → matched → disputed | paid | written-off. Often arrives via EDI 812/820 or as a remittance line item.
+      description: "A retailer-issued chargeback claim against a manufacturer invoice. Lifecycle: open → matched → disputed | paid | written-off. Often arrives via EDI 812/820 or as a remittance line item."
       keys: [deduction_id]
       attributes:
         - { name: deduction_id, type: varchar(32), isPrimaryKey: true }

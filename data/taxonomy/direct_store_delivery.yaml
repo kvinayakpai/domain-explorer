@@ -46,14 +46,14 @@ oneLiner: Plan, sell, deliver, settle, and audit goods that bypass retailer DCs 
 #   IFTA — International Fuel Tax Agreement (route reporting per jurisdiction).
 
 personas:
-  - { name: VP Field Sales, title: VP, Field Sales (DSD), level: VP }
-  - { name: Route Operations Manager, title: Director, Route Operations, level: Director }
-  - { name: Delivery Driver Manager, title: Manager, Delivery Drivers, level: Manager }
+  - { name: "VP Field Sales", title: "VP, Field Sales (DSD)", level: "VP" }
+  - { name: "Route Operations Manager", title: "Director, Route Operations", level: "Director" }
+  - { name: "Delivery Driver Manager", title: "Manager, Delivery Drivers", level: "Manager" }
   - { name: Account Sales Rep, title: DSD Account Sales Representative, level: IC }
-  - { name: Settlement Manager, title: Manager, Driver Settlement & Cash Reconciliation, level: Manager }
-  - { name: Perfect Store Lead, title: Director, Perfect Store & Retail Execution, level: Director }
+  - { name: "Settlement Manager", title: "Manager, Driver Settlement & Cash Reconciliation", level: "Manager" }
+  - { name: "Perfect Store Lead", title: "Director, Perfect Store & Retail Execution", level: "Director" }
   - { name: Route Planner, title: Senior Route Planner, level: IC }
-  - { name: DSD Finance Controller, title: Controller, DSD Operations Finance, level: VP }
+  - { name: "DSD Finance Controller", title: "Controller, DSD Operations Finance", level: "VP" }
 
 decisions:
   - { id: dsd.d.route_design, statement: "Re-cut master routes for the next quarter — which stops belong on which route given drive-time, tonnage, perfect-store class, and driver tenure?" }
@@ -399,7 +399,7 @@ dataModelArtifacts:
 sourceSystems:
   - { vendor: SAP, product: SAP DSD (S/4HANA Direct Store Delivery), category: DSD Platform }
   - { vendor: SymphonyAI Retail/CPG (Aldata), product: Aldata Apollo Route Accounting, category: Route Accounting / Settlement }
-  - { vendor: Trimble, product: Roadnet Anywhere (FleetLoader, MobileCast), category: Route Optimization & Mobile Dispatch }
+  - { vendor: "Trimble", product: "Roadnet Anywhere (FleetLoader, MobileCast)", category: "Route Optimization & Mobile Dispatch" }
   - { vendor: Trimble, product: Trimble PeopleNet (ELD + Telematics), category: Vehicle Telematics / ELD }
   - { vendor: Epicor, product: Epicor DSD (Apprise/Activant), category: DSD ERP / Mobile Sales Force }
   - { vendor: Epicor, product: Epicor Eagle, category: Independent Grocer POS }

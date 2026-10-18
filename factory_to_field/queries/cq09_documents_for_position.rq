@@ -1,0 +1,9 @@
+# question: Which engineering documents depict position ?pos, and at what revision?
+# bindings: ?pos (IRI)
+PREFIX ftf: <https://domain-explorer.dev/ftf#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?doc ?label ?kind ?rev WHERE {
+  ?doc a ftf:Document ; ftf:depicts ?pos ; ftf:label ?label ; ftf:doc_kind ?kind .
+  OPTIONAL { ?doc ftf:revision ?rev }
+} ORDER BY ?kind ?label

@@ -99,16 +99,20 @@ export function findCanned(
   const entries = loadCanned();
   let plain: CannedMatch | null = null;
   let verticalMatch: CannedMatch | null = null;
+  let anyMatch: CannedMatch | null = null;
   for (let i = 0; i < entries.length; i++) {
     const e = entries[i];
+    if (!e) continue;
     if (!lower.includes(e.matchSubstring.toLowerCase())) continue;
+    if (!anyMatch) anyMatch = { entry: e, index: i };
     if (e.persona && persona && e.persona === persona) return { entry: e, index: i };
     if (e.vertical && vertical && e.vertical === vertical && !verticalMatch) {
       verticalMatch = { entry: e, index: i };
     }
     if (!plain && !e.persona && !e.vertical) plain = { entry: e, index: i };
   }
-  return verticalMatch ?? plain;
+  // An entry scoped to a vertical/persona still answers when the caller gave no hint.
+  return verticalMatch ?? plain ?? anyMatch;
 }
 
 /**

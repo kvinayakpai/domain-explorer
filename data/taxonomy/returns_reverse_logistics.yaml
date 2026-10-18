@@ -50,11 +50,11 @@ oneLiner: End-to-end management of customer returns and reverse-logistics flows 
 #     ASCM / CSCMP Reverse Logistics best-practice references.
 
 personas:
-  - { name: VP Reverse Logistics, title: VP, Reverse Logistics & Returns, level: VP }
-  - { name: Returns Operations Manager, title: Director, Returns Operations, level: Director }
+  - { name: "VP Reverse Logistics", title: "VP, Reverse Logistics & Returns", level: "VP" }
+  - { name: "Returns Operations Manager", title: "Director, Returns Operations", level: "Director" }
   - { name: Refurb Center Manager, title: Refurb / Customer Return Center Manager, level: Manager }
   - { name: Returns Fraud Analyst, title: Returns Fraud Analyst, level: IC }
-  - { name: Sustainability / Circular Lead, title: Director, Circular Economy & Sustainability, level: Director }
+  - { name: "Sustainability / Circular Lead", title: "Director, Circular Economy & Sustainability", level: "Director" }
   - { name: Returns CX Lead, title: Returns Customer Experience Lead, level: Manager }
   - { name: Recovery Manager, title: Recovery & Liquidation Manager, level: Manager }
 
@@ -400,7 +400,7 @@ connectors:
   - { type: ASC X12 EDI 214 (Carrier Status), protocol: AS2, auth: PKI }
   - { type: GS1 EPCIS 2.0 (returned-goods events), protocol: HTTPS JSON over CBV 2.0, auth: OAuth2 + capability token }
   - { type: Good360 Donation Receipt API, protocol: HTTPS JSON, auth: API key }
-  - { type: Marketplace Returns CDC (Amazon Seller, eBay), protocol: HTTPS JSON, auth: OAuth2 }
+  - { type: "Marketplace Returns CDC (Amazon Seller, eBay)", protocol: "HTTPS JSON", auth: "OAuth2" }
 
 ingestionChallenges:
   - High-fan-out RMA → return_item explosion — a single multi-line order can generate one RMA with 12+ return_items; the disposition decision is per-item, but every customer-facing surface is per-RMA. Need separate streams keyed on (rma_id, return_item_id).
@@ -431,7 +431,7 @@ integrationChallenges:
     mitigation: Capture the label cost at issue time when the carrier API returns it; for vendors that bill weekly, run a settlement-allocation job that distributes the invoice line items back to carrier_label rows by tracking_number; expose both `provisional_label_cost_minor` and `settled_label_cost_minor` to make the lag visible.
   - name: Linking liquidation proceeds to original COGS
     description: A B-Stock lot of 200 items sells for $1,800. Recovery yield only makes sense if you can allocate the $1,800 back to the original 200 items' COGS — but the original COGS sits in the merch system, the lot in Optoro/B-Stock. Allocation rules (by cogs, by retail, equal) drive Recovery Value % swings of 5-15 percentage points.
-    mitigation: Materialize the bridge `liquidation_lot_item` with explicit `allocated_cogs_minor` and `allocated_proceeds_minor` per item, computed by a documented allocation rule (default: weight by unit_cogs); persist the rule version + as-of timestamp on each bridge row; report the headline KPI with both unallocated and pro-rated views.
+    mitigation: "Materialize the bridge `liquidation_lot_item` with explicit `allocated_cogs_minor` and `allocated_proceeds_minor` per item, computed by a documented allocation rule (default: weight by unit_cogs); persist the rule version + as-of timestamp on each bridge row; report the headline KPI with both unallocated and pro-rated views."
   - name: PII / chronic-returner shared-list contracts
     description: Newmine + Appriss Retail + The Retail Equation (and merchant-to-merchant ALTO-style sharing) require sharing customer hashed identifiers across retailers. Naive integration leaks raw email/phone and breaks GDPR Art. 6 / CCPA.
     mitigation: Tokenize `customer_ref_hash = SHA-256(email + tenant-salt)`; share only the hash + reason code categorical; persist DPA disclosure consent at the customer record level; honor the customer's right-to-erasure by emitting a tombstone event that invalidates the hash mapping downstream.

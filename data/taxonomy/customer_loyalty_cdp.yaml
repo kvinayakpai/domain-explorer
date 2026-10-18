@@ -55,13 +55,13 @@ oneLiner: Identity resolution, real-time segmentation, lifecycle journeys, and l
 #     Schema.org Person + Adobe XDM Profile for cross-vendor profile contracts.
 
 personas:
-  - { name: Head of CRM, title: VP, Head of CRM & Customer Marketing, level: VP }
-  - { name: CDP Architect, title: Principal Architect, Customer Data Platform, level: IC }
-  - { name: Loyalty Program Director, title: Senior Director, Loyalty Program Strategy, level: Director }
-  - { name: Customer Insights Manager, title: Manager, Customer Insights & Analytics, level: Manager }
-  - { name: Segmentation Strategist, title: Senior Manager, Segmentation & Audience Strategy, level: Manager }
-  - { name: Lifecycle Marketing Lead, title: Director, Lifecycle & Retention Marketing, level: Director }
-  - { name: Identity Resolution Lead, title: Staff Engineer, Identity Resolution, level: IC }
+  - { name: "Head of CRM", title: "VP, Head of CRM & Customer Marketing", level: "VP" }
+  - { name: "CDP Architect", title: "Principal Architect, Customer Data Platform", level: "IC" }
+  - { name: "Loyalty Program Director", title: "Senior Director, Loyalty Program Strategy", level: "Director" }
+  - { name: "Customer Insights Manager", title: "Manager, Customer Insights & Analytics", level: "Manager" }
+  - { name: "Segmentation Strategist", title: "Senior Manager, Segmentation & Audience Strategy", level: "Manager" }
+  - { name: "Lifecycle Marketing Lead", title: "Director, Lifecycle & Retention Marketing", level: "Director" }
+  - { name: "Identity Resolution Lead", title: "Staff Engineer, Identity Resolution", level: "IC" }
 
 decisions:
   - { id: cdp.d.identity_strategy, statement: "Choose the identity-resolution blend — deterministic-only (high precision, low recall), deterministic + probabilistic (higher recall, lower precision), or probabilistic-only — and the confidence threshold above which records merge into a golden profile." }

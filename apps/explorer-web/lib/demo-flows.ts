@@ -1,6 +1,7 @@
 import "server-only";
 import { registry, VERTICALS } from "@/lib/registry";
 import type { Subdomain } from "@domain-explorer/metadata";
+import { challengeText } from "@domain-explorer/metadata/schema";
 
 /**
  * Vertical-anchored demo flows.
@@ -127,7 +128,10 @@ export function platformStack(hero: Subdomain): {
   return {
     sources: hero.sourceSystems.slice(0, 6),
     ingest: hero.connectors.slice(0, 4).map((c) => `${c.type} (${c.protocol})`),
-    integrate: hero.ingestionChallenges.slice(0, 3),
+    integrate: hero.ingestionChallenges.slice(0, 3).map((c) => {
+      const t = challengeText(c as string | Record<string, unknown>);
+      return t.title ? `${t.title}. ${t.body}` : t.body;
+    }),
     model: (hero.dataModel?.entities ?? []).slice(0, 5).map((e) => e.name),
     consume: hero.kpis.slice(0, 4).map((k) => k.name),
   };

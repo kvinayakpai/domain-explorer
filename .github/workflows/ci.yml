@@ -66,3 +66,35 @@ jobs:
 
       - name: pytest
         run: uv run pytest
+
+  factory-to-field:
+    name: Factory to Field — ontology, simulated plant, knowledge graph, agents
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: factory_to_field/requirements.txt
+
+      - name: Install
+        run: pip install -r factory_to_field/requirements.txt ruff
+
+      - name: ruff
+        run: ruff check factory_to_field
+
+      - name: Generated ontology artefacts are current
+        run: python -m factory_to_field.ontology.build --check
+
+      - name: pytest (world, knowledge graph with SHACL gate, agents)
+        run: python -m pytest -c factory_to_field/pytest.ini factory_to_field/tests
+
+      - name: Gold cases
+        run: |
+          python -m factory_to_field.world.build
+          python -m factory_to_field.kg.build
+          python -m factory_to_field.agents.gold
+          python -m factory_to_field.demo

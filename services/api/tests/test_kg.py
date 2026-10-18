@@ -97,7 +97,7 @@ def _fixture_taxonomy(tmp_path: Path) -> Path:
 
 
 def test_build_graph_produces_expected_kinds_and_counts(tmp_path: Path):
-    """Smoke: 2 subdomains -> 2 verticals (16 total), 1 KPI, 2 entities, 3 personas, ..."""
+    """Smoke: 2 subdomains -> 2 verticals (17 total), 1 KPI, 2 entities, 3 personas, ..."""
     import sys
     sys.path.insert(0, str(REPO_ROOT))
     from kg.build_graph import build_graph
@@ -106,13 +106,13 @@ def test_build_graph_produces_expected_kinds_and_counts(tmp_path: Path):
     g = build_graph(data)
     assert isinstance(g, nx.MultiDiGraph)
 
-    # All 16 verticals are seeded as nodes regardless of which appear in the
+    # All 17 verticals are seeded as nodes regardless of which appear in the
     # taxonomy — the build always includes them so 'empty verticals' still
     # show up in the UI.
     kinds: dict[str, int] = {}
     for _, data_attrs in g.nodes(data=True):
         kinds[data_attrs["kind"]] = kinds.get(data_attrs["kind"], 0) + 1
-    assert kinds["vertical"] == 16
+    assert kinds["vertical"] == 17
     assert kinds["subdomain"] == 2
     assert kinds["persona"] == 3  # 1 + 2
     assert kinds["entity"] == 2
@@ -208,7 +208,7 @@ def test_committed_graph_json_loads_and_has_required_kinds():
         pytest.skip("kg/graph.json not committed yet")
     snap = json.loads(p.read_text(encoding="utf-8"))
     counts = snap["stats"]["byKind"]
-    assert counts.get("vertical", 0) == 16
+    assert counts.get("vertical", 0) == 17
     assert counts.get("subdomain", 0) >= 80
     assert counts.get("persona", 0) >= 100
     assert counts.get("kpi", 0) >= 50

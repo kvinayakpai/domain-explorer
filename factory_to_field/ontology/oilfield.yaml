@@ -1,0 +1,75 @@
+id: https://domain-explorer.dev/ftf/oilfield
+name: ftf_oilfield
+title: Factory to Field — oil field module
+description: Upstream concepts for artificially lifted wells. Aligns with OSDU (well master data) and ISO 14224 / API RP 11S (ESP failure analysis).
+version: 0.1.0
+prefixes:
+  ftf: https://domain-explorer.dev/ftf#
+  linkml: https://w3id.org/linkml/
+default_prefix: ftf
+default_range: string
+imports:
+  - linkml:types
+  - core
+
+enums:
+  ESPComponentKind:
+    permissible_values:
+      pump: {}
+      intake: {}
+      seal_section: {}
+      motor: {}
+      cable: {}
+      sensor: {}
+  EndState:
+    description: How a run of a string ended.
+    permissible_values:
+      failed: {}
+      running: {description: "Still in the well; the run life is censored"}
+      pulled_for_other: {description: "Pulled for a reason unrelated to the string"}
+
+classes:
+  OilField:
+    is_a: Site
+  Well:
+    is_a: FunctionalLocation
+    attributes:
+      pad: {}
+      lift_method: {description: "esp | gas_lift | rod_pump"}
+      producing: {range: boolean}
+  ESPPosition:
+    is_a: FunctionalLocation
+    description: The artificial-lift position in a well (the ESP slot), under the Well.
+    attributes:
+      setting_depth_m: {range: float}
+  ESPString:
+    is_a: PhysicalEquipment
+    description: A complete submersible pump string as run in a well.
+    attributes:
+      components: {range: ESPComponent, multivalued: true}
+  ESPComponent:
+    is_a: PhysicalEquipment
+    attributes:
+      kind: {range: ESPComponentKind, required: true}
+  RunRecord:
+    is_a: Entity
+    description: One run of a string in a well. Run life belongs to the string, not to the well.
+    attributes:
+      installation: {range: Installation}
+      start: {range: date}
+      end: {range: date}
+      end_state: {range: EndState, required: true}
+      run_days: {range: integer}
+  Workover:
+    is_a: Event
+    attributes:
+      rig: {}
+      pulled_unit: {range: PhysicalEquipment}
+      set_unit: {range: PhysicalEquipment}
+      at_position: {range: FunctionalLocation}
+  Deferment:
+    description: Production lost or at risk while a well runs degraded or is down.
+    attributes:
+      well: {range: Well}
+      barrels_per_day: {range: float}
+      reason: {}

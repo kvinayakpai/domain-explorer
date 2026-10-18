@@ -64,8 +64,8 @@ kpis:
   - { id: ac.kpi.agent_attributable_gmv_pct, name: Agent-Attributable GMV %, formula: sum(agent_attributable_gmv) / sum(total_gmv), unit: "%", direction: higher_is_better, vertical: CrossCutting }
   - { id: ac.kpi.agent_conversion_rate, name: Agent Conversion Rate, formula: agent_purchases / agent_intent_events, unit: "%", direction: higher_is_better, vertical: CrossCutting }
   - { id: ac.kpi.agent_chargeback_rate, name: Agent-Initiated Chargeback Rate, formula: agent_chargebacks / agent_transactions, unit: "%", direction: lower_is_better, vertical: CrossCutting }
-  - { id: ac.kpi.intent_to_purchase_p50, name: Intent-to-Purchase Latency (P50), formula: percentile(purchase_ts - intent_ts, 0.50), unit: seconds, direction: lower_is_better, vertical: CrossCutting }
-  - { id: ac.kpi.intent_to_purchase_p95, name: Intent-to-Purchase Latency (P95), formula: percentile(purchase_ts - intent_ts, 0.95), unit: seconds, direction: lower_is_better, vertical: CrossCutting }
+  - { id: "ac.kpi.intent_to_purchase_p50", name: "Intent-to-Purchase Latency (P50)", formula: "percentile(purchase_ts - intent_ts, 0.50)", unit: "seconds", direction: "lower_is_better", vertical: "CrossCutting" }
+  - { id: "ac.kpi.intent_to_purchase_p95", name: "Intent-to-Purchase Latency (P95)", formula: "percentile(purchase_ts - intent_ts, 0.95)", unit: "seconds", direction: "lower_is_better", vertical: "CrossCutting" }
   - { id: ac.kpi.stepup_rate, name: Step-Up Auth Rate, formula: stepup_required / agent_authorizations, unit: "%", direction: target_band, vertical: CrossCutting }
   - { id: ac.kpi.cross_agent_trust_score, name: Cross-Agent Trust Score, formula: median(kya_trust_score), unit: index, direction: higher_is_better, vertical: CrossCutting }
   - { id: ac.kpi.refund_rate_agent, name: Refund Rate on Agent Purchases, formula: agent_refunds / agent_purchases, unit: "%", direction: lower_is_better, vertical: CrossCutting }
@@ -94,7 +94,7 @@ kpis:
   - { id: sop.kpi.fill_rate, name: Order Fill Rate, formula: lines_filled_complete / lines_ordered, unit: "%", direction: higher_is_better, vertical: Manufacturing }
   - { id: sop.kpi.inventory_turns, name: Inventory Turns, formula: cogs_annualized / avg_inventory_value, unit: turns/yr, direction: higher_is_better, vertical: Manufacturing }
   - { id: sop.kpi.doh, name: Days on Hand (DOH), formula: avg_inventory_units / avg_daily_demand_units, unit: days, direction: target_band, vertical: Manufacturing }
-  - { id: sop.kpi.plan_adherence, name: Plan Adherence %, formula: sum(min(actual_units, plan_units)) / sum(plan_units), unit: "%", direction: higher_is_better, vertical: Manufacturing }
+  - { id: "sop.kpi.plan_adherence", name: "Plan Adherence %", formula: "sum(min(actual_units, plan_units)) / sum(plan_units)", unit: "%", direction: "higher_is_better", vertical: "Manufacturing" }
   - { id: sop.kpi.capacity_utilization, name: Capacity Utilization %, formula: planned_load_hours / available_capacity_hours, unit: "%", direction: target_band, vertical: Manufacturing }
   - { id: sop.kpi.demand_sensing_lead_time, name: Demand Sensing Lead Time, formula: avg(plan_publish_ts - signal_observed_ts), unit: hours, direction: lower_is_better, vertical: Manufacturing }
   - { id: sop.kpi.scenario_cycle_time, name: Scenario Cycle Time, formula: avg(scenario_published_ts - scenario_requested_ts), unit: minutes, direction: lower_is_better, vertical: Manufacturing }
@@ -147,8 +147,8 @@ kpis:
   - { id: tpm.kpi.display_compliance_pct, name: Display Compliance %, formula: stores_with_compliant_display / stores_promised_display, unit: "%", direction: higher_is_better, vertical: CrossCutting }
   - { id: tpm.kpi.distribution_coverage, name: Distribution Coverage (%ACV), formula: sum(acv_with_sku) / total_acv, unit: "%", direction: higher_is_better, vertical: CrossCutting }
   - { id: tpm.kpi.on_shelf_availability_pct, name: On-Shelf Availability %, formula: stores_in_stock / stores_audited, unit: "%", direction: higher_is_better, vertical: CrossCutting }
-  - { id: tpm.kpi.perfect_store_score, name: Perfect Store Score, formula: weighted_avg(distribution, share_of_shelf, planogram_compliance, price_compliance, promo_compliance), unit: index, direction: higher_is_better, vertical: CrossCutting }
-  - { id: tpm.kpi.retailer_scorecard, name: Retailer Score-card (JBP), formula: weighted(otif, fill_rate, deduction_rate, growth_pct, promo_compliance), unit: index, direction: higher_is_better, vertical: CrossCutting }
+  - { id: "tpm.kpi.perfect_store_score", name: "Perfect Store Score", formula: "weighted_avg(distribution, share_of_shelf, planogram_compliance, price_compliance, promo_compliance)", unit: "index", direction: "higher_is_better", vertical: "CrossCutting" }
+  - { id: "tpm.kpi.retailer_scorecard", name: "Retailer Score-card (JBP)", formula: "weighted(otif, fill_rate, deduction_rate, growth_pct, promo_compliance)", unit: "index", direction: "higher_is_better", vertical: "CrossCutting" }
   - { id: tpm.kpi.pay_for_performance_pct, name: Pay-for-Performance %, formula: sum(performance_qualified_spend) / sum(committed_spend), unit: "%", direction: higher_is_better, vertical: CrossCutting }
 
   # CPG — Revenue Growth Management (CPG anchor)
@@ -189,7 +189,7 @@ kpis:
   - { id: oms.kpi.pick_accuracy, name: Pick Accuracy, formula: lines_picked_correctly / total_lines_picked, unit: "%", direction: higher_is_better, vertical: Retail }
   - { id: oms.kpi.bopis_lead_time, name: BOPIS Lead Time (Order-to-Ready), formula: avg(ready_for_pickup_ts - order_capture_ts), unit: minutes, direction: lower_is_better, vertical: Retail }
   - { id: oms.kpi.ship_from_store_mix, name: Ship-from-Store Mix %, formula: store_sourced_lines / total_sourced_lines, unit: "%", direction: target_band, vertical: Retail }
-  - { id: oms.kpi.atp_accuracy, name: ATP Accuracy, formula: 1 - mean_abs_error(atp_promised, atp_actual_at_pick), unit: "%", direction: higher_is_better, vertical: Retail }
+  - { id: "oms.kpi.atp_accuracy", name: "ATP Accuracy", formula: "1 - mean_abs_error(atp_promised, atp_actual_at_pick)", unit: "%", direction: "higher_is_better", vertical: "Retail" }
   - { id: oms.kpi.inventory_visibility_unified_pct, name: Inventory Visibility (% Unified), formula: skus_with_unified_position / total_skus, unit: "%", direction: higher_is_better, vertical: Retail }
   - { id: oms.kpi.order_split_rate, name: Order Split Rate, formula: orders_with_multiple_shipments / total_multi_line_orders, unit: "%", direction: target_band, vertical: Retail }
   - { id: oms.kpi.cost_to_serve_per_channel, name: Cost-to-Serve per Channel, formula: sum(fulfillment_cost) / count(orders) by channel, unit: USD, direction: lower_is_better, vertical: Retail }
@@ -237,7 +237,7 @@ kpis:
   - { id: psa.kpi.savings_realized_pct, name: Savings Realized %, formula: sum(savings_realized) / sum(savings_committed), unit: "%", direction: higher_is_better, vertical: Manufacturing }
   - { id: psa.kpi.maverick_spend_pct, name: Maverick Spend %, formula: sum(off_contract_spend) / sum(total_addressable_spend), unit: "%", direction: lower_is_better, vertical: Manufacturing }
   - { id: psa.kpi.contract_compliance_pct, name: Contract Compliance %, formula: sum(spend_on_contracted_terms) / sum(spend_with_active_contract), unit: "%", direction: higher_is_better, vertical: Manufacturing }
-  - { id: psa.kpi.supplier_risk_score, name: Supplier Risk Score (weighted composite), formula: weighted(financial, geographic, cyber, compliance, sustainability) per supplier, unit: index, direction: lower_is_better, vertical: Manufacturing }
+  - { id: "psa.kpi.supplier_risk_score", name: "Supplier Risk Score (weighted composite)", formula: "weighted(financial, geographic, cyber, compliance, sustainability) per supplier", unit: "index", direction: "lower_is_better", vertical: "Manufacturing" }
   - { id: psa.kpi.supplier_diversity_pct, name: Supplier Diversity %, formula: sum(spend_with_diverse_suppliers) / sum(total_addressable_spend), unit: "%", direction: higher_is_better, vertical: Manufacturing }
   - { id: psa.kpi.scope3_intensity, name: Scope 3 Emissions per $ (Cat 1+2), formula: sum(supplier_scope3_kgco2e) / sum(spend_usd), unit: kgCO2e/USD, direction: lower_is_better, vertical: Manufacturing }
   - { id: psa.kpi.touchless_po_pct, name: Touchless PO %, formula: count(po_no_human_intervention) / count(total_po), unit: "%", direction: higher_is_better, vertical: Manufacturing }

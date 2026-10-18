@@ -1,0 +1,18 @@
+<title>Terminal</title><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<style>
+body{background:#10161a}
+.w{height:100%;padding:34px 60px 110px;display:flex;flex-direction:column}
+.bar{color:#9aa6ac;font:500 18px "Inter";margin-bottom:12px;display:flex;gap:14px;align-items:center}.bar i{width:13px;height:13px;border-radius:50%;background:#3a4a52;display:inline-block}
+#t{flex:1;background:#0b1114;border:1px solid #26333a;border-radius:12px;padding:20px 26px;font:500 21px/1.5 "IBM Plex Mono","DejaVu Sans Mono",ui-monospace,monospace;color:#d6e0e4;overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere}
+.c{color:#7fd6d6}.ok{color:#7ee09b}.bad{color:#ff8a7d}.dim{color:#7b8a91}.h{color:#e5b94e}
+.k::after{content:"▌";color:#7fd6d6;animation:b 1s steps(1) infinite}@keyframes b{50%{opacity:0}}
+</style>
+<div class="w"><div class="bar"><i></i><i></i><i></i><span id="ttl">terminal</span></div><div id="t"></div></div>
+<div id="cap"></div><div id="cur"></div>
+<script>
+const T=document.getElementById('t');let cur=null;
+window.setTitle=s=>document.getElementById('ttl').textContent=s;
+window.line=(txt,cls)=>{if(cur)cur.classList.remove('k');const d=document.createElement('div');d.className=cls||'';d.textContent=txt;T.appendChild(d);cur=d;T.scrollTop=T.scrollHeight}
+window.cmd=txt=>{line('$ '+txt,'c');cur.classList.add('k')}
+window.clear=()=>{T.innerHTML='';cur=null}
+</script>

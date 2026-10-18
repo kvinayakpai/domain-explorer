@@ -31,13 +31,13 @@ oneLiner: Regular price line management, markdown optimization, promotional plan
 #     for promo displays).
 
 personas:
-  - { name: Head of Pricing, title: VP, Pricing & Revenue Growth Management, level: VP }
+  - { name: "Head of Pricing", title: "VP, Pricing & Revenue Growth Management", level: "VP" }
   - { name: Category Manager, title: Category Manager, level: Manager }
   - { name: Pricing Analyst, title: Senior Pricing Analyst, level: IC }
-  - { name: Markdown Optimization Director, title: Director, Lifecycle & Markdown Pricing, level: Director }
-  - { name: Competitive Intel Manager, title: Manager, Competitive Price Intelligence, level: Manager }
-  - { name: Promo Effectiveness Lead, title: Director, Promotion Effectiveness & Trade Strategy, level: Director }
-  - { name: Margin Strategist, title: Director, Margin & Mix Strategy, level: Director }
+  - { name: "Markdown Optimization Director", title: "Director, Lifecycle & Markdown Pricing", level: "Director" }
+  - { name: "Competitive Intel Manager", title: "Manager, Competitive Price Intelligence", level: "Manager" }
+  - { name: "Promo Effectiveness Lead", title: "Director, Promotion Effectiveness & Trade Strategy", level: "Director" }
+  - { name: "Margin Strategist", title: "Director, Margin & Mix Strategy", level: "Director" }
 
 decisions:
   - { id: pp.d.kvi_classification, statement: "Which SKUs to classify as KVIs (Key Value Items) versus traffic builders, premium, or background — and how often to refresh the classification." }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { challengeText } from "@domain-explorer/metadata/schema";
 import { notFound } from "next/navigation";
 import { registry, VERTICALS } from "@/lib/registry";
 import { getSnapshot } from "@/lib/snapshots";
@@ -182,17 +183,29 @@ export default async function SubdomainPage({ params }: { params: { subdomain: s
 
       <Section title="Ingestion challenges">
         <ul className="list-disc space-y-1 pl-6 text-sm">
-          {s.ingestionChallenges.map((c, i) => (
-            <li key={i}>{c}</li>
-          ))}
+          {s.ingestionChallenges.map((c, i) => {
+            const t = challengeText(c as string | Record<string, unknown>);
+            return (
+              <li key={i}>
+                {t.title ? <strong>{t.title}. </strong> : null}
+                {t.body}
+              </li>
+            );
+          })}
         </ul>
       </Section>
 
       <Section title="Integration challenges">
         <ul className="list-disc space-y-1 pl-6 text-sm">
-          {s.integrationChallenges.map((c, i) => (
-            <li key={i}>{c}</li>
-          ))}
+          {s.integrationChallenges.map((c, i) => {
+            const t = challengeText(c as string | Record<string, unknown>);
+            return (
+              <li key={i}>
+                {t.title ? <strong>{t.title}. </strong> : null}
+                {t.body}
+              </li>
+            );
+          })}
         </ul>
       </Section>
 

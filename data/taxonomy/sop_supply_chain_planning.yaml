@@ -52,12 +52,12 @@ oneLiner: Monthly Sales & Operations Planning / Integrated Business Planning —
 #     Probabilistic forecasting (CRPS, quantile loss) — ToolsGroup, GAINS.
 
 personas:
-  - { name: VP Supply Chain Planning, title: VP, Global Supply Chain Planning, level: VP }
-  - { name: S&OP Process Lead, title: Director, S&OP / IBP Process, level: Director }
+  - { name: "VP Supply Chain Planning", title: "VP, Global Supply Chain Planning", level: "VP" }
+  - { name: "S&OP Process Lead", title: "Director, S&OP / IBP Process", level: "Director" }
   - { name: Demand Planner, title: Senior Demand Planner, level: IC }
   - { name: Supply Planner, title: Senior Supply Planner, level: IC }
   - { name: Plant Scheduler, title: Plant Master Scheduler, level: IC }
-  - { name: Inventory Strategist, title: Director, Inventory & Network Strategy, level: Director }
+  - { name: "Inventory Strategist", title: "Director, Inventory & Network Strategy", level: "Director" }
   - { name: Executive S&OP Sponsor, title: COO / Chief Supply Chain Officer, level: C-suite }
 
 decisions:
@@ -228,7 +228,7 @@ dataModel:
         - { name: ingested_at, type: timestamp }
 
     - name: forecast
-      description: Time-phased demand forecast — one row per item-location-customer-period per forecast_version. Multi-version: statistical_baseline, sales_input, marketing_input, finance_aligned, consensus.
+      description: "Time-phased demand forecast — one row per item-location-customer-period per forecast_version. Multi-version: statistical_baseline, sales_input, marketing_input, finance_aligned, consensus."
       keys: [forecast_id]
       attributes:
         - { name: forecast_id, type: bigint, isPrimaryKey: true }
@@ -379,7 +379,7 @@ sourceSystems:
   - { vendor: Blue Yonder, product: Luminate Planning (Supply Chain Planning), category: Supply Chain Planning Suite }
   - { vendor: Oracle, product: Oracle Supply Chain Planning Cloud, category: Demand & Supply Planning Suite }
   - { vendor: Anaplan, product: Anaplan Connected Planning, category: Connected Planning / IBP }
-  - { vendor: Logility, product: Logility Digital Supply Chain Platform (DemandAI+, InventoryAI+), category: SCP / MEIO }
+  - { vendor: "Logility", product: "Logility Digital Supply Chain Platform (DemandAI+, InventoryAI+)", category: "SCP / MEIO" }
   - { vendor: ToolsGroup, product: SO99+ / Service Optimizer 99+, category: Probabilistic Forecasting + MEIO }
   - { vendor: Demand Solutions, product: DSX (Demand Solutions Suite), category: Demand & S&OP }
   - { vendor: John Galt Solutions, product: Atlas Planning Platform, category: Demand & S&OP }
@@ -443,11 +443,6 @@ integrationChallenges:
   - name: Tariff / trade-policy shocks
     description: A new tariff on US$ imports from a country flips the lowest-landed-cost source for thousands of item-locations overnight; the supply plan must reroute and the inventory plan must absorb in-flight stock.
     mitigation: Maintain a tariff matrix as a slowly-changing dim; re-cost forecast_value + supply_plan_value at scenario evaluation; expose a "tariff what-if" scenario template prepopulated for common shocks.
-
-dataModels:
-  threeNF: modeling/ddl/sop_supply_chain_planning_3nf.sql
-  vault: modeling/ddl/sop_supply_chain_planning_vault.sql
-  dimensional: modeling/ddl/sop_supply_chain_planning_dim.sql
 
 glossaryTerms:
   - S&OP (Sales & Operations Planning)

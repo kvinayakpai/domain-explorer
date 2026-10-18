@@ -1,0 +1,17 @@
+id: https://domain-explorer.dev/ftf
+name: ftf
+title: Factory to Field ontology v0.1
+description: Umbrella schema. Import this one to get every module.
+version: 0.1.0
+prefixes:
+  ftf: https://domain-explorer.dev/ftf#
+  linkml: https://w3id.org/linkml/
+default_prefix: ftf
+default_range: string
+imports:
+  - linkml:types
+  - core
+  - refinery
+  - oilfield
+  - factory
+  - kpi

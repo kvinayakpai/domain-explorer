@@ -73,10 +73,10 @@ describe("kg helpers", () => {
 });
 
 describe.skipIf(!HAS_SNAP)("kg snapshot integrity", () => {
-  it("graph.json parses and has 16 verticals", () => {
+  it("graph.json parses and has at least 16 verticals", () => {
     const raw = JSON.parse(readFileSync(SNAP_PATH, "utf8")) as KgSnapshot;
     expect(raw.schemaVersion).toBe(1);
-    expect(raw.stats.byKind.vertical).toBe(16);
+    expect(raw.stats.byKind.vertical).toBeGreaterThanOrEqual(16);
     expect(raw.stats.nodes).toBeGreaterThan(500);
     expect(raw.stats.edges).toBeGreaterThan(500);
   });

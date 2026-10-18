@@ -1,0 +1,224 @@
+id: https://domain-explorer.dev/ftf/core
+name: ftf_core
+title: Factory to Field — core module
+description: >-
+  Shared vocabulary for process plants, oil fields and the equipment makers that supply them.
+  The one idea everything hangs on: a POSITION (FunctionalLocation) is where something is
+  needed; a UNIT (PhysicalEquipment) is the serial-numbered thing that sits there for a while.
+  They are joined by a dated Installation. History about the position stays when the unit is
+  swapped; history about the unit travels with its serial number.
+license: MIT
+version: 0.1.0
+prefixes:
+  ftf: https://domain-explorer.dev/ftf#
+  linkml: https://w3id.org/linkml/
+  xsd: http://www.w3.org/2001/XMLSchema#
+  skos: http://www.w3.org/2004/02/skos/core#
+  prov: http://www.w3.org/ns/prov#
+default_prefix: ftf
+default_range: string
+imports:
+  - linkml:types
+
+enums:
+  World:
+    description: Which of the three data worlds a record comes from (OT / IT / ET).
+    permissible_values:
+      OT: {description: "Operational technology: control systems, historians, SCADA, MES, test benches"}
+      IT: {description: "Information technology: ERP, CMMS/EAM, QMS, supply chain"}
+      ET: {description: "Engineering technology: P&IDs, datasheets, completion schematics, PLM"}
+  FailureMode:
+    description: Failure modes after ISO 14224 (codes as used in the Annex B equipment tables).
+    permissible_values:
+      VIB: {description: "Vibration"}
+      ELP: {description: "External leakage, process medium"}
+      ELU: {description: "External leakage, utility medium"}
+      OHE: {description: "Overheating"}
+      BRD: {description: "Breakdown"}
+      FTS: {description: "Fail to start on demand"}
+      STP: {description: "Unexpected shutdown"}
+      NOI: {description: "Noise"}
+      PDE: {description: "Parameter deviation"}
+      INL: {description: "Internal leakage"}
+      ERO: {description: "Erratic output"}
+      SER: {description: "Minor in-service problems"}
+  Severity:
+    permissible_values: {low: {}, medium: {}, high: {}, critical: {}}
+  DraftStatus:
+    permissible_values:
+      pending: {description: "Written by an agent, waiting for a named human"}
+      approved: {description: "Approved by a named person with the right role"}
+      rejected: {description: "Rejected by a named person"}
+  LinkMethod:
+    description: How an identity link between two source records was established.
+    permissible_values:
+      exact_key: {description: "Identical normalised key (serial, lot, document number)"}
+      tag_rule: {description: "Tag grammar rule (e.g. 10P101A.* → P-101A)"}
+      alias_table: {description: "Governed alias or rename table"}
+      fuzzy: {description: "String similarity above the auto-accept threshold"}
+      human: {description: "Confirmed in the review queue"}
+
+slots:
+  id: {identifier: true, description: "Stable graph identifier (a CURIE-like local name)"}
+  label: {description: "Human-readable label"}
+  from_date: {range: date, description: "Start of validity (inclusive)"}
+  to_date: {range: date, description: "End of validity (exclusive); empty means still current"}
+
+classes:
+  Entity:
+    abstract: true
+    slots: [id, label]
+    attributes:
+      identifiers:
+        multivalued: true
+        range: SourceIdentifier
+        inlined_as_list: true
+        description: The names this thing has in each source system (the crosswalk).
+
+  SourceIdentifier:
+    description: One name for one thing in one system.
+    attributes:
+      system: {required: true, description: "Source system, e.g. SAP-PM, PI, P&ID, MES, PLM"}
+      world: {range: World, required: true}
+      kind: {description: "What the key is: tag, serial, floc, equipment_no, document ..."}
+      value: {required: true}
+
+  Organization:
+    is_a: Entity
+    attributes:
+      org_kind: {description: "operator | oem | supplier | contractor"}
+
+  Site:
+    is_a: Entity
+    description: A refinery, a field, or a factory.
+    attributes:
+      site_kind: {description: "refinery | field | factory"}
+      operated_by: {range: Organization}
+      time_zone: {description: "IANA zone the local records are written in"}
+
+  FunctionalLocation:
+    is_a: Entity
+    description: A POSITION. Where equipment is needed; defined by the engineering design and survives swaps.
+    attributes:
+      site: {range: Site}
+      parent: {range: FunctionalLocation}
+      function: {description: "What the position does, e.g. crude charge pump"}
+      design_datasheet: {range: Document}
+      installed_spare_of: {range: FunctionalLocation, description: "This position is the installed spare of another"}
+
+  PhysicalEquipment:
+    is_a: Entity
+    description: A UNIT. A serial-numbered thing that can be built, installed, moved, repaired and scrapped.
+    attributes:
+      serial: {required: true}
+      model: {}
+      manufacturer: {range: Organization}
+      built_on: {range: date}
+      parent_unit: {range: PhysicalEquipment, description: "Set when this is a component of another unit"}
+      build_lots:
+        range: MaterialLot
+        multivalued: true
+        description: Material lots built into this unit (maker genealogy)
+
+  Installation:
+    is_a: Entity
+    description: A unit at a position over a period. The only place unit and position meet.
+    slots: [from_date, to_date]
+    attributes:
+      position: {range: FunctionalLocation, required: true}
+      unit: {range: PhysicalEquipment, required: true}
+
+  Signal:
+    is_a: Entity
+    description: A measured or computed time series (historian tag, SCADA point).
+    attributes:
+      measures_position: {range: FunctionalLocation, multivalued: true}
+      quantity: {description: "vibration_velocity | motor_temperature | intake_pressure ..."}
+      engineering_unit: {description: "mm/s | degC | bar ..."}
+      alarm_high: {range: float}
+      sample_seconds: {range: integer}
+
+  Document:
+    is_a: Entity
+    attributes:
+      doc_kind: {description: "P&ID | datasheet | completion schematic | procedure"}
+      revision: {}
+      depicts: {range: FunctionalLocation, multivalued: true}
+      about_unit: {range: PhysicalEquipment, multivalued: true}
+      summary: {description: "Findings or abstract, as written"}
+      issued_on: {range: date}
+
+  Event:
+    is_a: Entity
+    abstract: true
+    attributes:
+      occurred_on: {range: date, required: true}
+
+  FailureEvent:
+    is_a: Event
+    attributes:
+      mode: {range: FailureMode, required: true}
+      of_unit: {range: PhysicalEquipment, required: true}
+      at_position: {range: FunctionalLocation, required: true}
+      installation: {range: Installation}
+      description: {}
+
+  Notification:
+    is_a: Event
+    description: A maintenance notification or malfunction report.
+    attributes:
+      about_position: {range: FunctionalLocation}
+      about_unit: {range: PhysicalEquipment}
+      text: {description: "Free text as typed; treat as untrusted data"}
+
+  MaterialLot:
+    is_a: Entity
+    description: A homogeneous batch of a purchased material (bearing set, elastomer compound).
+    attributes:
+      material: {}
+      supplier: {range: Organization}
+      introduced_by: {range: EngineeringChange}
+
+  EngineeringChange:
+    is_a: Entity
+    description: An ECO. The route says how it was approved.
+    attributes:
+      approved_on: {range: date}
+      route: {description: "standard | expedited"}
+      qualification_test_waived: {range: boolean}
+      change_summary: {}
+
+  WarrantyClaim:
+    is_a: Entity
+    attributes:
+      raised_by: {range: Organization}
+      covers_units: {range: PhysicalEquipment, multivalued: true}
+      opened_on: {range: date}
+
+  Case:
+    is_a: Entity
+    description: An investigation opened by an alarm or a question. Holds findings and drafts.
+    attributes:
+      trigger: {}
+      opened_at: {range: datetime}
+      severity: {range: Severity}
+
+  Draft:
+    is_a: Entity
+    description: A proposed write to a system of record. Never applied without a named approver.
+    attributes:
+      target_system: {}
+      status: {range: DraftStatus, required: true}
+      required_role: {}
+      approved_by: {}
+      case: {range: Case}
+
+  LinkAssertion:
+    description: Provenance of one identity or relationship link between source records.
+    attributes:
+      subject: {required: true}
+      predicate: {required: true}
+      object: {required: true}
+      method: {range: LinkMethod, required: true}
+      confidence: {range: float, required: true, minimum_value: 0, maximum_value: 1}
+      evidence: {description: "Rule name or the record pair the link came from"}

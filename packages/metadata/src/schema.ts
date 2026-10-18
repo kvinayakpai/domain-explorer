@@ -60,7 +60,7 @@ export const EntityAttribute = z.object({
 export type EntityAttribute = z.infer<typeof EntityAttribute>;
 
 /** Cardinality between two entities. */
-export const RelationshipKind = z.enum(["one_to_one", "one_to_many", "many_to_many"]);
+export const RelationshipKind = z.enum(["one_to_one", "one_to_many", "many_to_one", "many_to_many"]);
 export type RelationshipKind = z.infer<typeof RelationshipKind>;
 
 export const EntityRelationship = z.object({
@@ -87,10 +87,28 @@ export const DataModelArtifacts = z.object({
 });
 export type DataModelArtifacts = z.infer<typeof DataModelArtifacts>;
 
+/** Cardinality edge between two entities, declared at the data-model level. */
+export const DataModelRelationship = z.object({
+  from: z.string().min(1),
+  to: z.string().min(1),
+  kind: RelationshipKind,
+});
+export type DataModelRelationship = z.infer<typeof DataModelRelationship>;
+
 export const DataModel = z.object({
   entities: z.array(Entity).default([]),
+  relationships: z.array(DataModelRelationship).default([]),
 });
 export type DataModel = z.infer<typeof DataModel>;
+
+/** An external standard or protocol a subdomain depends on. */
+export const Standard = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  version: z.string().optional(),
+  url: z.string().optional(),
+});
+export type Standard = z.infer<typeof Standard>;
 
 export const SourceSystem = z.object({
   vendor: z.string().min(1),
@@ -103,6 +121,7 @@ export const Connector = z.object({
   type: z.string().min(1),
   protocol: z.string().min(1),
   auth: z.string().min(1),
+  typicalSources: z.array(z.string()).default([]),
 });
 export type Connector = z.infer<typeof Connector>;
 
@@ -114,7 +133,7 @@ export const Subdomain = z.object({
   personas: z.array(Persona).min(1),
   decisions: z.array(Decision).default([]),
   kpis: z.array(Kpi).default([]),
-  dataModel: DataModel.default({ entities: [] }),
+  dataModel: DataModel.default({ entities: [], relationships: [] }),
   dataModelArtifacts: DataModelArtifacts.optional(),
   sourceSystems: z.array(SourceSystem).default([]),
   connectors: z.array(Connector).default([]),
@@ -130,6 +149,8 @@ export const Subdomain = z.object({
       z.object({}).passthrough()
     ])
   ).default([]),
+  standards: z.array(Standard).default([]),
+  glossaryTerms: z.array(z.string()).default([]),
 });
 export type Subdomain = z.infer<typeof Subdomain>;
 
@@ -183,6 +204,8 @@ export const ConnectorPattern = z.object({
   typicalSources: z.array(z.string()).default([]),
   latency: z.enum(["realtime", "near-realtime", "batch"]),
   modes: z.array(z.enum(["push", "pull", "stream", "file"])).default([]),
+  /** Directory of the runnable Python stub for this pattern, when one exists. */
+  stubPath: z.string().optional(),
 });
 export type ConnectorPattern = z.infer<typeof ConnectorPattern>;
 
@@ -196,3 +219,16 @@ export const GlossaryTerm = z.object({
   steward: z.string().optional(),
 });
 export type GlossaryTerm = z.infer<typeof GlossaryTerm>;
+
+/**
+ * Challenges are authored either as plain strings or as `{name, description}` objects
+ * (and, in a few files, as single-key maps). Always render them through this helper.
+ */
+export function challengeText(c: string | Record<string, unknown>): { title?: string; body: string } {
+  if (typeof c === "string") return { body: c };
+  if (typeof c.name === "string") {
+    return { title: c.name, body: typeof c.description === "string" ? c.description : "" };
+  }
+  const [k, v] = Object.entries(c)[0] ?? ["", ""];
+  return { title: String(k), body: String(v) };
+}

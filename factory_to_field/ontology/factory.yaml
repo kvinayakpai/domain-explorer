@@ -1,0 +1,49 @@
+id: https://domain-explorer.dev/ftf/factory
+name: ftf_factory
+title: Factory to Field — pump maker module
+description: What the equipment maker knows — build records, genealogy, tests, changes, quality actions. This is where the two tracks meet.
+version: 0.1.0
+prefixes:
+  ftf: https://domain-explorer.dev/ftf#
+  linkml: https://w3id.org/linkml/
+default_prefix: ftf
+default_range: string
+imports:
+  - linkml:types
+  - core
+
+classes:
+  BuildRecord:
+    is_a: Entity
+    attributes:
+      unit: {range: PhysicalEquipment, required: true}
+      built_on: {range: date}
+      work_order: {}
+      lots: {range: MaterialLot, multivalued: true}
+  TestRecord:
+    is_a: Entity
+    attributes:
+      unit: {range: PhysicalEquipment}
+      test_kind: {description: "performance | leak | press_fit_force"}
+      passed: {range: boolean}
+      value: {range: float}
+      engineering_unit: {}
+  Shipment:
+    is_a: Entity
+    attributes:
+      unit: {range: PhysicalEquipment}
+      customer: {range: Organization}
+      shipped_on: {range: date}
+  NonConformance:
+    is_a: Entity
+    attributes:
+      lots: {range: MaterialLot, multivalued: true}
+      opened_on: {range: date}
+      description: {}
+  EightD:
+    is_a: Entity
+    description: Corrective-action report (8D). Always created as a draft by agents.
+    attributes:
+      covers_claims: {range: WarrantyClaim, multivalued: true}
+      root_cause: {}
+      containment_units: {range: PhysicalEquipment, multivalued: true}

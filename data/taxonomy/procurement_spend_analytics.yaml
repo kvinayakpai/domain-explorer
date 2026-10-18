@@ -71,14 +71,14 @@ oneLiner: Source-to-pay (S2P), spend cube analytics, supplier risk and ESG scori
 
 personas:
   - { name: Chief Procurement Officer, title: Chief Procurement Officer, level: C-suite }
-  - { name: Category Manager (Indirect), title: Category Manager, Indirect Spend, level: Manager }
-  - { name: Category Manager (Direct), title: Category Manager, Direct Materials, level: Manager }
-  - { name: Sourcing Director, title: Director, Strategic Sourcing, level: Director }
-  - { name: Sustainability Procurement Lead, title: Senior Director, Sustainable Procurement & Scope 3, level: Director }
+  - { name: "Category Manager (Indirect)", title: "Category Manager, Indirect Spend", level: "Manager" }
+  - { name: "Category Manager (Direct)", title: "Category Manager, Direct Materials", level: "Manager" }
+  - { name: "Sourcing Director", title: "Director, Strategic Sourcing", level: "Director" }
+  - { name: "Sustainability Procurement Lead", title: "Senior Director, Sustainable Procurement & Scope 3", level: "Director" }
   - { name: Spend Analyst, title: Senior Spend Analyst, level: IC }
-  - { name: Supplier Risk Manager, title: Director, Supplier Risk & Resilience, level: Director }
+  - { name: "Supplier Risk Manager", title: "Director, Supplier Risk & Resilience", level: "Director" }
   - { name: Contract Manager, title: Senior Contract Manager, level: IC }
-  - { name: AP Operations Lead, title: Senior Manager, Accounts Payable Operations, level: Manager }
+  - { name: "AP Operations Lead", title: "Senior Manager, Accounts Payable Operations", level: "Manager" }
 
 decisions:
   - { id: psa.d.consolidate_suppliers, statement: "For a category with N qualified suppliers, should we consolidate spend onto the top K — and which suppliers get culled given price, risk, ESG, and diversity considerations?" }
@@ -465,7 +465,7 @@ sourceSystems:
   - { vendor: CDP, product: CDP Supply Chain Disclosure, category: Sustainability Disclosure }
   - { vendor: SBTi, product: Science Based Targets initiative registry, category: Sustainability Disclosure }
   - { vendor: SAP, product: SAP S/4HANA MM/FI, category: ERP (Materials Mgmt + Finance) }
-  - { vendor: Oracle, product: Oracle Cloud ERP (Payables, Cash Mgmt), category: ERP }
+  - { vendor: "Oracle", product: "Oracle Cloud ERP (Payables, Cash Mgmt)", category: "ERP" }
   - { vendor: Microsoft, product: Dynamics 365 Finance & Operations, category: ERP }
   - { vendor: Workday, product: Workday Financials, category: ERP }
 
@@ -528,11 +528,6 @@ integrationChallenges:
   - name: Sustainable procurement clause enforcement
     description: ISO 20400 expects sustainability clauses to flow from policy through contract to operational measurement. In practice, signed clauses don't propagate to spend cubes — buyers can't see whether they're transacting with EcoVadis Silver+ suppliers.
     mitigation: Expose supplier.ecovadis_medal on the buying UX; auto-block PO submission for categories with sustainability_clauses requiring Silver+ if supplier doesn't qualify; report sustainable_spend_pct against board commitment.
-
-dataModels:
-  threeNF: modeling/ddl/procurement_spend_analytics_3nf.sql
-  vault: modeling/ddl/procurement_spend_analytics_vault.sql
-  dimensional: modeling/ddl/procurement_spend_analytics_dim.sql
 
 glossaryTerms:
   - Spend Under Management (SUM)

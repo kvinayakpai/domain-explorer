@@ -154,7 +154,7 @@ sources:
 
   # Revenue Growth Management (CPG anchor)
   - { id: src.vistex_revopt, vendor: Vistex, product: Vistex Solutions for Revenue Optimization, category: Pricing / Rebates / Net Revenue, primaryConnectors: [conn.vistex_rest, conn.sap_rfc, conn.webhook] }
-  - { id: src.pricefx_suite, vendor: Pricefx, product: Pricefx Price Optimization & Management Suite (PriceBuilder, PriceOptimizer, PromotionManager, RebateManager), category: Pricing Platform, primaryConnectors: [conn.pricefx_rest] }
+  - { id: "src.pricefx_suite", vendor: "Pricefx", product: "Pricefx Price Optimization & Management Suite (PriceBuilder, PriceOptimizer, PromotionManager, RebateManager)", category: "Pricing Platform", primaryConnectors: [conn.pricefx_rest] }
   - { id: src.modeln_revcloud, vendor: Model N, product: Model N Revenue Management Cloud, category: Revenue Management / Channel Incentive, primaryConnectors: [conn.modeln_rest] }
   - { id: src.pros_rgm, vendor: PROS, product: PROS RGM (Smart CPQ + RealPrice + Guidance), category: B2B Price Optimization, primaryConnectors: [conn.pros_rest] }
   - { id: src.sap_s4_rm_ccm, vendor: SAP, product: SAP S/4HANA Revenue Management + Condition Contract Management, category: ERP / Net Revenue Settlement, primaryConnectors: [conn.sap_rfc, conn.sap_idoc] }
@@ -209,7 +209,7 @@ sources:
   # Direct Store Delivery (CPG anchor)
   - { id: src.sap_dsd, vendor: SAP, product: SAP DSD (S/4HANA Direct Store Delivery), category: DSD Platform, primaryConnectors: [conn.sap_rfc, conn.sap_idoc, conn.rest] }
   - { id: src.aldata_apollo, vendor: SymphonyAI Retail/CPG (Aldata), product: Aldata Apollo Route Accounting, category: Route Accounting / Settlement, primaryConnectors: [conn.aldata_apollo_sftp, conn.rest] }
-  - { id: src.trimble_roadnet, vendor: Trimble, product: Roadnet Anywhere (FleetLoader, MobileCast), category: Route Optimization & Mobile Dispatch, primaryConnectors: [conn.trimble_roadnet_rest, conn.rest] }
+  - { id: "src.trimble_roadnet", vendor: "Trimble", product: "Roadnet Anywhere (FleetLoader, MobileCast)", category: "Route Optimization & Mobile Dispatch", primaryConnectors: [conn.trimble_roadnet_rest, conn.rest] }
   - { id: src.trimble_peoplenet, vendor: Trimble, product: Trimble PeopleNet (ELD + Telematics), category: Vehicle Telematics / ELD, primaryConnectors: [conn.peoplenet_rest, conn.telematics_stream] }
   - { id: src.epicor_dsd, vendor: Epicor, product: Epicor DSD (Apprise/Activant), category: DSD ERP / Mobile Sales Force, primaryConnectors: [conn.epicor_dsd_rest, conn.file_sftp] }
   - { id: src.epicor_eagle, vendor: Epicor, product: Epicor Eagle, category: Independent Grocer POS, primaryConnectors: [conn.epicor_dsd_rest, conn.file_sftp] }
@@ -238,7 +238,7 @@ sources:
   - { id: src.gainsystems_gains, vendor: GAINSystems, product: GAINS (Inventory + S&OP optimisation), category: S&OP / MEIO Platform, primaryConnectors: [conn.gainsystems_rest, conn.file_sftp] }
   - { id: src.sap_s4_sop_source, vendor: SAP, product: SAP S/4HANA ERP — sales orders / shipments / inventory feeding S&OP, category: ERP — Source for S&OP, primaryConnectors: [conn.sap_rfc, conn.sap_idoc] }
   - { id: src.oracle_ebs_sop_source, vendor: Oracle, product: Oracle EBS / Fusion ERP — orders + inventory feeding S&OP, category: ERP — Source for S&OP, primaryConnectors: [conn.rest, conn.file_sftp] }
-  - { id: src.mes_sop_feed, vendor: Multiple (Siemens Opcenter, Rockwell FactoryTalk, AVEVA MES), product: MES production confirmations / yield feed for S&OP supply side, category: MES — Source for S&OP, primaryConnectors: [conn.rest, conn.cdc_kafka] }
+  - { id: "src.mes_sop_feed", vendor: "Multiple (Siemens Opcenter, Rockwell FactoryTalk, AVEVA MES)", product: "MES production confirmations / yield feed for S&OP supply side", category: "MES — Source for S&OP", primaryConnectors: [conn.rest, conn.cdc_kafka] }
   - { id: src.niq_circana_sop_feed, vendor: NielsenIQ / Circana, product: Syndicated POS / sell-through (drives demand sensing into S&OP), category: Syndicated POS — Source for S&OP, primaryConnectors: [conn.niq_circana_sftp, conn.file_sftp] }
 
   # Returns & Reverse Logistics (RRL anchor)

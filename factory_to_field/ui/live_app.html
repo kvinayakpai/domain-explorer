@@ -1,0 +1,101 @@
+<title>Factory to Field Console</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#f4f2ec;--panel:#fffdf8;--ink:#1d2327;--muted:#5d676d;--line:#dcd7c9;--accent:#0b6e6e;--accent-ink:#fff;--ok:#2f7d46;--bad:#b3362c;--warn:#9a6a00;--chip:#ece8dc;--code:#f0ece0;--ot:#6b3fa0}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12171a;--panel:#1a2125;--ink:#e8ecee;--muted:#9aa6ac;--line:#2d383e;--accent:#4cc2c2;--accent-ink:#0b1416;--ok:#6fcf8a;--bad:#ff8a7d;--warn:#e5b94e;--chip:#26323a;--code:#222c32;--ot:#b99af0;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12171a;--panel:#1a2125;--ink:#e8ecee;--muted:#9aa6ac;--line:#2d383e;--accent:#4cc2c2;--accent-ink:#0b1416;--ok:#6fcf8a;--bad:#ff8a7d;--warn:#e5b94e;--chip:#26323a;--code:#222c32;--ot:#b99af0;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "IBM Plex Sans",system-ui,sans-serif;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px}
+header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between;max-width:1480px;margin:0 auto 12px}
+h1{font:600 20px/1.2 "IBM Plex Sans",sans-serif;margin:0}h1 small{font-weight:400;color:var(--muted);font-size:13px;margin-left:8px}
+.pills{display:flex;flex-wrap:wrap;gap:6px}.pill{font:500 11px "IBM Plex Mono",ui-monospace,Menlo,monospace;border:1px solid var(--line);border-radius:99px;padding:2px 9px;background:var(--panel);color:var(--muted)}.pill::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:6px}
+.grid{display:grid;grid-template-columns:minmax(0,250px) minmax(0,1fr) minmax(0,310px);gap:14px;max-width:1480px;margin:0 auto}
+@media(max-width:1100px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+h3{font:600 11px "IBM Plex Sans","Inter",system-ui,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+nav{display:flex;flex-direction:column;gap:5px}
+nav button{all:unset;cursor:pointer;padding:7px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg)}
+nav button[aria-current="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent);background:var(--panel)}
+nav .id{font:500 11px "IBM Plex Mono",ui-monospace,Menlo,monospace;color:var(--muted)}nav .t{display:block;font-size:13px}
+.ask{display:flex;gap:8px;margin-bottom:10px}.ask input{flex:1}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 9px;min-width:0}
+button.act{font:500 13px "IBM Plex Sans","Inter",system-ui,sans-serif;cursor:pointer;border:0;border-radius:6px;padding:7px 14px;background:var(--accent);color:var(--accent-ink)}button.act:disabled{opacity:.45;cursor:default}button.act.alt{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.meta{font:500 11px "IBM Plex Mono",ui-monospace,Menlo,monospace;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 14px;margin-bottom:8px}
+h2{font:600 18px/1.3 "IBM Plex Sans","Inter",system-ui,sans-serif;margin:4px 0 8px;text-wrap:balance}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:10px 0}.tabs button{all:unset;cursor:pointer;padding:6px 12px;color:var(--muted);border-bottom:2px solid transparent}.tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--accent);font-weight:500}
+.rec{border-left:3px solid var(--accent);padding:7px 12px;background:var(--code);border-radius:0 8px 8px 0;margin-bottom:6px}
+.f{display:grid;grid-template-columns:86px minmax(0,1fr);gap:3px 12px;padding:8px 0;border-top:1px solid var(--line)}
+.who{font:600 11px "IBM Plex Sans","Inter",system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
+.chips{grid-column:2;display:flex;flex-wrap:wrap;gap:4px}.chip{font:11px "IBM Plex Mono",ui-monospace,Menlo,monospace;background:var(--chip);border-radius:5px;padding:1px 6px;color:var(--muted);overflow-wrap:anywhere}
+.flag{border:1px solid var(--warn);border-radius:8px;padding:7px 12px;margin:8px 0}.flag b{color:var(--warn)}.refuse{border:1px solid var(--bad);border-radius:8px;padding:7px 12px;margin:8px 0}.refuse b{color:var(--bad)}
+.verify{font-size:12px;color:var(--ok);margin-top:8px}.verify.bad{color:var(--bad)}
+table{border-collapse:collapse;width:100%;font-size:12px}td,th{padding:3px 8px;border-top:1px solid var(--line);text-align:left;vertical-align:top;overflow-wrap:anywhere}th{color:var(--muted);font-weight:500}td.m{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+.sys{font:500 11px "IBM Plex Mono",ui-monospace,Menlo,monospace;padding:1px 6px;border-radius:4px;background:var(--chip)}.sys.ot{color:var(--ot)}
+.draft{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:8px 0}.draft .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.badge{font:500 11px "IBM Plex Mono",ui-monospace,Menlo,monospace;padding:1px 8px;border-radius:99px;background:var(--chip)}.badge.approved,.badge.released{color:var(--ok)}
+.msg{font-size:12px;color:var(--bad);min-height:1.2em;flex-basis:100%}
+.led{font-size:12px;border-top:1px solid var(--line);padding:7px 0}.led b{font-weight:500}.led .by{color:var(--muted)}
+.empty{color:var(--muted);padding:24px 4px}
+.probe{display:flex;flex-direction:column;gap:6px}.probe .out{font:11px "IBM Plex Mono",ui-monospace,Menlo,monospace;background:var(--code);border-radius:6px;padding:6px 8px;min-height:2.4em;color:var(--bad);overflow-wrap:anywhere}
+.spin{color:var(--muted);padding:24px 4px}
+.scroll{overflow-x:auto}
+</style>
+<body>
+<header><h1>Factory to Field <small>agent console · simulated plant systems</small></h1><div class="pills" id="pills"></div></header>
+<div class="grid">
+  <aside class="card"><h3>Cases</h3><nav id="nav"></nav></aside>
+  <main class="card" id="main"><div class="empty">Pick a case, or ask your own question, then press Run.</div></main>
+  <aside class="card">
+    <h3>Released to plant systems</h3><div id="ledger"><div class="empty" style="padding:6px 0">Nothing has been written yet. Agents cannot write; a named person must approve each draft first.</div></div>
+    <h3 style="margin-top:18px">Try to break the rules</h3>
+    <div class="probe">
+      <button class="act alt" data-probe="pi">Agent credential writes to PI historian</button>
+      <button class="act alt" data-probe="sap">Agent credential writes to SAP PM</button>
+      <div class="out" id="probe"></div>
+    </div>
+  </aside>
+</div>
+<script>
+const $=s=>document.querySelector(s),esc=t=>String(t??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+let S=null,cur=null,res=null,tab="report";
+const sysOf=t=>t.startsWith("ot.")?"ot":t.split(".")[0];
+async function api(p,b){const r=await fetch(p,b?{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}:{});const j=await r.json();if(!r.ok)throw new Error(j.error||r.status);return j}
+async function init(){S=await api("/api/state");
+  $("#pills").innerHTML=S.health.systems.map(x=>`<span class="pill">${esc(x)}</span>`).join("");
+  $("#nav").innerHTML=S.cases.map(c=>`<button data-id="${c.id}"><span class="id">${c.id}</span><span class="t">${esc(c.title)}</span></button>`).join("");
+  $("#nav").onclick=e=>{const b=e.target.closest("button");if(b)pick(b.dataset.id)};
+  document.querySelectorAll("[data-probe]").forEach(b=>b.onclick=async()=>{const r=await api("/api/probe",{target:b.dataset.probe});$("#probe").textContent=r.allowed?"ALLOWED (this should never happen)":r.error});
+  pick(S.cases[0].id,false);ledger()}
+function pick(id,run=true){cur=S.cases.find(c=>c.id===id);document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-current",b.dataset.id===id));
+  $("#main").innerHTML=`<div class="ask"><input id="q" value="${esc(cur.question)}"><button class="act" id="go">Run</button></div><div id="out"><div class="empty">Press Run to send this question to the agent.</div></div>`;
+  $("#go").onclick=go;$("#q").onkeydown=e=>{if(e.key==="Enter")go()};if(run)go()}
+async function go(){const q=$("#q").value;$("#go").disabled=true;$("#out").innerHTML='<div class="spin">Agent is calling the simulated PI, SAP, PLM, MES and QMS...</div>';
+  try{res=await api("/api/run",{case_id:cur.id,question:q,question_changed:q!==cur.question});tab="report";draw()}catch(e){$("#out").innerHTML=`<div class="refuse"><b>Error.</b> ${esc(e.message)}</div>`}$("#go").disabled=false}
+function draw(){const r=res;
+  const head=`<div class="meta"><span>${r.case}</span><span>playbook: ${esc(r.playbook)}</span><span>${r.tool_calls} tool calls</span><span>${r.seconds}s</span><span>as of ${esc(r.as_of)}</span></div><h2>${esc(r.summary)}</h2>`;
+  const tabs=`<div class="tabs" role="tablist">${[["report","Report"],["trail","Audit trail ("+r.calls.length+")"],["drafts","Drafts ("+r.drafts.length+")"]].map(([k,l])=>`<button role="tab" data-t="${k}" aria-selected="${tab===k}">${l}</button>`).join("")}</div>`;
+  let body="";
+  if(tab==="report"){body=(r.flags.map(x=>`<div class="flag"><b>Flag.</b> ${esc(x)}</div>`).join(""))+(r.refusals.map(x=>`<div class="refuse"><b>Refused.</b> ${esc(x)}</div>`).join(""))+
+    (r.recommendation?`<h3>Recommendation</h3><div class="rec">${esc(r.recommendation)}</div>`:"")+`<h3 style="margin-top:12px">Findings</h3>`+
+    r.findings.map(f=>`<div class="f"><div class="who">${esc(f.who)}</div><div>${esc(f.text)}</div><div class="chips">${f.evidence.map(e=>`<span class="chip">${esc(e)}</span>`).join("")}</div></div>`).join("")+
+    `<div class="verify ${r.problems.length?"bad":""}">${r.problems.length?"Verifier problems: "+esc(r.problems.join("; ")):"Verifier: every citation exists in the tool-call log and every quoted number matches its source."}</div>`}
+  if(tab==="trail"){body=`<div class="scroll"><table><tr><th>#</th><th>System</th><th>Tool</th><th>Arguments</th><th>Evidence</th><th></th></tr>${r.calls.map(c=>`<tr><td>${c.n}</td><td><span class="sys ${c.tool.startsWith("ot.")?"ot":""}">${sysOf(c.tool)}</span></td><td class="m">${esc(c.tool)}</td><td class="m">${esc(JSON.stringify(c.args)).slice(0,110)}</td><td>${c.evidence}</td><td>${c.refused?'<span class="badge" style="color:var(--bad)">refused</span>':""}${c.untrusted?'<span class="badge" style="color:var(--warn)">untrusted text</span>':""}</td></tr>`).join("")}</table></div>`}
+  if(tab==="drafts"){body=r.drafts.length?r.drafts.map(d=>draftHtml(d)).join(""):'<div class="empty">This case produced no drafts.</div>'}
+  $("#out").innerHTML=head+tabs+body;
+  $("#out").querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{tab=b.dataset.t;draw()});
+  $("#out").querySelectorAll("[data-ap]").forEach(b=>b.onclick=()=>act("approve",b.dataset.ap));
+  $("#out").querySelectorAll("[data-rel]").forEach(b=>b.onclick=()=>act("release",b.dataset.rel))}
+function draftHtml(d){const roles=Object.keys(S.people),dis=d.status!=="draft";
+  const pay=Object.entries(d.payload).slice(0,6).map(([k,v])=>`<tr><td>${esc(k)}</td><td class="m">${esc(typeof v==="object"?JSON.stringify(v):v)}</td></tr>`).join("");
+  return `<div class="draft" id="${d.id}"><div><b>${esc(d.title)}</b> <span class="badge ${d.status}">${d.status}</span></div><div class="meta" style="margin:4px 0">${d.id} · ${esc(d.kind)} · needs a ${esc(d.role)}</div><table>${pay}</table>
+  <div class="row"><input id="p-${d.id}" placeholder="Approver name" value="${esc(S.people[d.role]||"")}" ${dis?"disabled":""}><select id="r-${d.id}" ${dis?"disabled":""}>${roles.map(x=>`<option ${x===d.role?"selected":""}>${x}</option>`).join("")}</select>
+  <button class="act" data-ap="${d.id}" ${dis?"disabled":""}>Approve</button><button class="act alt" data-rel="${d.id}" ${d.status==="approved"?"":"disabled"}>Release to system</button><div class="msg" id="m-${d.id}">${d.status==="released"?"Released by "+esc(d.by):""}</div></div></div>`}
+async function act(kind,id){const m=document.getElementById("m-"+id);m.style.color="var(--bad)";
+  try{let d;if(kind==="approve")d=await api("/api/approve",{draft_id:id,person:document.getElementById("p-"+id).value,role:document.getElementById("r-"+id).value});else d=(await api("/api/release",{draft_id:id})).draft;
+    res.drafts=res.drafts.map(x=>x.id===id?d:x);draw();ledger()}catch(e){m.textContent=e.message}}
+async function ledger(){const w=(await api("/api/ledger")).writes;if(!w.length)return;
+  $("#ledger").innerHTML=w.map(x=>`<div class="led"><span class="sys">${esc(x.system)}</span> <b>${esc(x.id)}</b><div>${esc(x.title||"")}</div><div class="by">approved by ${esc(x.approved_by||"")} · ${esc(x.draft_id||"")}</div></div>`).join("")}
+init();
+</script>
