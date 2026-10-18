@@ -4,10 +4,10 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 SELECT ?string ?sserial ?well ?start ?end ?state ?days ?sealserial ?sealbuilt ?elot WHERE {
   ?run a ftf:RunRecord ; ftf:installation ?i ; ftf:start ?start ; ftf:end_state ?state ; ftf:run_days ?days .
-  OPTIONAL { ?run ftf:end ?end }
   ?i ftf:unit ?string ; ftf:position ?wellpos .
   ?string ftf:serial ?sserial ; ftf:components ?seal .
   ?seal ftf:kind "seal_section" ; ftf:serial ?sealserial ; ftf:built_on ?sealbuilt .
-  OPTIONAL { ?seal ftf:build_lots ?elot . ?elot ftf:material "elastomer compound" }
   ?wellpos ftf:label ?well .
+  OPTIONAL { ?run ftf:end ?end }
+  OPTIONAL { ?seal ftf:build_lots ?elot . ?elot ftf:material "elastomer compound" }
 }
