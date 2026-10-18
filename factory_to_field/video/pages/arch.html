@@ -1,0 +1,41 @@
+<title>Architecture</title><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<style>
+.w{height:100%;padding:34px 60px 110px;display:grid;grid-template-rows:auto 1fr}
+h2{font:600 38px/1.1 "Inter",sans-serif;margin:0 0 20px}
+.row{display:grid;grid-template-columns:1.25fr .12fr 1.1fr .12fr 1.1fr .12fr 1.05fr;align-items:stretch}
+.col{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.col h3{font:600 15px "Inter";letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.box{border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin:6px 0;font-size:19px;background:var(--bg)}
+.box small{display:block;font-size:14px;color:var(--muted)}
+.box.ot{border-left:5px solid var(--ot)}.box.it{border-left:5px solid var(--accent)}.box.fld{border-left:5px solid var(--warn)}.box.pm{border-left:5px solid var(--ok)}
+.ar{display:grid;place-items:center;font-size:44px;color:var(--accent)}
+.big{font:600 40px "Inter";color:var(--accent)}
+.note{font-size:17px;color:var(--muted)}
+.no{color:var(--bad);font-weight:600}
+</style>
+<div class="w"><h2 class="step show">One platform, four layers</h2>
+<div class="row">
+<div class="col step" data-s="1"><h3>Source systems</h3>
+<div class="box ot">PI historian · SCADA · CMS<small>signals, alarms, vibration spectra</small></div>
+<div class="box it">SAP PM<small>positions, notifications, orders, stock</small></div>
+<div class="box fld">OSDU · production planning<small>wells, rigs, outage windows</small></div>
+<div class="box pm">PLM · MES · QMS (pump maker)<small>design changes, lots, claims</small></div></div>
+<div class="ar step" data-s="2">→</div>
+<div class="col step" data-s="2"><h3>Ontology + knowledge graph</h3>
+<div class="box">Position ≠ unit<small>a slot in the plant vs the pump installed there, by date</small></div>
+<div class="box">Identity resolution<small>tags, serials, notifications linked</small></div>
+<div class="big">109,591</div><div class="note">facts, with provenance</div></div>
+<div class="ar step" data-s="3">→</div>
+<div class="col step" data-s="3"><h3>Agents (read-only)</h3>
+<div class="box">8 tool servers<small>also exposed over MCP</small></div>
+<div class="box">Playbook or model planner</div>
+<div class="box">Verifier<small>citations and numbers vs tool log</small></div>
+<div class="note"><span class="no">No</span> OT write tool. Free text is untrusted data.</div></div>
+<div class="ar step" data-s="4">→</div>
+<div class="col step" data-s="4"><h3>People decide</h3>
+<div class="box">Drafts<small>notification, reservation, claim, 8D, operator request</small></div>
+<div class="box">Named approver in the right role</div>
+<div class="box">Release to system<small>stamped with who approved</small></div></div>
+</div></div>
+<div id="cap"></div><div id="cur"></div>
+<script>window.reveal=n=>document.querySelectorAll('.step').forEach(e=>e.classList.toggle('show',e.dataset.s?+e.dataset.s<=n:true))</script>

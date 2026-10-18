@@ -1,0 +1,22 @@
+<title>Summary</title><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<style>
+.w{height:100%;padding:36px 70px 110px;display:grid;grid-template-rows:auto 1fr auto;gap:18px}
+h2{font:600 44px/1.1 "Inter";margin:0}
+.g{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.c{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 22px;font-size:22px}
+.c b{display:block;font:600 16px "Inter";letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.c .n{font:600 40px "Inter";color:var(--ink)}
+.next{background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--warn);border-radius:12px;padding:14px 22px;font-size:21px}
+.next b{color:var(--warn)}
+</style>
+<div class="w"><h2>What the solution offers</h2>
+<div class="g">
+<div class="c step" data-s="1"><b>Diagnose</b><span class="n">10 / 10</span><br>gold cases pass, 57 of 57 checks, files and HTTP</div>
+<div class="c step" data-s="1"><b>Connect</b><span class="n">0.9995 / 1.000</span><br>identity-resolution recall / precision; 3 tags to human review</div>
+<div class="c step" data-s="1"><b>Prove</b><span class="n">44 calls</span><br>per case, each logged; every citation and number verified</div>
+<div class="c step" data-s="2"><b>Stay in bounds</b><span class="n">0 OT writes</span><br>refused by design; drafts need a named approver in the right role</div>
+<div class="c step" data-s="2"><b>One core, many roles</b><span class="n">3 sites</span><br>refinery, oil-field wells and the pump maker on one ontology</div>
+<div class="c step" data-s="2"><b>Tested</b><span class="n">32 tests</span><br>plus ruff, ontology check and the demo in CI</div></div>
+<div class="next step" data-s="3"><b>Not yet:</b> all data and systems here are simulated. Next: connect real SAP PM, PI, OSDU and PLM/MES, run the model planner live, add a review workflow and an identity provider for approvers.</div></div>
+<div id="cap"></div><div id="cur"></div>
+<script>window.reveal=n=>document.querySelectorAll('.step').forEach(e=>e.classList.toggle('show',+e.dataset.s<=n))</script>

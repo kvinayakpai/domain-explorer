@@ -1,0 +1,8 @@
+:root{--bg:#f4f2ec;--panel:#fffdf8;--ink:#1d2327;--muted:#5d676d;--line:#dcd7c9;--accent:#0b6e6e;--ok:#2f7d46;--bad:#b3362c;--warn:#9a6a00;--chip:#ece8dc;--ot:#6b3fa0}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:20px/1.45 "Inter","IBM Plex Sans",system-ui,sans-serif;overflow:hidden}
+#cap{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);max-width:1180px;width:calc(100% - 120px);text-align:center;font:500 25px/1.35 "Inter",system-ui,sans-serif;color:#fff;background:rgba(18,23,26,.86);padding:12px 22px;border-radius:12px;z-index:9999;opacity:0;transition:opacity .25s}
+#cap.on{opacity:1}
+#cur{position:fixed;width:20px;height:20px;border-radius:50%;border:3px solid #0b6e6e;background:rgba(11,110,110,.25);z-index:10000;pointer-events:none;left:-40px;top:-40px;transform:translate(-50%,-50%);transition:transform .08s}
+#cur.dn{transform:translate(-50%,-50%) scale(.7);background:rgba(11,110,110,.6)}
+.step{opacity:0;transform:translateY(10px);transition:opacity .5s,transform .5s}.step.show{opacity:1;transform:none}

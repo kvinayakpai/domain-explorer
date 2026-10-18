@@ -1,0 +1,19 @@
+<title>Title</title><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<style>
+.w{height:100%;display:grid;place-content:center;padding:0 140px 70px}
+h1{font:600 84px/1.05 "Inter",sans-serif;margin:0 0 14px;letter-spacing:-.02em}
+.sub{font-size:34px;color:var(--muted);margin:0 0 46px;max-width:1100px}
+ul{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:18px 40px;max-width:1300px}
+li{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 22px;font-size:26px;border-left:6px solid var(--accent)}
+li b{display:block;font-size:19px;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+.tag{font:500 18px "IBM Plex Mono",ui-monospace,monospace;color:var(--muted);margin-top:34px}
+</style>
+<div class="w"><h1>Factory to Field</h1><p class="sub">From a plant alarm to an approved action, with every finding cited.</p>
+<ul>
+<li class="step" data-s="1"><b>Connects</b>Historians, SCADA, SAP PM, OSDU, PLM, MES and quality systems in one knowledge graph</li>
+<li class="step" data-s="2"><b>Answers</b>What is wrong, why, who else is exposed, and what to do</li>
+<li class="step" data-s="3"><b>Cites</b>Every finding names its evidence; a verifier checks every number</li>
+<li class="step" data-s="3"><b>Stays safe</b>Read-only on operations; writes are drafts a named role approves</li></ul>
+<div class="tag">Demo on a simulated plant: refinery, oil-field ESP wells and the pump maker that supplies both</div></div>
+<div id="cap"></div><div id="cur"></div>
+<script>window.reveal=n=>document.querySelectorAll('.step').forEach(e=>e.classList.toggle('show',+e.dataset.s<=n))</script>
