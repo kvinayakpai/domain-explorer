@@ -19,8 +19,10 @@ def term_lines(path: Path, keep: int = 99) -> tuple[str, list[tuple[str, str]]]:
     raw = path.read_text().splitlines()
     cmd = re.sub(r"^\$ (env \S+ )?\S*/python ", "$ python ", raw[0])
     cmd = cmd.removeprefix("$ ")
+    cmd = cmd.replace("/tmp/vw/world", "build/world").replace("/tmp/vw/kg", "build/kg")
     out = []
     for ln in raw[1:][-keep:]:
+        ln = ln.replace("/tmp/vw/world", "build/world").replace("/tmp/vw/kg", "build/kg").replace("SHACL None", "SHACL skipped here (runs in CI)")
         cls = "ok" if ln.startswith("PASS") or "PASS" in ln and "gate" in ln or "passed" in ln or "All checks" in ln else "bad" if ln.startswith("FAIL") else "dim" if ln.startswith("(took") else ""
         out.append((ln, cls))
     return cmd, out
@@ -116,8 +118,8 @@ def build_scenes(v: Voice) -> list[Scene]:
         await p.select_option(f"#r-{sel}", "quality_engineer"); await r.click(f'[data-ap="{sel}"]')
         await r.sync(7)
         await p.select_option(f"#r-{sel}", "maintenance_planner"); await r.click(f'[data-ap="{sel}"]'); await r.click(f'[data-rel="{sel}"]')
-        for el in (await p.locator(".draft").all())[1:]:
-            did = await el.get_attribute("id")
+        ids = [await el.get_attribute("id") for el in await p.locator(".draft").all()][1:]
+        for did in ids:
             await r.click(f'[data-ap="{did}"]'); await r.click(f'[data-rel="{did}"]')
     scenes.append(S("05_console_refinery", [
         "This is the live console, running the real agent against those simulators. An alarm: drive end vibration on pump P one oh one A at a refinery.",
