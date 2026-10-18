@@ -173,9 +173,10 @@ def build_scenes(v: Voice) -> list[Scene]:
     # 9 demo cli
     async def d_demo(r):
         await r.sync(0)
-        cmd, lines = term_lines(CAP / "demo.txt", 13)
+        cmd, lines = term_lines(CAP / "demo.txt", 14)
         lines = [(x[:170], c) for x, c in lines]
         await play_term(r, cmd, lines, r.scene.total - 1.6, "end-to-end demo")
+        await r.page.evaluate("t=>line(t,'dim')", "(excerpt of the demo output; the full run prints the whole report)")
     scenes.append(S("09_demo_cli", [
         "The same flow also runs from the command line as an end to end demo: start the simulators, run the case, approve the drafts as named roles, release them, and show what the plant systems received."], P("term.html"), d_demo))
 

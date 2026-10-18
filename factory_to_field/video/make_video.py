@@ -99,16 +99,16 @@ class Run:
         if d > 0:
             await self.page.wait_for_timeout(int(d * 1000))
 
-    async def move(self, sel: str, steps: int = 28) -> None:
+    async def move(self, sel: str, steps: int = 14) -> None:
         box = await self.page.locator(sel).first.bounding_box()
         await self.page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2, steps=steps)
 
     async def click(self, sel: str) -> None:
         await self.page.locator(sel).first.scroll_into_view_if_needed()
         await self.move(sel)
-        await self.page.wait_for_timeout(250)
-        await self.page.mouse.down(); await self.page.wait_for_timeout(90); await self.page.mouse.up()
-        await self.page.wait_for_timeout(250)
+        await self.page.wait_for_timeout(150)
+        await self.page.mouse.down(); await self.page.wait_for_timeout(70); await self.page.mouse.up()
+        await self.page.wait_for_timeout(150)
 
     async def scroll(self, dy: int, secs: float, sel: str | None = None) -> None:
         n = max(1, int(secs * 20))
