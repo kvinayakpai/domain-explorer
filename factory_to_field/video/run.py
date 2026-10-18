@@ -114,11 +114,11 @@ def build_scenes(v: Voice) -> list[Scene]:
         await r.sync(4); await r.click('[data-t="trail"]'); await r.scroll(200, 2.5)
         await r.sync(5); await r.scroll(-600, 0.5); await r.click('[data-t="drafts"]')
         await r.sync(6)
-        sel = await p.locator(".draft").first.get_attribute("id")
+        sel = await p.locator("div.draft[id]").first.get_attribute("id")
         await p.select_option(f"#r-{sel}", "quality_engineer"); await r.click(f'[data-ap="{sel}"]')
         await r.sync(7)
         await p.select_option(f"#r-{sel}", "maintenance_planner"); await r.click(f'[data-ap="{sel}"]'); await r.click(f'[data-rel="{sel}"]')
-        ids = [await el.get_attribute("id") for el in await p.locator(".draft").all()][1:]
+        ids = [await el.get_attribute("id") for el in await p.locator("div.draft[id]").all()][1:]
         for did in ids:
             await r.click(f'[data-ap="{did}"]'); await r.click(f'[data-rel="{did}"]')
     scenes.append(S("05_console_refinery", [
