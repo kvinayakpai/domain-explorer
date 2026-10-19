@@ -76,7 +76,7 @@ linkml_meta = LinkMLMeta({'default_prefix': 'ftf',
                           'prefix_reference': 'https://domain-explorer.dev/ftf#'},
                   'linkml': {'prefix_prefix': 'linkml',
                              'prefix_reference': 'https://w3id.org/linkml/'}},
-     'source_file': '/home/claude/kvinayakpai/domain-explorer/factory_to_field/ontology/ftf.yaml',
+     'source_file': 'ftf.yaml',
      'title': 'Factory to Field ontology v0.1'} )
 
 class World(str, Enum):

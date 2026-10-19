@@ -30,7 +30,8 @@ def render() -> dict[str, str]:
         r = subprocess.run([str(exe), *cmd[1:], str(SCHEMA)], capture_output=True, text=True)
         if r.returncode:
             raise SystemExit(f"{cmd[0]} failed:\n{r.stderr[-2000:]}")
-        out[name] = r.stdout
+        # generators embed the absolute schema path; strip it so output is identical on every machine
+        out[name] = r.stdout.replace(str(SCHEMA.parent) + "/", "")
     return out
 
 
