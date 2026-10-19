@@ -8,16 +8,11 @@ Narration is synthetic (espeak-ng); captions are burned in, and a captions-only 
 """
 from __future__ import annotations
 
-import argparse
-import asyncio
 import ctypes
-import json
 import subprocess
 import time
 import wave
 from pathlib import Path
-
-from playwright.async_api import async_playwright
 
 HERE = Path(__file__).resolve().parent
 PAGES = HERE / "pages"
@@ -138,7 +133,7 @@ async def record_scene(pw, scene: Scene, out: Path) -> Path:
     await ctx.close(); await b.close()
     webm = next(vid.glob("*.webm"))
     mp4 = out / f"{scene.name}.mp4"
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{lead:.2f}", "-i", str(webm), "-vf", f"scale=1920:1080:flags=lanczos,fps=30,format=yuv420p",
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{lead:.2f}", "-i", str(webm), "-vf", "scale=1920:1080:flags=lanczos,fps=30,format=yuv420p",
                     "-an", "-c:v", "libx264", "-crf", "20", "-preset", "veryfast", str(mp4)], check=True)
     return mp4
 
