@@ -94,7 +94,7 @@ jobs:
           python -m factory_to_field.world.build --out /tmp/dw >/dev/null
           w=$(cd /tmp/dw && sha256sum * | awk '{print substr($1,1,8)" "$2}' | tr '\n' ';')
           echo "::notice::world sha: ${w}"
-          python -m factory_to_field.kg.build --world /tmp/dw --out /tmp/dk --skip-shacl | tail -1 | sed 's/^/::notice::/'
+          python -m factory_to_field.kg.build --world /tmp/dw --out /tmp/dk | tail -1 | sed 's/^/::notice::/'
           python - <<'PY'
           import platform, numpy
           from pathlib import Path
@@ -102,6 +102,9 @@ jobs:
           kg = KG(Path("/tmp/dk/store"), read_only=True)
           rows = kg.sparql("PREFIX ftf: <https://domain-explorer.dev/ftf#> SELECT (COUNT(*) AS ?n) WHERE { ?s a ftf:Signal }")
           cw = kg.sparql("PREFIX ftf: <https://domain-explorer.dev/ftf#> SELECT ?s ?o WHERE { ?s ?p ?o . FILTER(CONTAINS(STR(?o), '10P101A.VIB_DE')) } LIMIT 5")
+          cq = kg.cq("cq10", system="SAP-PM", value="OEM 24 0398")
+          cq2 = kg.cq("cq10", system="PI", value="10P101A.VIB_DE")
+          print(f"::notice::cq10 sap={cq} pi={cq2}")
           print(f"::notice::py {platform.python_version()} numpy {numpy.__version__} {platform.machine()} signals={rows} tagrefs={cw}")
           PY
       - name: pytest (world, knowledge graph with SHACL gate, agents)
