@@ -105,6 +105,8 @@ jobs:
           cq = kg.cq("cq10", system="SAP-PM", value="OEM 24 0398")
           cq2 = kg.cq("cq10", system="PI", value="10P101A.VIB_DE")
           print(f"::notice::cq10 sap={cq} pi={cq2}")
+          from factory_to_field.ontology_probe import probe
+          print("::notice::" + probe(kg).replace("\n", "%0A"))
           print(f"::notice::py {platform.python_version()} numpy {numpy.__version__} {platform.machine()} signals={rows} tagrefs={cw}")
           PY
       - name: pytest (world, knowledge graph with SHACL gate, agents)
