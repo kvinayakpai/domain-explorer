@@ -88,7 +88,14 @@ jobs:
         run: python -m factory_to_field.ontology.build --check
 
       - name: pytest (world, knowledge graph with SHACL gate, agents)
-        run: python -m pytest -c factory_to_field/pytest.ini factory_to_field/tests
+        shell: bash
+        run: |
+          set +e
+          python -m pytest -c factory_to_field/pytest.ini factory_to_field/tests --tb=short -rfE 2>&1 | tee pytest.log
+          rc=${PIPESTATUS[0]}
+          # surface failures as annotations so they are readable without the raw log
+          grep -E "^(FAILED|ERROR)|^E  " pytest.log | head -15 | while IFS= read -r l; do echo "::error::${l:0:400}"; done
+          exit $rc
 
       - name: Gold cases
         run: |
