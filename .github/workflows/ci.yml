@@ -87,6 +87,23 @@ jobs:
       - name: Generated ontology artefacts are current
         run: python -m factory_to_field.ontology.build --check
 
+      - name: Diagnose (temporary) world and graph fingerprints
+        shell: bash
+        continue-on-error: true
+        run: |
+          python -m factory_to_field.world.build --out /tmp/dw >/dev/null
+          w=$(cd /tmp/dw && sha256sum * | awk '{print substr($1,1,8)" "$2}' | tr '\n' ';')
+          echo "::notice::world sha: ${w}"
+          python -m factory_to_field.kg.build --world /tmp/dw --out /tmp/dk --skip-shacl | tail -1 | sed 's/^/::notice::/'
+          python - <<'PY'
+          import platform, numpy
+          from pathlib import Path
+          from factory_to_field.kg.store import KG
+          kg = KG(Path("/tmp/dk/store"), read_only=True)
+          rows = kg.sparql("PREFIX ftf: <https://domain-explorer.dev/ftf#> SELECT (COUNT(*) AS ?n) WHERE { ?s a ftf:Signal }")
+          cw = kg.sparql("PREFIX ftf: <https://domain-explorer.dev/ftf#> SELECT ?s ?o WHERE { ?s ?p ?o . FILTER(CONTAINS(STR(?o), '10P101A.VIB_DE')) } LIMIT 5")
+          print(f"::notice::py {platform.python_version()} numpy {numpy.__version__} {platform.machine()} signals={rows} tagrefs={cw}")
+          PY
       - name: pytest (world, knowledge graph with SHACL gate, agents)
         shell: bash
         run: |
@@ -94,7 +111,7 @@ jobs:
           python -m pytest -c factory_to_field/pytest.ini factory_to_field/tests --tb=short -rfE 2>&1 | tee pytest.log
           rc=${PIPESTATUS[0]}
           # surface failures as annotations so they are readable without the raw log
-          grep -E "^(FAILED|ERROR)|^E  " pytest.log | head -15 | while IFS= read -r l; do echo "::error::${l:0:400}"; done
+          grep -E "^(FAILED|ERROR) " pytest.log | head -8 | while IFS= read -r l; do echo "::error::${l:0:300}"; done; grep -E "^E  " pytest.log | head -6 | while IFS= read -r l; do echo "::error::${l:0:400}"; done
           exit $rc
 
       - name: Gold cases
