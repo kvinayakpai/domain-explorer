@@ -16,7 +16,19 @@ import numpy as np
 
 from . import spec
 from .ids import sscc18
-from .spec import BY_SKU, DAYS, DC_SKUS, DSD_SKUS, HERO_SKU, OPEN_HOURS, PRODUCTS, param
+from .spec import (
+    BY_SKU,
+    CASE_KG,
+    DAYS,
+    DC_SKUS,
+    DC_SLOTS,
+    DSD_SKUS,
+    HERO_SKU,
+    OPEN_HOURS,
+    PALLET_TARE_KG,
+    PRODUCTS,
+    param,
+)
 
 H = len(OPEN_HOURS)
 N_DAYS = len(DAYS)
@@ -41,21 +53,40 @@ def _rng(seed: int, name: str) -> np.random.Generator:
     return np.random.default_rng([seed, _STREAMS.index(name) + 1])
 
 
+DC_CHECKS = ("none", "pick_scan", "check_weigh")
+RECEIVING = ("label", "case_scan")
+
+
 @dataclass(frozen=True)
 class Scenario:
-    """Store-side interventions. The defaults are the store as it runs today."""
+    """Interventions in the store and the DC. The defaults are the chain as it runs today."""
 
     alert_days: int | None = None  # flag N days of sales under 25% of forecast with stock on the books
     backroom_discipline: bool = False  # cases scanned into bins at put-away; refill rounds never skipped
     milk_order_factor: float = 1.0  # multiplies the toned-milk standing order
-    # Store-side interventions start with the month-start count on 1 June, so the four weeks of
-    # history are identical in every scenario.
+    # DC: "none" confirms each pick by scanning the slot label; "pick_scan" scans every case's
+    # barcode at pick; "check_weigh" weighs every pallet against its shipping notice at dispatch.
+    dc_check: str = "none"
+    # Store receiving: "label" scans the pallet label and books the shipping notice; "case_scan"
+    # scans every case at receipt and books what is actually there.
+    receiving: str = "label"
+    # Interventions start with the month-start count on 1 June, so the four weeks of history are
+    # identical in every scenario.
+
+    def __post_init__(self) -> None:
+        if self.dc_check not in DC_CHECKS or self.receiving not in RECEIVING:
+            raise ValueError(f"unknown dc_check {self.dc_check!r} or receiving {self.receiving!r}")
 
     @property
     def key(self) -> str:
         alert = "off" if self.alert_days is None else f"{self.alert_days}d"
-        return (f"alert-{alert}_backroom-{'on' if self.backroom_discipline else 'off'}"
-                f"_milk-{self.milk_order_factor:.2f}")
+        key = (f"alert-{alert}_backroom-{'on' if self.backroom_discipline else 'off'}"
+               f"_milk-{self.milk_order_factor:.2f}")
+        if self.dc_check != "none":
+            key += f"_dc-{self.dc_check}"
+        if self.receiving != "label":
+            key += f"_recv-{self.receiving}"
+        return key
 
 
 AS_IS = Scenario()
@@ -165,6 +196,10 @@ class World:
     asn_lines: list[dict] = field(default_factory=list)
     receipts: list[dict] = field(default_factory=list)
     pallets_truth: list[dict] = field(default_factory=list)
+    picks: list[dict] = field(default_factory=list)  # DC pick confirmations, one per shipping-notice line
+    pallets: list[dict] = field(default_factory=list)  # one per SSCC: weight the notice implies, weight on the scale
+    claims: list[dict] = field(default_factory=list)  # receiving discrepancies the store reports to the DC
+    dc_adjustments: list[dict] = field(default_factory=list)  # DC stock corrections for the store's lines
     counts: list[dict] = field(default_factory=list)
     audits: list[dict] = field(default_factory=list)
     write_offs: list[dict] = field(default_factory=list)
@@ -262,28 +297,41 @@ def simulate(scn: Scenario = AS_IS, seed: int = 42, draws: Draws | None = None,
 
     def receive(di: int, ship: dict) -> None:
         day = DAYS[di]
-        discipline = scn.backroom_discipline and di >= STORY_FIRST
+        live = di >= STORY_FIRST
+        discipline = scn.backroom_discipline and live
+        case_scan = scn.receiving == "case_scan" and live
+        checked = discipline or case_scan
+        method = ("case scan at receipt" if case_scan else "case scan at put-away" if discipline
+                  else "pallet label (SSCC) scan against the shipping notice")
         for line in [ln for ln in w.asn_lines if ln["shipment_id"] == ship["shipment_id"]]:
             s_asn, units_asn = line["sku"], line["units"]
             truth = next(t for t in w.pallets_truth if t["sscc"] == line["sscc"] and t["line"] == line["line"])
             s_act, units_act = truth["sku_actual"], truth["units_actual"]
             mismatch = s_act != s_asn
-            if mismatch and discipline:
-                # Case scan at put-away shows 1 kg cases on a 5 kg line: the receipt is corrected.
+            if mismatch and checked:
+                # A case scan shows 1 kg cases on a 5 kg line: book what arrived and report it to the DC.
                 book_sku, book_units = s_act, units_act
-                event(ship["arrived_ts"], s_asn, "put_away_scan_caught_mismatch", units_asn, True,
-                      f"Put-away scan found {s_act} cases on a line booked as {s_asn}; receipt corrected.")
+                if case_scan:
+                    event(ship["arrived_ts"], s_asn, "receiving_scan_caught_mismatch", units_asn, True,
+                          f"Case scan at receipt found {units_act} units of {s_act} on a line the shipping notice "
+                          f"lists as {units_asn} units of {s_asn}; booked what arrived and reported it to the DC.")
+                else:
+                    event(ship["arrived_ts"], s_asn, "put_away_scan_caught_mismatch", units_asn, True,
+                          f"Put-away scan found {s_act} cases on a line booked as {s_asn}; receipt corrected.")
+                w.claims.append({"claim_id": f"CLM-{day:%y%m%d}-{line['line']}", "claim_ts": ship["arrived_ts"],
+                                 "shipment_id": ship["shipment_id"], "sscc": line["sscc"], "line": line["line"],
+                                 "notice_sku": s_asn, "notice_units": int(units_asn), "received_sku": s_act,
+                                 "received_units": int(units_act), "found_by": method})
             else:
                 book_sku, book_units = s_asn, units_asn
             w.receipts.append({"grn_id": f"GRN-{day:%y%m%d}", "shipment_id": ship["shipment_id"],
                                "sscc": line["sscc"], "line": line["line"], "received_ts": ship["arrived_ts"],
                                "sku_booked": book_sku, "units_booked": int(book_units),
-                               "receipt_method": "case scan at put-away" if discipline
-                               else "pallet label (SSCC) scan against the shipping notice"})
+                               "receipt_method": method})
             stock[book_sku].book += book_units
             daily[book_sku]["received_book"][di] += book_units
             daily[s_act]["received_physical"][di] += units_act
-            if mismatch and not discipline:
+            if mismatch and not checked:
                 stock[s_asn].upstream_phantom += units_asn
             st = stock[s_act]
             misplace = story_misplace = False
@@ -342,36 +390,93 @@ def simulate(scn: Scenario = AS_IS, seed: int = 42, draws: Draws | None = None,
         if arriving:
             late = bool(dr.truck_late[di] < float(param("truck_late_rate")))  # type: ignore[arg-type]
             minute = 6 * 60 + (int(dr.truck_late_min[di]) if late else int(dr.truck_early_min[di]))
-            arrived = datetime.combine(day, time(minute // 60, minute % 60))
-            ship = {"shipment_id": f"SHP-{day:%y%m%d}", "from_gln": spec.DC["gln"], "to_gln": spec.STORE["gln"],
-                    "dispatched_ts": _ts(day, 4, 30), "slot_start": _ts(day, 6, 0), "slot_end": _ts(day, 6, 30),
-                    "arrived_ts": arrived.isoformat(timespec="minutes"), "vehicle": "TRK-07",
-                    "arrival_minute": minute}
-            w.shipments.append(ship)
+            ordered = sorted(arriving, key=lambda o: DC_SKUS.index(o["sku"]))
+            dc_check = scn.dc_check if live else "none"
+            # The planted mis-pick: on the first truck from 22 June that carries 5 kg atta, the
+            # picker takes the cases from the neighbouring 1 kg slot.
+            mispick = None
+            if not flags["wrong_pallet_done"] and day >= date(2026, 6, 22):
+                mispick = next((o for o in ordered if o["sku"] == HERO_SKU), None)
+                flags["wrong_pallet_done"] = mispick is not None
+            wrong_sku = "ATTA-WW-1KG"
+
+            # Picking: cases per line after any short pick, and the pallet each line goes on.
+            plan = []
             cases_on_pallet = 0
             sscc = None
-            for line_no, o in enumerate(sorted(arriving, key=lambda o: DC_SKUS.index(o["sku"])), start=1):
+            for line_no, o in enumerate(ordered, start=1):
                 s = o["sku"]
-                p = BY_SKU[s]
                 cases = o["cases"]
                 short = dr.dc_short[s][di] < float(param("dc_short_rate"))  # type: ignore[arg-type]
                 if short:
                     cases = max(1, int(cases * 0.75))
-                    event(ship["arrived_ts"], s, "dc_short_ship", (o["cases"] - cases) * p.case_units, False,
-                          f"DC shipped {cases} of {o['cases']} cases.")
                 if sscc is None or cases_on_pallet + cases > 40:
                     serial["sscc"] += 1
                     sscc = sscc18(serial["sscc"])
                     cases_on_pallet = 0
                 cases_on_pallet += cases
+                picked = wrong_sku if (o is mispick and dc_check != "pick_scan") else s
+                plan.append({"o": o, "line": line_no, "cases": cases, "short": short, "sscc": sscc, "picked": picked})
+
+            # Dispatch: the scale compares each pallet with the weight its shipping notice implies.
+            weights: dict[str, dict[str, float]] = {}
+            for ln in plan:
+                wt = weights.setdefault(ln["sscc"], {"notice": PALLET_TARE_KG, "actual": PALLET_TARE_KG, "cases": 0})
+                wt["notice"] += ln["cases"] * CASE_KG[ln["o"]["sku"]]
+                wt["actual"] += ln["cases"] * CASE_KG[ln["picked"]]
+                wt["cases"] += ln["cases"]
+            tol = float(param("check_weigh_tolerance"))  # type: ignore[arg-type]
+            flagged = {k for k, v in weights.items()
+                       if dc_check == "check_weigh" and abs(v["actual"] - v["notice"]) > tol * v["notice"]}
+            delay = int(param("check_weigh_repick_minutes")) if flagged else 0  # type: ignore[arg-type]
+            minute += delay
+            arrived = datetime.combine(day, time(minute // 60, minute % 60))
+            dispatched = datetime.combine(day, time(4, 30)) + timedelta(minutes=delay)
+            ship = {"shipment_id": f"SHP-{day:%y%m%d}", "from_gln": spec.DC["gln"], "to_gln": spec.STORE["gln"],
+                    "dispatched_ts": dispatched.isoformat(timespec="minutes"), "slot_start": _ts(day, 6, 0),
+                    "slot_end": _ts(day, 6, 30), "arrived_ts": arrived.isoformat(timespec="minutes"),
+                    "vehicle": "TRK-07", "pallets": len(weights), "arrival_minute": minute}
+            w.shipments.append(ship)
+            for k, v in weights.items():
+                weighed = dc_check == "check_weigh"
+                w.pallets.append({"sscc": k, "shipment_id": ship["shipment_id"], "cases": int(v["cases"]),
+                                  "notice_kg": round(v["notice"], 1),
+                                  "scale_kg": round(v["notice"], 1) if weighed else None,
+                                  "weight_check": ("flagged, line re-picked, passed on re-weigh" if k in flagged
+                                                   else "passed" if weighed else "not weighed")})
+
+            for ln in plan:
+                o, line_no, cases, sscc = ln["o"], ln["line"], ln["cases"], ln["sscc"]
+                s = o["sku"]
+                p = BY_SKU[s]
+                pick_ts = (datetime.combine(day, time(3, 0)) + timedelta(minutes=8 * (line_no - 1))).isoformat(
+                    timespec="minutes")
+                if ln["short"]:
+                    event(ship["arrived_ts"], s, "dc_short_ship", (o["cases"] - cases) * p.case_units, False,
+                          f"DC shipped {cases} of {o['cases']} cases.")
                 actual_sku, actual_units = s, cases * p.case_units
-                if (s == HERO_SKU and not flags["wrong_pallet_done"] and day >= date(2026, 6, 22)):
-                    flags["wrong_pallet_done"] = True
-                    actual_sku = "ATTA-WW-1KG"
-                    actual_units = cases * BY_SKU[actual_sku].case_units
-                    event(ship["arrived_ts"], s, "wrong_pallet", cases * p.case_units, True,
-                          f"Line picked from the adjacent 1 kg slot: {cases} cases of {actual_sku} "
-                          f"({actual_units} units) shipped as {cases} cases of {s}.")
+                if o is mispick:
+                    wrong_units = cases * BY_SKU[wrong_sku].case_units
+                    if dc_check == "pick_scan":
+                        event(pick_ts, s, "pick_scan_caught_wrong_item", cases * p.case_units, True,
+                              f"Case scan at pick rejected a {wrong_sku} case on the {s} line; the picker took "
+                              f"{cases} cases from slot {DC_SLOTS[s]} instead.")
+                    elif sscc in flagged:
+                        wt = weights[sscc]
+                        event((dispatched - timedelta(minutes=delay)).isoformat(timespec="minutes"), s,
+                              "check_weigh_caught_wrong_item", cases * p.case_units, True,
+                              f"Dispatch scale: pallet {sscc} weighed {wt['actual']:.0f} kg against "
+                              f"{wt['notice']:.0f} kg from its shipping notice. The {s} line held {wrong_sku} cases "
+                              f"and was re-picked; the truck left {delay} minutes late.")
+                    else:
+                        actual_sku, actual_units = wrong_sku, wrong_units
+                        event(ship["arrived_ts"], s, "wrong_pallet", cases * p.case_units, True,
+                              f"Line picked from the adjacent 1 kg slot: {cases} cases of {actual_sku} "
+                              f"({actual_units} units) shipped as {cases} cases of {s}.")
+                w.picks.append({"pick_ts": pick_ts, "order_id": o["order_id"], "shipment_id": ship["shipment_id"],
+                                "line": line_no, "sku": s, "slot": DC_SLOTS[s], "cases_ordered": int(o["cases"]),
+                                "cases_confirmed": int(cases),
+                                "confirmed_by": "case barcode scan" if dc_check == "pick_scan" else "slot label scan"})
                 w.asn_lines.append({"shipment_id": ship["shipment_id"], "sscc": sscc, "line": line_no, "sku": s,
                                     "gtin": p.gtin, "cases": int(cases), "units": int(cases * p.case_units),
                                     "order_id": o["order_id"]})
@@ -613,9 +718,49 @@ def simulate(scn: Scenario = AS_IS, seed: int = 42, draws: Draws | None = None,
         if day == spec.END:
             do_count(di, 22, 30, list(BY_SKU), "scheduled full count", thorough=False)
 
+    _dc_corrections(w)
     w.daily = daily
     w.hourly = hourly
     return w
+
+
+def _dc_corrections(w: World) -> None:
+    """DC stock corrections after the planted mis-pick.
+
+    The mis-pick leaves the DC's system wrong in both slots: it thinks 16 cases of 5 kg left and
+    none of 1 kg. If the store reports the wrong pallet, the DC fixes both slots that morning
+    against the claim. If nobody does, each slot is corrected when its own discrepancy surfaces,
+    days apart, as an unexplained count variance.
+    """
+    wrong = next((e for e in w.events if e["kind"] == "wrong_pallet"), None)
+    if not wrong:
+        return
+    ship = next(s for s in w.shipments if s["arrived_ts"] == wrong["ts"])
+    line = next(a for a in w.asn_lines if a["shipment_id"] == ship["shipment_id"] and a["sku"] == wrong["sku"])
+    took = next(t["sku_actual"] for t in w.pallets_truth if t["sscc"] == line["sscc"] and t["line"] == line["line"])
+    cases = line["cases"]
+    claim = next((c for c in w.claims if c["shipment_id"] == ship["shipment_id"] and c["line"] == line["line"]), None)
+    if claim:
+        ts = f"{claim['claim_ts'][:10]}T10:30"
+        rows = [(ts, took, -cases, f"receiving claim {claim['claim_id']}"),
+                (ts, line["sku"], cases, f"receiving claim {claim['claim_id']}")]
+    else:
+        when = {e.key: e.when for e in spec.STORY_EVENTS}
+        rows = [(when["dc_short_pick"], took, -cases, "short pick: slot count variance"),
+                (when["dc_cycle_count"], line["sku"], cases, "cycle count variance")]
+        w.events.append({"ts": when["dc_short_pick"], "sku": took, "kind": "dc_short_pick",
+                         "units": cases * BY_SKU[took].case_units, "planted": True, "scenario": w.scenario.key,
+                         "detail": f"A DC picker finds slot {DC_SLOTS[took]} {cases} cases short of the system; "
+                                   f"the slot is counted and adjusted down. Nothing links it to {ship['shipment_id']}."})
+        w.events.append({"ts": when["dc_cycle_count"], "sku": line["sku"], "kind": "dc_cycle_count",
+                         "units": cases * BY_SKU[line["sku"]].case_units, "planted": True, "scenario": w.scenario.key,
+                         "detail": f"The weekly cycle count finds {cases} more cases in slot {DC_SLOTS[line['sku']]} "
+                                   f"than the system shows, and adjusts it up."})
+    for ts, sku, d_cases, reason in rows:
+        w.dc_adjustments.append({"adjusted_ts": ts, "sku": sku, "slot": DC_SLOTS[sku], "cases": int(d_cases),
+                                 "units": int(d_cases * BY_SKU[sku].case_units),
+                                 "value_at_cost_inr": round(d_cases * BY_SKU[sku].case_units * BY_SKU[sku].cost, 2),
+                                 "reason": reason})
 
 
 def imputed_for_empty_hours(s: str, scanned_hourly: dict[str, np.ndarray], daily: dict, lo: int, di: int) -> np.ndarray:

@@ -6,6 +6,7 @@ If the world changes, these fail first, and the post must be updated with them.
 from __future__ import annotations
 
 import json
+from datetime import date
 
 import numpy as np
 import pytest
@@ -44,7 +45,8 @@ def test_deterministic(draws: Draws) -> None:
 
 
 def test_scenarios_share_customers_and_history(as_is, draws: Draws) -> None:
-    for scn in (Scenario(alert_days=1), Scenario(backroom_discipline=True), Scenario(milk_order_factor=0.85)):
+    for scn in (Scenario(alert_days=1), Scenario(backroom_discipline=True), Scenario(milk_order_factor=0.85),
+                Scenario(dc_check="pick_scan"), Scenario(dc_check="check_weigh", receiving="case_scan")):
         w = simulate(scn, 42, draws)
         for s in spec.BY_SKU:
             assert np.array_equal(w.hourly[s]["demand_base"], as_is.hourly[s]["demand_base"])
@@ -72,6 +74,32 @@ def test_logistics_story_numbers(as_is) -> None:
         "line": 1, "shipment_id": "SHP-260622", "sku_actual": "ATTA-WW-1KG",
         "sscc": lg["line"]["sscc"], "units_actual": 160}
     assert ids.is_valid(lg["line"]["sscc"])
+    # The four stock corrections: two at the DC, days apart; two at the store, after complaints.
+    assert [(a["adjusted_ts"], a["sku"], a["cases"]) for a in lg["dc_adjustments"]] == [
+        ("2026-06-23T14:20", "ATTA-WW-1KG", -16), ("2026-06-25T10:00", "ATTA-WW-5KG", 16)]
+    assert [(c["sku"], c["adjustment"]) for c in lg["corrections"]] == [("ATTA-WW-5KG", -63), ("ATTA-WW-1KG", 157)]
+    assert lg["adjustments_net"]["value_at_cost_inr"] == 80
+    ep = lg["episode"]
+    assert (ep["start"], ep["end"], ep["empty_open_hours"], ep["lost_units"]) == (
+        "2026-06-23T15:30", "2026-06-26T22:00", 51.5, 72)
+
+
+def test_otif_four_ways(draws: Draws) -> None:
+    def run(**kw):
+        w = simulate(Scenario(**kw), 42, draws)
+        return answer_key.otif(w)["ways"], w.daily[spec.HERO_SKU]["lost"][DAYS.index(date(2026, 6, 22)):].sum()
+
+    ways, lost = run()
+    assert ways == {"dc_report": 0.92, "by_line": 0.9, "scorecard": 0.88, "at_the_shelf": 0.84} and lost == 72
+    # Scanning cases at receipt makes the scorecard worse and the shelf better.
+    ways, lost = run(receiving="case_scan")
+    assert ways["scorecard"] == ways["at_the_shelf"] == 0.84 and lost == 0
+    # Scanning cases at pick prevents the wrong pallet; the scorecard and the shelf agree.
+    ways, lost = run(dc_check="pick_scan")
+    assert ways["scorecard"] == ways["at_the_shelf"] == 0.88 and lost <= 1
+    # Weighing pallets catches it at dispatch, at the cost of a late truck.
+    ways, lost = run(dc_check="check_weigh")
+    assert ways["dc_report"] == 0.88 and ways["scorecard"] == 0.84 and lost <= 1
 
 
 def test_interventions_rank_as_expected(draws: Draws) -> None:

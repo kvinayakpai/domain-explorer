@@ -1,12 +1,15 @@
 """
 Export the slice of the India grocery world that the "Why Domain Matters" blog uses.
 
-Runs the store-side intervention grid and the milk standing-order grid on the same
-customers (common random numbers), computes what each persona sees, and writes:
+Runs the store-side intervention grid, the milk standing-order grid and the DC and
+receiving grid on the same customers (common random numbers), computes what each persona
+sees, and writes:
 
   <out>/src/data/retail.json                       data for the retail demo
+  <out>/src/data/logistics.json                    data for the logistics demo
   <out>/public/data/india-grocery/*.csv            June records readers can download
   <out>/public/data/india-grocery/answer-key-retail.json
+  <out>/public/data/india-grocery/answer-key-logistics.json
   <out>/public/data/india-grocery/README.md
 
 Run:
@@ -19,6 +22,7 @@ import csv
 import json
 import subprocess
 import sys
+from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -33,6 +37,13 @@ JUNE = slice(STORY_FIRST, None)
 ALERTS = {"off": None, "2d": 2, "1d": 1}
 ROUTINES = {"today": False, "scanned": True}
 MILK_FACTORS = [0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15]
+DC_CHECKS = ["none", "pick_scan", "check_weigh"]
+RECEIVING = ["label", "case_scan"]
+WRONG_DAY = date(2026, 6, 22)
+WINDOW = (date(2026, 6, 20), spec.END)  # the logistics demo's charts
+LOGISTICS_KINDS = {"wrong_pallet", "pick_scan_caught_wrong_item", "check_weigh_caught_wrong_item",
+                   "receiving_scan_caught_mismatch", "put_away_scan_caught_mismatch", "dc_short_pick",
+                   "dc_cycle_count", "complaint_count", "dc_short_ship"}
 
 
 def _ints(a) -> list[int]:
@@ -83,6 +94,70 @@ def milk_block(w: World, factor: float) -> dict:
         "factor": factor,
         "daily_lost": _ints(d["lost"][JUNE]),
         "daily_expired": [by_day.get(day.isoformat(), 0) for day in DAYS[STORY_FIRST:]],
+    }
+
+
+def logistics_block(w: World, dc: str, rv: str) -> dict:
+    """What each logistics persona sees for one DC check and one way of receiving."""
+    o = answer_key.otif(w)
+    d22 = DAYS.index(WRONG_DAY)
+    lo, hi = DAYS.index(WINDOW[0]), DAYS.index(WINDOW[1]) + 1
+    d5 = w.daily[HERO]
+    h5, h1 = w.hourly[HERO], w.hourly["ATTA-WW-1KG"]
+    ship = next(s for s in w.shipments if s["arrived_ts"].startswith(WRONG_DAY.isoformat()))
+    sid = ship["shipment_id"]
+    lost = int(d5["lost"][d22:].sum())
+
+    def win(a) -> list:
+        return a[lo:hi].reshape(-1).tolist()
+
+    return {
+        "key": f"{dc}|{rv}", "dc_check": dc, "receiving": rv,
+        "kpis": {"otif": o["ways"], "good": o["good"], "out_of": o["out_of"], "case_fill": o["case_fill"],
+                 "in_slot": o["in_slot"], "shipments": o["shipments"],
+                 "empty_open_hours_after": round(float(d5["empty_hours"][d22:].sum()), 1),
+                 "lost_units_after": lost, "lost_value_after_inr": round(lost * spec.BY_SKU[HERO].price, 0)},
+        "hourly": {"book_5kg": _ints(win(h5["book"])), "shelf_5kg": _ints(win(h5["shelf"])),
+                   "empty_5kg": [round(float(x), 2) for x in win(h5["empty"])],
+                   "demand_5kg": _ints(win(h5["demand"])),
+                   "book_1kg": _ints(win(h1["book"])),
+                   "physical_1kg": _ints(win(h1["shelf"] + h1["back"] + h1["lost_stock"]))},
+        "by_shipment": o["by_shipment"],
+        "shipment": {k: v for k, v in ship.items() if k != "arrival_minute"},
+        "picks": [p for p in w.picks if p["shipment_id"] == sid],
+        "notice": [a for a in w.asn_lines if a["shipment_id"] == sid],
+        "pallets": [p for p in w.pallets if p["shipment_id"] == sid],
+        "receipts": [r for r in w.receipts if r["shipment_id"] == sid],
+        "claims": [c for c in w.claims if c["claim_ts"] >= "2026-06"],
+        "dc_adjustments": w.dc_adjustments,
+        "store_counts": [c for c in w.counts if c["count_ts"] >= WRONG_DAY.isoformat() and c["sku"] in ATTA
+                         and c["trigger"] != "scheduled full count"],
+        "events": sorted([e for e in w.events if e["ts"] >= "2026-06" and e["kind"] in LOGISTICS_KINDS],
+                         key=lambda e: e["ts"]),
+        "episodes": [e for e in answer_key.episodes(w, HERO) if e["start"] >= WRONG_DAY.isoformat()],
+    }
+
+
+def logistics_records(w: World) -> dict:
+    """June's shipping records, as the systems keep them, for the demo's record drawer."""
+    june = "2026-06"
+    truth = {(t["sscc"], t["line"]): t for t in w.pallets_truth}
+    rec = {(r["sscc"], r["line"]): r for r in w.receipts}
+    notice = []
+    for a in w.asn_lines:
+        if a["shipment_id"] < "SHP-2606":
+            continue
+        t, r = truth[(a["sscc"], a["line"])], rec[(a["sscc"], a["line"])]
+        notice.append({k: a[k] for k in ("shipment_id", "sscc", "line", "sku", "cases", "units")}
+                      | {"booked_sku": r["sku_booked"], "booked_units": r["units_booked"],
+                         "really": None if t["sku_actual"] == a["sku"] else
+                         {"sku": t["sku_actual"], "units": t["units_actual"]}})
+    return {
+        "shipments": [{k: v for k, v in s.items() if k != "arrival_minute"} for s in w.shipments
+                      if s["arrived_ts"] >= june],
+        "notice": notice,
+        "picks": [p for p in w.picks if p["pick_ts"] >= june],
+        "pallets": [p for p in w.pallets if p["shipment_id"] >= "SHP-2606"],
     }
 
 
@@ -155,7 +230,37 @@ def downloads(out: Path, w: World, bills: list[dict], lines: list[dict]) -> list
             for i, d in enumerate(DAYS) if i >= STORY_FIRST],
     }
     (out / "answer-key-retail.json").write_text(json.dumps(truth, indent=2, default=str) + "\n")
+    logistics_downloads(out, w)
     return sorted(p.name for p in out.iterdir())
+
+
+def logistics_downloads(out: Path, w: World) -> None:
+    june = "2026-06"
+    write_csv(out / "products.csv", [
+        {"sku": p.sku, "gtin": p.gtin, "name": p.name, "pack": p.pack, "case_units": p.case_units,
+         "case_kg": spec.CASE_KG.get(p.sku), "flow": p.flow, "dc_slot": spec.DC_SLOTS.get(p.sku),
+         "price_inr": p.price, "cost_inr": p.cost} for p in spec.PRODUCTS],
+        ["sku", "gtin", "name", "pack", "case_units", "case_kg", "flow", "dc_slot", "price_inr", "cost_inr"])
+    write_csv(out / "shipments-june.csv", [s for s in w.shipments if s["arrived_ts"] >= june],
+              ["shipment_id", "vehicle", "dispatched_ts", "slot_start", "slot_end", "arrived_ts", "pallets"])
+    write_csv(out / "dc-pick-confirmations-june.csv", [p for p in w.picks if p["pick_ts"] >= june],
+              ["pick_ts", "order_id", "shipment_id", "line", "sku", "slot", "cases_ordered", "cases_confirmed",
+               "confirmed_by"])
+    write_csv(out / "shipping-notice-lines-june.csv", [a for a in w.asn_lines if a["shipment_id"] >= "SHP-2606"],
+              ["shipment_id", "sscc", "line", "order_id", "sku", "gtin", "cases", "units"])
+    write_csv(out / "pallets-june.csv", [p for p in w.pallets if p["shipment_id"] >= "SHP-2606"],
+              ["sscc", "shipment_id", "cases", "notice_kg", "weight_check"])
+    write_csv(out / "dc-stock-adjustments-june.csv", w.dc_adjustments,
+              ["adjusted_ts", "sku", "slot", "cases", "units", "value_at_cost_inr", "reason"])
+    o = answer_key.otif(w)
+    key = {
+        "about": "Answer key for the logistics exercises. It holds what was really on the pallets.",
+        "story": answer_key.logistics_story(w),
+        "otif_four_ways": {k: v for k, v in o.items() if k != "by_shipment"},
+        "otif_by_delivery": o["by_shipment"],
+        "pallet_contents_june": [t for t in w.pallets_truth if t["shipment_id"] >= "SHP-2606"],
+    }
+    (out / "answer-key-logistics.json").write_text(json.dumps(key, indent=2, default=str) + "\n")
 
 
 README = """# India grocery world: June records
@@ -166,27 +271,42 @@ its warehouse and its milk route, generated by the Domain Explorer project
 sets aside for restricted circulation within a company or a region, so none of them is a
 globally issued product number.
 
-These are the records the store's systems keep. They do not show what was really on the shelf.
+These are the records the store's and the warehouse's systems keep. They do not show what was
+really on the shelf, or on the pallets.
 
 | File | What it holds |
 |---|---|
+| products.csv | Items, barcodes, case sizes and weights, and each item's slot in the warehouse |
 | pos-lines-atta-june.csv | Every till line for the three atta packs, as scanned |
 | daily-sales-june.csv | Units and revenue per item per day, as scanned |
 | inventory-book-june.csv | The system's stock on hand at close, per item per day |
 | forecasts-june.csv | The nightly forecast, reorder point and order for each warehouse item |
 | store-orders-june.csv | Orders sent to the warehouse |
+| dc-pick-confirmations-june.csv | The warehouse's pick confirmations for the store's orders |
+| shipping-notice-lines-june.csv | What each shipping notice said was on each pallet |
+| pallets-june.csv | One row per pallet label (SSCC): cases and the weight its notice implies |
+| shipments-june.csv | Trucks: dispatch, delivery slot and arrival |
 | goods-receipts-june.csv | Pallets received, with what the shipping notice said and what was booked |
-| stock-counts-june.csv | Physical counts and the adjustments they made |
+| dc-stock-adjustments-june.csv | Corrections the warehouse made to its stock of the store's lines |
+| stock-counts-june.csv | Physical counts at the store and the adjustments they made |
 | shelf-audits-june.csv | Twice-weekly shelf audits at 11:00 |
 | write-offs-june.csv | Damaged and expired stock written off |
-| answer-key-retail.json | Spoilers: what was really on the shelf, and why |
+| answer-key-retail.json | Spoilers for the retail exercises: what was really on the shelf, and why |
+| answer-key-logistics.json | Spoilers for the logistics exercises: what was really on the pallets |
 
-Try these before opening the answer key:
+Retail: try these before opening the retail answer key.
 
 1. Using only the till lines, find the hours when the 5 kg shelf was probably empty.
 2. Compare the book stock with sales. When did the book stop moving, and why did nothing get reordered?
 3. Work out on-shelf availability from the shelf audits and compare it with the share of days the system showed stock.
 4. Estimate how many bags of 5 kg atta customers wanted but could not buy in the week of 8 June.
+
+Logistics: try these before opening the logistics answer key.
+
+1. Compute June's on-time-in-full from the shipments, shipping notices, receipts and orders: per delivery, then per order line. Why do the two differ?
+2. Every record says the 22 June delivery was perfect. Find the evidence, in other tables, that it was not.
+3. Line up the warehouse's stock adjustments with the store's count adjustments. What do the four have in common?
+4. Using the case weights in products.csv, work out how much lighter the 22 June pallet was than its notice. Would a scale with a 2% tolerance have caught it?
 """
 
 
@@ -238,11 +358,37 @@ def main() -> None:
     data_dir = args.out / "src" / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     (data_dir / "retail.json").write_text(json.dumps(data, separators=(",", ":"), default=str))
+
+    lblocks = []
+    for dc in DC_CHECKS:
+        for rv in RECEIVING:
+            ws = w if (dc == "none" and rv == "label") else simulate(Scenario(dc_check=dc, receiving=rv),
+                                                                       args.seed, grid_draws)
+            lblocks.append(logistics_block(ws, dc, rv))
+    lo, hi = DAYS.index(WINDOW[0]), DAYS.index(WINDOW[1]) + 1
+    logistics = {
+        "meta": {"seed": args.seed, "commit": commit, "source": data["meta"]["source"], "store": spec.STORE,
+                 "dc": spec.DC, "days": [d.isoformat() for d in DAYS[lo:hi]], "hours": spec.OPEN_HOURS,
+                 "realism": data["meta"]["realism"]},
+        "hero": data["hero"],
+        "one_kg": {"sku": "ATTA-WW-1KG", "name": spec.BY_SKU["ATTA-WW-1KG"].name,
+                   "case_units": spec.BY_SKU["ATTA-WW-1KG"].case_units, "price": spec.BY_SKU["ATTA-WW-1KG"].price},
+        "slots": spec.DC_SLOTS, "case_kg": spec.CASE_KG, "pallet_tare_kg": spec.PALLET_TARE_KG,
+        "costs": {p.sku: p.cost for p in spec.PRODUCTS if p.flow == "DC"},
+        "check_weigh": {"tolerance": spec.param("check_weigh_tolerance"),
+                        "repick_minutes": spec.param("check_weigh_repick_minutes")},
+        "definitions": answer_key.OTIF_WAYS,
+        "scenarios": lblocks,
+        "story": answer_key.logistics_story(w),
+        "records": logistics_records(w),
+    }
+    (data_dir / "logistics.json").write_text(json.dumps(logistics, separators=(",", ":"), default=str))
+
     dl = args.out / "public" / "data" / "india-grocery"
     files = downloads(dl, w, bills, lines)
     (dl / "README.md").write_text(README.format(seed=args.seed, commit=commit))
-    size = (data_dir / "retail.json").stat().st_size
-    print(f"wrote src/data/retail.json ({size / 1024:.0f} KB) and {len(files) + 1} download files")
+    sizes = ", ".join(f"{n} {(data_dir / n).stat().st_size / 1024:.0f} KB" for n in ("retail.json", "logistics.json"))
+    print(f"wrote src/data ({sizes}) and {len(files) + 1} download files")
 
 
 if __name__ == "__main__":

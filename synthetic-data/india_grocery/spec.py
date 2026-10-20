@@ -81,6 +81,15 @@ DC_SKUS = [p.sku for p in PRODUCTS if p.flow == "DC"]
 DSD_SKUS = [p.sku for p in PRODUCTS if p.flow == "DSD"]
 HERO_SKU = "ATTA-WW-5KG"
 
+# Warehouse facts for the logistics story. A brand's pack sizes share a bay in the DC's
+# pick aisle, so the 5 kg and 1 kg bales of atta sit in neighbouring slots.
+DC_SLOTS = {"ATTA-WW-5KG": "A-07-03", "ATTA-WW-1KG": "A-07-04", "ATTA-WW-10KG": "A-07-05",
+            "RICE-SM-5KG": "A-09-01", "DAL-TOOR-1KG": "B-02-02", "OIL-SUN-1L": "B-05-01", "SUGAR-1KG": "B-03-04"}
+# Gross weight of one case (bale or carton), kg: contents plus about 0.3 kg of wrap.
+CASE_KG = {"ATTA-WW-5KG": 20.3, "ATTA-WW-1KG": 10.3, "ATTA-WW-10KG": 20.3, "RICE-SM-5KG": 20.3,
+           "DAL-TOOR-1KG": 10.3, "OIL-SUN-1L": 9.5, "SUGAR-1KG": 10.3}
+PALLET_TARE_KG = 22.0
+
 # Hourly demand shapes over the fifteen open hours (07:00 ... 21:00). Each sums to 1.
 HOURLY = {
     "staples": [0.02, 0.03, 0.04, 0.05, 0.06, 0.06, 0.05, 0.05, 0.06, 0.07, 0.09, 0.11, 0.12, 0.11, 0.08],
@@ -116,6 +125,9 @@ PARAMS: dict[str, tuple[object, str]] = {
     "fresh_date_picking": (0.35, "assumption: share of shoppers who reach past older pouches for the newest date"),
     "dc_short_rate": (0.03, "assumption: share of order lines the DC ships short (75% of cases)"),
     "truck_late_rate": (0.08, "assumption: share of mornings the DC truck misses its 06:00-06:30 slot"),
+    "check_weigh_tolerance": (0.02, "assumption: the dispatch scale flags a pallet more than 2% off the weight its "
+                                    "shipping notice implies"),
+    "check_weigh_repick_minutes": (30, "assumption: minutes to find and re-pick a flagged line before the truck leaves"),
     "low_sales_alert": (0.25, "assumption: the alert flags a day with sales under 25% of forecast while the books "
                               "show at least a day of stock"),
     "count_find_rate": (0.9, "assumption: share of misplaced stock a full count finds"),
@@ -154,6 +166,14 @@ STORY_EVENTS = [
     StoryEvent("wrong_pallet", "2026-06-22T06:00", HERO_SKU,
                "At the DC, the 5 kg line is picked from the adjacent 1 kg slot. The pallet label and the "
                "shipping notice still say 5 kg, and the store books what the notice says.",
+               "logistics"),
+    StoryEvent("dc_short_pick", "2026-06-23T14:20", "ATTA-WW-1KG",
+               "At the DC, a picker finds the 1 kg slot short of what the warehouse system shows. The slot is "
+               "counted and the system is adjusted down 16 cases (only if nobody reported the wrong pallet).",
+               "logistics"),
+    StoryEvent("dc_cycle_count", "2026-06-25T10:00", HERO_SKU,
+               "The DC's weekly cycle count of the atta bay finds 16 more cases of 5 kg than the system shows, and "
+               "adjusts it up (only if nobody reported the wrong pallet).",
                "logistics"),
     StoryEvent("complaint_count", "2026-06-26T09:00", HERO_SKU,
                "After customer complaints, the store manager orders a count of the atta bay (only if the "

@@ -1,9 +1,10 @@
 """
 Synthetic India grocery world: one Bengaluru supermarket, its DC and its dairy route.
 
-Observable tables (what the store's systems record):
+Observable tables (what the store's and the DC's systems record):
   locations, products, pos_bills, pos_lines, inventory_book_daily, forecasts, store_orders,
-  shipments, asn_lines, goods_receipts, dsd_deliveries, write_offs, stock_counts, shelf_audits
+  shipments, dc_pick_confirmations, asn_lines, pallets, goods_receipts, receiving_claims,
+  dc_stock_adjustments, dsd_deliveries, write_offs, stock_counts, shelf_audits
 Truth tables (invisible to the store; the answer key for exercises and demos):
   truth_hourly, truth_pallets, truth_scan_errors, truth_events
 Also writes answer_key.json and realism_report.txt next to the tables.
@@ -77,8 +78,15 @@ def frames(w: World, bills: list[dict], lines: list[dict]) -> dict[str, pd.DataF
         "forecasts": pd.DataFrame(w.forecasts),
         "store_orders": pd.DataFrame(w.orders),
         "shipments": shipments,
+        "dc_pick_confirmations": pd.DataFrame(w.picks),
         "asn_lines": pd.DataFrame(w.asn_lines),
+        "pallets": pd.DataFrame(w.pallets),
         "goods_receipts": pd.DataFrame(w.receipts),
+        "receiving_claims": pd.DataFrame(w.claims, columns=[
+            "claim_id", "claim_ts", "shipment_id", "sscc", "line", "notice_sku", "notice_units", "received_sku",
+            "received_units", "found_by"]),
+        "dc_stock_adjustments": pd.DataFrame(w.dc_adjustments, columns=[
+            "adjusted_ts", "sku", "slot", "cases", "units", "value_at_cost_inr", "reason"]),
         "dsd_deliveries": pd.DataFrame(w.dsd),
         "write_offs": pd.DataFrame(w.write_offs),
         "stock_counts": counts,

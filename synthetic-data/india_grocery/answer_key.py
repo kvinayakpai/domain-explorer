@@ -169,6 +169,67 @@ def retail_story(w: World) -> dict:
     }
 
 
+OTIF_WAYS = {
+    "dc_report": "deliveries dispatched on schedule with every line shipped as ordered, by the DC's pick confirmations",
+    "by_line": "order lines that arrived in the 06:00-06:30 slot and in full, by the store's goods receipt",
+    "scorecard": "deliveries that arrived in the slot with every line in full, by the store's goods receipt",
+    "at_the_shelf": "deliveries that arrived in the slot with every case what the store ordered",
+}
+
+
+def otif(w: World, first: date = spec.STORY_START) -> dict:
+    """On-time-in-full for the DC's deliveries to the store, measured four ways.
+
+    The measures differ in the on-time window (dispatch or arrival slot), the unit counted
+    (delivery or order line) and the record that decides "in full" (pick confirmations and
+    shipping notice, the store's goods receipt, or what was physically on the pallet).
+    """
+    orders = {(o["order_id"], o["sku"]): o for o in w.orders}
+    rec = {(r["sscc"], r["line"]): r for r in w.receipts}
+    truth = {(t["sscc"], t["line"]): t for t in w.pallets_truth}
+    rows = []
+    lines_total = lines_good = 0
+    cases = {"ordered": 0, "notice": 0, "physical": 0}
+    for s in w.shipments:
+        if s["arrived_ts"] < first.isoformat():
+            continue
+        day = s["arrived_ts"][:10]
+        dispatched = s["dispatched_ts"] <= f"{day}T04:30"
+        in_slot = s["slot_start"] <= s["arrived_ts"] <= s["slot_end"]
+        lines = [a for a in w.asn_lines if a["shipment_id"] == s["shipment_id"]]
+        ok = {"notice": True, "receipt": True, "physical": True}
+        for a in lines:
+            o = orders[(a["order_id"], a["sku"])]
+            r, t = rec[(a["sscc"], a["line"])], truth[(a["sscc"], a["line"])]
+            want = (o["sku"], o["units"])
+            ok["notice"] &= (a["sku"], a["units"]) == want
+            ok["receipt"] &= (r["sku_booked"], r["units_booked"]) == want
+            ok["physical"] &= (t["sku_actual"], t["units_actual"]) == want
+            lines_total += 1
+            lines_good += int(in_slot and (r["sku_booked"], r["units_booked"]) == want)
+            cases["ordered"] += o["cases"]
+            cases["notice"] += a["cases"]
+            cases["physical"] += a["cases"] if t["sku_actual"] == o["sku"] else 0
+        rows.append({"shipment_id": s["shipment_id"], "arrived_ts": s["arrived_ts"], "lines": len(lines),
+                     "dispatched_on_time": dispatched, "in_slot": in_slot,
+                     "in_full_notice": ok["notice"], "in_full_receipt": ok["receipt"],
+                     "in_full_physical": ok["physical"],
+                     "dc_report": dispatched and ok["notice"], "scorecard": in_slot and ok["receipt"],
+                     "at_the_shelf": in_slot and ok["physical"]})
+    n = len(rows) or 1
+    good = {k: sum(r[k] for r in rows) for k in ("dc_report", "scorecard", "at_the_shelf")}
+    good["by_line"] = lines_good
+    base = {"dc_report": n, "by_line": lines_total or 1, "scorecard": n, "at_the_shelf": n}
+    return {"shipments": len(rows), "lines": lines_total,
+            "ways": {k: round(good[k] / base[k], 3) for k in OTIF_WAYS},
+            "good": {k: good[k] for k in OTIF_WAYS}, "out_of": {k: base[k] for k in OTIF_WAYS},
+            "definitions": OTIF_WAYS, "in_slot": sum(r["in_slot"] for r in rows),
+            "case_fill": {"by_notice": round(cases["notice"] / max(1, cases["ordered"]), 4),
+                          "right_item": round(cases["physical"] / max(1, cases["ordered"]), 4),
+                          "cases_ordered": cases["ordered"]},
+            "by_shipment": rows}
+
+
 def logistics_story(w: World) -> dict:
     ev = _event(w, "wrong_pallet")
     if not ev:
@@ -180,8 +241,23 @@ def logistics_story(w: World) -> dict:
     eps = [e for e in episodes(w, HERO_SKU) if e["start"] >= ev["ts"]]
     counts = [c for c in w.counts if c["count_ts"] >= ev["ts"] and c["sku"] in ("ATTA-WW-5KG", "ATTA-WW-1KG")
               and c["trigger"] != "scheduled full count"]
+    picks = [p for p in w.picks if p["shipment_id"] == ship["shipment_id"]]
+    pallets = [p for p in w.pallets if p["shipment_id"] == ship["shipment_id"]]
+    receipt = next(r for r in w.receipts if r["sscc"] == hero["sscc"] and r["line"] == hero["line"])
+    value = sum(a["units"] * BY_SKU[a["sku"]].cost for a in lines)
+    store_adj = [{"sku": c["sku"], "units": c["adjustment"],
+                  "value_at_cost_inr": round(c["adjustment"] * BY_SKU[c["sku"]].cost, 2)} for c in counts]
+    dc_adj = [{"sku": a["sku"], "units": a["units"], "value_at_cost_inr": a["value_at_cost_inr"]}
+              for a in w.dc_adjustments]
+    net = {s: sum(a["units"] for a in store_adj + dc_adj if a["sku"] == s) for s in ("ATTA-WW-5KG", "ATTA-WW-1KG")}
     return {"shipment": ship, "line": hero, "actual": truth, "episode": eps[0] if eps else None,
-            "corrections": counts, "lines_on_truck": len(lines)}
+            "corrections": counts, "lines_on_truck": len(lines), "picks": picks, "pallets": pallets,
+            "receipt": receipt, "consignment_value_at_cost_inr": round(value, 0),
+            "dc_adjustments": w.dc_adjustments,
+            "adjustments_net": {"units": net, "value_at_cost_inr": round(sum(
+                a["value_at_cost_inr"] for a in store_adj + dc_adj), 0),
+                "store_value_at_cost_inr": round(sum(a["value_at_cost_inr"] for a in store_adj), 0),
+                "dc_value_at_cost_inr": round(sum(a["value_at_cost_inr"] for a in dc_adj), 0)}}
 
 
 def payments_story(w: World) -> dict:
@@ -203,6 +279,7 @@ def build(w: World, realism_results: list[tuple[str, bool, str, str]]) -> dict:
         "planted_events": [e for e in w.events if e["planted"]],
         "retail": retail_story(w),
         "logistics": logistics_story(w),
+        "logistics_otif": {k: v for k, v in otif(w).items() if k != "by_shipment"},
         "payments": payments_story(w),
         "out_of_stock_causes": causes(w),
         "record_accuracy_end_of_june": {"items": len(end), "wrong": sum(c["adjustment"] != 0 for c in end),

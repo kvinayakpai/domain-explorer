@@ -102,6 +102,14 @@ def checks(w: World, dr: Draws) -> list[Check]:
     add("Every goods receipt matches a shipping-notice pallet and comes after dispatch", not bad,
         f"{len(bad)} of {len(w.receipts)} receipt lines violate", "logic")
 
+    # 7b. The DC's documents agree with each other line by line, whatever was on the pallet.
+    picks = {(p["shipment_id"], p["line"]): p for p in w.picks}
+    weights = {p["sscc"] for p in w.pallets}
+    bad = [a for a in w.asn_lines if (a["shipment_id"], a["line"]) not in picks
+           or picks[(a["shipment_id"], a["line"])]["cases_confirmed"] != a["cases"] or a["sscc"] not in weights]
+    add("Every shipping-notice line has a matching pick confirmation and pallet record", not bad,
+        f"{len(bad)} of {len(w.asn_lines)} notice lines without a matching pick or pallet", "logic")
+
     # 8. Morning deliveries.
     on_time = [s for s in w.shipments if s["arrival_minute"] <= 6 * 60 + 30]
     share = len(on_time) / max(1, len(w.shipments))
