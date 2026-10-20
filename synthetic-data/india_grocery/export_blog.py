@@ -24,7 +24,7 @@ import csv
 import json
 import subprocess
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -36,8 +36,15 @@ HERO = spec.HERO_SKU
 ATTA = [s for s in spec.DC_SKUS if spec.BY_SKU[s].family == "atta"]
 SHORT = {"ATTA-WW-5KG": "5kg", "ATTA-WW-1KG": "1kg", "ATTA-WW-10KG": "10kg"}
 JUNE = slice(STORY_FIRST, None)
-ALERTS = {"off": None, "2d": 2, "1d": 1}
+# How the store finds an empty shelf: not at all, a nightly low-sales rule after two days or one,
+# or the hourly gap detector on the tills' records.
+GAP_ALPHA = 0.001
+ALERTS = {"off": {}, "2d": {"alert_days": 2}, "1d": {"alert_days": 1}, "gap": {"gap_alpha": GAP_ALPHA}}
 ROUTINES = {"today": False, "scanned": True}
+DETECTOR_GRID = [("daily rule, 2 days", {"alert_days": 2}), ("daily rule, 1 day", {"alert_days": 1}),
+                 ("hourly, 1 in 100", {"gap_alpha": 0.01}), ("hourly, 1 in 1,000", {"gap_alpha": 0.001}),
+                 ("hourly, 1 in 10,000", {"gap_alpha": 0.0001})]
+CHECK_TRIGGERS = ("low-sales alert", "gap detector")
 MILK_FACTORS = [0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15]
 DC_CHECKS = ["none", "pick_scan", "check_weigh"]
 RECEIVING = ["label", "case_scan"]
@@ -82,10 +89,50 @@ def scenario_block(w: World, alert: str, routine: str) -> dict:
             "lost": _ints(d["lost"][JUNE]),
         },
         "kpis": answer_key.kpis(w),
+        "dc": dc_summary(w),
         "episodes": answer_key.episodes(w, HERO),
         "events": [e for e in w.events if e["ts"] >= "2026-06" and e["sku"] in ATTA],
         "counts": [c for c in w.counts if c["count_ts"] >= "2026-06" and c["sku"] in ATTA],
     }
+
+
+def dc_summary(w: World) -> dict:
+    """Every warehouse item in June: what the shelf lost, and the checks the store's detector asked for."""
+    checks = [c for c in w.counts if c["count_ts"] >= "2026-06" and c["trigger"] in CHECK_TRIGGERS]
+    flags = sorted([e for e in w.events if e["ts"] >= "2026-06" and e["kind"] in ("gap_flag", "low_sales_alert")],
+                   key=lambda e: e["ts"])
+
+    def in_gap(e: dict) -> bool:
+        # Was the shelf really empty in the hour the flag looked at? (The answer key's view.)
+        t = datetime.fromisoformat(e["ts"])
+        di = DAYS.index(t.date())
+        hi = spec.OPEN_HOURS.index(min(t.hour, 22) - 1)
+        return bool(w.hourly[e["sku"]]["empty"][di, hi] > 0)
+
+    return {
+        "lost_units": int(sum(w.daily[s]["lost"][JUNE].sum() for s in spec.DC_SKUS)),
+        "empty_open_hours": round(float(sum(w.daily[s]["empty_hours"][JUNE].sum() for s in spec.DC_SKUS)), 1),
+        "checks": len(checks),
+        "checks_shelf_empty": sum(1 for c in checks if c["shelf_before"] == 0),
+        "checks_found_misplaced": sum(1 for c in checks if c["misplaced_found"] > 0),
+        "checks_corrected_book": sum(1 for c in checks if c["adjustment"] != 0),
+        "check_list": [{k: c[k] for k in ("count_ts", "sku", "trigger", "book_before", "counted", "adjustment",
+                                          "shelf_before", "misplaced_found")} for c in checks],
+        "flags_in_real_gaps": sum(in_gap(e) for e in flags),
+        "flags": [{k: e[k] for k in ("ts", "sku", "kind", "detail")} | {"shelf_empty": in_gap(e)} for e in flags],
+    }
+
+
+def detector_grid(seed: int, draws: Draws) -> list[dict]:
+    """The same June with each way of finding an empty shelf, on the same customers."""
+    rows = []
+    for label, kw in DETECTOR_GRID:
+        w = simulate(Scenario(**kw), seed, draws)
+        k = answer_key.kpis(w)
+        rows.append({"label": label, **kw, "hero_lost_units": k["lost_units"],
+                     "hero_empty_open_hours": k["empty_open_hours"],
+                     **{key: v for key, v in dc_summary(w).items() if key not in ("check_list", "flags")}})
+    return rows
 
 
 def milk_block(w: World, factor: float) -> dict:
@@ -274,10 +321,11 @@ def downloads(out: Path, w: World, bills: list[dict], lines: list[dict]) -> list
     out.mkdir(parents=True, exist_ok=True)
     june = "2026-06"
     bill = {b["bill_id"]: b for b in bills}
-    pos = [ln | {"bill_ts": bill[ln["bill_id"]]["bill_ts"]} for ln in lines if ln["sku_scanned"] in ATTA]
-    pos = [p for p in pos if p["bill_ts"] >= june]
-    write_csv(out / "pos-lines-atta-june.csv", pos,
+    # Every till line for the warehouse items, May and June: four weeks of history, then the story.
+    pos = [ln | {"bill_ts": bill[ln["bill_id"]]["bill_ts"]} for ln in lines if ln["sku_scanned"] in spec.DC_SKUS]
+    write_csv(out / "pos-lines-may-june.csv", pos,
               ["bill_id", "bill_ts", "line", "gtin_scanned", "sku_scanned", "qty", "unit_price", "line_amount"])
+    (out / "pos-lines-atta-june.csv").unlink(missing_ok=True)  # superseded by the file above
     daily = [{"date": d.isoformat(), "sku": s, "units_sold": int(w.daily[s]["scanned"][i]),
               "revenue_inr": round(float(w.daily[s]["revenue"][i]), 2)}
              for s in spec.BY_SKU for i, d in enumerate(DAYS) if i >= STORY_FIRST]
@@ -308,6 +356,14 @@ def downloads(out: Path, w: World, bills: list[dict], lines: list[dict]) -> list
         "about": "Answer key for the retail exercises. It holds what the store could not see.",
         "story": answer_key.retail_story(w),
         "episodes_5kg": answer_key.episodes(w, HERO),
+        # Every warehouse item: each run of open hours with the shelf empty, and each day's truth.
+        "episodes": [e for s in spec.DC_SKUS for e in answer_key.episodes(w, s)],
+        "truth_daily": [
+            {"date": d.isoformat(), "sku": s, "true_demand": int(w.daily[s]["demand"][i]),
+             "sold": int(w.daily[s]["sold"][i]), "lost": int(w.daily[s]["lost"][i]),
+             "empty_open_hours": round(float(w.daily[s]["empty_hours"][i]), 2),
+             "book_close": int(w.daily[s]["book_close"][i]), "physical_close": int(w.daily[s]["physical_close"][i])}
+            for s in spec.DC_SKUS for i, d in enumerate(DAYS) if i >= STORY_FIRST],
         "scan_errors_atta_june": [e for e in errors if e["bill_ts"] >= june],
         "close_of_day_truth_5kg": [
             {"date": d.isoformat(), "book": int(w.daily[HERO]["book_close"][i]),
@@ -363,7 +419,7 @@ They do not show what was really on the shelf, on the pallets, or in customers' 
 | File | What it holds |
 |---|---|
 | products.csv | Items, barcodes, case sizes and weights, and each item's slot in the warehouse |
-| pos-lines-atta-june.csv | Every till line for the three atta packs, as scanned |
+| pos-lines-may-june.csv | Every till line for the seven warehouse items, 4 May to 28 June, as scanned |
 | daily-sales-june.csv | Units and revenue per item per day, as scanned |
 | inventory-book-june.csv | The system's stock on hand at close, per item per day |
 | forecasts-june.csv | The nightly forecast, reorder point and order for each warehouse item |
@@ -428,9 +484,10 @@ def main() -> None:
 
     blocks = []
     grid_draws: Draws = dr
-    for alert, days in ALERTS.items():
+    for alert, kw in ALERTS.items():
         for routine, disc in ROUTINES.items():
-            ws = w if (days is None and not disc) else simulate(Scenario(days, disc), args.seed, grid_draws)
+            ws = w if (not kw and not disc) else simulate(Scenario(**kw, backroom_discipline=disc), args.seed,
+                                                          grid_draws)
             blocks.append(scenario_block(ws, alert, routine))
     milk = [milk_block(w if f == 1.0 else simulate(Scenario(milk_order_factor=f), args.seed, grid_draws), f)
             for f in MILK_FACTORS]
@@ -443,6 +500,8 @@ def main() -> None:
         "hero": {"sku": p.sku, "name": p.name, "price": p.price, "case_units": p.case_units,
                  "shelf_capacity": p.shelf_capacity, "gtin": p.gtin},
         "scenarios": blocks,
+        "detectors": detector_grid(args.seed, grid_draws),
+        "gap_alpha": GAP_ALPHA,
         "milk": milk,
         "milk_product": {"name": spec.BY_SKU["MILK-TONED-500ML"].name,
                          "standing_order": spec.param("milk_standing_order"),

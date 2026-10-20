@@ -46,7 +46,8 @@ def test_deterministic(draws: Draws) -> None:
 
 def test_scenarios_share_customers_and_history(as_is, draws: Draws) -> None:
     for scn in (Scenario(alert_days=1), Scenario(backroom_discipline=True), Scenario(milk_order_factor=0.85),
-                Scenario(dc_check="pick_scan"), Scenario(dc_check="check_weigh", receiving="case_scan")):
+                Scenario(dc_check="pick_scan"), Scenario(dc_check="check_weigh", receiving="case_scan"),
+                Scenario(gap_alpha=0.001)):
         w = simulate(scn, 42, draws)
         for s in spec.BY_SKU:
             assert np.array_equal(w.hourly[s]["demand_base"], as_is.hourly[s]["demand_base"])
@@ -109,6 +110,24 @@ def test_interventions_rank_as_expected(draws: Draws) -> None:
         lost[scn.key] = w.daily[spec.HERO_SKU]["lost"][STORY_FIRST:].sum()
     as_is, two, one, routine = lost.values()
     assert as_is > two > one > routine
+
+
+def test_gap_detector_on_the_tills_records(draws: Draws) -> None:
+    # The hourly gap detector learns each item's sales pattern from May's till records and flags a run of
+    # no sales, with stock on the books, once it is less likely than 1 in 1,000. Both 5 kg gaps are flagged
+    # on the evening they start; a check an hour later finds the misplaced cases on 10 June.
+    w = simulate(Scenario(gap_alpha=0.001), 42, draws)
+    flags = [e["ts"] for e in w.events if e["kind"] == "gap_flag" and e["sku"] == spec.HERO_SKU]
+    assert flags == ["2026-06-10T19:00", "2026-06-23T20:00"]
+    checks = [c for c in w.counts if c["trigger"] == "gap detector"]
+    assert (len(checks), sum(c["shelf_before"] == 0 for c in checks)) == (11, 3)
+    assert any(c["sku"] == spec.HERO_SKU and c["misplaced_found"] == 56 for c in checks)
+    lost = int(w.daily[spec.HERO_SKU]["lost"][STORY_FIRST:].sum())
+    assert lost == 35  # against 157 as the store runs today
+    # A stricter threshold raises fewer false alarms and finds the gaps later.
+    strict = simulate(Scenario(gap_alpha=0.0001), 42, draws)
+    assert len([c for c in strict.counts if c["trigger"] == "gap detector"]) < len(checks)
+    assert int(strict.daily[spec.HERO_SKU]["lost"][STORY_FIRST:].sum()) > lost
 
 
 def test_milk_order_trades_waste_for_gaps(draws: Draws) -> None:

@@ -70,6 +70,10 @@ class Scenario:
     # Store receiving: "label" scans the pallet label and books the shipping notice; "case_scan"
     # scans every case at receipt and books what is actually there.
     receiving: str = "label"
+    # Hourly gap detector on the tills' records: once a run of open hours with no sales, while the
+    # books show stock, becomes less likely than this under the item's usual sales rate, someone
+    # checks the item's shelf and backroom within the next open hour. None: no detector.
+    gap_alpha: float | None = None
     # Interventions start with the month-start count on 1 June, so the four weeks of history are
     # identical in every scenario.
 
@@ -86,6 +90,8 @@ class Scenario:
             key += f"_dc-{self.dc_check}"
         if self.receiving != "label":
             key += f"_recv-{self.receiving}"
+        if self.gap_alpha is not None:
+            key += f"_gap-{self.gap_alpha:g}"
         return key
 
 
@@ -265,6 +271,13 @@ def simulate(scn: Scenario = AS_IS, seed: int = 42, draws: Draws | None = None,
     serial = {"sscc": 1000, "order": 0}
     flags = {"misplaced_done": False, "wrong_pallet_done": False}
     freeze_s: dict[str, float] = dict.fromkeys(DC_SKUS, 0.0)  # today's reorder point, for attribution
+    # Gap detector state: the expected sales over each item's current run of open hours with no sales,
+    # the items already flagged in that run, and the checks booked for later hours.
+    gap_limit = -math.log(scn.gap_alpha) if scn.gap_alpha else None
+    gap_run: dict[str, float] = dict.fromkeys(DC_SKUS, 0.0)
+    gap_flagged: set[str] = set()
+    gap_checks: dict[tuple[int, int], list[str]] = {}
+    gap_rate: dict[str, dict] = {}
 
     def event(ts: str, sku: str, kind: str, units: int, planted: bool, detail: str) -> None:
         w.events.append({"ts": ts, "sku": sku, "kind": kind, "units": int(units), "planted": planted,
@@ -283,7 +296,7 @@ def simulate(scn: Scenario = AS_IS, seed: int = 42, draws: Draws | None = None,
             counted = st.shelf + st.back
             w.counts.append({"count_ts": _ts(day, hour, minute), "sku": s, "book_before": int(st.book),
                              "counted": int(counted), "adjustment": int(counted - st.book),
-                             "trigger": trigger, "misplaced_found": int(found)})
+                             "trigger": trigger, "misplaced_found": int(found), "shelf_before": int(st.shelf)})
             st.book = counted
             st.upstream_phantom = 0
 
@@ -361,6 +374,8 @@ def simulate(scn: Scenario = AS_IS, seed: int = 42, draws: Draws | None = None,
         discipline = scn.backroom_discipline and live
         alert_days = scn.alert_days if live else None
         milk_factor = scn.milk_order_factor if live else 1.0
+        if gap_limit and live and not gap_rate:
+            gap_rate.update(gap_profiles(scanned_hourly, STORY_FIRST))
 
         # 05:30 direct store deliveries (fresh).
         for s in DSD_SKUS:
@@ -520,6 +535,13 @@ def simulate(scn: Scenario = AS_IS, seed: int = 42, draws: Draws | None = None,
                     refill(s)
                     event(_ts(day, 8), s, "alert_count", 0, False,
                           f"Count after {alert_days} day(s) of low sales with stock on the books.")
+            for s in gap_checks.pop((di, hi), []):
+                do_count(di, hour, 0, [s], "gap detector", thorough=True)
+                refill(s)
+                event(_ts(day, hour), s, "gap_check", 0, False,
+                      "Shelf and backroom checked after the gap detector flagged no sales with stock on the books.")
+                gap_run[s] = 0.0
+                gap_flagged.discard(s)
             # Planted store events.
             if day == date(2026, 6, 13) and hour == 10 and stock[HERO_SKU].lost_story > 0:
                 st = stock[HERO_SKU]
@@ -628,6 +650,24 @@ def simulate(scn: Scenario = AS_IS, seed: int = 42, draws: Draws | None = None,
                 hourly[s]["back"][di, hi] = st.back
                 hourly[s]["lost_stock"][di, hi] = st.lost + st.lost_story
                 hourly[s]["book"][di, hi] = st.book
+
+            # Gap detector, on what the tills recorded this hour.
+            if gap_limit and live:
+                for s in DC_SKUS:
+                    if scanned_hourly[s][di, hi] > 0 or stock[s].book <= 0:
+                        gap_run[s] = 0.0
+                        gap_flagged.discard(s)
+                        continue
+                    gap_run[s] += expected_sales(gap_rate[s], daily[s]["forecast"][di - 1], weekend, hi)
+                    if s not in gap_flagged and gap_run[s] > gap_limit:
+                        gap_flagged.add(s)
+                        # Someone checks within the next open hour: from the hour after next, or 07:00 tomorrow.
+                        nxt = (di, hi + 2) if hi + 2 < H else (di + 1, 0)
+                        if nxt[0] < N_DAYS:
+                            gap_checks.setdefault(nxt, []).append(s)
+                        event(_ts(day, hour + 1), s, "gap_flag", 0, False,
+                              f"No sales while the books show {stock[s].book}; {gap_run[s]:.1f} sales expected "
+                              f"since the last one (chance of none: {math.exp(-gap_run[s]):.4f}).")
 
         # Close: damage, theft, expiry.
         for s in DC_SKUS:
@@ -761,6 +801,29 @@ def _dc_corrections(w: World) -> None:
                                  "units": int(d_cases * BY_SKU[sku].case_units),
                                  "value_at_cost_inr": round(d_cases * BY_SKU[sku].case_units * BY_SKU[sku].cost, 2),
                                  "reason": reason})
+
+
+def gap_profiles(scanned_hourly: dict[str, np.ndarray], n_days: int) -> dict[str, dict]:
+    """Each warehouse item's usual sales pattern, learned from the tills' records of the first n_days.
+
+    The share of a day's sales in each open hour (pooled over the days, lightly smoothed) and how
+    much weekdays and weekends sell against the average day. Uses only what the tills recorded.
+    """
+    weekend = np.array([DAYS[i].weekday() >= 5 for i in range(n_days)])
+    out = {}
+    for s in DC_SKUS:
+        hist = scanned_hourly[s][:n_days]
+        prof = (hist.sum(axis=0) + 0.5) / (hist.sum() + 0.5 * H)
+        per_day = hist.sum(axis=1)
+        mean = float(per_day.mean()) or 1.0
+        out[s] = {"profile": prof, "weekday": float(per_day[~weekend].mean()) / mean,
+                  "weekend": float(per_day[weekend].mean()) / mean}
+    return out
+
+
+def expected_sales(rate: dict, forecast: float, weekend: bool, hi: int) -> float:
+    """Sales the gap detector expects in open hour hi, from last night's forecast and the item's pattern."""
+    return float(forecast) * rate["weekend" if weekend else "weekday"] * float(rate["profile"][hi])
 
 
 def imputed_for_empty_hours(s: str, scanned_hourly: dict[str, np.ndarray], daily: dict, lo: int, di: int) -> np.ndarray:

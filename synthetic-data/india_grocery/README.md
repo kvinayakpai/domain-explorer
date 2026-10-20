@@ -27,6 +27,7 @@ Background behaviour is random but seeded: customers, refill rounds that get ski
 `world.Scenario` changes only what the store and the warehouse do, never the customers: every random number is drawn up front, so all scenarios face the same shoppers, trucks and accidents, and May is identical in every scenario. Interventions start with the month-start count on 1 June.
 
 - `alert_days`: flag an item whose sales fall under 25% of forecast for N days while the books show stock, and count it next morning.
+- `gap_alpha`: an hourly gap detector on the tills' records. It learns each warehouse item's hourly sales pattern from May's till lines, adds up the sales it expects (last night's forecast times that pattern) over a run of open hours with no sales while the books show stock, and once a zero that long is less likely than `gap_alpha` (for example 0.001), someone checks the shelf and backroom within the next open hour. The blog's analysis replays the same detector on the downloadable till lines.
 - `backroom_discipline`: scan every case into a backroom bin at put-away (which also catches a wrong pallet) and keep fixed refill rounds.
 - `milk_order_factor`: scale the toned-milk standing order.
 - `dc_check`: `"pick_scan"` scans every case's barcode at pick, so the wrong-slot pick never happens; `"check_weigh"` weighs each pallet against the weight its shipping notice implies (2% tolerance), re-picks a flagged line and sends the truck 30 minutes late.
