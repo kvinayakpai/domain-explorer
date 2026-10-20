@@ -359,7 +359,9 @@ def downloads(out: Path, w: World, bills: list[dict], lines: list[dict]) -> list
         # Every warehouse item: each run of open hours with the shelf empty, and each day's truth.
         "episodes": [e for s in spec.DC_SKUS for e in answer_key.episodes(w, s)],
         "truth_daily": [
-            {"date": d.isoformat(), "sku": s, "true_demand": int(w.daily[s]["demand"][i]),
+            {"date": d.isoformat(), "sku": s,
+             # Shoppers who came for the item that day; true_demand also counts those back after a gap.
+             "base_demand": int(w.hourly[s]["demand_base"][i].sum()), "true_demand": int(w.daily[s]["demand"][i]),
              "sold": int(w.daily[s]["sold"][i]), "lost": int(w.daily[s]["lost"][i]),
              "empty_open_hours": round(float(w.daily[s]["empty_hours"][i]), 2),
              "book_close": int(w.daily[s]["book_close"][i]), "physical_close": int(w.daily[s]["physical_close"][i])}
