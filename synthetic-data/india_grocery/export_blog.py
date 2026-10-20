@@ -377,7 +377,7 @@ They do not show what was really on the shelf, on the pallets, or in customers' 
 | stock-counts-june.csv | Physical counts at the store and the adjustments they made |
 | shelf-audits-june.csv | Twice-weekly shelf audits at 11:00 |
 | write-offs-june.csv | Damaged and expired stock written off |
-| pos-payments-june.csv | Every payment attempt at the tills, with the till's status and the UPI reference (RRN) |
+| pos-payments-june.csv | Every payment attempt at the tills, with the till's status and the UPI reference (RRN) when the till got one |
 | psp-upi-report-june.csv | The payment provider's report: each UPI payment's final status and when it was known |
 | upi-settlements-june.csv | The acquirer's daily UPI settlement, credits and refunds |
 | upi-refunds-june.csv | Refunds the store made for UPI payments |
