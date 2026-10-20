@@ -8,7 +8,7 @@ from datetime import date, datetime, time, timedelta
 
 import numpy as np
 
-from . import spec
+from . import payments, spec
 from .realism import oos_by_cause
 from .spec import BY_SKU, DC_SKUS, HERO_SKU, OPEN_HOURS, param
 from .world import CAUSE_GROUP, DAYS, STORY_FIRST, World, imputed_for_empty_hours
@@ -260,14 +260,45 @@ def logistics_story(w: World) -> dict:
                 "dc_value_at_cost_inr": round(sum(a["value_at_cost_inr"] for a in dc_adj), 0)}}
 
 
-def payments_story(w: World) -> dict:
+SLOWDOWN = (str(param("upi_slowdown")["start"]), str(param("upi_slowdown")["end"]))  # type: ignore[index]
+JUNE_RANGE = (spec.STORY_START.isoformat(), (spec.END + timedelta(days=1)).isoformat())
+
+
+def payments_story(w: World, pay: payments.Payments | None = None) -> dict:
+    """The payments story: one Saturday evening's slowdown, and what it did to customers' money."""
     if not w.bills:
         return {}
-    amounts = np.array([b["amount_inr"] for b in w.bills])
-    tenders = [b["tender"] for b in w.bills]
-    return {"bills": len(w.bills), "median_bill_inr": round(float(np.median(amounts)), 0),
-            "share_above_2000": round(float((amounts > 2000).mean()), 3),
-            "tender_share": {t: round(tenders.count(t) / len(tenders), 3) for t in sorted(set(tenders))}}
+    pay = pay or payments.simulate_payments(w.bills, payments.AS_TODAY, w.seed)
+    june = payments.june_bills(w.bills)
+    amounts = np.array([b["amount_inr"] for b in june])
+    tenders = [b["tender"] for b in june]
+    by_bill: dict[str, list[dict]] = {}
+    for a in pay.attempts:
+        by_bill.setdefault(a["bill_id"], []).append(a)
+    # The scene: the first customer in the slowdown charged twice for a basket over Rs 1,000.
+    scene = next((d for d in pay.doubles if SLOWDOWN[0] <= d["paid_ts"][:16] < SLOWDOWN[1] and d["amount_inr"] > 1000), None)
+    hours = []
+    day = SLOWDOWN[0][:10]
+    for hour in spec.OPEN_HOURS:
+        h = f"{day}T{hour:02d}"
+        upi = [a for a in pay.attempts if a["tender"] == "UPI" and a["ts"][:13] == h]
+        hours.append({"hour": hour, "upi_attempts": len(upi),
+                      "approved_at_till": sum(a["till_status"].startswith("approved") for a in upi),
+                      "credited": sum(a["final"] in ("success", "late credit") for a in upi),
+                      "no_response": sum(a["till_status"] == "failed: no response" for a in upi)})
+    return {
+        "june": {"bills": len(june), "median_bill_inr": round(float(np.median(amounts)), 0),
+                 "share_above_2000": round(float((amounts > 2000).mean()), 3),
+                 "tender_share": {t: round(tenders.count(t) / len(tenders), 3) for t in sorted(set(tenders))},
+                 **payments.kpis(pay, w.bills, *JUNE_RANGE)},
+        "slowdown": {"start": SLOWDOWN[0], "end": SLOWDOWN[1], **payments.kpis(pay, w.bills, *SLOWDOWN),
+                     "till_minutes": payments.till_minutes(pay, *SLOWDOWN)},
+        "refunds": payments.refunds_summary(pay),
+        "scene": scene and {**scene, "attempts": by_bill[scene["bill_id"]],
+                            "complaint": next((c for c in pay.complaints if c["rrn"] == scene["rrn"]), None)},
+        "slowdown_day_by_hour": hours,
+        "mdr_on_june_bills": payments.mdr(w.bills, *JUNE_RANGE),
+    }
 
 
 def build(w: World, realism_results: list[tuple[str, bool, str, str]]) -> dict:

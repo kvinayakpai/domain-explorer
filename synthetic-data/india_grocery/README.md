@@ -6,9 +6,11 @@ The store runs the way many stores do: a min/max reorder rule on its own book st
 
 The warehouse picks each night's store order before 04:00, confirming each line by scanning the slot's label, and sends one truck a morning for a 06:00-06:30 delivery slot. Its records (pick confirmations, shipping notice lines, pallet labels with the weight each notice implies, and its own stock corrections for the store's lines) are written alongside the store's.
 
+Every June bill is paid at the tills (`payments.py`): by UPI, card or cash. A UPI attempt can be approved, declined for the customer's reasons, fail fast for a technical reason, or get no answer before the till gives up after 30 seconds. A timed-out attempt may already have debited the customer; UPI settles it later, crediting the store late or returning the money within RBI's T+5 days, while the cashier has already taken a second payment. The tables hold the till's payment attempts, the payment provider's UPI report, daily settlements, refunds and complaints.
+
 ## What is scripted and what is random
 
-Background behaviour is random but seeded: customers, refill rounds that get skipped, damage, truck lateness, short shipments, misplaced cases. Six story incidents are scripted on top, the same approach as Factory to Field, and every one is listed in `answer_key.json` under `planted_events`:
+Background behaviour is random but seeded: customers, refill rounds that get skipped, damage, truck lateness, short shipments, misplaced cases. Seven story incidents are scripted on top, the same approach as Factory to Field, and every one is listed in `answer_key.json` under `planted_events`:
 
 | When | What | Domain |
 |---|---|---|
@@ -17,6 +19,7 @@ Background behaviour is random but seeded: customers, refill rounds that get ski
 | 22 June, first 5 kg line | The DC picks it from the adjacent 1 kg slot; the label and shipping notice still say 5 kg | Logistics |
 | 23 June, 14:20 | A DC picker finds the 1 kg slot 16 cases short; it is counted and adjusted down (only if nobody reported the wrong pallet) | Logistics |
 | 25 June, 10:00 | The DC's weekly cycle count finds 16 extra cases of 5 kg and adjusts up (same condition) | Logistics |
+| 20 June, 18:20-19:50 | The acquiring bank's UPI switch slows down: 40% of UPI attempts get no answer before the till gives up | Payments |
 | 26 June, 09:00 | The manager orders a count after complaints (only if the shelf is still frozen) | Retail |
 
 ## Interventions
@@ -29,11 +32,13 @@ Background behaviour is random but seeded: customers, refill rounds that get ski
 - `dc_check`: `"pick_scan"` scans every case's barcode at pick, so the wrong-slot pick never happens; `"check_weigh"` weighs each pallet against the weight its shipping notice implies (2% tolerance), re-picks a flagged line and sends the truck 30 minutes late.
 - `receiving`: `"case_scan"` scans every case at the store, books what arrived and raises a claim; the DC then corrects both slots the same morning.
 
+`payments.PayScenario` changes how the store pays and reconciles, on the same bills and banks: `till="check"` waits for the first status check NPCI allows (90 seconds) before taking a second payment; `recon="bill_ref"` puts the bill ID on every UPI request, so a late credit is matched to its bill the next morning and refunded automatically.
+
 `answer_key.otif` measures June's on-time-in-full four ways: the DC's own report (dispatch and pick confirmations), the scorecard per order line and per delivery (slot and goods receipt), and what was physically on the pallets.
 
 ## Realism checks
 
-`realism.py` compares the world with published figures where they exist and labels the rest as assumptions. All 15 must pass; `realism_report.txt` is written next to the tables.
+`realism.py` compares the world with published figures where they exist and labels the rest as assumptions. All 17 must pass; `realism_report.txt` is written next to the tables.
 
 | Check | Benchmark |
 |---|---|
@@ -44,6 +49,8 @@ Background behaviour is random but seeded: customers, refill rounds that get ski
 | Pouch milk sellable for the delivery day and the next | Amul Taaza: 48 hours from packing below 8 degC |
 | Valid GTIN, GLN and SSCC check digits under prefix 29 | GS1 GSCN 23-006: 02 and 20-29 are for restricted circulation within a company or region |
 | Every shipping-notice line has a matching pick confirmation and pallet record | Logic: the warehouse's documents agree with each other, whatever was on the pallet |
+| UPI technical failures run at 0.5-1.0% of attempts outside the slowdown | NPCI's MD and CEO, November 2024: 0.7-0.8% |
+| Every UPI debit that never reaches the store is returned within T+5 days | RBI/2019-20/67 (20 Sep 2019): merchant payments auto-reversed within T+5 |
 
 Prices are illustrative and not quotes for any real brand. Every parameter and its provenance is in `spec.PARAMS`.
 

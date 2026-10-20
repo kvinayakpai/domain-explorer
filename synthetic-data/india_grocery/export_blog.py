@@ -7,9 +7,11 @@ sees, and writes:
 
   <out>/src/data/retail.json                       data for the retail demo
   <out>/src/data/logistics.json                    data for the logistics demo
+  <out>/src/data/payments.json                     data for the payments demo
   <out>/public/data/india-grocery/*.csv            June records readers can download
   <out>/public/data/india-grocery/answer-key-retail.json
   <out>/public/data/india-grocery/answer-key-logistics.json
+  <out>/public/data/india-grocery/answer-key-payments.json
   <out>/public/data/india-grocery/README.md
 
 Run:
@@ -26,7 +28,7 @@ from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from india_grocery import answer_key, realism, spec
+from india_grocery import answer_key, payments, realism, spec
 from india_grocery.generate import build_world
 from india_grocery.world import DAYS, STORY_FIRST, Draws, Scenario, World, simulate
 
@@ -161,6 +163,89 @@ def logistics_records(w: World) -> dict:
     }
 
 
+TILLS = ["retry", "check"]
+RECONS = ["manual", "bill_ref"]
+DRAWER = ("2026-06-20T18:00", "2026-06-20T20:30")
+
+
+def payments_block(pay: payments.Payments, bills: list[dict]) -> dict:
+    """What each payments persona sees under one till policy and one way of reconciling."""
+    slow = answer_key.SLOWDOWN
+    june = answer_key.JUNE_RANGE
+    by_bill: dict[str, list[dict]] = {}
+    for a in pay.attempts:
+        by_bill.setdefault(a["bill_id"], []).append(a)
+    day = slow[0][:10]
+    hourly = []
+    for hour in spec.OPEN_HOURS:
+        h = f"{day}T{hour:02d}"
+        upi = [a for a in pay.attempts if a["tender"] == "UPI" and a["ts"][:13] == h]
+        hourly.append({"hour": hour, "upi_attempts": len(upi),
+                       "approved_at_till": sum(a["till_status"].startswith("approved") for a in upi),
+                       "credited": sum(a["final"] in ("success", "late credit") for a in upi)})
+    days = [d.isoformat() for d in DAYS[STORY_FIRST:]]
+    daily = []
+    for d in days:
+        upi = [a for a in pay.attempts if a["tender"] == "UPI" and a["ts"][:10] == d]
+        credits = [a for a in pay.attempts if a["tender"] == "UPI" and a["final"] in ("success", "late credit")
+                   and a["resolved_ts"][:10] == d]
+        daily.append({"date": d, "till_approved": sum(a["till_status"].startswith("approved") for a in upi),
+                      "provider_credits": len(credits),
+                      "unmatched": sum(1 for x in pay.doubles if x["credited_ts"][:10] == d),
+                      "refunds": sum(1 for f in pay.refunds if f["completed_ts"][:10] == d)})
+    return {
+        "key": pay.scenario.key, "till": pay.scenario.till, "recon": pay.scenario.recon,
+        "kpis": {"june": payments.kpis(pay, bills, *june),
+                 "slowdown": {**payments.kpis(pay, bills, *slow), "till_minutes": payments.till_minutes(pay, *slow)},
+                 "refunds": payments.refunds_summary(pay)},
+        "doubles": [d | {"attempts": [{k: a[k] for k in ("attempt", "ts", "tender", "till_status", "final")}
+                                      for a in by_bill[d["bill_id"]]]} for d in pay.doubles],
+        "returns": pay.returns,
+        "complaints": sorted(pay.complaints, key=lambda c: c["complaint_ts"]),
+        "refunds": pay.refunds,
+        "hourly": hourly,
+        "daily": daily,
+    }
+
+
+def payments_records(pay: payments.Payments) -> dict:
+    """The till's and the provider's records around the slowdown, as the systems keep them."""
+    lo, hi = DRAWER
+    att = [a for a in pay.attempts if lo <= a["ts"][:16] < hi]
+    rrns = {a["rrn"] for a in att if a["rrn"]}
+    return {
+        "pos": [{k: a[k] for k in ("bill_id", "attempt", "ts", "tender", "amount_inr", "till_status", "rrn")}
+                | {"really": a["final"] if a["tender"] == "UPI" and a["final"] in ("late credit", "returned") else None}
+                for a in att],
+        "psp": [r for r in pay.psp if r["rrn"] in rrns],
+        "settlements": payments.settlements(pay),
+    }
+
+
+def payments_downloads(out: Path, w: World, pay: payments.Payments) -> None:
+    write_csv(out / "pos-payments-june.csv", pay.attempts,
+              ["bill_id", "attempt", "ts", "tender", "amount_inr", "till_status", "rrn", "note"])
+    write_csv(out / "psp-upi-report-june.csv", pay.psp,
+              ["rrn", "initiated_ts", "amount_inr", "status", "status_ts", "bill_ref"])
+    write_csv(out / "upi-settlements-june.csv", payments.settlements(pay),
+              ["settlement_date", "upi_credits", "gross_inr", "refunds_inr", "mdr_inr", "net_inr"])
+    write_csv(out / "upi-refunds-june.csv", pay.refunds,
+              ["refund_id", "rrn", "bill_id", "amount_inr", "trigger", "requested_ts", "completed_ts"])
+    write_csv(out / "customer-complaints-june.csv", sorted(pay.complaints, key=lambda c: c["complaint_ts"]),
+              ["complaint_ts", "kind", "amount_inr", "bill_id", "rrn", "resolved_ts", "resolution"])
+    key = {
+        "about": "Answer key for the payments exercises. It holds what happened to each customer's money.",
+        "story": answer_key.payments_story(w, pay),
+        "charged_twice": pay.doubles,
+        "debited_and_returned": pay.returns,
+        "upi_attempts_not_simply_approved": [
+            {k: a[k] for k in ("bill_id", "attempt", "ts", "rrn", "amount_inr", "till_status", "debited", "final",
+                               "resolved_ts")}
+            for a in pay.attempts if a["tender"] == "UPI" and a["till_status"] != "approved"],
+    }
+    (out / "answer-key-payments.json").write_text(json.dumps(key, indent=2, default=str) + "\n")
+
+
 def records(w: World, bills: list[dict], lines: list[dict]) -> dict:
     """Small excerpts for the demo's record drawer (incident week)."""
     ts = {b["bill_id"]: b["bill_ts"] for b in bills}
@@ -271,8 +356,8 @@ its warehouse and its milk route, generated by the Domain Explorer project
 sets aside for restricted circulation within a company or a region, so none of them is a
 globally issued product number.
 
-These are the records the store's and the warehouse's systems keep. They do not show what was
-really on the shelf, or on the pallets.
+These are the records the store's, the warehouse's and the payment provider's systems keep.
+They do not show what was really on the shelf, on the pallets, or in customers' accounts.
 
 | File | What it holds |
 |---|---|
@@ -291,8 +376,14 @@ really on the shelf, or on the pallets.
 | stock-counts-june.csv | Physical counts at the store and the adjustments they made |
 | shelf-audits-june.csv | Twice-weekly shelf audits at 11:00 |
 | write-offs-june.csv | Damaged and expired stock written off |
+| pos-payments-june.csv | Every payment attempt at the tills, with the till's status and the UPI reference (RRN) |
+| psp-upi-report-june.csv | The payment provider's report: each UPI payment's final status and when it was known |
+| upi-settlements-june.csv | The acquirer's daily UPI settlement, credits and refunds |
+| upi-refunds-june.csv | Refunds the store made for UPI payments |
+| customer-complaints-june.csv | Customer complaints about payments |
 | answer-key-retail.json | Spoilers for the retail exercises: what was really on the shelf, and why |
 | answer-key-logistics.json | Spoilers for the logistics exercises: what was really on the pallets |
+| answer-key-payments.json | Spoilers for the payments exercises: what happened to each customer's money |
 
 Retail: try these before opening the retail answer key.
 
@@ -307,6 +398,13 @@ Logistics: try these before opening the logistics answer key.
 2. Every record says the 22 June delivery was perfect. Find the evidence, in other tables, that it was not.
 3. Line up the warehouse's stock adjustments with the store's count adjustments. What do the four have in common?
 4. Using the case weights in products.csv, work out how much lighter the 22 June pallet was than its notice. Would a scale with a 2% tolerance have caught it?
+
+Payments: try these before opening the payments answer key.
+
+1. Using the till's payments alone, find the hour on 20 June when UPI started failing, and how long it lasted.
+2. Match the provider's UPI successes to the till's approved payments by reference number. Which credits have no approved payment behind them?
+3. For each of those credits, find the bill it belongs to and how the customer paid instead. How many customers were charged twice, and for how much?
+4. How long did each of them wait for a refund? Which ones had not been refunded when June closed?
 """
 
 
@@ -384,10 +482,30 @@ def main() -> None:
     }
     (data_dir / "logistics.json").write_text(json.dumps(logistics, separators=(",", ":"), default=str))
 
+    u = payments.draws(args.seed, len(payments.june_bills(bills)))
+    pays = {f"{t}|{r}": payments.simulate_payments(bills, payments.PayScenario(t, r), args.seed, u)
+            for t in TILLS for r in RECONS}
+    as_today = pays["retry|manual"]
+    pdata = {
+        "meta": {"seed": args.seed, "commit": commit, "source": data["meta"]["source"], "store": spec.STORE,
+                 "days": [d.isoformat() for d in DAYS[STORY_FIRST:]], "hours": spec.OPEN_HOURS,
+                 "slowdown": {"start": answer_key.SLOWDOWN[0], "end": answer_key.SLOWDOWN[1]},
+                 "realism": data["meta"]["realism"]},
+        "params": {k: {"value": spec.PARAMS[k][0], "source": spec.PARAMS[k][1]}
+                   for k in spec.PARAMS if k.startswith(("upi_", "after_upi", "complaint_", "manual_refund", "card_"))},
+        "scenarios": [payments_block(pays[k], bills) for k in pays],
+        "story": answer_key.payments_story(w, as_today),
+        "records": payments_records(as_today),
+    }
+    (data_dir / "payments.json").write_text(json.dumps(pdata, separators=(",", ":"), default=str))
+
     dl = args.out / "public" / "data" / "india-grocery"
     files = downloads(dl, w, bills, lines)
+    payments_downloads(dl, w, as_today)
+    files = sorted(p.name for p in dl.iterdir())
     (dl / "README.md").write_text(README.format(seed=args.seed, commit=commit))
-    sizes = ", ".join(f"{n} {(data_dir / n).stat().st_size / 1024:.0f} KB" for n in ("retail.json", "logistics.json"))
+    sizes = ", ".join(f"{n} {(data_dir / n).stat().st_size / 1024:.0f} KB"
+                      for n in ("retail.json", "logistics.json", "payments.json"))
     print(f"wrote src/data ({sizes}) and {len(files) + 1} download files")
 
 

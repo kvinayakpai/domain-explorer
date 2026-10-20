@@ -1,12 +1,13 @@
 """
 Synthetic India grocery world: one Bengaluru supermarket, its DC and its dairy route.
 
-Observable tables (what the store's and the DC's systems record):
+Observable tables (what the store's, the DC's and the payment provider's systems record):
   locations, products, pos_bills, pos_lines, inventory_book_daily, forecasts, store_orders,
   shipments, dc_pick_confirmations, asn_lines, pallets, goods_receipts, receiving_claims,
-  dc_stock_adjustments, dsd_deliveries, write_offs, stock_counts, shelf_audits
+  dc_stock_adjustments, dsd_deliveries, write_offs, stock_counts, shelf_audits,
+  pos_payments, psp_upi_report, upi_settlements, upi_refunds, customer_complaints (June)
 Truth tables (invisible to the store; the answer key for exercises and demos):
-  truth_hourly, truth_pallets, truth_scan_errors, truth_events
+  truth_hourly, truth_pallets, truth_scan_errors, truth_events, truth_payments
 Also writes answer_key.json and realism_report.txt next to the tables.
 
 The world runs eight weeks (4 May to 28 June 2026, the last four are the story) with the
@@ -27,7 +28,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import common
 
-from india_grocery import answer_key, realism, spec
+from india_grocery import answer_key, payments, realism, spec
 from india_grocery.world import (
     AS_IS,
     DAYS,
@@ -41,7 +42,8 @@ from india_grocery.world import (
 SUBDOMAIN = spec.SUBDOMAIN
 
 
-def frames(w: World, bills: list[dict], lines: list[dict]) -> dict[str, pd.DataFrame]:
+def frames(w: World, bills: list[dict], lines: list[dict], pay: payments.Payments | None = None) -> dict[str, pd.DataFrame]:
+    pay = pay or payments.simulate_payments(bills, payments.AS_TODAY, w.seed)
     products = pd.DataFrame([{
         "sku": p.sku, "gtin": p.gtin, "name": p.name, "category": p.category, "family": p.family, "pack": p.pack,
         "price_inr": p.price, "cost_inr": p.cost, "case_units": p.case_units, "flow": p.flow,
@@ -95,6 +97,15 @@ def frames(w: World, bills: list[dict], lines: list[dict]) -> dict[str, pd.DataF
         "truth_pallets": pd.DataFrame(w.pallets_truth),
         "truth_scan_errors": scan_errors,
         "truth_events": pd.DataFrame(w.events).drop(columns=["scenario"]),
+        "pos_payments": pd.DataFrame([{k: a[k] for k in ("bill_id", "attempt", "ts", "tender", "amount_inr",
+                                                          "till_status", "rrn", "note")} for a in pay.attempts]),
+        "psp_upi_report": pd.DataFrame(pay.psp),
+        "upi_settlements": pd.DataFrame(payments.settlements(pay)),
+        "upi_refunds": pd.DataFrame(pay.refunds, columns=["refund_id", "rrn", "bill_id", "amount_inr", "trigger",
+                                                          "requested_ts", "completed_ts"]),
+        "customer_complaints": pd.DataFrame(pay.complaints),
+        "truth_payments": pd.DataFrame([{k: a[k] for k in ("bill_id", "attempt", "rrn", "tender", "debited", "final",
+                                                            "resolved_ts")} for a in pay.attempts]),
     }
 
 

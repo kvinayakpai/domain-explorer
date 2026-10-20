@@ -121,3 +121,34 @@ def test_milk_order_trades_waste_for_gaps(draws: Draws) -> None:
 def test_calendar() -> None:
     assert DAYS[0] == spec.HISTORY_START and DAYS[-1] == spec.END
     assert DAYS[STORY_FIRST] == spec.STORY_START and spec.STORY_START.weekday() == 0
+
+
+def test_payments_story_numbers_match_the_post() -> None:
+    from india_grocery import payments
+    from india_grocery.generate import build_world
+
+    w, _, bills, _ = build_world(42)
+    st = answer_key.payments_story(w)
+    slow = st["slowdown"]
+    assert (slow["start"], slow["end"]) == ("2026-06-20T18:20", "2026-06-20T19:50")
+    assert (slow["charged_twice"], slow["extra_charges"], slow["charged_twice_inr"]) == (15, 17, 7825.69)
+    assert slow["four_ways"] == {"till": 0.6098, "bank": 0.8171, "bills_paid": 1.0, "charged_once": 0.8655}
+    june = st["june"]
+    assert (june["charged_twice"], june["extra_charges"], june["debited_and_returned"]) == (24, 26, 6)
+    assert june["returned_within_t5"]
+    ref = st["refunds"]
+    assert (ref["median_days_to_refund"], ref["unrefunded_at_month_end"], ref["unrefunded_inr"]) == (4.9, 4, 2846.06)
+    assert st["scene"]["bill_id"] == "B260620-110056" and st["scene"]["amount_inr"] == 1064.47
+    assert st["mdr_on_june_bills"]["bills_above"] == 668 and st["mdr_on_june_bills"]["fee_inr"] == 8081.93
+
+    # Checking status before taking a second payment halves the double charges and costs till time;
+    # matching credits by bill reference gets every refund out within two days.
+    u = payments.draws(42, len(payments.june_bills(bills)))
+    runs = {k: payments.simulate_payments(bills, payments.PayScenario(*k.split("|")), 42, u)
+            for k in ("retry|manual", "check|manual", "retry|bill_ref")}
+    doubles = {k: len(v.doubles) for k, v in runs.items()}
+    assert doubles["check|manual"] < doubles["retry|manual"] == doubles["retry|bill_ref"]
+    assert payments.till_minutes(runs["check|manual"], *answer_key.SLOWDOWN) > slow["till_minutes"]
+    assert payments.refunds_summary(runs["retry|bill_ref"])["max_days_to_refund"] <= 2
+    # The policies change what the store does, never what the customers' banks do.
+    assert [r["bill_id"] for r in runs["check|manual"].returns] == [r["bill_id"] for r in runs["retry|manual"].returns]

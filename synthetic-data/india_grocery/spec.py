@@ -139,6 +139,39 @@ PARAMS: dict[str, tuple[object, str]] = {
     "fresh_standing_factor": (1.02, "assumption: standing orders for other fresh items, as a multiple of mean demand"),
     "transactions_per_day": (1100, "assumption: bills per day at an 8,000 sq ft supermarket"),
     "tender_mix": ({"UPI": 0.62, "card": 0.13, "cash": 0.25}, "assumption"),
+    "upi_business_decline": (0.03, "assumption: share of UPI attempts declined for the customer's reasons "
+                                   "(wrong PIN, balance, limits)"),
+    "upi_technical_decline": (0.0075, "NPCI MD and CEO Dilip Asbe, November 2024: technical declines are 0.7-0.8% of "
+                                      "UPI transactions"),
+    "upi_till_timeout": (0.0015, "assumption: share of UPI attempts that get no answer before the till gives up, on a "
+                                 "normal day"),
+    "upi_slowdown": ({"start": "2026-06-20T18:20", "end": "2026-06-20T19:50", "timeout": 0.40, "technical": 0.05},
+                     "scripted: the acquiring bank's UPI switch slows down on Saturday evening; 40% of attempts get no "
+                     "answer before the till gives up"),
+    "upi_timeout_debited": (0.6, "assumption: share of timed-out attempts where the customer's account was already "
+                                 "debited"),
+    "upi_debited_late_credit": (0.7, "assumption: share of those that end as a late credit to the store; the rest are "
+                                     "returned to the customer"),
+    "upi_late_credit_timing": ({"within_90s": 0.65, "hours": [1, 30]},
+                               "assumption: 65% of late credits arrive within 90 seconds of the payment, the rest "
+                               "1 to 30 hours later, once the payment is confirmed after settlement"),
+    "upi_return_days": ([0.7, 0.2, 0.05, 0.03, 0.02],
+                        "assumption: days after the payment that a return reaches the customer, T+1 to T+5. RBI's "
+                        "TAT circular (20 Sep 2019) requires auto-reversal within T+5 for payments to merchants"),
+    "after_upi_failure": ({"upi_again": 0.5, "cash": 0.35, "card": 0.15},
+                          "assumption: what a customer does when the till says a UPI payment failed"),
+    "upi_status_check_seconds": (90, "NPCI UPI OC 215 (2025): first check-transaction-status call no earlier than 90 "
+                                     "seconds after the payment"),
+    "complaint_charged_twice": (0.8, "assumption: share of customers charged twice who complain to the store"),
+    "complaint_debited_returned": (0.4, "assumption: share of customers debited and later refunded by their bank who "
+                                        "call the store first"),
+    "manual_refund_days": ([2, 5], "assumption: days to verify and refund a complaint when credits are matched to "
+                                   "bills by hand"),
+    "card_decline": (0.02, "assumption: share of first card attempts declined"),
+    "upi_mdr": ({"from": "2026-10-15", "rate": 0.004, "above": 2000, "cap": 300},
+                "NPCI UPI and Services Steering Committee, reported 15 Sep 2026: 0.4% MDR on person-to-merchant UPI "
+                "payments above Rs 2,000, capped at Rs 300, from 15 Oct 2026; merchants receiving up to Rs 1 lakh a "
+                "month through UPI QR are exempt"),
     "audit_days": (["Tue", "Fri"], "assumption: third-party shelf audit at 11:00"),
 }
 

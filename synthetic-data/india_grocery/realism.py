@@ -10,7 +10,7 @@ from datetime import date, datetime
 
 import numpy as np
 
-from . import spec
+from . import payments, spec
 from .ids import is_valid
 from .spec import BY_SKU, DC_SKUS, PRODUCTS, param
 from .world import CAUSE_GROUP, DAYS, STORY_FIRST, Draws, Scenario, World, simulate
@@ -161,6 +161,21 @@ def checks(w: World, dr: Draws) -> list[Check]:
             0.55 <= upi <= 0.70 and 0.02 <= big <= 0.20,
             f"UPI {upi:.0%} of {len(w.bills):,} bills; {big:.1%} above Rs 2,000; median Rs {np.median(amounts):,.0f}",
             str(spec.PARAMS["tender_mix"][1]))
+
+    # 13b. UPI declines and returns.
+    if w.bills:
+        pay = payments.simulate_payments(w.bills, payments.AS_TODAY, w.seed)
+        normal = [a for a in pay.attempts if a["tender"] == "UPI"
+                  and not payments._in_slowdown(datetime.fromisoformat(a["ts"]))]
+        td_rate = sum(a["till_status"] == "failed" for a in normal) / max(1, len(normal))
+        add("UPI technical failures run at 0.5-1.0% of attempts outside the Saturday slowdown",
+            0.005 <= td_rate <= 0.010, f"{td_rate:.2%} of {len(normal):,} attempts",
+            str(spec.PARAMS["upi_technical_decline"][1]))
+        longest = max((x["days"] for x in pay.returns), default=0)
+        add("Every UPI debit that never reaches the store is returned within T+5 days",
+            bool(pay.returns) and longest <= 5, f"{len(pay.returns)} returns, the longest after {longest} day(s)",
+            "RBI/2019-20/67 (20 Sep 2019), TAT for failed transactions: UPI payments to merchants auto-reversed "
+            "within T+5, Rs 100 a day after")
 
     # 14. Same customers and same history in every scenario.
     other = simulate(Scenario(alert_days=1, backroom_discipline=True), w.seed, dr)
