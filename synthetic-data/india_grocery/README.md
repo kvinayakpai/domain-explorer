@@ -34,7 +34,7 @@ Background behaviour is random but seeded: customers, refill rounds that get ski
 | Most item records wrong at the month-end count (world: 8 of 11) | DeHoratius and Raman (2008): 65% |
 | Shopper responses to an empty shelf | Gruen, Corsten and Bharadwaj (2002), via Penn (SAEA) |
 | Pouch milk sellable for the delivery day and the next | Amul Taaza: 48 hours from packing below 8 degC |
-| Valid GTIN, GLN and SSCC check digits under prefix 29 | GS1 General Specifications: 20-29 are restricted circulation |
+| Valid GTIN, GLN and SSCC check digits under prefix 29 | GS1 GSCN 23-006: 02 and 20-29 are for restricted circulation within a company or region |
 
 Prices are illustrative and not quotes for any real brand. Every parameter and its provenance is in `spec.PARAMS`.
 

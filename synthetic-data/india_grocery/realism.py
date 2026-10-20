@@ -20,7 +20,7 @@ Check = tuple[str, bool, str, str]
 FMI_2002 = ("FMI, GMA and CIES (2002), worldwide out-of-stock study: average 8.3%; about 47% from store "
             "ordering and forecasting, 25% from shelf management")
 DR_2008 = "DeHoratius and Raman (2008), Management Science 54(4): 65% of 370,000 records inaccurate"
-GS1 = "GS1 General Specifications: prefixes 20-29 are restricted circulation numbers"
+GS1 = "GS1 GSCN 23-006: prefixes 02 and 20-29 are for restricted circulation within a company or a region"
 
 
 def oos_by_cause(w: World, skus: list[str]) -> dict[str, float]:

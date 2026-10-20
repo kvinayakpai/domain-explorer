@@ -1,8 +1,8 @@
 """GS1 identifiers with valid check digits.
 
-All numbers use GS1 prefix 29. Prefixes 20-29 are reserved for restricted circulation
-inside a company and are never issued to brand owners, so no identifier here can collide
-with a real product, location or pallet.
+All numbers use GS1 prefix 29. GS1 sets aside prefixes 02 and 20-29 for restricted
+circulation within a company or a region (GSCN 23-006), so these codes cannot be mistaken
+for globally issued product, location or pallet numbers.
 """
 from __future__ import annotations
 
