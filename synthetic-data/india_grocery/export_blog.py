@@ -214,8 +214,9 @@ def payments_records(pay: payments.Payments) -> dict:
     att = [a for a in pay.attempts if lo <= a["ts"][:16] < hi]
     rrns = {a["rrn"] for a in att if a["rrn"]}
     return {
-        "pos": [{k: a[k] for k in ("bill_id", "attempt", "ts", "tender", "amount_inr", "till_status", "rrn")}
-                | {"really": a["final"] if a["tender"] == "UPI" and a["final"] in ("late credit", "returned") else None}
+        "pos": [{k: a[k] for k in ("bill_id", "attempt", "ts", "tender", "amount_inr", "till_status")}
+                | {"rrn": a["till_rrn"],
+                   "really": a["final"] if a["tender"] == "UPI" and a["final"] in ("late credit", "returned") else None}
                 for a in att],
         "psp": [r for r in pay.psp if r["rrn"] in rrns],
         "settlements": payments.settlements(pay),
@@ -223,7 +224,7 @@ def payments_records(pay: payments.Payments) -> dict:
 
 
 def payments_downloads(out: Path, w: World, pay: payments.Payments) -> None:
-    write_csv(out / "pos-payments-june.csv", pay.attempts,
+    write_csv(out / "pos-payments-june.csv", [a | {"rrn": a["till_rrn"]} for a in pay.attempts],
               ["bill_id", "attempt", "ts", "tender", "amount_inr", "till_status", "rrn", "note"])
     write_csv(out / "psp-upi-report-june.csv", pay.psp,
               ["rrn", "initiated_ts", "amount_inr", "status", "status_ts", "bill_ref"])

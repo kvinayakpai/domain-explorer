@@ -152,3 +152,9 @@ def test_payments_story_numbers_match_the_post() -> None:
     assert payments.refunds_summary(runs["retry|bill_ref"])["max_days_to_refund"] <= 2
     # The policies change what the store does, never what the customers' banks do.
     assert [r["bill_id"] for r in runs["check|manual"].returns] == [r["bill_id"] for r in runs["retry|manual"].returns]
+    # A till that hears nothing back never learns the payment's reference number, so the till's
+    # records and the provider's report share no key for exactly the payments that matter.
+    att = runs["retry|manual"].attempts
+    assert any(a["till_status"] == "failed: no response" for a in att)
+    assert all(a["till_rrn"] is None for a in att if a["till_status"] == "failed: no response")
+    assert all(a["till_rrn"] == a["rrn"] for a in att if a["tender"] == "UPI" and a["till_status"].startswith("approved"))

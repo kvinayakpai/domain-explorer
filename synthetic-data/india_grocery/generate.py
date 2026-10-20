@@ -98,7 +98,8 @@ def frames(w: World, bills: list[dict], lines: list[dict], pay: payments.Payment
         "truth_scan_errors": scan_errors,
         "truth_events": pd.DataFrame(w.events).drop(columns=["scenario"]),
         "pos_payments": pd.DataFrame([{k: a[k] for k in ("bill_id", "attempt", "ts", "tender", "amount_inr",
-                                                          "till_status", "rrn", "note")} for a in pay.attempts]),
+                                                          "till_status", "note")} | {"rrn": a["till_rrn"]}
+                                      for a in pay.attempts]),
         "psp_upi_report": pd.DataFrame(pay.psp),
         "upi_settlements": pd.DataFrame(payments.settlements(pay)),
         "upi_refunds": pd.DataFrame(pay.refunds, columns=["refund_id", "rrn", "bill_id", "amount_inr", "trigger",

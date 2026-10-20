@@ -113,14 +113,14 @@ def simulate_payments(bills: list[dict], scn: PayScenario = AS_TODAY, seed: int 
             attempt += 1
             if tender == "cash":
                 pay.attempts.append({"bill_id": b["bill_id"], "attempt": attempt, "ts": _ts(clock), "tender": "cash",
-                                     "amount_inr": amount, "till_status": "approved", "rrn": None, "note": None,
+                                     "amount_inr": amount, "till_status": "approved", "rrn": None, "till_rrn": None, "note": None,
                                      "debited": False, "final": "paid", "resolved_ts": _ts(clock)})
                 clock += timedelta(seconds=SECONDS["cash"])
                 break
             if tender == "card":
                 ok = bool(row[23] >= card_decline or attempt > 1)
                 pay.attempts.append({"bill_id": b["bill_id"], "attempt": attempt, "ts": _ts(clock), "tender": "card",
-                                     "amount_inr": amount, "till_status": "approved" if ok else "declined", "rrn": None,
+                                     "amount_inr": amount, "till_status": "approved" if ok else "declined", "rrn": None, "till_rrn": None,
                                      "note": None, "debited": ok, "final": "paid" if ok else "declined",
                                      "resolved_ts": _ts(clock)})
                 clock += timedelta(seconds=SECONDS["card"])
@@ -177,9 +177,12 @@ def simulate_payments(bills: list[dict], scn: PayScenario = AS_TODAY, seed: int 
                 else:
                     outcome, note = "pending at status check", "UPI pending: second payment taken"
             till_status = {"timed out": "failed: no response"}.get(outcome, outcome)
+            # A till that hears nothing back never learns the payment's reference number (RRN); a status
+            # check returns it.
+            till_rrn = None if till_status == "failed: no response" else rrn
             pay.attempts.append({"bill_id": b["bill_id"], "attempt": attempt, "ts": _ts(clock), "tender": "UPI",
-                                 "amount_inr": amount, "till_status": till_status, "rrn": rrn, "note": note,
-                                 "debited": debited, "final": final, "resolved_ts": _ts(resolved)})
+                                 "amount_inr": amount, "till_status": till_status, "rrn": rrn, "till_rrn": till_rrn,
+                                 "note": note, "debited": debited, "final": final, "resolved_ts": _ts(resolved)})
             psp_status = {"success": "success", "late credit": "success", "returned": "returned"}.get(final, "failed")
             pay.psp.append({"rrn": rrn, "initiated_ts": _ts(clock), "amount_inr": amount, "status": psp_status,
                             "status_ts": _ts(resolved),
