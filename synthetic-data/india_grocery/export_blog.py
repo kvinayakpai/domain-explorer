@@ -321,10 +321,12 @@ def downloads(out: Path, w: World, bills: list[dict], lines: list[dict]) -> list
     out.mkdir(parents=True, exist_ok=True)
     june = "2026-06"
     bill = {b["bill_id"]: b for b in bills}
-    # Every till line for the warehouse items, May and June: four weeks of history, then the story.
-    pos = [ln | {"bill_ts": bill[ln["bill_id"]]["bill_ts"]} for ln in lines if ln["sku_scanned"] in spec.DC_SKUS]
+    # Every till line for every item, May and June: four weeks of history, then the story.
+    pos = [ln | {"bill_ts": bill[ln["bill_id"]]["bill_ts"]} for ln in lines]
     write_csv(out / "pos-lines-may-june.csv", pos,
               ["bill_id", "bill_ts", "line", "gtin_scanned", "sku_scanned", "qty", "unit_price", "line_amount"])
+    write_csv(out / "fresh-deliveries-june.csv", [x for x in w.dsd if x["delivery_ts"] >= june],
+              ["delivery_ts", "route", "sku", "units", "crates", "use_by"])
     (out / "pos-lines-atta-june.csv").unlink(missing_ok=True)  # superseded by the file above
     daily = [{"date": d.isoformat(), "sku": s, "units_sold": int(w.daily[s]["scanned"][i]),
               "revenue_inr": round(float(w.daily[s]["revenue"][i]), 2)}
@@ -421,7 +423,8 @@ They do not show what was really on the shelf, on the pallets, or in customers' 
 | File | What it holds |
 |---|---|
 | products.csv | Items, barcodes, case sizes and weights, and each item's slot in the warehouse |
-| pos-lines-may-june.csv | Every till line for the seven warehouse items, 4 May to 28 June, as scanned |
+| pos-lines-may-june.csv | Every till line, 4 May to 28 June, as scanned |
+| fresh-deliveries-june.csv | Milk, curd and bread delivered each morning by the dairy and bakery routes, with use-by dates |
 | daily-sales-june.csv | Units and revenue per item per day, as scanned |
 | inventory-book-june.csv | The system's stock on hand at close, per item per day |
 | forecasts-june.csv | The nightly forecast, reorder point and order for each warehouse item |
