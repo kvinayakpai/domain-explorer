@@ -173,6 +173,12 @@ PARAMS: dict[str, tuple[object, str]] = {
                 "payments above Rs 2,000, capped at Rs 300, from 15 Oct 2026; merchants receiving up to Rs 1 lakh a "
                 "month through UPI QR are exempt"),
     "audit_days": (["Tue", "Fri"], "assumption: third-party shelf audit at 11:00"),
+    "agent_rule": ({"drop": 0.5, "drop_days": 3, "availability": 0.95, "hold_days": 7, "check_alpha": 0.001},
+                   "assumption: the scripted replenishment agent's rule. At 22:00 it looks for items whose demand, "
+                   "as it reads it, came to less than half the forecast over the last 3 days while availability "
+                   "was at least 95%; it concludes demand has dropped and sets the forecast to the last 7 days' "
+                   "rate for a week. With the domain rules it also asks for a shelf check when a run of no sales "
+                   "while the books show stock is less likely than 1 in 1,000"),
 }
 
 

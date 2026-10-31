@@ -47,7 +47,7 @@ def test_deterministic(draws: Draws) -> None:
 def test_scenarios_share_customers_and_history(as_is, draws: Draws) -> None:
     for scn in (Scenario(alert_days=1), Scenario(backroom_discipline=True), Scenario(milk_order_factor=0.85),
                 Scenario(dc_check="pick_scan"), Scenario(dc_check="check_weigh", receiving="case_scan"),
-                Scenario(gap_alpha=0.001)):
+                Scenario(gap_alpha=0.001), Scenario(agent="naive"), Scenario(agent="domain")):
         w = simulate(scn, 42, draws)
         for s in spec.BY_SKU:
             assert np.array_equal(w.hourly[s]["demand_base"], as_is.hourly[s]["demand_base"])
@@ -128,6 +128,27 @@ def test_gap_detector_on_the_tills_records(draws: Draws) -> None:
     strict = simulate(Scenario(gap_alpha=0.0001), 42, draws)
     assert len([c for c in strict.counts if c["trigger"] == "gap detector"]) < len(checks)
     assert int(strict.daily[spec.HERO_SKU]["lost"][STORY_FIRST:].sum()) > lost
+
+
+def test_scripted_agents(draws: Draws) -> None:
+    # Two scripted replenishment agents review every warehouse item at 22:00 with the same rule and the
+    # same tools. The naive one reads recorded sales and book stock: it trims the 5 kg forecast twice and
+    # never looks at a shelf. The domain one reads censored hours: it asks for five shelf checks, and two
+    # of them find the 5 kg gaps the next morning, the misplaced cases and the wrong pallet.
+    naive = simulate(Scenario(agent="naive"), 42, draws)
+    domain = simulate(Scenario(agent="domain"), 42, draws)
+    assert {x["action"] for x in naive.agent_log} == {"lower forecast"}
+    assert [x["ts"] for x in naive.agent_log if x["sku"] == spec.HERO_SKU] == ["2026-06-11T22:00", "2026-06-25T22:00"]
+    assert not [x for x in domain.agent_log if x["action"] == "lower forecast"]
+    checks = [c for c in domain.counts if c["trigger"] == "agent check"]
+    assert (len(checks), sum(c["shelf_before"] == 0 for c in checks)) == (5, 2)
+    hero = [(c["count_ts"], c["misplaced_found"], c["counted"], c["book_before"])
+            for c in checks if c["sku"] == spec.HERO_SKU]
+    assert hero == [("2026-06-11T08:00", 56, 56, 56), ("2026-06-24T08:00", 0, 0, 63)]
+    lost = {k: int(w.daily[spec.HERO_SKU]["lost"][STORY_FIRST:].sum()) for k, w in (("naive", naive), ("domain", domain))}
+    assert lost == {"naive": 137, "domain": 51}  # 157 with no agent
+    with pytest.raises(ValueError):
+        Scenario(agent="clever")
 
 
 def test_milk_order_trades_waste_for_gaps(draws: Draws) -> None:

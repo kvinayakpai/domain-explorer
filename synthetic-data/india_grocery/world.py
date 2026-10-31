@@ -55,6 +55,7 @@ def _rng(seed: int, name: str) -> np.random.Generator:
 
 DC_CHECKS = ("none", "pick_scan", "check_weigh")
 RECEIVING = ("label", "case_scan")
+AGENTS = ("naive", "domain")
 
 
 @dataclass(frozen=True)
@@ -74,12 +75,22 @@ class Scenario:
     # books show stock, becomes less likely than this under the item's usual sales rate, someone
     # checks the item's shelf and backroom within the next open hour. None: no detector.
     gap_alpha: float | None = None
+    # A scripted replenishment agent (rules, not a language model) that reviews every warehouse item
+    # at 22:00, before the ordering run, with the same tools either way: read the records, set an
+    # item's forecast for a week, ask staff to check a shelf the next morning. "naive" reads the KPIs
+    # as reported: recorded sales, and availability from book stock. "domain" reads them with the
+    # series' domain rules: sales measure demand only while the shelf is stocked (censored hours are
+    # estimated, not taken as zero), and book stock is a belief (an improbable run of no sales while
+    # the books show stock gets a shelf check). None: no agent, the store's ordering run alone.
+    agent: str | None = None
     # Interventions start with the month-start count on 1 June, so the four weeks of history are
     # identical in every scenario.
 
     def __post_init__(self) -> None:
         if self.dc_check not in DC_CHECKS or self.receiving not in RECEIVING:
             raise ValueError(f"unknown dc_check {self.dc_check!r} or receiving {self.receiving!r}")
+        if self.agent is not None and self.agent not in AGENTS:
+            raise ValueError(f"unknown agent {self.agent!r}")
 
     @property
     def key(self) -> str:
@@ -92,6 +103,8 @@ class Scenario:
             key += f"_recv-{self.receiving}"
         if self.gap_alpha is not None:
             key += f"_gap-{self.gap_alpha:g}"
+        if self.agent is not None:
+            key += f"_agent-{self.agent}"
         return key
 
 
@@ -215,6 +228,7 @@ class World:
     bill_lines: list[dict] = field(default_factory=list)
     causes: dict[str, list[list[str]]] = field(default_factory=dict)
     scanned_hourly: dict[str, np.ndarray] = field(default_factory=dict)
+    agent_log: list[dict] = field(default_factory=list)  # what the scripted agent read and did
 
 
 def _ts(day: date, hour: int, minute: int = 0) -> str:
@@ -278,6 +292,12 @@ def simulate(scn: Scenario = AS_IS, seed: int = 42, draws: Draws | None = None,
     gap_flagged: set[str] = set()
     gap_checks: dict[tuple[int, int], list[str]] = {}
     gap_rate: dict[str, dict] = {}
+    # Scripted agent state: forecasts it has set (value, sigma, last night it holds), the shelf
+    # checks it has asked for, and where each item's last check left off.
+    agent_rule = param("agent_rule")
+    agent_set: dict[str, tuple[float, float, int]] = {}
+    agent_checks: dict[int, list[str]] = {}
+    agent_looked: dict[str, set[tuple[int, int]]] = {}
 
     def event(ts: str, sku: str, kind: str, units: int, planted: bool, detail: str) -> None:
         w.events.append({"ts": ts, "sku": sku, "kind": kind, "units": int(units), "planted": planted,
@@ -366,6 +386,136 @@ def simulate(scn: Scenario = AS_IS, seed: int = 42, draws: Draws | None = None,
             else:
                 st.back += units_act
 
+    def censored(s: str, lo: int, di: int) -> tuple[np.ndarray, np.ndarray, dict | None]:
+        """The domain agent's censored hours from day lo to day di, as the series' analysis defines them.
+
+        Open hours with no stock on the books, and runs of open hours with no sales while the books
+        show stock, once a run becomes less likely than 1 in 1,000 under the item's usual rate. A
+        run starts at the first hour without a sale and ends when the item sells again, the books
+        reach zero or a shelf check looks; overnight closure does not end it, and once it is
+        flagged a lone unit does not end it either (it is as likely another pack scanned as this
+        one). Returns, per day, the sales expected in censored hours beyond those recorded and the
+        number of censored hours, and the run still open at close on day di.
+        """
+        limit = -math.log(float(agent_rule["check_alpha"]))  # type: ignore[index]
+        rate = gap_rate[s]
+        imp = np.zeros(di - lo + 1)
+        hrs = np.zeros(di - lo + 1)
+        run: list[tuple[int, float, float]] = []
+        st = {"exp": 0.0, "flagged": False, "lone": False}
+
+        def end_run() -> None:
+            if st["flagged"]:
+                for j, e, r in run:
+                    imp[j] += max(0.0, e - r)
+                    hrs[j] += 1
+            run.clear()
+            st.update(exp=0.0, flagged=False, lone=False)
+
+        for j, d in enumerate(range(lo, di + 1)):
+            f = daily[s]["forecast"][d - 1]
+            wk = DAYS[d].weekday() >= 5
+            for h in range(H):
+                units = float(scanned_hourly[s][d, h])
+                e = expected_sales(rate, f, wk, h)
+                if (d, h) in agent_looked.get(s, set()):
+                    end_run()
+                if hourly[s]["book"][d, h] <= 0:
+                    end_run()
+                    imp[j] += max(0.0, e - units)
+                    hrs[j] += 1
+                    continue
+                if st["flagged"] and units == 1 and not st["lone"]:
+                    st["lone"] = True
+                elif units > 0:
+                    end_run()
+                    continue
+                run.append((j, e, units))
+                st["exp"] += e
+                if st["exp"] > limit:
+                    st["flagged"] = True
+        open_run = ({"hours": len(run), "expected": float(st["exp"]), "flagged": bool(st["flagged"])}
+                    if run else None)
+        end_run()
+        return imp, hrs, open_run
+
+    def review(di: int, lo: int) -> dict[str, tuple[float, float, str]]:
+        """The scripted agent's 22:00 review of every warehouse item; returns tonight's forecasts.
+
+        Both agents leave the store's forecast alone unless one rule fires, the same rule for both,
+        on what each reads as demand: if an item's demand came to less than half its forecast over
+        the last 3 days while availability was at least 95%, demand has dropped, so set the forecast
+        to the last 7 days' rate and hold it for a week. The naive agent reads recorded sales, and
+        availability from book stock. The domain agent reads estimated demand (recorded sales plus
+        the sales expected in censored hours) and availability from censored hours, and has one more
+        rule: in stock means on the shelf, so it asks for a shelf check when a run of no sales while
+        the books show stock is less likely than 1 in 1,000, or when the day's shelf audit found an
+        item empty that the books say is in stock.
+        """
+        day = DAYS[di]
+        rule = agent_rule
+        nd, hold = int(rule["drop_days"]), int(rule["hold_days"])  # type: ignore[index]
+        domain = scn.agent == "domain"
+        out: dict[str, tuple[float, float, str]] = {}
+        open_runs: dict[str, dict | None] = {}
+        for s in DC_SKUS:
+            rec = daily[s]["scanned"][lo:di + 1]
+            if domain:
+                imp, cens, open_runs[s] = censored(s, lo, di)
+                seen = rec + imp
+                avail = 1.0 - float(cens[-nd:].sum()) / (nd * H)
+            else:
+                seen = rec
+                avail = float((hourly[s]["book"][di - nd + 1:di + 1] > 0).mean())
+            base_f, base_sig = float(rec.mean()), float(rec.std(ddof=0))  # the store's own method
+            held = agent_set.get(s)
+            if held and held[2] >= di:
+                out[s] = (held[0], held[1], "set by the agent for a week")
+                continue
+            made = float(daily[s]["forecast"][di - nd:di].sum())  # the forecasts that drove the last 3 days
+            got = float(seen[-nd:].sum())
+            if not (made > 0 and got < rule["drop"] * made and avail >= rule["availability"]):  # type: ignore[index]
+                out[s] = (base_f, base_sig, "28-day mean of recorded sales")
+                continue
+            rate = float(seen[-hold:].mean())
+            agent_set[s] = (rate, base_sig, di + hold - 1)
+            out[s] = (rate, base_sig, "set by the agent for a week")
+            if domain:
+                read = (f"estimated demand came to {got:.0f} (recorded sales plus {float(imp[-nd:].sum()):.0f} "
+                        f"expected in {float(cens[-nd:].sum()):.0f} censored hours) against a forecast of "
+                        f"{made:.0f}, with the shelf stocked {avail:.0%} of open hours")
+            else:
+                read = f"recorded sales came to {got:.0f} against a forecast of {made:.0f}, with availability at {avail:.0%} on the books"
+            w.agent_log.append({
+                "ts": _ts(day, 22), "sku": s, "action": "lower forecast", "demand_read": round(got, 1),
+                "forecast_read": round(made, 1), "availability": round(avail, 3),
+                "forecast_from": round(base_f, 1), "forecast_to": round(rate, 1),
+                "detail": (f"Over the last {nd} days {read}: demand looks lower. Forecast set to {rate:.1f} a day "
+                           f"for a week, the last {hold} days' rate; the usual method says {base_f:.1f}.")})
+        if domain and di + 1 < N_DAYS:
+            h11 = OPEN_HOURS.index(11)
+            audited = day.strftime("%a") in param("audit_days")  # type: ignore[operator]
+            for s in DC_SKUS:
+                reason = None
+                book_then = int(hourly[s]["book"][di, h11 - 1])
+                if (audited and stock[s].shelf == 0 and book_then > 0
+                        and any(a["sku"] == s and a["audit_ts"] == _ts(day, 11) and a["status"] == "empty"
+                                for a in w.audits)
+                        and scanned_hourly[s][di, h11:].sum() == 0):
+                    reason = (f"The 11:00 shelf audit found it empty while the books showed {book_then}, and "
+                              f"nothing has sold since.")
+                run = open_runs.get(s)
+                if reason is None and run and run["flagged"] and stock[s].book > 0:
+                    p_none = math.exp(-run["expected"])
+                    odds = "under 1 in a million" if p_none < 1e-6 else f"1 in {float(f'{1 / p_none:.2g}'):,.0f}"
+                    reason = (f"No sales for {run['hours']} open hours while the books show {int(stock[s].book)}; "
+                              f"{run['expected']:.1f} expected (chance of none: {odds}).")
+                if reason and s not in agent_checks.get(di + 1, []):
+                    agent_checks.setdefault(di + 1, []).append(s)
+                    w.agent_log.append({"ts": _ts(day, 22), "sku": s, "action": "ask for a shelf check",
+                                        "detail": f"{reason} Asked staff to check the shelf and backroom at 08:00."})
+        return out
+
     for di, day in enumerate(DAYS):
         wd = day.weekday()
         weekend = wd >= 5
@@ -374,7 +524,7 @@ def simulate(scn: Scenario = AS_IS, seed: int = 42, draws: Draws | None = None,
         discipline = scn.backroom_discipline and live
         alert_days = scn.alert_days if live else None
         milk_factor = scn.milk_order_factor if live else 1.0
-        if gap_limit and live and not gap_rate:
+        if (gap_limit or scn.agent == "domain") and live and not gap_rate:
             gap_rate.update(gap_profiles(scanned_hourly, STORY_FIRST))
 
         # 05:30 direct store deliveries (fresh).
@@ -535,6 +685,27 @@ def simulate(scn: Scenario = AS_IS, seed: int = 42, draws: Draws | None = None,
                     refill(s)
                     event(_ts(day, 8), s, "alert_count", 0, False,
                           f"Count after {alert_days} day(s) of low sales with stock on the books.")
+            if hour == 8:
+                for s in agent_checks.pop(di, []):
+                    n_before = len(w.counts)
+                    do_count(di, 8, 0, [s], "agent check", thorough=True)
+                    refill(s)
+                    agent_looked.setdefault(s, set()).add((di, hi))
+                    c = w.counts[n_before]
+                    diff = c["counted"] - c["book_before"]
+                    if c["shelf_before"] > 0:
+                        detail = (f"The shelf held {c['shelf_before']}: no gap. The count, {c['counted']} against "
+                                  f"{c['book_before']} on the books, "
+                                  + ("matched." if diff == 0 else f"corrected the book by {diff:+d}."))
+                    elif c["misplaced_found"]:
+                        detail = (f"The shelf was empty. Staff found {c['misplaced_found']} in the wrong bay and filled "
+                                  f"it; the count matched the books ({c['counted']}).")
+                    else:
+                        detail = (f"The shelf was empty, and so was the backroom: {c['counted']} counted against "
+                                  f"{c['book_before']} on the books. The book is corrected, so tonight's ordering "
+                                  f"run can reorder.")
+                    w.agent_log.append({"ts": _ts(day, 8), "sku": s, "action": "shelf checked",
+                                        "gap": c["shelf_before"] == 0, "detail": detail})
             for s in gap_checks.pop((di, hi), []):
                 do_count(di, hour, 0, [s], "gap detector", thorough=True)
                 refill(s)
@@ -723,14 +894,18 @@ def simulate(scn: Scenario = AS_IS, seed: int = 42, draws: Draws | None = None,
                           f"{n_days} day(s) with sales under {alert_share:.0%} of forecast while the books show "
                           f"{stock[s].book} on hand.")
 
-        # 22:00 forecast and reorder for DC items.
+        # 22:00 forecast and reorder for DC items, after the scripted agent's review if there is one.
         lo = max(0, di - window + 1)
+        agent_f = review(di, lo) if (scn.agent and live) else {}
         orders_today = []
         for s in DC_SKUS:
             p = BY_SKU[s]
             hist = daily[s]["scanned"][lo:di + 1]
             f = float(hist.mean())
             sig = float(hist.std(ddof=0))
+            method = "28-day mean of recorded sales"
+            if s in agent_f:
+                f, sig, method = agent_f[s]
             rop = math.ceil(f * lead + z * sig * math.sqrt(lead))
             upto = rop + math.ceil(f * cover)
             on_order = sum(o["units"] for o in pipeline if o["sku"] == s)
@@ -747,7 +922,7 @@ def simulate(scn: Scenario = AS_IS, seed: int = 42, draws: Draws | None = None,
             w.forecasts.append({"date": day.isoformat(), "sku": s, "forecast_units_per_day": round(f, 2),
                                 "sigma": round(sig, 2), "reorder_point": rop, "order_up_to": upto,
                                 "book_on_hand": int(stock[s].book), "on_order": int(on_order),
-                                "ordered_units": int(qty), "method": "28-day mean of recorded sales"})
+                                "ordered_units": int(qty), "method": method})
             if qty > 0 and di + lead < N_DAYS:
                 orders_today.append(s)
                 o = {"order_id": f"SO-{day:%y%m%d}", "sku": s, "units": qty, "cases": qty // p.case_units,

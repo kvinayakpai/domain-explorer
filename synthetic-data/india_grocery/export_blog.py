@@ -27,6 +27,8 @@ import sys
 from datetime import date, datetime
 from pathlib import Path
 
+import numpy as np
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from india_grocery import answer_key, payments, realism, spec
 from india_grocery.generate import build_world
@@ -45,6 +47,8 @@ DETECTOR_GRID = [("daily rule, 2 days", {"alert_days": 2}), ("daily rule, 1 day"
                  ("hourly, 1 in 100", {"gap_alpha": 0.01}), ("hourly, 1 in 1,000", {"gap_alpha": 0.001}),
                  ("hourly, 1 in 10,000", {"gap_alpha": 0.0001})]
 CHECK_TRIGGERS = ("low-sales alert", "gap detector")
+AGENTS = {"none": None, "naive": "naive", "domain": "domain"}
+AGENT_SEEDS = range(1, 41)  # forty other Junes: different shoppers, the same planted failures
 MILK_FACTORS = [0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15]
 DC_CHECKS = ["none", "pick_scan", "check_weigh"]
 RECEIVING = ["label", "case_scan"]
@@ -133,6 +137,59 @@ def detector_grid(seed: int, draws: Draws) -> list[dict]:
                      "hero_empty_open_hours": k["empty_open_hours"],
                      **{key: v for key, v in dc_summary(w).items() if key not in ("check_list", "flags")}})
     return rows
+
+
+def agent_outcome(w: World) -> dict:
+    """What one June cost with an agent (or none): the 5 kg shelf, every warehouse item, the stock held."""
+    checks = [c for c in w.counts if c["count_ts"] >= "2026-06" and c["trigger"] == "agent check"]
+    return {
+        "hero_lost_units": int(w.daily[HERO]["lost"][JUNE].sum()),
+        "hero_empty_open_hours": round(float(w.daily[HERO]["empty_hours"][JUNE].sum()), 1),
+        "lost_units": int(sum(w.daily[s]["lost"][JUNE].sum() for s in spec.DC_SKUS)),
+        "lost_value_inr": round(float(sum(w.daily[s]["lost"][JUNE].sum() * spec.BY_SKU[s].price
+                                          for s in spec.DC_SKUS)), 0),
+        "empty_open_hours": round(float(sum(w.daily[s]["empty_hours"][JUNE].sum() for s in spec.DC_SKUS)), 1),
+        # Average stock at cost across the warehouse items, at the close of each June day.
+        "stock_at_cost_inr": round(float(sum(w.daily[s]["physical_close"][JUNE].mean() * spec.BY_SKU[s].cost
+                                             for s in spec.DC_SKUS)), 0),
+        "forecast_changes": sum(1 for x in w.agent_log if x["action"] == "lower forecast"),
+        "checks": len(checks),
+        "checks_found_gap": sum(1 for c in checks if c["shelf_before"] == 0),
+    }
+
+
+def agent_block(seed: int, draws: Draws) -> dict:
+    """The scripted replenishment agents: one June in full for each, and the same comparison over forty more."""
+    runs = {}
+    for key, agent in AGENTS.items():
+        w = simulate(Scenario(agent=agent), seed, draws)
+        d = w.daily[HERO]
+        runs[key] = {
+            **agent_outcome(w),
+            "daily": {
+                "forecast": [round(float(x), 1) for x in d["forecast"][STORY_FIRST - 1:-1]],
+                "recorded": _ints(d["scanned"][JUNE]),
+                "demand": _ints(d["demand"][JUNE]),
+                "empty_hours": [round(float(x), 1) for x in d["empty_hours"][JUNE]],
+                "book_close": _ints(d["book_close"][JUNE]),
+                "physical_close": _ints(d["physical_close"][JUNE]),
+            },
+            "episodes": [e for e in answer_key.episodes(w, HERO) if e["empty_open_hours"] >= 3],
+            "log": [x for x in w.agent_log if x["ts"] >= "2026-06"],
+        }
+    per_seed: dict[str, list[dict]] = {k: [] for k in AGENTS}
+    for sd in AGENT_SEEDS:
+        dr = Draws(sd)
+        for key, agent in AGENTS.items():
+            per_seed[key].append(agent_outcome(simulate(Scenario(agent=agent), sd, dr)))
+    fields = ("hero_lost_units", "lost_units", "stock_at_cost_inr", "forecast_changes", "checks", "checks_found_gap")
+    seeds = {k: {"mean": {f: round(float(np.mean([r[f] for r in rows])), 1) for f in fields},
+                 "median": {f: float(np.median([r[f] for r in rows])) for f in fields},
+                 "hero_lost_units": [r["hero_lost_units"] for r in rows]}
+             for k, rows in per_seed.items()}
+    rule, source = spec.PARAMS["agent_rule"]
+    return {"rule": rule, "rule_source": source, "seed": seed, "runs": runs,
+            "seeds": {"first": AGENT_SEEDS[0], "last": AGENT_SEEDS[-1], "n": len(AGENT_SEEDS), "runs": seeds}}
 
 
 def milk_block(w: World, factor: float) -> dict:
@@ -506,6 +563,7 @@ def main() -> None:
                  "shelf_capacity": p.shelf_capacity, "gtin": p.gtin},
         "scenarios": blocks,
         "detectors": detector_grid(args.seed, grid_draws),
+        "agents": agent_block(args.seed, grid_draws),
         "gap_alpha": GAP_ALPHA,
         "milk": milk,
         "milk_product": {"name": spec.BY_SKU["MILK-TONED-500ML"].name,
