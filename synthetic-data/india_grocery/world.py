@@ -56,6 +56,7 @@ def _rng(seed: int, name: str) -> np.random.Generator:
 DC_CHECKS = ("none", "pick_scan", "check_weigh")
 RECEIVING = ("label", "case_scan")
 AGENTS = ("naive", "domain")
+MINUS = "\u2212"  # typographic minus, for notes people read
 
 
 @dataclass(frozen=True)
@@ -696,7 +697,7 @@ def simulate(scn: Scenario = AS_IS, seed: int = 42, draws: Draws | None = None,
                     if c["shelf_before"] > 0:
                         detail = (f"The shelf held {c['shelf_before']}: no gap. The count, {c['counted']} against "
                                   f"{c['book_before']} on the books, "
-                                  + ("matched." if diff == 0 else f"corrected the book by {diff:+d}."))
+                                  + ("matched." if diff == 0 else f"corrected the book by {'+' if diff > 0 else MINUS}{abs(diff)}."))
                     elif c["misplaced_found"]:
                         detail = (f"The shelf was empty. Staff found {c['misplaced_found']} in the wrong bay and filled "
                                   f"it; the count matched the books ({c['counted']}).")
