@@ -5,6 +5,6 @@ runnable demonstration. Registry ids: ``conn.mqtt`` and
 ``conn.sparkplug_b``.
 """
 
-from .client import MqttClient, MqttMessage, MqttError, SparkplugBPayload
+from .client import MqttClient, MqttError, MqttMessage, SparkplugBPayload
 
-__all__ = ["MqttClient", "MqttMessage", "MqttError", "SparkplugBPayload"]
+__all__ = ["MqttClient", "MqttError", "MqttMessage", "SparkplugBPayload"]

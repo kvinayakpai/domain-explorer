@@ -91,7 +91,7 @@ def _subjects(ctx, studies, sites, n=15_000):
     rfstdtc = pd.to_datetime(rng.integers(int(pd.Timestamp("2022-01-01").timestamp()), int(pd.Timestamp("2026-03-01").timestamp()), size=n), unit="s")
     age = rng.integers(18, 86, size=n)
     return pd.DataFrame({
-        "usubjid": [f"{s}-{site[1:]}-{i:05d}" for i, (s, site) in enumerate(zip(studyid, siteid))],
+        "usubjid": [f"{s}-{site[1:]}-{i:05d}" for i, (s, site) in enumerate(zip(studyid, siteid, strict=True))],
         "studyid": studyid,
         "siteid": siteid,
         "subjid": [f"{i:05d}" for i in range(1, n + 1)],

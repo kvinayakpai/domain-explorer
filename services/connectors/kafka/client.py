@@ -35,9 +35,9 @@ import itertools
 import json
 import threading
 import time
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
-
+from typing import Any
 
 # -- exceptions ---------------------------------------------------------------
 
@@ -66,9 +66,9 @@ class KafkaMessage:
     topic: str
     partition: int
     offset: int
-    key: Optional[bytes]
+    key: bytes | None
     value: bytes
-    headers: Dict[str, bytes] = field(default_factory=dict)
+    headers: dict[str, bytes] = field(default_factory=dict)
     timestamp_ms: int = 0
 
     def value_json(self) -> Any:
@@ -82,9 +82,9 @@ class _InMemoryBroker:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         # topics[(bootstrap, topic)] = list[KafkaMessage]
-        self._topics: Dict[Tuple[str, str], List[KafkaMessage]] = collections.defaultdict(list)
+        self._topics: dict[tuple[str, str], list[KafkaMessage]] = collections.defaultdict(list)
         # offsets[(bootstrap, group_id, topic)] = next-to-read offset
-        self._offsets: Dict[Tuple[str, str, str], int] = collections.defaultdict(int)
+        self._offsets: dict[tuple[str, str, str], int] = collections.defaultdict(int)
         self._counter = itertools.count(1)
 
     def append(self, bootstrap: str, msg: KafkaMessage) -> int:
@@ -103,7 +103,7 @@ class _InMemoryBroker:
             log.append(stored)
             return offset
 
-    def read(self, bootstrap: str, group_id: str, topic: str, max_messages: int) -> List[KafkaMessage]:
+    def read(self, bootstrap: str, group_id: str, topic: str, max_messages: int) -> list[KafkaMessage]:
         with self._lock:
             log = self._topics.get((bootstrap, topic), [])
             offset = self._offsets[(bootstrap, group_id, topic)]
@@ -136,8 +136,8 @@ class KafkaProducer:
 
     bootstrap_servers: str
     auth_mechanism: str = "PLAINTEXT"
-    sasl_username: Optional[str] = None
-    sasl_password: Optional[str] = field(default=None, repr=False)
+    sasl_username: str | None = None
+    sasl_password: str | None = field(default=None, repr=False)
     compression_type: str = "none"
     client_id: str = "domain-explorer-stub-producer"
     _connected: bool = field(default=False, init=False, repr=False)
@@ -167,7 +167,7 @@ class KafkaProducer:
     def close(self) -> None:
         self._connected = False
 
-    def __enter__(self) -> "KafkaProducer":
+    def __enter__(self) -> KafkaProducer:
         self.connect()
         return self
 
@@ -179,9 +179,9 @@ class KafkaProducer:
     def publish(
         self,
         topic: str,
-        key: Optional[Any] = None,
+        key: Any | None = None,
         value: Any = None,
-        headers: Optional[Dict[str, Any]] = None,
+        headers: dict[str, Any] | None = None,
     ) -> int:
         """Publish one record. Returns the assigned offset.
 
@@ -192,7 +192,7 @@ class KafkaProducer:
 
         key_bytes = _encode(key)
         value_bytes = _encode(value)
-        header_bytes: Dict[str, bytes] = {
+        header_bytes: dict[str, bytes] = {
             k: _encode(v) or b"" for k, v in (headers or {}).items()
         }
 
@@ -222,11 +222,11 @@ class KafkaConsumer:
     bootstrap_servers: str
     group_id: str
     auth_mechanism: str = "PLAINTEXT"
-    sasl_username: Optional[str] = None
-    sasl_password: Optional[str] = field(default=None, repr=False)
+    sasl_username: str | None = None
+    sasl_password: str | None = field(default=None, repr=False)
     auto_offset_reset: str = "earliest"
     client_id: str = "domain-explorer-stub-consumer"
-    _topics: List[str] = field(default_factory=list, init=False, repr=False)
+    _topics: list[str] = field(default_factory=list, init=False, repr=False)
     _connected: bool = field(default=False, init=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -242,7 +242,7 @@ class KafkaConsumer:
     def close(self) -> None:
         self._connected = False
 
-    def __enter__(self) -> "KafkaConsumer":
+    def __enter__(self) -> KafkaConsumer:
         self.connect()
         return self
 
@@ -254,7 +254,7 @@ class KafkaConsumer:
     def subscribe(
         self,
         topic: str,
-        callback: Optional[Callable[[KafkaMessage], None]] = None,
+        callback: Callable[[KafkaMessage], None] | None = None,
     ) -> None:
         """Subscribe to a topic. If ``callback`` is supplied, immediately
         drain whatever is currently on the topic and invoke it per message.
@@ -267,12 +267,12 @@ class KafkaConsumer:
             for msg in self._drain(topic, max_messages=10_000):
                 callback(msg)
 
-    def poll(self, max_messages: int = 100) -> List[KafkaMessage]:
+    def poll(self, max_messages: int = 100) -> list[KafkaMessage]:
         """Return up to ``max_messages`` records across subscribed topics
         and advance the committed offset to just past them."""
         if not self._connected:
             self.connect()
-        out: List[KafkaMessage] = []
+        out: list[KafkaMessage] = []
         for topic in self._topics:
             out.extend(self._drain(topic, max_messages - len(out)))
             if len(out) >= max_messages:
@@ -281,12 +281,11 @@ class KafkaConsumer:
 
     def consume(self, max_messages: int = 100) -> Iterator[KafkaMessage]:
         """Iterator-style alias for :meth:`poll`."""
-        for msg in self.poll(max_messages=max_messages):
-            yield msg
+        yield from self.poll(max_messages=max_messages)
 
     # --- internal ---
 
-    def _drain(self, topic: str, max_messages: int) -> List[KafkaMessage]:
+    def _drain(self, topic: str, max_messages: int) -> list[KafkaMessage]:
         if max_messages <= 0:
             return []
         msgs = _BROKER.read(self.bootstrap_servers, self.group_id, topic, max_messages)
@@ -299,7 +298,7 @@ class KafkaConsumer:
 # -- helpers -----------------------------------------------------------------
 
 
-def _encode(value: Any) -> Optional[bytes]:
+def _encode(value: Any) -> bytes | None:
     if value is None:
         return None
     if isinstance(value, bytes):

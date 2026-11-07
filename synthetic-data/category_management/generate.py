@@ -146,7 +146,7 @@ def _sku_attributes(ctx, skus):
     rows = []
     sku_ids = skus["sku_id"].to_numpy()
     n_attrs_per_sku = rng.integers(3, len(ATTR_NAMES) + 1, size=len(sku_ids))
-    for sku_id, k in zip(sku_ids, n_attrs_per_sku):
+    for sku_id, k in zip(sku_ids, n_attrs_per_sku, strict=True):
         attrs = rng.choice(ATTR_NAMES, size=int(k), replace=False)
         for i, a in enumerate(attrs):
             v = rng.choice(ATTR_VALUES[a])
@@ -382,7 +382,7 @@ def _range_review_decisions(ctx, range_reviews, skus):
                 "range_review_id": rr_id,
                 "sku_id": sku,
                 "decision_type": weighted_choice(rng, DECISION_TYPES, DECISION_TYPE_W, 1)[0],
-                "cluster_scope": rng.choice(["ALL"] + CLUSTERS),
+                "cluster_scope": rng.choice(["ALL", *CLUSTERS]),
                 "rationale": rng.choice(DECISION_RATIONALES),
                 "confidence": round(float(rng.uniform(0.55, 0.99)), 3),
                 "decision_authority": rng.choice(["category_captain", "retailer_buyer", "joint"], p=[0.45, 0.30, 0.25]),

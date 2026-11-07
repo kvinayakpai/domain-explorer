@@ -5,17 +5,17 @@ runnable demonstration. Registry id: ``conn.rest``.
 """
 
 from .client import (
-    RestJsonClient,
     OAuth2ClientCredentials,
-    RetryPolicy,
     RestError,
+    RestJsonClient,
     RestResponse,
+    RetryPolicy,
 )
 
 __all__ = [
-    "RestJsonClient",
     "OAuth2ClientCredentials",
-    "RetryPolicy",
     "RestError",
+    "RestJsonClient",
     "RestResponse",
+    "RetryPolicy",
 ]

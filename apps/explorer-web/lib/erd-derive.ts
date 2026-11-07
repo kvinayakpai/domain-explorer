@@ -29,7 +29,7 @@ export interface ErdRelationship {
   from: string;
   to: string;
   via?: string;
-  kind: "one_to_one" | "one_to_many" | "many_to_many";
+  kind: "one_to_one" | "one_to_many" | "many_to_one" | "many_to_many";
 }
 
 export interface ErdGraph {

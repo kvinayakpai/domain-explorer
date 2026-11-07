@@ -132,15 +132,15 @@ def _assets(ctx, n):
     )
     return pd.DataFrame({
         "asset_id": [f"AST{i:07d}" for i in range(1, n + 1)],
-        "tag_id": [f"{s}.A{a:02d}.L{l:02d}.{cls.upper()[:3]}-{i:04d}"
-                   for i, (s, a, l, cls) in enumerate(zip(site, area, line, asset_class), start=1)],
+        "tag_id": [f"{s}.A{a:02d}.L{ln:02d}.{cls.upper()[:3]}-{i:04d}"
+                   for i, (s, a, ln, cls) in enumerate(zip(site, area, line, asset_class, strict=True), start=1)],
         "asset_class": asset_class,
         "manufacturer": rng.choice(MANUFACTURERS, size=n),
         "model_number": [f"M{rng.integers(1000, 9999):04d}-{rng.integers(10, 99):02d}" for _ in range(n)],
         "serial_number": [f"SN{rng.integers(10**8, 10**9):09d}" for _ in range(n)],
         "site_id": site,
         "area_id": [f"AREA-{a:02d}" for a in area],
-        "line_id": [f"LINE-{l:02d}" for l in line],
+        "line_id": [f"LINE-{ln:02d}" for ln in line],
         "criticality": weighted_choice(rng, CRITICALITY, CRITICALITY_W, n),
         "install_date": install.date,
         "design_life_hours": rng.choice([35_000, 50_000, 80_000, 120_000], size=n),
@@ -155,7 +155,7 @@ def _sensors(ctx, assets, sensors_per_asset):
     sensor_idx = 1
     asset_ids = assets["asset_id"].to_numpy()
     asset_classes = assets["asset_class"].to_numpy()
-    for ai, (asset_id, asset_class) in enumerate(zip(asset_ids, asset_classes)):
+    for asset_id, _asset_class in zip(asset_ids, asset_classes, strict=True):
         # Pick a sensible subset based on asset_class — every asset gets a temp + vibration.
         types_for_asset = ["vibration_accel", "temp_rtd"]
         extra_pool = [t[0] for t in SENSOR_TYPES if t[0] not in types_for_asset]
@@ -370,7 +370,7 @@ def _work_orders(ctx, assets, failure_events, predictions, n):
     actual_end = actual_start + pd.to_timedelta(rng.gamma(2.0, 90, size=n).clip(30, 1440).astype(int), unit="m")
     labor_hours = np.round(rng.gamma(2.0, 1.5, size=n).clip(0.5, 24.0), 2)
     parts_cost = np.round(rng.lognormal(5.5, 1.5, size=n), 2)
-    labor_cost = labor_hours * float(85.0)
+    labor_cost = labor_hours * 85.0
     triggered_by = np.where(
         wo_type == "predictive",
         rng.choice(predictions["prediction_id"].to_numpy(), size=n),
@@ -445,7 +445,7 @@ def generate(seed=42, scale="medium"):
     failure_modes = _failure_modes(ctx)
     print("  generating model_versions...")
     model_versions = _model_versions(ctx, n_mv)
-    print(f"  generating sensor_readings — this is the big one...")
+    print("  generating sensor_readings — this is the big one...")
     readings = _readings(ctx, sensors, days, rpm)
     print("  generating failure_events...")
     failure_events = _failure_events(ctx, assets, failure_modes, n_fail)

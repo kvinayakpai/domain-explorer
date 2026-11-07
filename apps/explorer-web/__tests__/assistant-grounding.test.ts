@@ -428,7 +428,7 @@ async function callChatRoute(question: string, personaKey: string): Promise<stri
     const m = block.match(/data: (\{[\s\S]*\})/);
     if (!m) continue;
     try {
-      const parsed = JSON.parse(m[1]) as { text?: string };
+      const parsed = JSON.parse(m[1] ?? "{}") as { text?: string };
       if (parsed.text) out.push(parsed.text);
     } catch {
       /* ignore */

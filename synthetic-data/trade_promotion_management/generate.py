@@ -230,7 +230,7 @@ def _promotions(ctx, accounts, n=200_000):
     return pd.DataFrame({
         "promotion_id": [f"PRM{i:08d}" for i in range(1, n + 1)],
         "account_id": accounts["account_id"].to_numpy()[a_idx],
-        "name": [f"Q{fq_i} Promo {i:08d}" for i, fq_i in zip(range(1, n + 1), fq)],
+        "name": [f"Q{fq_i} Promo {i:08d}" for i, fq_i in zip(range(1, n + 1), fq, strict=True)],
         "fiscal_year": fy,
         "fiscal_quarter": fq,
         "start_date": pd.to_datetime(start_ts, unit="s").date,

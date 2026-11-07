@@ -30,9 +30,9 @@ Production swap-out::
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
-
+from typing import Any
 
 # -- exceptions ---------------------------------------------------------------
 
@@ -54,7 +54,7 @@ _CUSTOMER_COLUMNS = (
 )
 
 
-def _row(i: int) -> Tuple[Any, ...]:
+def _row(i: int) -> tuple[Any, ...]:
     """Generate one canned customer row deterministically."""
     region = ("EMEA", "AMER", "APAC")[i % 3]
     country = {"EMEA": "DE", "AMER": "US", "APAC": "JP"}[region]
@@ -64,7 +64,7 @@ def _row(i: int) -> Tuple[Any, ...]:
     return (f"CUST{i:07d}", region, country, segment, rev, active)
 
 
-def _generate_rows(predicate: str) -> Iterator[Tuple[Any, ...]]:
+def _generate_rows(predicate: str) -> Iterator[tuple[Any, ...]]:
     """Generate up to 30,000 rows, optionally filtered by a tiny WHERE clause."""
     region_match = re.search(r"region\s*=\s*\?", predicate, re.IGNORECASE)
     country_match = re.search(r"country\s*=\s*\?", predicate, re.IGNORECASE)
@@ -86,12 +86,12 @@ def _generate_rows(predicate: str) -> Iterator[Tuple[Any, ...]]:
 class OdbcCursor:
     """Subset of a pyodbc.Cursor."""
 
-    description: List[Tuple[str, str]] = field(default_factory=list)
+    description: list[tuple[str, str]] = field(default_factory=list)
     rowcount: int = -1
-    _generator: Optional[Iterator[Tuple[Any, ...]]] = field(default=None, init=False, repr=False)
-    _filter: Dict[str, Any] = field(default_factory=dict, init=False, repr=False)
+    _generator: Iterator[tuple[Any, ...]] | None = field(default=None, init=False, repr=False)
+    _filter: dict[str, Any] = field(default_factory=dict, init=False, repr=False)
 
-    def execute(self, sql: str, params: Optional[Sequence[Any]] = None) -> "OdbcCursor":
+    def execute(self, sql: str, params: Sequence[Any] | None = None) -> OdbcCursor:
         sql_norm = " ".join(sql.split()).strip().rstrip(";")
         params = list(params or [])
 
@@ -103,7 +103,7 @@ class OdbcCursor:
             if m:
                 where = m.group(1)
                 tokens = re.split(r"\s+and\s+", where, flags=re.IGNORECASE)
-                for tok, val in zip(tokens, params):
+                for tok, val in zip(tokens, params, strict=False):
                     col_match = re.match(r"(\w+)\s*=\s*\?", tok.strip(), re.IGNORECASE)
                     if col_match:
                         self._filter[col_match.group(1).lower()] = val
@@ -118,7 +118,7 @@ class OdbcCursor:
         self.rowcount = n
         return n
 
-    def _iter_filtered(self) -> Iterator[Tuple[Any, ...]]:
+    def _iter_filtered(self) -> Iterator[tuple[Any, ...]]:
         col_index = {c[0]: i for i, c in enumerate(_CUSTOMER_COLUMNS)}
         for row in _generate_rows(""):
             ok = True
@@ -130,15 +130,15 @@ class OdbcCursor:
             if ok:
                 yield row
 
-    def fetchone(self) -> Optional[Tuple[Any, ...]]:
+    def fetchone(self) -> tuple[Any, ...] | None:
         if self._generator is None:
             return None
         return next(self._generator, None)
 
-    def fetchmany(self, size: int) -> List[Tuple[Any, ...]]:
+    def fetchmany(self, size: int) -> list[tuple[Any, ...]]:
         if self._generator is None or size <= 0:
             return []
-        out: List[Tuple[Any, ...]] = []
+        out: list[tuple[Any, ...]] = []
         for _ in range(size):
             row = next(self._generator, None)
             if row is None:
@@ -146,7 +146,7 @@ class OdbcCursor:
             out.append(row)
         return out
 
-    def fetchall(self) -> List[Tuple[Any, ...]]:
+    def fetchall(self) -> list[tuple[Any, ...]]:
         if self._generator is None:
             return []
         rows = list(self._generator)
@@ -166,13 +166,13 @@ class OdbcClient:
     is validated.
     """
 
-    dsn: Optional[str] = None
-    connection_string: Optional[str] = None
+    dsn: str | None = None
+    connection_string: str | None = None
     autocommit: bool = False
     _connected: bool = field(default=False, init=False, repr=False)
 
-    def connect(self, dsn: Optional[str] = None,
-                connection_string: Optional[str] = None) -> "OdbcClient":
+    def connect(self, dsn: str | None = None,
+                connection_string: str | None = None) -> OdbcClient:
         if dsn:
             self.dsn = dsn
         if connection_string:
@@ -187,7 +187,7 @@ class OdbcClient:
             self.connect()
         return OdbcCursor()
 
-    def execute(self, sql: str, params: Optional[Sequence[Any]] = None) -> OdbcCursor:
+    def execute(self, sql: str, params: Sequence[Any] | None = None) -> OdbcCursor:
         cur = self.cursor()
         cur.execute(sql, params)
         return cur
@@ -199,9 +199,9 @@ class OdbcClient:
     def fetch_iter(
         self,
         sql: str,
-        params: Optional[Sequence[Any]] = None,
+        params: Sequence[Any] | None = None,
         batch_size: int = 10_000,
-    ) -> Iterator[List[Tuple[Any, ...]]]:
+    ) -> Iterator[list[tuple[Any, ...]]]:
         """Yield batches of rows of size ``batch_size`` until the cursor
         is exhausted. Pattern mirrors how production ETL drives big
         SELECTs without buffering the whole result set."""
@@ -215,7 +215,7 @@ class OdbcClient:
     def close(self) -> None:
         self._connected = False
 
-    def __enter__(self) -> "OdbcClient":
+    def __enter__(self) -> OdbcClient:
         if not self._connected:
             self.connect()
         return self

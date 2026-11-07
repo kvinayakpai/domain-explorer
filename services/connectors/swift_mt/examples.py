@@ -17,7 +17,6 @@ import json
 
 from .parser import SwiftMtParser
 
-
 SAMPLE_MT103 = """\
 {1:F01ACMEUS33AXXX0000000000}\
 {2:I103DEUTDEFFXXXXN}\

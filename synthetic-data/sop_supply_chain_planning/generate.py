@@ -250,7 +250,7 @@ def _forecasts(ctx, items, locations, customers, sop_cycles,
     cust_arr = cust_sample["customer_id"].to_numpy()[rng.integers(0, len(cust_sample), size=n)]
 
     # Demand base by item ABC mult
-    item_class_lookup = dict(zip(item_sub["item_id"], item_sub["item_class"]))
+    item_class_lookup = dict(zip(item_sub["item_id"], item_sub["item_class"], strict=True))
     item_classes = np.array([item_class_lookup[i] for i in items_arr])
     base_units = rng.lognormal(2.8, 1.0, size=n) * np.where(
         item_classes == "A", 4.0, np.where(item_classes == "B", 1.6, 0.6))
@@ -267,7 +267,7 @@ def _forecasts(ctx, items, locations, customers, sop_cycles,
     forecast_units = np.round(base_units * bias, 4)
 
     # Unit price from item table
-    unit_price_lookup = dict(zip(item_sub["item_id"], item_sub["unit_price"]))
+    unit_price_lookup = dict(zip(item_sub["item_id"], item_sub["unit_price"], strict=True))
     unit_prices = np.array([unit_price_lookup[i] for i in items_arr])
     forecast_value = np.round(forecast_units * unit_prices, 4)
 

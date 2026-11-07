@@ -30,6 +30,8 @@ select = ["E", "F", "I", "B", "UP", "N", "SIM", "RUF"]
 # UP017:       we keep `datetime.timezone.utc` for compatibility with Python <3.11
 #              dev environments.
 ignore = ["E501", "N815", "N802", "UP042", "UP017"]
+# "×" is used on purpose in docstrings and labels (e.g. "3 × 4 grid").
+allowed-confusables = ["×"]
 
 [tool.ruff.lint.per-file-ignores]
 "synthetic-data/**/generate.py" = ["F841"]  # unused `f = ctx.faker` aliases
@@ -55,4 +57,12 @@ pythonpath = [
 addopts = "-q --color=yes -m 'not slow' --import-mode=importlib"
 markers = [
   "slow: long-running synthetic-data generator runs",
+]
+
+[dependency-groups]
+dev = [
+    "mypy==2.4.1",
+    "networkx>=3.2",
+    "pytest>=8",
+    "ruff==0.16.9",
 ]

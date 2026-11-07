@@ -7,6 +7,12 @@ license = { text = "MIT" }
 dependencies = [
   "pydantic>=2.7",
   "domain-explorer-metadata",
+  "numpy>=1.26",
+  "pandas>=2.2",
+  "pyarrow>=15",
+  "faker>=24",
+  "mimesis>=12",
+  "duckdb>=1.0",
 ]
 
 [project.optional-dependencies]

@@ -53,7 +53,7 @@ export function CatalogTable({ rows }: { rows: CatalogRow[] }) {
       });
     }
     return [...out.entries()].sort((a, b) =>
-      a[1][0].subdomainName.localeCompare(b[1][0].subdomainName),
+      (a[1][0]?.subdomainName ?? "").localeCompare(b[1][0]?.subdomainName ?? ""),
     );
   }, [filtered]);
 
@@ -103,10 +103,10 @@ export function CatalogTable({ rows }: { rows: CatalogRow[] }) {
           <section key={sd} className="rounded-lg border">
             <header className="flex items-center justify-between border-b bg-muted/40 px-4 py-2">
               <Link href={`/d/${sd}`} className="text-sm font-semibold hover:underline">
-                {list[0].subdomainName}
+                {list[0]?.subdomainName}
               </Link>
               <span className="text-xs text-muted-foreground">
-                {list[0].vertical} · {list.length} entit{list.length === 1 ? "y" : "ies"}
+                {list[0]?.vertical} · {list.length} entit{list.length === 1 ? "y" : "ies"}
               </span>
             </header>
             <div className="overflow-x-auto">
