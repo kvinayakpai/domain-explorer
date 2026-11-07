@@ -11,14 +11,14 @@ from pathlib import Path
 
 from . import gen_factory, gen_field, gen_refinery, render, signals, stories
 from .model import World
-from .spec import SEED
+from .spec import NOISE, SEED
 
 DEFAULT_OUT = Path(__file__).resolve().parents[1] / "build" / "world"
 
 
-def make_world(seed: int = SEED) -> World:
+def make_world(seed: int = SEED, noise: str = "base") -> World:
     import numpy as np
-    w = World(seed=seed, rng=np.random.default_rng(seed))
+    w = World(seed=seed, rng=np.random.default_rng(seed), noise=dict(NOISE[noise]))
     gen_factory.setup_orgs_and_customers(w)
     gen_factory.setup_changes_and_lots(w)
     gen_refinery.generate(w)
@@ -28,14 +28,14 @@ def make_world(seed: int = SEED) -> World:
     return w
 
 
-def build(out: Path = DEFAULT_OUT, seed: int = SEED) -> World:
+def build(out: Path = DEFAULT_OUT, seed: int = SEED, noise: str = "base") -> World:
     t0 = time.time()
-    w = make_world(seed)
+    w = make_world(seed, noise)
     tr = render.render_all(w, out)
     key = stories.build(w)
     (out / "truth.json").write_text(json.dumps([list(r) for r in tr.rows]))
     (out / "answer_key.json").write_text(json.dumps(key, indent=1, default=str))
-    (out / "MANIFEST.json").write_text(json.dumps({"seed": seed, "files": sorted(p.name for p in out.iterdir()),
+    (out / "MANIFEST.json").write_text(json.dumps({"seed": seed, "noise": noise, "files": sorted(p.name for p in out.iterdir()),
                                                    "note": "All data is synthetic. truth.json and answer_key.json are for scoring only."}, indent=1))
     print(f"world built in {time.time() - t0:.1f}s -> {out}")
     return w
@@ -45,5 +45,6 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
     ap.add_argument("--seed", type=int, default=SEED)
+    ap.add_argument("--noise", choices=sorted(NOISE), default="base")
     a = ap.parse_args()
-    build(a.out, a.seed)
+    build(a.out, a.seed, a.noise)

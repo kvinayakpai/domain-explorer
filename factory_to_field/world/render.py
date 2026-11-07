@@ -116,7 +116,7 @@ def render_sap(w: World, out: Path, tr: Truth) -> None:
             continue
         # SAP keeps time segments; a few are never closed or recorded (data-quality realism, not on planted units)
         planted = w.units[inst["unit"]]["serial"] in {"OEM-24-0412", "OEM-25-1187", "OEM-21-0090", "ES-25-0233", "ES-23-0117"}
-        if not planted and w.rng.random() < 0.02:
+        if not planted and w.rng.random() < w.noise["equz_missing"]:
             continue
         con.execute("INSERT INTO EQUZ VALUES(?,?,?,?)", (equnr[inst["unit"]], w.positions[inst["pos"]]["floc"], inst["from"].isoformat(),
                                                          (inst["to"] - timedelta(days=1)).isoformat() if inst["to"] else "9999-12-31"))
@@ -131,7 +131,7 @@ def render_sap(w: World, out: Path, tr: Truth) -> None:
         if "NOTE TO AI" in (n.get("long") or ""):
             w.answer["injection_qmnum"] = qm
         code = SAP_CODE.get(n["mode"]) if n["mode"] else None
-        if n["mode"] and w.rng.random() < 0.05:
+        if n["mode"] and w.rng.random() < w.noise["legacy_code"]:
             code = "VIBR" if n["mode"] == "VIB" else "LEAK"  # legacy local codes
         eq = equnr.get(n["unit"]) if n["unit"] else None
         con.execute("INSERT INTO QMEL VALUES(?,?,?,?,?,?,?,?,?,?,?)", (qm, n["type"], n["text"][:40], n.get("long") or None, n["on"].isoformat(),
@@ -209,7 +209,7 @@ def _hist_db(w: World, out: Path, name: str, site_filter, tr: Truth, system: str
         if s["site"] == "site:R3" and s["quantity"].startswith("vibration"):
             unit, alarm = "in/s", (round(alarm / 25.4, 3) if alarm else None)
         asset = None
-        if s["site"] != "site:FA" and w.rng.random() < 0.9:
+        if s["site"] != "site:FA" and w.rng.random() >= w.noise["asset_path_missing"]:
             asset = f"\\\\{pos['prefix']}\\{pos['tag'].split('-', 1)[1]}"
         if s["site"] == "site:FA" or not s["desc"]:
             asset = None
@@ -240,7 +240,7 @@ def _hist_db(w: World, out: Path, name: str, site_filter, tr: Truth, system: str
             if np.isnan(mean[i]):
                 continue
             tt = legacy[sig] if (sig in legacy and i < mig) else t
-            nb = int(w.rng.random() < 0.01) * int(w.rng.integers(1, 6))
+            nb = int(w.rng.random() < w.noise["extra_dup"]) * int(w.rng.integers(1, 6))
             rows.append((tt, DATES[i].isoformat(), float(round(mean[i], 4)), float(round(mn[i], 4)), float(round(mx[i], 4)), int(n[i]) - nb, nb))
     con.executemany("INSERT INTO daily VALUES(?,?,?,?,?,?,?)", rows)
     flat = w.answer["flatline"]["signal"]

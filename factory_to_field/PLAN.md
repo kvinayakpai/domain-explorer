@@ -19,8 +19,8 @@ Status key: [x] done, [~] partly, [ ] not started, [!] blocked on the owner (see
 - [x] 1.1 Seed sweep harness: `eval/seeds.py` builds a fresh world per seed, resolves, scores links, runs the gold cases. Seed 42 is dev, all others held out.
 - [x] 1.2 First sweep found the answer key was partly typed in (DIFA count 5, oil rate 640, notification number 300001480). Key is now computed from the generated world.
 - [x] 1.3 `tests/test_heldout_seeds.py` (floor: link recall 0.995, precision 0.99, all ten gold cases); CI runs seeds 1 2 3 via FTF_SEEDS.
-- [ ] 1.4 Remove generator-noise hard-coding from the resolver (it was tuned to seed 42 noise rates). Report recall per seed; gate on the minimum, not seed 42.
-- [ ] 1.5 Held-out world: a second generator config (different names, tag patterns, ID formats, noise rates) that no code was tuned on. Score once, report as is.
+- [x] 1.4 Checked the resolver (`kg/pipeline.py`): no seed-specific constants, only per-method confidences. Its real coupling is to the generator's noise *types* (serial edit distance 1, blank serial, legacy codes, tag grammar), which 1.5 must vary. Noise rates are now a preset (`world/spec.py NOISE`, `--noise base|dirty`); dirty is 3x. Result: seed 1 dirty recall 0.9977, precision 1.0, gold 10/10, so rate is not the weak spot.
+- [ ] 1.5 Held-out world (new noise TYPES, not rates; rates done in 1.4): a second generator config (different names, tag patterns, ID formats, noise rates) that no code was tuned on. Score once, report as is.
 - [ ] 1.6 Independent grading: gold checks compare to a key built by a separate code path (SQL over the rendered files) rather than the generator's in-memory variables.
 - [ ] 1.7 Confidence intervals: with N seeds, report mean and worst case, not one number.
 - [ ] 1.8 More cases: at least 30 gold cases (5 per playbook family) and 15 adversarial, generated from templates across seeds.
@@ -61,5 +61,7 @@ Status key: [x] done, [~] partly, [ ] not started, [!] blocked on the owner (see
 - 2026-11-07: Seed sweep before the fix: links recall 0.998-0.9995, precision 1.0 on all seeds, but the agent passed 8/10 gold cases on seeds 1-3 (10/10 on seed 42). Causes: answer key held typed-in constants (DIFA count, oil rate, notification number). Fixed in the key and playbook; after the fixes (key computed, DIFA count filtered to the as-of date, CASE-3005 well chosen from the key, injection note number from the world) seeds 42 and 1-7 all score 10/10; link recall 0.9983-0.9998, precision 1.0.
 
 ## Session log
+
+- 2026-11-07 (session 1, cont.): 1.4 done, noise presets added, `--noise dirty` works in the sweep. Next: 1.5 new noise types (e.g. serial transpositions, OCR confusions O/0 and I/1, swapped position tags, free-text-only mentions), then 1.6.
 
 - 2026-11-07 (session 1 of this plan): added `eval/seeds.py`, made key values computed, wrote this file, ticked 1.1-1.3. Next: 1.4 (resolver tuned to seed 42 noise: recall is 0.998+ on every seed so the tuning looks mild, confirm by reading kg/pipeline.py for constants), then 1.5 held-out world config.

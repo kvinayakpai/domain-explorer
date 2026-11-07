@@ -23,13 +23,13 @@ OUT = Path(__file__).resolve().parents[1] / "build" / "eval"
 DEV_SEED = 42
 
 
-def run_seed(seed: int, agent: bool = True) -> dict:
+def run_seed(seed: int, agent: bool = True, noise: str = "base") -> dict:
     t0 = time.time()
-    r: dict = {"seed": seed, "dev": seed == DEV_SEED}
+    r: dict = {"seed": seed, "noise": noise, "dev": seed == DEV_SEED and noise == "base"}
     with tempfile.TemporaryDirectory() as td:
         wd = Path(td) / "world"
         try:
-            build(wd, seed)
+            build(wd, seed, noise)
         except Exception as e:  # a world that cannot be built is a result, not a crash
             r["error"] = f"world: {type(e).__name__}: {e}"
             return r
@@ -58,15 +58,16 @@ def run_seed(seed: int, agent: bool = True) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--seeds", type=int, nargs="*", default=[DEV_SEED, 1, 2, 3, 4])
+    ap.add_argument("--noise", default="base", help="base or dirty")
     ap.add_argument("--skip-agent", action="store_true")
     ap.add_argument("--out", type=Path, default=OUT / "seed-sweep.json")
     a = ap.parse_args()
     rows = []
     for s in a.seeds:
-        r = run_seed(s, not a.skip_agent)
+        r = run_seed(s, not a.skip_agent, a.noise)
         rows.append(r)
         l = r.get("links", {}); g = r.get("agent", {})
-        print(f"seed {s:>4}{' (dev)' if r['dev'] else '      '} "
+        print(f"{a.noise} seed {s:>4}{' (dev)' if r['dev'] else '      '} "
               + (f"links recall {l.get('recall')} precision {l.get('precision')}" if l else r.get("error", ""))
               + (f" | agent {g.get('cases_ok')}/{g.get('cases_total')}" if "cases_ok" in g else (f" | agent {g.get('error')}" if g else "")), flush=True)
         for c, why in g.get("failed", {}).items():
