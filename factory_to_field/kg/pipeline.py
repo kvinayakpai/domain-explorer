@@ -65,6 +65,7 @@ class Result:
     links: list[Link] = field(default_factory=list)
     review: list[dict] = field(default_factory=list)
     stats: dict = field(default_factory=dict)
+    dismissed: list[str] = field(default_factory=list)
 
 
 def _rows(con: sqlite3.Connection, sql: str, *a) -> list[sqlite3.Row]:
@@ -78,7 +79,8 @@ class Pipeline:
         self.b = Builder()
         self.links: list[Link] = []
         self.review: list[dict] = []
-        self.decisions = decisions or {}  # "system|table|key" -> canon, from the review queue
+        self.dismissed: list[str] = []
+        self.decisions = decisions or {}  # "system|table|key" -> canon (None = dismissed), from the review queue
         self.pos_by_tag: dict[str, str] = {}
         self.pos_by_floc: dict[str, str] = {}
         self.unit_by_equnr: dict[int, str] = {}
@@ -90,6 +92,9 @@ class Pipeline:
     def link(self, system: str, table: str, key: str, canon: str, method: str, conf: float, evidence: str, obj=None) -> bool:
         k = f"{system}|{table}|{key}"
         if k in self.decisions:
+            if self.decisions[k] is None:    # a reviewer dismissed it (e.g. a retired tag): no link, and not queued again
+                self.dismissed.append(k)
+                return False
             canon, method, conf, evidence = self.decisions[k], "human", 1.0, "confirmed in review queue"
         if conf < AUTO_ACCEPT:
             self.review.append({"id": k, "system": system, "table": table, "key": key, "candidate": canon, "method": method,
@@ -253,9 +258,12 @@ class Pipeline:
                 pool = [s for s in children.get(par_unit[5:], []) if builds[s]["model"] == r["typbz"] and s not in matched_mes]
             if len(pool) == 1:
                 settle(eq, pool[0], "fuzzy", 0.93, "blank serial; the only component of that model in the parent assembly", "")
+            elif f"SAP-PM|EQUI|{eq}" in self.decisions and self.decisions[f"SAP-PM|EQUI|{eq}"]:
+                settle(eq, self.decisions[f"SAP-PM|EQUI|{eq}"].removeprefix("unit:"), "human", 1.0, "confirmed in review queue", "")
             else:
-                self.review.append({"id": f"SAP-PM|EQUI|{eq}", "system": "SAP-PM", "table": "EQUI", "key": str(eq), "candidate": None,
-                                    "method": "fuzzy", "confidence": 0.0, "evidence": f"blank serial; {len(pool)} candidates", "status": "open"})
+                if f"SAP-PM|EQUI|{eq}" not in self.decisions:     # dismissed items are recorded by link() via settle()
+                    self.review.append({"id": f"SAP-PM|EQUI|{eq}", "system": "SAP-PM", "table": "EQUI", "key": str(eq), "candidate": None,
+                                        "method": "fuzzy", "confidence": 0.0, "evidence": f"blank serial; {len(pool)} candidates", "status": "open"})
                 settle(eq, None, "exact_key", 1.0, "", "")
         # --- build every unit node (CMMS side, then maker-only units)
         kind_of = {"PM": "pump", "IN": "intake", "MT": "motor", "CB": "cable"}
@@ -430,6 +438,10 @@ class Pipeline:
                 for t in targets:
                     if self.link("PI", "tags", name, t, method, conf, ev, obj=iri(sc_)):
                         self.b.set(u, "measures_position", iri(t))
+            elif f"PI|tags|{name}" in self.decisions:      # a data steward decided it in the review queue
+                decided = self.decisions[f"PI|tags|{name}"]
+                if self.link("PI", "tags", name, decided or "", "human", 1.0, "confirmed in review queue", obj=iri(sc_)) and decided:
+                    self.b.set(u, "measures_position", iri(decided))
             else:
                 self.review.append({"id": f"PI|tags|{name}", "system": "PI", "table": "tags", "key": name, "candidate": None, "method": "fuzzy",
                                     "confidence": 0.0, "evidence": "no tag grammar, asset path or descriptor matched", "status": "open"})
@@ -549,7 +561,7 @@ class Pipeline:
         self.events()
         self.reliability()
         self.kpis()
-        res = Result(self.b, self.links, self.review)
+        res = Result(self.b, self.links, self.review, dismissed=list(self.dismissed))
         res.stats = {"triples": len(self.b.g), "nodes": len(self.b.nodes), "links": len(self.links), "review_open": len(self.review),
                      "failures": self.n_failures, "signals": self.signal_count}
         return res
