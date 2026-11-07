@@ -62,6 +62,7 @@ for t in glossary:
     for s in t.get("related_subdomains") or []:
         gloss_by_sub.setdefault(s, []).append(t["name"])
 
+demos = {k: v for k, v in json.loads((D / "demos.json").read_text(encoding="utf-8")).items() if not k.startswith("_")}
 subs = []
 for p in sorted((D / "taxonomy").glob("*.yaml")):
     d = yaml.safe_load(p.read_text(encoding="utf-8"))
@@ -103,6 +104,7 @@ for p in sorted((D / "taxonomy").glob("*.yaml")):
         "cites": av.get("citations") or [],
         "dq": dq_count.get(d["id"], 0), "dqRun": last["by_subdomain"].get(d["id"]),
         "deep": bool(d.get("decisions") or d.get("ingestionChallenges")),
+        "demo": demos.get(d["id"]),
     })
 
 commit = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()

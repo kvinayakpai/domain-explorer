@@ -1,36 +1,299 @@
 id: refinery_operations
 name: Refinery Operations
 vertical: Energy
-oneLiner: Crude scheduling, blending, unit yields, and turnaround planning across downstream refining.
+oneLiner: Crude processing, unit yields and turnarounds, and the rotating equipment that keeps the units running, traced from a pump's alarm to the bearing lot it was built with.
+
+# Deep tier since Nov 2026. The synthetic data is exported from the Factory to Field world
+# (factory_to_field/world): three refineries with 92 API 610 pump positions, their SAP PM
+# history, PI historian signals and the pump maker's build genealogy. Generator:
+# synthetic-data/refinery_operations/generate.py. Working demo of the same plant (agents over
+# an ontology and knowledge graph): https://kvinayakpai.github.io/domain-explorer/factory-to-field/
+#
+# Sources used for the model:
+#   ISO 14224:2016 Petroleum, petrochemical and natural gas industries — collection and exchange
+#     of reliability and maintenance data for equipment, https://www.iso.org/standard/64076.html
+#   API 610 Centrifugal Pumps for Petroleum, Petrochemical and Natural Gas Industries (12th ed.)
+#   ISO 20816-3 Mechanical vibration — industrial machines (evaluation zones)
+#   ISA-95 / IEC 62264 (functional location hierarchy), ISA-18.2 (alarm management)
+#   SAP S/4HANA Asset Management: functional location, equipment, installation history,
+#     maintenance notification (M1/M2) and order (PM01/PM02/PM03) objects
 
 personas:
   - { name: VP Refining, title: VP Refining Operations, level: VP }
+  - { name: Unit Operations Manager, title: "Operations Manager, Crude and Vacuum Units", level: Manager }
+  - { name: Console Operator, title: "Board Operator, Crude Unit", level: IC }
+  - { name: Reliability Engineer, title: "Senior Reliability Engineer, Rotating Equipment", level: IC }
+  - { name: Maintenance Planner, title: Maintenance Planner/Scheduler, level: IC }
   - { name: Process Engineer, title: Senior Process Engineer, level: Manager }
+  - { name: Turnaround Manager, title: Turnaround and Shutdown Manager, level: Manager }
   - { name: Blending Coordinator, title: Product Blending Coordinator, level: Manager }
+  - { name: OT/IT Integration Engineer, title: OT Data and Integration Engineer, level: IC }
+
+decisions:
+  - { id: ref.d.switch_to_spare, statement: "Switch to the installed spare (the B pump) now, or keep the running pump under watch until the next maintenance window?" }
+  - { id: ref.d.repair_window, statement: "Repair the pump in the next planned window, or take an unplanned outage before it fails?" }
+  - { id: ref.d.real_or_instrument, statement: "Is this alarm a real change in the machine, or an instrument fault such as a stuck or drifting sensor?" }
+  - { id: ref.d.containment, statement: "Which other pumps carry the same suspect component lot, and do they need inspection, spares or replacement?" }
+  - { id: ref.d.warranty_claim, statement: "Is this failure the maker's responsibility, and what evidence goes into the warranty claim?" }
+  - { id: ref.d.bad_actor_fix, statement: "For a bad-actor position, redesign (seal plan, bearing, operating point) or keep replacing like for like?" }
+  - { id: ref.d.turnaround_scope, statement: "What goes into the next turnaround scope, and what can safely run to the following one?" }
+  - { id: ref.d.crude_slate, statement: "Which crude slate and unit targets maximise margin within equipment and product limits?" }
 
 kpis:
-  - { id: ref.kpi.utilization, name: Refinery Utilization, formula: throughput / nameplate, unit: "%", direction: higher_is_better }
-  - { id: ref.kpi.distillate_yield, name: Distillate Yield, formula: distillate_bbl / crude_bbl, unit: "%", direction: higher_is_better }
-  - { id: ref.kpi.energy_intensity, name: Energy Intensity Index, formula: actual_energy / standard_energy, unit: index, direction: lower_is_better }
-  - { id: ref.kpi.giveaway, name: Blend Giveaway, formula: avg(spec_giveaway_pct), unit: "%", direction: lower_is_better }
-  - { id: ref.kpi.turnaround_overrun, name: Turnaround Schedule Overrun, formula: actual_days - planned_days, unit: days, direction: lower_is_better }
+  - { id: ref.kpi.utilization, name: Refinery Utilization, formula: throughput / nameplate, unit: "%", direction: higher_is_better, decisionsSupported: [ref.d.crude_slate] }
+  - { id: ref.kpi.distillate_yield, name: Distillate Yield, formula: distillate_bbl / crude_bbl, unit: "%", direction: higher_is_better, decisionsSupported: [ref.d.crude_slate] }
+  - { id: ref.kpi.energy_intensity, name: Energy Intensity Index, formula: actual_energy / standard_energy, unit: index, direction: lower_is_better, decisionsSupported: [ref.d.crude_slate] }
+  - { id: ref.kpi.giveaway, name: Blend Giveaway, formula: avg(spec_giveaway_pct), unit: "%", direction: lower_is_better, decisionsSupported: [ref.d.crude_slate] }
+  - { id: ref.kpi.turnaround_overrun, name: Turnaround Schedule Overrun, formula: actual_days - planned_days, unit: days, direction: lower_is_better, decisionsSupported: [ref.d.turnaround_scope] }
+  - id: ref.kpi.pump_mtbf
+    name: Pump MTBF (installed time per failure)
+    formula: sum(days each unit was installed in the period) / count(failures in the period)
+    unit: days
+    direction: higher_is_better
+    decisionsSupported: [ref.d.bad_actor_fix, ref.d.containment]
+  - id: ref.kpi.failures_per_pump_year
+    name: Failures per Pump-Year
+    formula: count(failures) / (sum(installed_days) / 365)
+    unit: failures/pump-year
+    direction: lower_is_better
+    decisionsSupported: [ref.d.bad_actor_fix, ref.d.turnaround_scope]
+  - id: ref.kpi.mechanical_availability
+    name: Mechanical Availability (pumps)
+    formula: 1 - sum(repair_days) / sum(position_days)
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [ref.d.repair_window, ref.d.switch_to_spare]
+  - id: ref.kpi.bad_actor_count
+    name: Bad-Actor Positions
+    formula: count(positions with >= 2 failures in the last 365 days)
+    unit: positions
+    direction: lower_is_better
+    decisionsSupported: [ref.d.bad_actor_fix]
+  - id: ref.kpi.lot_failure_ratio
+    name: Suspect-Lot Failure Ratio
+    formula: failures per pump-year for units built with the lot / failures per pump-year for the fleet
+    unit: ratio
+    direction: lower_is_better
+    decisionsSupported: [ref.d.containment, ref.d.warranty_claim]
+  - id: ref.kpi.reactive_work_share
+    name: Reactive Work Share
+    formula: corrective orders / all maintenance orders
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [ref.d.repair_window, ref.d.turnaround_scope]
+  - id: ref.kpi.time_in_alarm
+    name: Vibration Days Above Alarm
+    formula: count(pump-days where daily max vibration > alarm limit)
+    unit: pump-days
+    direction: lower_is_better
+    decisionsSupported: [ref.d.real_or_instrument, ref.d.switch_to_spare]
 
 dataModel:
   entities:
-    - { name: Unit, description: 'Process unit' }
-    - { name: Stream, description: 'Hydrocarbon stream' }
-    - { name: Yield, description: 'Yield record' }
-    - { name: LabSample, description: 'Lab sample analysis' }
-    - { name: ShutdownEvent, description: 'Planned/unplanned shutdown' }
+    - name: site
+      description: A refinery. Owns functional locations and historian tags.
+      keys: [site_id]
+      attributes:
+        - { name: site_id, type: varchar(16), isPrimaryKey: true }
+        - { name: site_name, type: varchar(64) }
+        - { name: operator_id, type: varchar(32) }
+        - { name: time_zone, type: varchar(32) }
+    - name: functional_location
+      description: A position in the plant, such as pump 10-P-101A on the crude unit. Positions stay; the physical pumps installed in them come and go (ISA-95, SAP PM functional location).
+      keys: [functional_location_id]
+      attributes:
+        - { name: functional_location_id, type: varchar(32), isPrimaryKey: true }
+        - { name: floc_code, type: varchar(40), description: "SAP PM functional location code, e.g. CDU1-10-P-101A" }
+        - { name: tag, type: varchar(24), description: "P&ID tag, e.g. 10-P-101A" }
+        - { name: site_id, type: varchar(16), isForeignKey: true, references: site.site_id }
+        - { name: area, type: varchar(8) }
+        - { name: process_unit, type: varchar(16) }
+        - { name: service, type: varchar(48) }
+        - { name: api_610_type, type: varchar(8), description: "API 610 pump type, e.g. OH2, BB2" }
+        - { name: model_required, type: varchar(24) }
+        - { name: rated_flow_m3h, type: "decimal(8,1)" }
+        - { name: train_letter, type: char(1), description: "A runs, B is the installed spare" }
+        - { name: spare_of, type: varchar(32) }
+        - { name: pid_drawing, type: varchar(24) }
+        - { name: pid_revision, type: varchar(4) }
+    - name: equipment
+      description: A physical pump identified by the maker's serial. It can move between positions, go to the workshop and come back.
+      keys: [equipment_id]
+      attributes:
+        - { name: equipment_id, type: varchar(24), isPrimaryKey: true, description: "Maker's serial number" }
+        - { name: equipment_kind, type: varchar(16) }
+        - { name: model, type: varchar(24) }
+        - { name: maker_id, type: varchar(24) }
+        - { name: customer_id, type: varchar(24) }
+        - { name: built_on, type: date }
+        - { name: shipped_on, type: date }
+    - name: installation
+      description: Dated installation of one pump in one position. The join that answers 'which unit was in P-101A on 8 March?'.
+      keys: [installation_id]
+      attributes:
+        - { name: installation_id, type: varchar(16), isPrimaryKey: true }
+        - { name: functional_location_id, type: varchar(32), isForeignKey: true, references: functional_location.functional_location_id }
+        - { name: equipment_id, type: varchar(24), isForeignKey: true, references: equipment.equipment_id }
+        - { name: installed_from, type: date }
+        - { name: installed_to, type: date, description: "Null while installed" }
+    - name: failure_event
+      description: Functional failure of a pump in a position, coded with the ISO 14224 failure mode (VIB, ELP, FTS, ...).
+      keys: [failure_event_id]
+      attributes:
+        - { name: failure_event_id, type: varchar(16), isPrimaryKey: true }
+        - { name: functional_location_id, type: varchar(32), isForeignKey: true, references: functional_location.functional_location_id }
+        - { name: equipment_id, type: varchar(24), isForeignKey: true, references: equipment.equipment_id }
+        - { name: installation_id, type: varchar(16), isForeignKey: true, references: installation.installation_id }
+        - { name: failed_on, type: date }
+        - { name: iso14224_failure_mode, type: varchar(4), description: "ISO 14224 Table B.6 failure mode code" }
+        - { name: description, type: varchar(160) }
+        - { name: repair_days, type: integer }
+        - { name: unit_swapped, type: boolean }
+    - name: notification
+      description: SAP PM maintenance notification (M1 request, M2 malfunction). Free text from the field lives here, and is treated as data, never as instructions.
+      keys: [notification_id]
+      attributes:
+        - { name: notification_id, type: varchar(16), isPrimaryKey: true }
+        - { name: notification_type, type: varchar(4) }
+        - { name: priority, type: smallint }
+        - { name: status, type: varchar(12) }
+        - { name: reported_on, type: date }
+        - { name: functional_location_id, type: varchar(32), isForeignKey: true, references: functional_location.functional_location_id }
+        - { name: equipment_id, type: varchar(24), isForeignKey: true, references: equipment.equipment_id }
+        - { name: short_text, type: varchar(160) }
+        - { name: iso14224_failure_mode, type: varchar(4) }
+        - { name: failure_event_id, type: varchar(16), isForeignKey: true, references: failure_event.failure_event_id }
+    - name: work_order
+      description: SAP PM maintenance order (PM01 preventive, PM02 corrective, PM03 inspection) raised from a notification.
+      keys: [work_order_id]
+      attributes:
+        - { name: work_order_id, type: varchar(16), isPrimaryKey: true }
+        - { name: order_type, type: varchar(4) }
+        - { name: notification_id, type: varchar(16), isForeignKey: true, references: notification.notification_id }
+        - { name: functional_location_id, type: varchar(32), isForeignKey: true, references: functional_location.functional_location_id }
+        - { name: equipment_id, type: varchar(24), isForeignKey: true, references: equipment.equipment_id }
+        - { name: basic_start, type: date }
+        - { name: basic_finish, type: date }
+        - { name: short_text, type: varchar(160) }
+    - name: signal
+      description: A historian tag (PI) on a position, e.g. drive-end bearing vibration in mm/s with its alarm limit.
+      keys: [signal_id]
+      attributes:
+        - { name: signal_id, type: varchar(48), isPrimaryKey: true }
+        - { name: tag, type: varchar(32) }
+        - { name: site_id, type: varchar(16), isForeignKey: true, references: site.site_id }
+        - { name: functional_location_id, type: varchar(32), isForeignKey: true, references: functional_location.functional_location_id }
+        - { name: quantity, type: varchar(24) }
+        - { name: eng_unit, type: varchar(12) }
+        - { name: alarm_high, type: "decimal(10,3)" }
+        - { name: source_system, type: varchar(12) }
+        - { name: sample_seconds, type: integer }
+        - { name: description, type: varchar(64) }
+    - name: signal_daily
+      description: Daily aggregates of each historian tag (mean, min, max, sample count). The high-volume fact.
+      keys: [signal_id, day]
+      attributes:
+        - { name: signal_id, type: varchar(48), isPrimaryKey: true, isForeignKey: true, references: signal.signal_id }
+        - { name: day, type: date, isPrimaryKey: true }
+        - { name: mean_value, type: "decimal(12,4)" }
+        - { name: min_value, type: "decimal(12,4)" }
+        - { name: max_value, type: "decimal(12,4)" }
+        - { name: sample_count, type: integer }
+    - name: material_lot
+      description: A received lot of a component (bearing set, seal) at the pump maker, with the engineering change that introduced it.
+      keys: [lot_id]
+      attributes:
+        - { name: lot_id, type: varchar(16), isPrimaryKey: true }
+        - { name: material, type: varchar(32) }
+        - { name: supplier_id, type: varchar(24) }
+        - { name: received_on, type: date }
+        - { name: quantity, type: integer }
+        - { name: engineering_change_id, type: varchar(16), isForeignKey: true, references: engineering_change.engineering_change_id }
+        - { name: purchase_order, type: varchar(20) }
+    - name: engineering_change
+      description: Engineering change order at the maker; an expedited route can waive the qualification test.
+      keys: [engineering_change_id]
+      attributes:
+        - { name: engineering_change_id, type: varchar(16), isPrimaryKey: true }
+        - { name: title, type: varchar(80) }
+        - { name: part, type: varchar(32) }
+        - { name: approval_route, type: varchar(12), description: "standard | expedited" }
+        - { name: qualification_waived, type: boolean }
+        - { name: approved_on, type: date }
+        - { name: status, type: varchar(12) }
+        - { name: supplier_from, type: varchar(24) }
+        - { name: supplier_to, type: varchar(24) }
+    - name: component_genealogy
+      description: Which component lots went into which pump serial (as-built record from the maker's MES).
+      keys: [equipment_id, component_kind]
+      attributes:
+        - { name: equipment_id, type: varchar(24), isPrimaryKey: true, isForeignKey: true, references: equipment.equipment_id }
+        - { name: component_kind, type: varchar(24), isPrimaryKey: true }
+        - { name: lot_id, type: varchar(16), isForeignKey: true, references: material_lot.lot_id }
+    - { name: Stream, description: "Hydrocarbon stream between units (process side; not in the synthetic data yet)" }
+    - { name: Yield, description: "Unit yield record (process side; not in the synthetic data yet)" }
+    - { name: LabSample, description: "Lab sample analysis (process side; not in the synthetic data yet)" }
+    - { name: ShutdownEvent, description: "Planned or unplanned unit shutdown (process side; not in the synthetic data yet)" }
+  relationships:
+    - { from: functional_location, to: site, kind: many_to_one }
+    - { from: installation, to: functional_location, kind: many_to_one }
+    - { from: installation, to: equipment, kind: many_to_one }
+    - { from: failure_event, to: installation, kind: many_to_one }
+    - { from: notification, to: failure_event, kind: many_to_one }
+    - { from: work_order, to: notification, kind: many_to_one }
+    - { from: signal, to: functional_location, kind: many_to_one }
+    - { from: signal_daily, to: signal, kind: many_to_one }
+    - { from: component_genealogy, to: equipment, kind: many_to_one }
+    - { from: component_genealogy, to: material_lot, kind: many_to_one }
+    - { from: material_lot, to: engineering_change, kind: many_to_one }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/refinery_operations_3nf.sql
+  vault: modeling/ddl/refinery_operations_vault.sql
+  dimensional: modeling/ddl/refinery_operations_dim.sql
 
 sourceSystems:
-  - { vendor: Aspen Technology, product: aspenONE, category: Process Optimisation }
+  - { vendor: SAP, product: S/4HANA Asset Management (PM), category: EAM/CMMS }
+  - { vendor: AVEVA, product: PI System, category: Historian }
   - { vendor: Honeywell, product: Experion PKS, category: DCS }
   - { vendor: Yokogawa, product: CENTUM VP, category: DCS }
-  - { vendor: AVEVA, product: PI System, category: Historian }
   - { vendor: Emerson, product: DeltaV, category: DCS }
+  - { vendor: Baker Hughes, product: Bently Nevada System 1, category: Condition Monitoring }
+  - { vendor: Aspen Technology, product: aspenONE, category: Process Optimisation }
+  - { vendor: GE Vernova, product: APM, category: APM Platform }
+  - { vendor: Cognite, product: Cognite Data Fusion, category: Industrial DataOps }
 
 connectors:
   - { type: OPC UA, protocol: TCP, auth: x509 }
   - { type: PI Web API, protocol: HTTPS, auth: Kerberos }
+  - { type: SAP OData (maintenance notification and order APIs), protocol: HTTPS, auth: OAuth2 / X.509 }
+  - { type: Sparkplug B, protocol: MQTT, auth: TLS + cred }
   - { type: Modbus TCP, protocol: TCP, auth: VPN }
+  - { type: Cognite Data Fusion API, protocol: HTTPS JSON, auth: OAuth2 client credentials }
+
+ingestionChallenges:
+  - Position versus unit — SAP PM keeps history on the functional location while the pump's own history follows its serial through the workshop; joining failures to the wrong one hides a bad unit or a bad position.
+  - Historian tags are renamed and retired; a tag such as 10P101A.VIB_DE has to be mapped to its position and to the pump installed on each day.
+  - A stuck or flat-lining sensor reads 'normal' and passes every threshold check; it needs its own detection.
+  - Failure codes arrive as free text, local codes and ISO 14224 codes in the same notification table.
+
+integrationChallenges:
+  - name: The maker's records sit outside the refinery
+    description: The bearing lot, the engineering change and the waived qualification test are in the pump maker's MES, PLM and QMS. Only the serial number joins the refinery's history to them.
+  - name: Agents must never write to control systems
+    description: Read OT data from a Level 3.5 replica, raise drafts in SAP PM for named people to approve, and turn any set-point request into an operator request.
+
+standards:
+  - { id: iso_14224, name: "ISO 14224 Reliability and maintenance data", version: "2016", url: "https://www.iso.org/standard/64076.html" }
+  - { id: api_610, name: "API 610 Centrifugal Pumps for Petroleum, Petrochemical and Natural Gas Industries", version: "12th edition" }
+  - { id: iso_20816_3, name: "ISO 20816-3 Mechanical vibration — industrial machines", version: "2022" }
+  - { id: isa_95, name: "ISA-95 (IEC 62264) Enterprise-Control System Integration", url: "https://www.isa.org/standards-and-publications/isa-standards/isa-standards-committees/isa95" }
+  - { id: isa_18_2, name: "ISA-18.2 Management of Alarm Systems for the Process Industries" }
+  - { id: dexpi, name: "DEXPI P&ID exchange", url: "https://dexpi.org/" }
+
+glossaryTerms:
+  - MTBF
+  - Condition-Based Maintenance (CBM)
+  - Historian
+  - Functional Location
+  - ISO 14224 Failure Mode

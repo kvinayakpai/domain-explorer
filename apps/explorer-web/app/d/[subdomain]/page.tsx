@@ -7,6 +7,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
+import { demoFor } from "@/lib/demos";
 
 export function generateStaticParams() {
   return registry().subdomains.map((s) => ({ subdomain: s.id }));
@@ -32,6 +33,7 @@ export default async function SubdomainPage({ params }: { params: { subdomain: s
   if (!s) notFound();
   const vert = VERTICALS.find((v) => v.slug === s.vertical);
   const snapshot = await getSnapshot(s.id);
+  const demo = demoFor(s.id);
   return (
     <div className="space-y-8">
       <Breadcrumb
@@ -46,6 +48,22 @@ export default async function SubdomainPage({ params }: { params: { subdomain: s
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{s.name}</h1>
         <p className="max-w-3xl text-muted-foreground">{s.oneLiner}</p>
       </header>
+
+      {demo ? (
+        <Card>
+          <CardHeader>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Working demo</p>
+            <CardTitle className="text-lg">
+              <a href={demo.url} className="underline underline-offset-4 hover:text-primary">
+                {demo.title}
+              </a>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">{demo.blurb}</p>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {snapshot && snapshot.length > 0 ? (
         <Section title="Live data snapshot">

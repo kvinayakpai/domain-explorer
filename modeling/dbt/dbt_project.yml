@@ -19,6 +19,18 @@ clean-targets:
 models:
   domain_explorer:
     +schema: dbt
+    refinery_operations:
+      staging:
+        +materialized: view
+      intermediate:
+        +materialized: view
+      marts:
+        +materialized: table
+    upstream_artificial_lift:
+      staging:
+        +materialized: view
+      marts:
+        +materialized: table
     payments:
       staging:
         +materialized: view
@@ -227,3 +239,7 @@ models:
         +materialized: ephemeral
       marts:
         +materialized: table
+
+vars:
+  # As-of date of the Factory to Field world that the oil and gas subdomains export.
+  ftf_as_of: '2026-10-17'

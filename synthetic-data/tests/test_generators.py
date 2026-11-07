@@ -27,7 +27,7 @@ SUBDOMAINS = [
     "pharmacovigilance",
 ]
 
-FAST_SUBDOMAINS = ["mes_quality", "pharmacovigilance"]
+FAST_SUBDOMAINS = ["mes_quality", "pharmacovigilance", "refinery_operations", "upstream_artificial_lift"]
 
 
 def _load_generator(name: str):
@@ -147,3 +147,32 @@ def test_pharmacovigilance_has_required_tables():
     assert len(t) >= 5
     for n, df in t.items():
         assert len(df) >= 1, f"pharmacovigilance.{n} is empty"
+
+
+def test_refinery_operations_failures_join_installations():
+    """Every failure belongs to the pump installed in that position on that day."""
+    t = _load_generator("refinery_operations").generate(seed=42)
+    inst = t["installation"].set_index("installation_id")
+    f = t["failure_event"]
+    assert f["installation_id"].notna().all()
+    joined = inst.loc[f["installation_id"]]
+    assert (joined["equipment_id"].to_numpy() == f["equipment_id"].to_numpy()).all()
+    assert (joined["functional_location_id"].to_numpy() == f["functional_location_id"].to_numpy()).all()
+    assert set(t["installation"]["equipment_id"]).issubset(set(t["equipment"]["equipment_id"]))
+    assert set(t["component_genealogy"]["lot_id"]).issubset(set(t["material_lot"]["lot_id"]))
+
+
+def test_upstream_run_life_matches_the_factory_to_field_story():
+    """Kaplan-Meier medians from the exported runs equal the world's answer key: 780 and 290 days."""
+    import importlib
+
+    t = _load_generator("upstream_artificial_lift").generate(seed=42)
+    km = importlib.import_module("factory_to_field.analytics").km_median
+    runs = t["esp_run"]
+    new = runs[runs["seal_built_since_aug_2025"]]
+    old = runs[~runs["seal_built_since_aug_2025"]]
+    assert (len(new), int((~new["censored"]).sum()), int(new["censored"].sum())) == (12, 7, 5)
+    assert km(list(zip(new["run_days"], ~new["censored"], strict=True))) == 290.0
+    assert km(list(zip(old["run_days"], ~old["censored"], strict=True))) == 780.0
+    assert set(runs["well_id"]).issubset(set(t["well"]["well_id"]))
+

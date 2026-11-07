@@ -72,6 +72,8 @@ SUBDOMAINS = [
     "sop_supply_chain_planning",
     "predictive_maintenance",
     "procurement_spend_analytics",
+    "refinery_operations",
+    "upstream_artificial_lift",
 ]
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
