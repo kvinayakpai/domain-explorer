@@ -76,3 +76,53 @@ What stays open for G5 itself: real endpoints and credentials, the company's ide
 | `ui/` | case viewer (template + built page) |
 | `pilot/` | identity provider, audit log, approvals, review workflow, UNS replay, connector config |
 | `tests/` | world, KG, agents, simulators, pilot |
+
+## Mock source systems
+
+Every source system the oil and gas and plant subdomains name now has a mock, so a connector can be built and tested without a real installation (`sim/vendors.py`; `GET /v/` lists them; the original simulators in `sim/server.py` cover PI Web API, the OPC UA gateway, SAP PM (which is also what PM/EAM means), OSDU, the pump maker's PLM/MES/QMS and production planning). Each mock answers in its product's naming and response shape, but from the same simulated plant, so one fact (the 16 October alarm on P-101A, the outer-race defect line, a work order, a seal lot) can be found through several systems under different identifiers. They are interpretations of each product's API, not vendor-certified, and read-only. The health scores and alerts of the vibration and APM mocks are simple rules over the world's vibration data, not a vendor's model.
+
+| Mock (`/v/<slug>/`) | Product | Vendor | Family | Serves |
+|---|---|---|---|---|
+| `proficy_historian` | Proficy Historian / Plant Applications | Proficy (GE Vernova, sold to TPG 2 Mar 2026) | historian | plant historian points |
+| `aspenone` | aspenONE | Aspen Technology | historian | IP.21 tags |
+| `aws_sitewise` | SiteWise | Amazon Web Services | historian | asset property aliases |
+| `insights_hub` | Insights Hub (formerly MindSphere) / Industrial Edge | Siemens | historian | asset aspects and time series |
+| `cognite` | Cognite Data Fusion | Cognite | historian | assets and time series |
+| `thingworx` | ThingWorx (IIoT Platform) | PTC | historian | things and property history |
+| `openenterprise` | OpenEnterprise SCADA | Emerson | historian | field SCADA points |
+| `pi_af` | PI System / PI Asset Framework | AVEVA | historian | AF elements and attributes |
+| `deltav` | DeltaV | Emerson | control | DCS modules |
+| `experion` | Experion PKS | Honeywell | control | DCS points |
+| `centum` | CENTUM VP | Yokogawa | control | DCS tags |
+| `controllogix` | ControlLogix PLC | Rockwell Automation | control | controller tags |
+| `s7` | SIMATIC S7 PLC | Siemens | control | data block addresses |
+| `wincc` | WinCC | Siemens | control | HMI tags |
+| `factorytalk` | FactoryTalk | Rockwell | control | FactoryTalk View tags |
+| `maximo` | Maximo | IBM | eam | work orders, assets, service requests |
+| `maximo_eam` | Maximo EAM | IBM | eam | work orders, assets, service requests |
+| `eam` | EAM | Infor | eam | work orders, equipment, requests |
+| `system1` | Bently Nevada System 1 | Baker Hughes | cm | vibration measurements and alerts |
+| `skf_observer` | SKF @ptitude Observer | SKF | cm | vibration measurements and alerts |
+| `ams` | AMS Machine Works | Emerson | cm | vibration measurements and alerts |
+| `senseye` | Senseye Predictive Maintenance | Siemens | cm | vibration measurements and alerts |
+| `augury` | Augury Machine Health | Augury | cm | vibration measurements and alerts |
+| `ecostruxure` | EcoStruxure Asset Advisor | Schneider Electric | cm | vibration measurements and alerts |
+| `ft_analytics` | FactoryTalk Analytics for Devices | Rockwell Automation | cm | vibration measurements and alerts |
+| `apm` | APM | GE Vernova | apm | asset health and alerts |
+| `ge_apm` | APM (Meridium, SmartSignal) | GE Vernova | apm | asset health and alerts |
+| `maximo_apm` | Maximo APM | IBM | apm | asset health and alerts |
+| `mas_apm` | Maximo Application Suite — APM | IBM | apm | asset health and alerts |
+| `aspen_mtell` | Aspen Mtell | AspenTech | apm | asset health and alerts |
+| `uptake` | Uptake APM | Uptake | apm | asset health and alerts |
+| `asset_performance` | Asset Performance | AVEVA | apm | asset health and alerts |
+| `asset_intelligence_network` | Asset Intelligence Network | SAP | apm | asset health and alerts |
+| `assetwise` | AssetWise | Bentley | apm | asset health and alerts |
+| `industrial_ai` | Industrial AI Platform | Avathon (formerly SparkCognition) | apm | asset health and alerts |
+| `forge` | Forge for Industrial | Honeywell | apm | asset health and alerts |
+| `opcenter` | Opcenter Execution | Siemens | mom | work orders, lots, test results |
+| `ft_productioncentre` | FactoryTalk ProductionCentre | Rockwell Automation | mom | work orders, lots, test results |
+| `proficy_pa` | Proficy Plant Applications | Proficy (GE Vernova, sold to TPG 2 Mar 2026) | mom | work orders, lots, test results |
+| `digital_manufacturing` | Digital Manufacturing | SAP | mom | work orders, lots, test results |
+| `esp_difa` | ESP surveillance and DIFA records | Baker Hughes / SLB | esp | drive events and teardown reports |
+
+Run them with the other simulators: `python -m factory_to_field.sim.server --port 8765`, then for example `GET /v/maximo/oslc/os/mxwo?oslc.where=spi:status="COMP"` or `GET /v/cognite/history?tag=pi:10P101A.VIB_DE` with `Authorization: Bearer ro-agent`.

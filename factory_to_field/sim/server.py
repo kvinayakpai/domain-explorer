@@ -9,6 +9,7 @@
   /osdu/api/search/v2/query, /storage    OSDU search and storage (Well master data)
   /plm/api/..., /mes/api/..., /qms/api/...   the pump maker's PLM, MES and QMS
   /prod/api/...                          production planning (outage windows, rigs, allocation)
+  /v/<system>/...                        41 more mock source systems, one dialect per product (sim/vendors.py; GET /v/ lists them)
   /sim/health, /sim/writes               simulator housekeeping
 
 Credentials are bearer tokens. `ro-agent` can read everything and write nothing. Writes need the `release` token plus
@@ -39,6 +40,7 @@ from pathlib import Path
 from ..agents.core import DEFAULT_WORLD
 from ..agents.drafts import APPROVER_ROLES
 from ..agents.release import TARGETS
+from . import vendors
 
 TOKENS = {"ro-agent": "read", "release": "release", "ops-readonly": "read"}
 # the role a signed approver must hold to write to each target, from the draft kinds that write there
@@ -325,6 +327,8 @@ class Handler(BaseHTTPRequestHandler):
         st = self.state
         if p == "/sim/writes":
             return 200, {"writes": st.writes}
+        if p == "/v" or p.startswith("/v/"):  # mock sources for the other systems (sim/vendors.py)
+            return vendors.route(st, p, q)
         # PI Web API
         if p == "/piwebapi/points":
             return 200, pi_points(st, q)
