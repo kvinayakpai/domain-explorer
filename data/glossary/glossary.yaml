@@ -1583,7 +1583,7 @@ terms:
     steward: Plant Manager
   - name: Historian
     aliases: [Process Historian, Time-Series Historian]
-    definition: Specialized database optimized for high-rate process tag time-series — typically year-decades of retention with compression. OSIsoft PI (now Aveva PI System), GE Proficy Historian, Honeywell PHD are canonical.
+    definition: Specialized database optimized for high-rate process tag time-series — typically year-decades of retention with compression. OSIsoft PI (now AVEVA PI System), Proficy Historian, Honeywell PHD are canonical.
     related_subdomains: [predictive_maintenance, mes_quality]
     related_kpis: []
     steward: Reliability Engineer

@@ -27,7 +27,7 @@ sourceSystems:
   - { vendor: AVEVA, product: PI System, category: Historian }
   - { vendor: Rockwell, product: FactoryTalk, category: SCADA/MES }
   - { vendor: Siemens, product: WinCC, category: SCADA }
-  - { vendor: GE Digital, product: Proficy, category: Historian/MES }
+  - { vendor: Proficy, product: Proficy Historian / Plant Applications, category: Historian/MES }
   - { vendor: AWS, product: SiteWise, category: IIoT Cloud }
 
 connectors:

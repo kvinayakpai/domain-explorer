@@ -570,7 +570,7 @@ The verticals below match the `vertical:` field in the YAML files. Within each v
 - **One-liner:** ML-driven prediction of equipment failure using sensor telemetry and historical maintenance.
 - **Standards / sources:** ISO 13374 (condition monitoring) — paid; ISO 17359 (general guidelines) — paid; NASA C-MAPSS / Turbofan public dataset: https://www.nasa.gov/intelligent-systems-division/discovery-and-systems-health/pcoe/pcoe-data-set-repository/ ; AWS Lookout for Equipment data schema: https://docs.aws.amazon.com/lookout-for-equipment/ ; PTC ThingWorx Analytics docs.
 - **Concrete entities:** Asset, Sensor Channel, Telemetry Sample, Health Index, Anomaly, Remaining Useful Life Estimate, Failure Mode, Recommended Action, Maintenance Trigger, Model Version.
-- **Recommendation:** Build from NASA C-MAPSS + AWS Lookout + ISO 13374 narrative.
+- **Recommendation:** Build from NASA C-MAPSS + ISO 13374 narrative. (AWS Lookout for Equipment was discontinued on 7 Oct 2026, so it is no longer an option.)
 
 #### Supplier Quality (`supplier_quality`)
 

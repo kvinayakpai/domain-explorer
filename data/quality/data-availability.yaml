@@ -488,8 +488,8 @@ subdomains:
       - { name: 'OPC UA (IEC 62541)', url: 'https://opcfoundation.org/about/opc-technologies/opc-ua/' }
       - { name: 'MIMOSA OSA-CBM', url: 'https://www.mimosa.org/' }
       - { name: 'PTC ThingWorx', url: 'https://www.ptc.com/en/products/thingworx' }
-      - { name: 'Siemens MindSphere / Senseye', url: 'https://www.siemens.com/global/en/products/automation/topic-areas/predictive-maintenance.html' }
-      - { name: 'GE Digital APM', url: 'https://www.ge.com/digital/applications/asset-performance-management' }
+      - { name: 'Siemens Insights Hub / Senseye', url: 'https://www.siemens.com/global/en/products/automation/topic-areas/predictive-maintenance.html' }
+      - { name: 'GE Vernova APM', url: 'https://www.gevernova.com/software/products/asset-performance-management' }
       - { name: 'Aveva PI System', url: 'https://www.aveva.com/en/products/pi-system/' }
       - { name: 'IBM Maximo APM', url: 'https://www.ibm.com/products/maximo' }
       - { name: 'AspenTech Mtell', url: 'https://www.aspentech.com/en/products/asset-performance-management/aspen-mtell' }

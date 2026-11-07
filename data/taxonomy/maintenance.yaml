@@ -28,7 +28,7 @@ sourceSystems:
   - { vendor: SAP, product: PM/EAM, category: EAM }
   - { vendor: Infor, product: EAM, category: EAM }
   - { vendor: AVEVA, product: PI System, category: Historian }
-  - { vendor: GE Digital, product: APM, category: Asset Performance }
+  - { vendor: GE Vernova, product: APM, category: Asset Performance }
 
 connectors:
   - { type: OPC UA, protocol: OPC UA, auth: PKI }
