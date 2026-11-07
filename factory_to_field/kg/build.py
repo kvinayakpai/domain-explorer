@@ -57,6 +57,7 @@ def build_kg(world: Path = ROOT / "world", out: Path = ROOT / "kg", skip_shacl: 
     KG.from_nquads(nq, store_dir)
     metrics["seconds"] = round(time.time() - t0)
     metrics["review_queue"] = len(res.review)
+    metrics["review_dismissed"] = len(res.dismissed)
     gate = metrics["resolution"]["gate"]["passed"] and (metrics["shacl"]["conforms"] in (True, None))
     metrics["gate_passed"] = bool(gate)
     (out / "metrics.json").write_text(json.dumps(metrics, indent=1))

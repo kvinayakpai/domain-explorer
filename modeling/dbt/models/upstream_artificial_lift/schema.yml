@@ -1,0 +1,46 @@
+version: 2
+
+models:
+  - name: dim_well_ual
+    description: Field A wells with lift method and ESP setting depth.
+    columns:
+      - name: well_key
+        tests: [unique, not_null]
+      - name: lift_method
+        tests:
+          - accepted_values: { values: ['esp', 'gas_lift'] }
+
+  - name: dim_esp_string_ual
+    description: ESP strings with their seal section and its elastomer lot.
+    columns:
+      - name: esp_string_key
+        tests: [unique, not_null]
+
+  - name: fct_esp_run_ual
+    description: One row per string run in a well, censored flag kept.
+    columns:
+      - name: run_id
+        tests: [unique, not_null]
+      - name: well_key
+        tests:
+          - not_null
+          - relationships: { to: ref('dim_well_ual'), field: well_key }
+      - name: esp_string_key
+        tests:
+          - not_null
+          - relationships: { to: ref('dim_esp_string_ual'), field: esp_string_key }
+
+  - name: kpi_esp_run_life_ual
+    description: Kaplan-Meier median run life per seal-build cohort (running strings censored).
+    columns:
+      - name: cohort
+        tests: [unique, not_null]
+
+  - name: fct_well_day_ual
+    description: Allocated oil per well per day with a producing flag.
+
+  - name: kpi_well_uptime_ual
+    description: Producing days over calendar days per well.
+    columns:
+      - name: well_key
+        tests: [unique, not_null]

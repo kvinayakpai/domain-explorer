@@ -30,9 +30,10 @@ oneLiner: Sensor-driven prediction of equipment failure, remaining useful life (
 #     for bearings, gearboxes, batteries, semiconductor tools.
 #   Vendors:
 #     PTC ThingWorx (Industrial IoT platform), https://www.ptc.com/en/products/thingworx
-#     Siemens MindSphere / Industrial Edge, https://siemens.mindsphere.io
-#     GE Digital Predix / APM (Asset Performance Management),
-#       https://www.ge.com/digital/applications/asset-performance-management
+#     Siemens Insights Hub (formerly MindSphere) / Industrial Edge,
+#       https://www.siemens.com/en-us/products/insights-hub/
+#     GE Vernova APM (Asset Performance Management; Meridium, SmartSignal),
+#       https://www.gevernova.com/software/products/asset-performance-management
 #     Aveva PI System (OSIsoft historian), https://www.aveva.com/en/products/pi-system/
 #     IBM Maximo Application Suite — APM + EAM, https://www.ibm.com/products/maximo
 #     Honeywell Forge for Industrial, https://www.honeywell.com/us/en/forge
@@ -40,7 +41,8 @@ oneLiner: Sensor-driven prediction of equipment failure, remaining useful life (
 #       https://www.aspentech.com/en/products/asset-performance-management/aspen-mtell
 #     Augury Machine Health, https://www.augury.com
 #     Uptake (formerly Caterpillar partnership), https://www.uptake.com
-#     SparkCognition SparkPredict, https://www.sparkcognition.com
+#     Avathon (formerly SparkCognition) Industrial AI Platform, https://avathon.com
+#     Cognite Data Fusion (industrial DataOps and knowledge graph), https://www.cognite.com
 #     Senseye Predictive Maintenance (Siemens acquisition, 2022),
 #       https://www.senseye.io
 #     SKF @ptitude / Observer, Emerson AMS Machine Works (vibration analytics)
@@ -321,9 +323,9 @@ dataModelArtifacts:
 
 sourceSystems:
   - { vendor: PTC, product: ThingWorx (IIoT Platform), category: IIoT Platform }
-  - { vendor: Siemens, product: MindSphere / Industrial Edge, category: IIoT Platform }
+  - { vendor: Siemens, product: Insights Hub (formerly MindSphere) / Industrial Edge, category: IIoT Platform }
   - { vendor: Siemens, product: Senseye Predictive Maintenance, category: PdM SaaS }
-  - { vendor: GE Digital, product: Predix / APM, category: APM Platform }
+  - { vendor: GE Vernova, product: "APM (Meridium, SmartSignal)", category: APM Platform }
   - { vendor: Aveva (OSIsoft), product: PI System / PI Asset Framework, category: Process Historian }
   - { vendor: IBM, product: Maximo Application Suite — APM, category: APM Platform }
   - { vendor: IBM, product: Maximo EAM, category: EAM/CMMS }
@@ -331,7 +333,8 @@ sourceSystems:
   - { vendor: AspenTech, product: Aspen Mtell, category: Prescriptive PdM }
   - { vendor: Augury, product: Augury Machine Health, category: PdM SaaS (vibration/ultrasound) }
   - { vendor: Uptake, product: Uptake APM, category: APM Platform }
-  - { vendor: SparkCognition, product: SparkPredict, category: AI/ML PdM }
+  - { vendor: Avathon (formerly SparkCognition), product: Industrial AI Platform, category: AI/ML PdM }
+  - { vendor: Cognite, product: Cognite Data Fusion, category: Industrial DataOps }
   - { vendor: Rockwell, product: FactoryTalk Analytics for Devices, category: APM Edge }
   - { vendor: Schneider Electric, product: EcoStruxure Asset Advisor, category: APM Platform }
   - { vendor: SKF, product: SKF @ptitude Observer, category: Vibration Analytics }
@@ -348,7 +351,7 @@ connectors:
   - { type: EtherNet/IP (CIP), protocol: TCP/UDP, auth: CIP Security }
   - { type: PI Web API, protocol: HTTPS, auth: Kerberos / OIDC }
   - { type: ThingWorx REST, protocol: HTTPS, auth: AppKey / OAuth2 }
-  - { type: MindSphere IoT TimeSeries API, protocol: HTTPS, auth: OAuth2 }
+  - { type: Insights Hub IoT Time Series API, protocol: HTTPS, auth: OAuth2 }
   - { type: Maximo OSLC REST, protocol: HTTPS, auth: OAuth2 / Basic }
   - { type: Augury REST, protocol: HTTPS, auth: API key }
   - { type: Vendor webhook (alarm/event), protocol: HTTPS, auth: HMAC signed }

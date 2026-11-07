@@ -521,14 +521,14 @@
   {
     "matchSubstring": "what is predictive maintenance",
     "vertical": "Manufacturing",
-    "response": "Predictive Maintenance (PdM) is the discipline of predicting equipment failure ahead of time using sensor telemetry and machine learning, then triggering maintenance only when needed — replacing the older time-based or run-to-failure regimes. The 2026 stack:\n\n• Telemetry sources — OPC UA from PLCs (Siemens S7, Rockwell ControlLogix); MQTT/Sparkplug B from wireless retrofit sensors (Augury, SKF); historians (Aveva PI System, GE Proficy Historian) for years of process data.\n• Platforms — PTC ThingWorx, Siemens MindSphere, GE Digital APM, IBM Maximo APM, Honeywell Forge, Schneider EcoStruxure, AspenTech Mtell.\n• PdM-specialized SaaS — Augury (vibration + ultrasound on motors/pumps), Senseye (Siemens-owned), Uptake, SparkCognition, Aspen Mtell.\n• CMMS / EAM — IBM Maximo, SAP PM, Infor EAM consume the advisories and own work-order execution.\n\nThe headline KPIs are MTBF, MTTR, Asset Availability %, Predictive Precision & Recall, % Failures Predicted, RUL Prediction Error %, and % Production Loss Avoided. The hard problem is label sparsity — failures are rare, so unsupervised anomaly detection (autoencoder reconstruction error, isolation forest) carries the long tail, validated against supervised failure_event labels where they exist. [REF:pm.kpi.mtbf] [REF:pm.kpi.predictive_recall]",
+    "response": "Predictive Maintenance (PdM) is the discipline of predicting equipment failure ahead of time using sensor telemetry and machine learning, then triggering maintenance only when needed — replacing the older time-based or run-to-failure regimes. The 2026 stack:\n\n• Telemetry sources — OPC UA from PLCs (Siemens S7, Rockwell ControlLogix); MQTT/Sparkplug B from wireless retrofit sensors (Augury, SKF); historians (AVEVA PI System, Proficy Historian) for years of process data.\n• Platforms — PTC ThingWorx, Siemens Insights Hub (formerly MindSphere), GE Vernova APM, IBM Maximo APM, Honeywell Forge, Schneider EcoStruxure, AspenTech Mtell.\n• PdM-specialized SaaS — Augury (vibration + ultrasound on motors/pumps), Senseye (Siemens-owned), Uptake, Avathon (formerly SparkCognition), Cognite, Aspen Mtell.\n• CMMS / EAM — IBM Maximo, SAP PM, Infor EAM consume the advisories and own work-order execution.\n\nThe headline KPIs are MTBF, MTTR, Asset Availability %, Predictive Precision & Recall, % Failures Predicted, RUL Prediction Error %, and % Production Loss Avoided. The hard problem is label sparsity — failures are rare, so unsupervised anomaly detection (autoencoder reconstruction error, isolation forest) carries the long tail, validated against supervised failure_event labels where they exist. [REF:pm.kpi.mtbf] [REF:pm.kpi.predictive_recall]",
     "citations": [
       "pm.kpi.mtbf",
       "pm.kpi.mttr",
       "pm.kpi.asset_availability",
       "pm.kpi.predictive_recall",
       "src.ptc_thingworx",
-      "src.siemens_mindsphere",
+      "src.siemens_insights_hub",
       "src.aveva_pi",
       "src.augury",
       "glossary.rul",

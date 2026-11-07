@@ -49,6 +49,10 @@ table{border-collapse:collapse;width:100%;font-size:12px}td,th{padding:3px 8px;b
   <main class="card" id="main"><div class="empty">Pick a case, or ask your own question, then press Run.</div></main>
   <aside class="card">
     <h3>Released to plant systems</h3><div id="ledger"><div class="empty" style="padding:6px 0">Nothing has been written yet. Agents cannot write; a named person must approve each draft first.</div></div>
+    <h3 style="margin-top:18px">Alarms from the plant (UNS over MQTT)</h3>
+    <div class="probe"><button class="act alt" id="uns">Replay the last six hours of alarms</button><div id="unsout" class="meta"></div></div>
+    <h3 style="margin-top:18px">Identity review queue</h3><div id="review" class="meta">Loading...</div>
+    <h3 style="margin-top:18px">Audit log</h3><div id="audit" class="meta">Loading...</div>
     <h3 style="margin-top:18px">Try to break the rules</h3>
     <div class="probe">
       <button class="act alt" data-probe="pi">Agent credential writes to PI historian</button>
@@ -61,13 +65,26 @@ table{border-collapse:collapse;width:100%;font-size:12px}td,th{padding:3px 8px;b
 const $=s=>document.querySelector(s),esc=t=>String(t??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 let S=null,cur=null,res=null,tab="report";
 const sysOf=t=>t.startsWith("ot.")?"ot":t.split(".")[0];
-async function api(p,b){const r=await fetch(p,b?{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}:{});const j=await r.json();if(!r.ok)throw new Error(j.error||r.status);return j}
+const TOK={};
+async function api(p,b,tok){const h={"Content-Type":"application/json"};if(tok)h.Authorization="Bearer "+tok;const r=await fetch(p,b?{method:"POST",headers:h,body:JSON.stringify(b)}:{});const j=await r.json();if(!r.ok)throw new Error(j.error||r.status);return j}
+async function signIn(u){if(!TOK[u])TOK[u]=(await api("/api/login",{username:u})).token;return TOK[u]}
+const whoFor=role=>Object.keys(S.people).find(u=>S.people[u].roles.includes(role))||Object.keys(S.people)[0];
 async function init(){S=await api("/api/state");
   $("#pills").innerHTML=S.health.systems.map(x=>`<span class="pill">${esc(x)}</span>`).join("");
   $("#nav").innerHTML=S.cases.map(c=>`<button data-id="${c.id}"><span class="id">${c.id}</span><span class="t">${esc(c.title)}</span></button>`).join("");
   $("#nav").onclick=e=>{const b=e.target.closest("button");if(b)pick(b.dataset.id)};
   document.querySelectorAll("[data-probe]").forEach(b=>b.onclick=async()=>{const r=await api("/api/probe",{target:b.dataset.probe});$("#probe").textContent=r.allowed?"ALLOWED (this should never happen)":r.error});
-  pick(S.cases[0].id,false);ledger()}
+  $("#uns").onclick=async()=>{$("#uns").disabled=true;$("#unsout").textContent="Publishing to the MQTT broker; the listener opens cases as alarms arrive...";
+    try{const r=await api("/api/uns",{});$("#unsout").innerHTML=`${r.sent} messages replayed; ${r.opened.length} alarms opened cases:`+r.opened.map(o=>`<div class="led"><b>${esc(o.case_id)}</b> ${esc(o.tag)} ${o.value} &gt; ${o.limit} at ${esc(o.at)}<div>${esc(o.summary)}</div><div class="by">${o.tool_calls} tool calls · drafts ${esc(o.drafts.map(d=>d.id).join(", ")||"none")}</div></div>`).join("")}
+    catch(e){$("#unsout").textContent=e.message}$("#uns").disabled=false};
+  pick(S.cases[0].id,false);ledger();review();audit()}
+async function review(){const r=await api("/api/review");const st=Object.keys(S.people).find(u=>S.people[u].roles.includes("data_steward"));
+  const open=r.items.filter(i=>i.status==="open").map(i=>i.id);if(open.length)api("/api/review/open",{item_ids:open},await signIn(st)).catch(()=>{});
+  $("#review").innerHTML=`${r.metrics.open} open · ${r.metrics.decided} decided`+r.items.map(i=>`<div class="led"><b>${esc(i.id)}</b> <span class="badge ${i.status==="open"?"draft":"approved"}">${esc(i.status)}</span><div>${esc(i.evidence||"")}</div>${i.status==="open"?`<div class="row"><input id="rv-${esc(i.id)}" placeholder="canonical id, e.g. pos:R1:10-P-101A"><button class="act" data-link="${esc(i.id)}">Link</button><button class="act alt" data-dis="${esc(i.id)}">Dismiss as retired</button></div><div class="msg" id="rm-${esc(i.id)}"></div>`:`<div class="by">${esc(i.decision?.verdict||"")} ${esc(i.decision?.canon||i.decision?.reason||"")} by ${esc(i.decision?.reviewer||"")}</div>`}</div>`).join("");
+  const go=async(id,body)=>{try{await api("/api/review/decide",{item_id:id,...body},await signIn(st));review();audit()}catch(e){document.getElementById("rm-"+id).textContent=e.message}};
+  $("#review").querySelectorAll("[data-link]").forEach(b=>b.onclick=()=>go(b.dataset.link,{link:document.getElementById("rv-"+b.dataset.link).value}));
+  $("#review").querySelectorAll("[data-dis]").forEach(b=>b.onclick=()=>go(b.dataset.dis,{dismiss:"tag retired; not an asset"}))}
+async function audit(){const a=await api("/api/audit");$("#audit").innerHTML=`${a.count} records · chain ${a.chain_ok?"verified":"BROKEN at #"+a.first_bad}`+a.records.slice(-6).reverse().map(r=>`<div class="led"><b>#${r.seq}</b> ${esc(r.action)} · ${esc(r.object)}<div class="by">${esc(r.actor)}${r.role?" ("+esc(r.role)+")":""} · ${esc(r.at)} · ${esc(r.hash.slice(0,12))}</div></div>`).join("")}
 function pick(id,run=true){cur=S.cases.find(c=>c.id===id);document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-current",b.dataset.id===id));
   $("#main").innerHTML=`<div class="ask"><input id="q" value="${esc(cur.question)}"><button class="act" id="go">Run</button></div><div id="out"><div class="empty">Press Run to send this question to the agent.</div></div>`;
   $("#go").onclick=go;$("#q").onkeydown=e=>{if(e.key==="Enter")go()};if(run)go()}
@@ -87,15 +104,15 @@ function draw(){const r=res;
   $("#out").querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{tab=b.dataset.t;draw()});
   $("#out").querySelectorAll("[data-ap]").forEach(b=>b.onclick=()=>act("approve",b.dataset.ap));
   $("#out").querySelectorAll("[data-rel]").forEach(b=>b.onclick=()=>act("release",b.dataset.rel))}
-function draftHtml(d){const roles=Object.keys(S.people),dis=d.status!=="draft";
+function draftHtml(d){const users=Object.keys(S.people),dis=d.status!=="draft",dflt=whoFor(d.role);
   const pay=Object.entries(d.payload).slice(0,6).map(([k,v])=>`<tr><td>${esc(k)}</td><td class="m">${esc(typeof v==="object"?JSON.stringify(v):v)}</td></tr>`).join("");
   return `<div class="draft" id="${d.id}"><div><b>${esc(d.title)}</b> <span class="badge ${d.status}">${d.status}</span></div><div class="meta" style="margin:4px 0">${d.id} · ${esc(d.kind)} · needs a ${esc(d.role)}</div><table>${pay}</table>
-  <div class="row"><input id="p-${d.id}" placeholder="Approver name" value="${esc(S.people[d.role]||"")}" ${dis?"disabled":""}><select id="r-${d.id}" ${dis?"disabled":""}>${roles.map(x=>`<option ${x===d.role?"selected":""}>${x}</option>`).join("")}</select>
+  <div class="row"><select id="u-${d.id}" title="Sign in as">${users.map(u=>`<option value="${u}" ${u===dflt?"selected":""}>${esc(S.people[u].name)} (${esc(S.people[u].roles.join(", "))})</option>`).join("")}</select>
   <button class="act" data-ap="${d.id}" ${dis?"disabled":""}>Approve</button><button class="act alt" data-rel="${d.id}" ${d.status==="approved"?"":"disabled"}>Release to system</button><div class="msg" id="m-${d.id}">${d.status==="released"?"Released by "+esc(d.by):""}</div></div></div>`}
 async function act(kind,id){const m=document.getElementById("m-"+id);m.style.color="var(--bad)";
-  try{let d;if(kind==="approve")d=await api("/api/approve",{draft_id:id,person:document.getElementById("p-"+id).value,role:document.getElementById("r-"+id).value});else d=(await api("/api/release",{draft_id:id})).draft;
-    res.drafts=res.drafts.map(x=>x.id===id?d:x);draw();ledger()}catch(e){m.textContent=e.message}}
+  try{const tok=await signIn(document.getElementById("u-"+id).value);let d;if(kind==="approve")d=await api("/api/approve",{draft_id:id},tok);else d=(await api("/api/release",{draft_id:id},tok)).draft;
+    res.drafts=res.drafts.map(x=>x.id===id?d:x);draw();ledger()}catch(e){m.textContent=e.message}audit()}
 async function ledger(){const w=(await api("/api/ledger")).writes;if(!w.length)return;
-  $("#ledger").innerHTML=w.map(x=>`<div class="led"><span class="sys">${esc(x.system)}</span> <b>${esc(x.id)}</b><div>${esc(x.title||"")}</div><div class="by">approved by ${esc(x.approved_by||"")} · ${esc(x.draft_id||"")}</div></div>`).join("")}
+  $("#ledger").innerHTML=w.map(x=>`<div class="led"><span class="sys">${esc(x.system)}</span> <b>${esc(x.id)}</b><div>${esc(x.title||"")}</div><div class="by">approved by ${esc(x.approved_by||"")}${x.subject?" · signed in as "+esc(x.subject):""} · ${esc(x.draft||"")}</div></div>`).join("")}
 init();
 </script>

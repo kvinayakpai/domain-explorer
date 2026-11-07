@@ -24,7 +24,7 @@ dataModel:
     - { name: MaintenanceEvent, description: 'Linked maintenance event' }
 
 sourceSystems:
-  - { vendor: GE Digital, product: APM, category: Asset Performance Mgmt }
+  - { vendor: GE Vernova, product: APM, category: Asset Performance Mgmt }
   - { vendor: AVEVA, product: Asset Performance, category: APM }
   - { vendor: Bentley, product: AssetWise, category: APM }
   - { vendor: IBM, product: Maximo APM, category: EAM/APM }

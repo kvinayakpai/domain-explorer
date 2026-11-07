@@ -11,11 +11,12 @@
 
 audit:
   generated: '2026-05-07'
-  total_subdomains: 116
+  updated: '2026-11-07'
+  total_subdomains: 129
   tier_counts:
-    tier1: 66
-    tier2: 23
-    tier3: 18
+    tier1: 81
+    tier2: 22
+    tier3: 17
     tier4: 9
   recommended_next_anchors:
     - ehr_integrations
@@ -488,14 +489,14 @@ subdomains:
       - { name: 'OPC UA (IEC 62541)', url: 'https://opcfoundation.org/about/opc-technologies/opc-ua/' }
       - { name: 'MIMOSA OSA-CBM', url: 'https://www.mimosa.org/' }
       - { name: 'PTC ThingWorx', url: 'https://www.ptc.com/en/products/thingworx' }
-      - { name: 'Siemens MindSphere / Senseye', url: 'https://www.siemens.com/global/en/products/automation/topic-areas/predictive-maintenance.html' }
-      - { name: 'GE Digital APM', url: 'https://www.ge.com/digital/applications/asset-performance-management' }
+      - { name: 'Siemens Insights Hub / Senseye', url: 'https://www.siemens.com/global/en/products/automation/topic-areas/predictive-maintenance.html' }
+      - { name: 'GE Vernova APM', url: 'https://www.gevernova.com/software/products/asset-performance-management' }
       - { name: 'Aveva PI System', url: 'https://www.aveva.com/en/products/pi-system/' }
       - { name: 'IBM Maximo APM', url: 'https://www.ibm.com/products/maximo' }
       - { name: 'AspenTech Mtell', url: 'https://www.aspentech.com/en/products/asset-performance-management/aspen-mtell' }
       - { name: 'Augury', url: 'https://www.augury.com' }
     entities: [Asset, Sensor, SensorReading, FailureMode, FailureEvent, WorkOrder, Prediction, MaintenancePlan, ModelVersion]
-    notes: Upgraded from Tier-2 stub to flagship anchor — fully attributed against ISO 13374 / 14224 / ISA-95 / OPC UA / MIMOSA + vendor public docs (PTC, Siemens, GE, Aveva, IBM, Honeywell, AspenTech, Augury, Uptake, SparkCognition).
+    notes: Upgraded from Tier-2 stub to flagship anchor — fully attributed against ISO 13374 / 14224 / ISA-95 / OPC UA / MIMOSA + vendor public docs (PTC, Siemens, GE, Aveva, IBM, Honeywell, AspenTech, Augury, Uptake, Avathon (formerly SparkCognition)).
 
   - id: sop_supply_chain_planning
     vertical: Manufacturing
@@ -945,9 +946,23 @@ subdomains:
 
   - id: refinery_operations
     vertical: Energy
-    tier: 3
-    citations: []
-    notes: Would require imagination — not recommended. AspenTech / Honeywell / KBC schemas are proprietary.
+    tier: 1
+    citations:
+      - { name: 'ISO 14224 Reliability data', url: 'https://www.iso.org/standard/64076.html' }
+      - { name: 'API 610 Centrifugal pumps (12th ed.)', url: 'https://www.api.org/products-and-services/standards' }
+      - { name: 'ISA-95 / IEC 62264', url: 'https://www.isa.org/standards-and-publications/isa-standards/isa-standards-committees/isa95' }
+      - { name: 'Factory to Field demo (same simulated plant)', url: 'https://kvinayakpai.github.io/domain-explorer/factory-to-field/' }
+    notes: Deep since Nov 2026 for rotating-equipment reliability. Synthetic data is exported from the Factory to Field world (three refineries, 92 API 610 pump positions, SAP PM history, PI tags, the pump maker's lots and genealogy); dbt models in modeling/dbt/models/refinery_operations. Process yields and blending are still metadata only, because AspenTech, Honeywell and KBC schemas are proprietary.
+
+  - id: upstream_artificial_lift
+    vertical: Energy
+    tier: 1
+    citations:
+      - { name: 'API RP 11S1 ESP teardown report', url: 'https://www.api.org/products-and-services/standards' }
+      - { name: 'ISO 14224 Reliability data', url: 'https://www.iso.org/standard/64076.html' }
+      - { name: 'OSDU Data Platform', url: 'https://osduforum.org/' }
+      - { name: 'Factory to Field demo (same simulated field)', url: 'https://kvinayakpai.github.io/domain-explorer/factory-to-field/' }
+    notes: New in Nov 2026. Synthetic data is exported from the Factory to Field world (Field A, 22 wells, 37 ESP runs, DIFA reports, SCADA tags, allocated oil). The Kaplan-Meier run-life medians computed in dbt (780 and 290 days) are checked against the world's answer key.
 
   # --- HiTech ---
 

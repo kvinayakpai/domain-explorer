@@ -1,0 +1,18 @@
+{
+  "_comment": "Working demos that run on the same simulated data as a subdomain. Read by apps/explorer-web/lib/demos.ts and viewer/build_dataset.py.",
+  "refinery_operations": {
+    "title": "Factory to Field",
+    "url": "https://kvinayakpai.github.io/domain-explorer/factory-to-field/",
+    "blurb": "A crude-unit pump alarm traced through SAP PM, the PI historian and the pump maker's records to a bearing lot approved with its qualification test waived. Same simulated refineries as this page's data."
+  },
+  "upstream_artificial_lift": {
+    "title": "Factory to Field",
+    "url": "https://kvinayakpai.github.io/domain-explorer/factory-to-field/",
+    "blurb": "An ESP motor-temperature alarm in well A-07 traced to a seal elastomer lot: Kaplan-Meier run life 290 days against 780 for earlier builds. Same simulated field as this page's data."
+  },
+  "predictive_maintenance": {
+    "title": "Factory to Field",
+    "url": "https://kvinayakpai.github.io/domain-explorer/factory-to-field/",
+    "blurb": "Vibration alarms, stuck sensors and position-versus-unit history on API 610 pumps, investigated by agents that cite every number and cannot write to control systems."
+  }
+}

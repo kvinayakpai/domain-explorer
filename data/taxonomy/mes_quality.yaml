@@ -248,7 +248,7 @@ dataModelArtifacts:
 sourceSystems:
   - { vendor: Siemens, product: Opcenter Execution, category: MES }
   - { vendor: Rockwell, product: FactoryTalk ProductionCentre, category: MES }
-  - { vendor: GE Digital, product: Proficy Plant Applications, category: MES }
+  - { vendor: Proficy, product: Proficy Plant Applications, category: MES }
   - { vendor: SAP, product: Digital Manufacturing, category: MES }
 
 connectors:

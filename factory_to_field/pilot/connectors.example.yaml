@@ -1,0 +1,25 @@
+# One entry per system the agents read from. For the demo every entry points at the simulators and the
+# simulated identity provider; for a pilot, replace base_url and token_url with the plant's endpoints and
+# put the client secret in the named environment variable. Secrets never go in this file.
+systems:
+  pi:            # AVEVA PI Web API (refinery historian)
+    base_url: http://127.0.0.1:8765
+    token_url: http://127.0.0.1:8766/oauth2/token
+    client_id: ftf-agent
+    secret_env: FTF_AGENT_SECRET
+  sap_pm:        # SAP S/4HANA asset management OData v2 (read; writes go through the human release path)
+    base_url: http://127.0.0.1:8765
+    token_url: http://127.0.0.1:8766/oauth2/token
+    client_id: ftf-agent
+    secret_env: FTF_AGENT_SECRET
+  osdu:          # OSDU search and storage (well master data)
+    base_url: http://127.0.0.1:8765
+    token_url: http://127.0.0.1:8766/oauth2/token
+    client_id: ftf-agent
+    secret_env: FTF_AGENT_SECRET
+    partition: aurelia
+  maker:         # the pump maker's PLM, MES and QMS REST APIs
+    base_url: http://127.0.0.1:8765
+    token_url: http://127.0.0.1:8766/oauth2/token
+    client_id: ftf-agent
+    secret_env: FTF_AGENT_SECRET

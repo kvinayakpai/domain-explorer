@@ -1506,8 +1506,8 @@ terms:
   - name: MTBF
     aliases: [Mean Time Between Failures]
     definition: Average operating time between two consecutive failures on the same asset class. The headline reliability index for repairable equipment; complement to MTTF for non-repairable.
-    related_subdomains: [predictive_maintenance]
-    related_kpis: [pm.kpi.mtbf]
+    related_subdomains: [predictive_maintenance, refinery_operations, upstream_artificial_lift]
+    related_kpis: [pm.kpi.mtbf, ref.kpi.pump_mtbf, ual.kpi.esp_failures_per_well_year]
     steward: Reliability Engineer
   - name: MTTR
     aliases: [Mean Time To Repair]
@@ -1583,7 +1583,7 @@ terms:
     steward: Plant Manager
   - name: Historian
     aliases: [Process Historian, Time-Series Historian]
-    definition: Specialized database optimized for high-rate process tag time-series — typically year-decades of retention with compression. OSIsoft PI (now Aveva PI System), GE Proficy Historian, Honeywell PHD are canonical.
+    definition: Specialized database optimized for high-rate process tag time-series — typically year-decades of retention with compression. OSIsoft PI (now AVEVA PI System), Proficy Historian, Honeywell PHD are canonical.
     related_subdomains: [predictive_maintenance, mes_quality]
     related_kpis: []
     steward: Reliability Engineer
@@ -2727,3 +2727,45 @@ terms:
     related_subdomains: [procurement_spend_analytics]
     related_kpis: []
     steward: AP / e-Invoicing Lead
+  - name: Functional Location
+    aliases: [FLOC, Position, Technical Place]
+    definition: A place in the plant where equipment does a job, such as pump position 10-P-101A on a crude unit. It keeps its own history while the physical units installed in it are swapped, repaired and moved; joining the two by dated installations is what tells a bad position from a bad unit.
+    related_subdomains: [refinery_operations, upstream_artificial_lift, predictive_maintenance]
+    related_kpis: [ref.kpi.pump_mtbf, ref.kpi.bad_actor_count]
+    steward: Reliability Engineer
+  - name: ISO 14224 Failure Mode
+    aliases: [ISO 14224 failure code, Failure mode code]
+    definition: The standard code for how a piece of equipment failed (for example VIB vibration, ELP external leakage of process medium, FTS fail to start), from ISO 14224, the reliability-data standard for petroleum, petrochemical and natural gas equipment.
+    related_subdomains: [refinery_operations, upstream_artificial_lift, predictive_maintenance]
+    related_kpis: [ref.kpi.failures_per_pump_year]
+    steward: Reliability Engineer
+  - name: Electrical Submersible Pump (ESP)
+    aliases: [ESP, ESP string]
+    definition: A multistage centrifugal pump with its motor, seal section, intake and power cable, run downhole to lift fluid from a well. The string is installed and pulled as one unit by a workover rig.
+    related_subdomains: [upstream_artificial_lift]
+    related_kpis: [ual.kpi.esp_run_life_median, ual.kpi.esp_failures_per_well_year]
+    steward: Artificial Lift Engineer
+  - name: ESP Run Life
+    aliases: [Run life, Days in hole]
+    definition: Days an ESP string runs in a well from start-up to failure or pull. Strings still running are censored observations, so run life is estimated with survival methods rather than a plain average of failed runs.
+    related_subdomains: [upstream_artificial_lift]
+    related_kpis: [ual.kpi.esp_run_life_median]
+    steward: Artificial Lift Engineer
+  - name: DIFA
+    aliases: [Dismantle Inspection and Failure Analysis, ESP teardown report]
+    definition: The teardown of a pulled ESP string to find why it failed, reported per API RP 11S1. Findings such as swollen seal elastomers or worn stages decide between a design change, a vendor claim and a well-condition fix.
+    related_subdomains: [upstream_artificial_lift]
+    related_kpis: [ual.kpi.difa_vendor_attributable]
+    steward: Artificial Lift Engineer
+  - name: Workover
+    aliases: [Well intervention, Pulling job]
+    definition: Bringing a rig onto a producing well to pull and replace downhole equipment such as an ESP string. Rig availability often sets how long a failed well stays shut in.
+    related_subdomains: [upstream_artificial_lift]
+    related_kpis: [ual.kpi.workover_wait_days, ual.kpi.deferred_production]
+    steward: Well Intervention Planner
+  - name: Kaplan-Meier Estimate
+    aliases: [Product-limit estimator, Survival curve]
+    definition: A survival-curve estimate that uses units still running (censored) as well as failed ones. The median of the curve is the usual run-life figure for ESPs and pumps.
+    related_subdomains: [upstream_artificial_lift, refinery_operations]
+    related_kpis: [ual.kpi.esp_run_life_median]
+    steward: Reliability Engineer

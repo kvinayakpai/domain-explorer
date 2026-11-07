@@ -8,6 +8,7 @@ world (seeded simulator) ──► SAP PM · historian · SCADA · P&ID · EDMS 
 kg (pyoxigraph) ◄── identity resolution with provenance, review queue, SHACL gate
 sim (HTTP) ◄── PI Web API · OPC UA gateway · SAP PM OData · OSDU · PLM · MES · QMS · production planning
 agents ◄── Source (files or sim over HTTP) ◄── MCP tools (kg · historian · eam · plant · maker · drafts · ot) ──► reports, drafts, audit trail
+pilot ◄── identity provider (RS256 JWT) · hash-chained audit log · review queue workflow · UNS replay over MQTT · OAuth2 connectors · eval harness
 ```
 
 ## Run it
@@ -24,6 +25,10 @@ FTF_SIM_URL=http://127.0.0.1:8765 python -m factory_to_field.agents.gold   # gol
 python -m factory_to_field.ui.build_ui             # ui/case_viewer.html (one self-contained page)
 python -m pytest -c factory_to_field/pytest.ini factory_to_field/tests
 python -m factory_to_field.agents.mcp_servers kg   # any of: kg historian eam plant maker drafts ot
+python -m factory_to_field.ui.live_app --port 8800 # live console: sign in, approve, release, review queue, audit log, UNS replay
+python -m factory_to_field.pilot.uns               # replay the plant's UNS over MQTT; alarms open agent cases
+python -m factory_to_field.pilot.review list       # identity-resolution review queue (decide, then apply)
+python -m factory_to_field.agents.eval_live        # gold + adversarial cases; --planner model needs ANTHROPIC_API_KEY
 ```
 
 ## The ideas that matter
@@ -39,9 +44,23 @@ python -m factory_to_field.agents.mcp_servers kg   # any of: kg historian eam pl
 There are no real SAP, PI, OSDU or PLM/MES systems in this project, so `sim/server.py` plays them: PI Web API (points, summary, recorded, event frames), an OPC UA gateway for field SCADA, a condition-monitoring API, SAP S/4 PM OData v2 (`$filter`, `$orderby`, `$top`, `$expand`), OSDU search and storage, the pump maker's PLM, MES and QMS, and production planning. They serve the generated world and never see the answer key.
 
 - Credentials are bearer tokens. The agent's `ro-agent` token reads everything and writes nothing. PI and SCADA refuse every write, whoever asks.
-- A write needs the `release` token plus `X-Approved-By` and `X-Draft-Id`. That is the path `agents/release.py` takes after a named person approves a draft.
+- A write needs the `release` token plus `X-Approved-By` and `X-Draft-Id`. That is the path `agents/release.py` takes after a named person approves a draft. With an identity provider configured, signed tokens replace both (see Pilot readiness).
+- Like the real systems, SAP needs a CSRF token before a write and pages large results, PI Web API pages points, OSDU needs a data partition, and `POST /sim/faults` can rate-limit requests to test retries.
 - `agents/sources.py` has two interchangeable backends: `FileSource` and `HttpSource`. The gold cases pass through both. A real connector would implement the same interface.
 - The knowledge-graph build still reads the generated files directly; they are the same files the simulators serve.
+
+## Pilot readiness (gate G5) without real systems
+
+`pilot/` holds what a pilot needs that does not depend on real plant systems:
+
+- **Signed identities.** `pilot/idp.py` is an OIDC-style identity provider: people sign in and get RS256 tokens carrying their name and roles; the agent gets a client-credentials token with read scope only. The simulators verify tokens against the provider's JWKS. With `require_identity`, a write needs the token of a named person holding the role that route requires, and the static `release` token is refused. The console uses this path.
+- **Audit log.** `pilot/audit.py` writes every sign-in, approval, refusal, release and review decision as hash-chained JSON lines under `build/audit/`; editing or deleting a line breaks the chain and `verify()` says where.
+- **Review workflow.** `pilot/review.py` lets a data steward link or dismiss each item in the identity-resolution queue, records who decided and how long it took, and rebuilds the graph with the decisions (queue 3 -> 0 in the tests).
+- **UNS over MQTT.** `pilot/uns.py` starts an MQTT broker, publishes `uns_replay.jsonl` on its ISA-95 topics and runs an alarm listener: the first value above a tag's alarm limit opens an agent case with the alarm's own timestamp as the clock (both alarms in the replay open the right cases).
+- **Connectors.** `agents/sources.py` now handles what the real systems do: OAuth2 token refresh on 401, retries with back-off on 429 and 5xx, SAP OData `__next` and PI `Links.Next` paging, SAP CSRF tokens before writes, OSDU `data-partition-id`. `pilot/connectors.py` adds the client-credentials provider and a per-system config (`connectors.example.yaml`); secrets come from environment variables.
+- **Model-planner evaluation.** `agents/eval_live.py` scores any planner on the 10 gold cases plus 5 adversarial ones (injected authority, approve-and-release requests, future data, the stuck sensor in other words, containment counts) by facts, evidence and guardrails. The playbook planner passes 15 of 15; the model planner needs an API key.
+
+What stays open for G5 itself: real endpoints and credentials, the company's identity provider, real reviewers and cases, a security review.
 
 ## Layout
 
@@ -55,4 +74,5 @@ There are no real SAP, PI, OSDU or PLM/MES systems in this project, so `sim/serv
 | `sim/` | the system simulators (HTTP) |
 | `demo.py` | one command, end to end |
 | `ui/` | case viewer (template + built page) |
-| `tests/` | world, KG, agents |
+| `pilot/` | identity provider, audit log, approvals, review workflow, UNS replay, connector config |
+| `tests/` | world, KG, agents, simulators, pilot |

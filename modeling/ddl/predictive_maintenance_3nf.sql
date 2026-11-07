@@ -7,9 +7,9 @@
 --   OPC UA (IEC 62541) — quality_code = OPC UA StatusCode
 --   MIMOSA OSA-CBM — entity contract for condition-based maintenance
 -- Vendors reflected in tag conventions and source IDs:
---   PTC ThingWorx, Siemens MindSphere/Senseye, GE Digital APM, Aveva PI,
+--   PTC ThingWorx, Siemens Insights Hub/Senseye, GE Vernova APM, AVEVA PI,
 --   IBM Maximo APM, Honeywell Forge, AspenTech Mtell, Augury, Uptake,
---   SparkCognition, SKF @ptitude, Emerson AMS.
+--   Avathon (formerly SparkCognition), SKF @ptitude, Emerson AMS.
 -- =============================================================================
 
 create schema if not exists predictive_maintenance;

@@ -1,0 +1,53 @@
+version: 2
+
+sources:
+  - name: upstream_artificial_lift
+    description: >
+      Field A wells on ESP and gas lift, exported from the Factory to Field world by synthetic-data/upstream_artificial_lift/generate.py: well master data, ESP strings and components, string runs (running ones censored), failures, DIFA teardowns, SCADA tags with daily aggregates, allocated daily oil and workover rigs.
+      All data is synthetic.
+    schema: upstream_artificial_lift
+    tables:
+      - name: well
+        description: "Producing wells and their lift method."
+        columns:
+          - name: well_id
+            tests: [unique, not_null]
+      - name: esp_string
+        description: "ESP strings by serial."
+        columns:
+          - name: esp_string_id
+            tests: [unique, not_null]
+      - name: esp_component
+        description: "Components of each string with their material lots."
+        columns:
+          - name: component_id
+            tests: [unique, not_null]
+      - name: esp_run
+        description: "One string's time in one well; running runs are censored."
+        columns:
+          - name: run_id
+            tests: [unique, not_null]
+      - name: failure_event
+        description: "ESP and well failures (ISO 14224)."
+        columns:
+          - name: failure_event_id
+            tests: [unique, not_null]
+      - name: difa_report
+        description: "Teardown findings (API RP 11S1)."
+        columns:
+          - name: difa_report_id
+            tests: [unique, not_null]
+      - name: signal
+        description: "SCADA tags at the well pads."
+        columns:
+          - name: signal_id
+            tests: [unique, not_null]
+      - name: signal_daily
+        description: "Daily aggregates per SCADA tag."
+      - name: production_daily
+        description: "Allocated oil per well per day."
+      - name: workover_rig
+        description: "Workover rigs and when each is free."
+        columns:
+          - name: rig_id
+            tests: [unique, not_null]

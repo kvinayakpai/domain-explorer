@@ -32,7 +32,8 @@ sources:
   # Manufacturing
   - { id: src.siemens_opcenter, vendor: Siemens, product: Opcenter Execution, category: MES, primaryConnectors: [conn.opc_ua, conn.mqtt, conn.sap_rfc] }
   - { id: src.rockwell_ftpc, vendor: Rockwell, product: FactoryTalk ProductionCentre, category: MES, primaryConnectors: [conn.opc_ua, conn.mqtt] }
-  - { id: src.ge_proficy, vendor: GE Digital, product: Proficy Plant Applications, category: MES, primaryConnectors: [conn.opc_ua, conn.sparkplug_b] }
+  # Proficy: sold by GE Vernova to TPG on 2 Mar 2026, now an independent company.
+  - { id: src.proficy_plant_apps, vendor: Proficy, product: Proficy Plant Applications, category: MES, primaryConnectors: [conn.opc_ua, conn.sparkplug_b] }
   - { id: src.sap_dm, vendor: SAP, product: Digital Manufacturing, category: MES, primaryConnectors: [conn.sap_rfc, conn.opc_ua] }
 
   # Life Sciences
@@ -75,9 +76,10 @@ sources:
 
   # Predictive Maintenance (Manufacturing)
   - { id: src.ptc_thingworx, vendor: PTC, product: ThingWorx (IIoT Platform), category: IIoT Platform, primaryConnectors: [conn.thingworx_rest, conn.opc_ua, conn.mqtt] }
-  - { id: src.siemens_mindsphere, vendor: Siemens, product: MindSphere / Industrial Edge, category: IIoT Platform, primaryConnectors: [conn.mindsphere_api, conn.opc_ua, conn.mqtt] }
+  # Insights Hub is the successor to MindSphere (Siemens Industrial Operations X).
+  - { id: src.siemens_insights_hub, vendor: Siemens, product: Insights Hub (formerly MindSphere) / Industrial Edge, category: IIoT Platform, primaryConnectors: [conn.insights_hub_api, conn.opc_ua, conn.mqtt] }
   - { id: src.siemens_senseye, vendor: Siemens, product: Senseye Predictive Maintenance, category: PdM SaaS, primaryConnectors: [conn.rest, conn.webhook] }
-  - { id: src.ge_predix_apm, vendor: GE Digital, product: Predix / APM, category: APM Platform, primaryConnectors: [conn.rest, conn.opc_ua, conn.sparkplug_b] }
+  - { id: src.ge_vernova_apm, vendor: GE Vernova, product: "APM (Meridium, SmartSignal)", category: APM Platform, primaryConnectors: [conn.rest, conn.opc_ua, conn.sparkplug_b] }
   - { id: src.aveva_pi, vendor: Aveva (OSIsoft), product: PI System / PI Asset Framework, category: Process Historian, primaryConnectors: [conn.pi_web_api, conn.opc_ua, conn.file_sftp] }
   - { id: src.ibm_maximo_apm, vendor: IBM, product: Maximo Application Suite — APM, category: APM Platform, primaryConnectors: [conn.maximo_oslc, conn.rest] }
   - { id: src.ibm_maximo_eam, vendor: IBM, product: Maximo EAM, category: EAM/CMMS, primaryConnectors: [conn.maximo_oslc, conn.rest] }
@@ -85,7 +87,10 @@ sources:
   - { id: src.aspentech_mtell, vendor: AspenTech, product: Aspen Mtell, category: Prescriptive PdM, primaryConnectors: [conn.rest, conn.pi_web_api] }
   - { id: src.augury, vendor: Augury, product: Augury Machine Health, category: PdM SaaS (vibration/ultrasound), primaryConnectors: [conn.augury_rest, conn.webhook] }
   - { id: src.uptake, vendor: Uptake, product: Uptake APM, category: APM Platform, primaryConnectors: [conn.rest, conn.webhook] }
-  - { id: src.sparkcognition, vendor: SparkCognition, product: SparkPredict, category: AI/ML PdM, primaryConnectors: [conn.rest, conn.opc_ua] }
+  # SparkCognition renamed itself Avathon in Nov 2024.
+  - { id: src.avathon, vendor: Avathon (formerly SparkCognition), product: Industrial AI Platform, category: AI/ML PdM, primaryConnectors: [conn.rest, conn.opc_ua] }
+  # Cognite: Schneider Electric agreed on 30 Jun 2026 to buy it and fold it into AVEVA; closing pending.
+  - { id: src.cognite_data_fusion, vendor: Cognite, product: Cognite Data Fusion (industrial knowledge graph), category: Industrial DataOps, primaryConnectors: [conn.cognite_api, conn.opc_ua, conn.mqtt] }
   - { id: src.skf_observer, vendor: SKF, product: SKF @ptitude Observer, category: Vibration Analytics, primaryConnectors: [conn.rest, conn.file_sftp] }
   - { id: src.emerson_ams, vendor: Emerson, product: AMS Machine Works, category: Vibration Analytics, primaryConnectors: [conn.opc_ua, conn.rest] }
   - { id: src.siemens_s7_plc, vendor: Siemens, product: SIMATIC S7 PLC, category: PLC/SCADA, primaryConnectors: [conn.opc_ua, conn.profinet, conn.modbus_tcp] }

@@ -115,9 +115,9 @@ def build_scenes(v: Voice) -> list[Scene]:
         await r.sync(5); await r.scroll(-600, 0.5); await r.click('[data-t="drafts"]')
         await r.sync(6)
         sel = await p.locator("div.draft[id]").first.get_attribute("id")
-        await p.select_option(f"#r-{sel}", "quality_engineer"); await r.click(f'[data-ap="{sel}"]')
+        await p.select_option(f"#u-{sel}", "m.das"); await r.click(f'[data-ap="{sel}"]')   # signed in as a quality engineer: refused
         await r.sync(7)
-        await p.select_option(f"#r-{sel}", "maintenance_planner"); await r.click(f'[data-ap="{sel}"]'); await r.click(f'[data-rel="{sel}"]')
+        await p.select_option(f"#u-{sel}", "a.rao"); await r.click(f'[data-ap="{sel}"]'); await r.click(f'[data-rel="{sel}"]')   # the maintenance planner
         ids = [await el.get_attribute("id") for el in await p.locator("div.draft[id]").all()][1:]
         for did in ids:
             await r.click(f'[data-ap="{did}"]'); await r.click(f'[data-rel="{did}"]')

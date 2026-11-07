@@ -24,7 +24,7 @@ dataModel:
     - { name: CauseCode, description: 'Outage cause code' }
 
 sourceSystems:
-  - { vendor: GE Digital, product: PowerOn Restore, category: OMS }
+  - { vendor: GE Vernova, product: PowerOn Restore, category: OMS }
   - { vendor: Oracle, product: Network Mgmt for Utilities, category: OMS }
   - { vendor: Schneider Electric, product: ArcFM, category: GIS/OMS }
   - { vendor: Esri, product: ArcGIS Utility Network, category: GIS }

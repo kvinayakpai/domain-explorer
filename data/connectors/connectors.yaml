@@ -1,4 +1,4 @@
-# 23 connector patterns spanning the verticals seeded in data/taxonomy.
+# Connector patterns spanning the verticals seeded in data/taxonomy.
 # `stubPath` marks the patterns that have a runnable Python stub under
 # services/connectors/<name>/. See services/connectors/README.md for the
 # full stub directory.
@@ -15,8 +15,8 @@ connectors:
   - { id: conn.edi_852_810, type: EDI 852/810, protocol: AS2, auth: PKI, typicalSources: [Retail trading partners], latency: batch, modes: [file] }
   - { id: conn.htng, type: HTNG, protocol: SOAP/XML, auth: WS-Security, typicalSources: [Opera PMS, Amadeus], latency: near-realtime, modes: [push, pull] }
   - { id: conn.opc_ua, type: OPC UA, protocol: OPC UA, auth: PKI, typicalSources: [Siemens Opcenter, Rockwell FactoryTalk], latency: realtime, modes: [stream, pull], stubPath: services/connectors/opc_ua/ }
-  - { id: conn.mqtt, type: MQTT, protocol: MQTT, auth: TLS + cred, typicalSources: [GE Proficy, Landis+Gyr], latency: realtime, modes: [stream], stubPath: services/connectors/mqtt/ }
-  - { id: conn.sparkplug_b, type: Sparkplug B, protocol: MQTT, auth: TLS + cred, typicalSources: [GE Proficy, edge brokers], latency: realtime, modes: [stream], stubPath: services/connectors/mqtt/ }
+  - { id: conn.mqtt, type: MQTT, protocol: MQTT, auth: TLS + cred, typicalSources: [Proficy, Landis+Gyr], latency: realtime, modes: [stream], stubPath: services/connectors/mqtt/ }
+  - { id: conn.sparkplug_b, type: Sparkplug B, protocol: MQTT, auth: TLS + cred, typicalSources: [Proficy, edge brokers], latency: realtime, modes: [stream], stubPath: services/connectors/mqtt/ }
   - { id: conn.snmp, type: SNMP, protocol: SNMP, auth: community/v3, typicalSources: [Nokia NetAct, network elements], latency: near-realtime, modes: [pull, push] }
   - { id: conn.netconf_yang, type: NetConf/YANG, protocol: NetConf, auth: SSH, typicalSources: [Ericsson ENM, Cisco IOS-XR], latency: near-realtime, modes: [pull, push] }
   - { id: conn.e2b_r3, type: E2B(R3), protocol: HL7 XML, auth: AS2/SFTP, typicalSources: [Argus, LifeSphere, Vault Safety], latency: batch, modes: [file] }
@@ -39,7 +39,8 @@ connectors:
 
   # Predictive Maintenance connectors
   - { id: conn.thingworx_rest, type: ThingWorx REST, protocol: HTTPS JSON, auth: AppKey / OAuth2, typicalSources: [PTC ThingWorx], latency: realtime, modes: [pull, push] }
-  - { id: conn.mindsphere_api, type: MindSphere IoT TimeSeries API, protocol: HTTPS JSON, auth: OAuth2 (technical user), typicalSources: [Siemens MindSphere], latency: realtime, modes: [pull, push] }
+  - { id: conn.insights_hub_api, type: Insights Hub IoT Time Series API (formerly MindSphere), protocol: HTTPS JSON, auth: OAuth2 (technical user), typicalSources: [Siemens Insights Hub], latency: realtime, modes: [pull, push] }
+  - { id: conn.cognite_api, type: Cognite Data Fusion API, protocol: HTTPS JSON, auth: OAuth2 client credentials (OIDC), typicalSources: [Cognite Data Fusion], latency: near-realtime, modes: [pull, push] }
   - { id: conn.pi_web_api, type: PI Web API, protocol: HTTPS JSON, auth: Kerberos / OIDC, typicalSources: [Aveva PI System, OSIsoft PI], latency: near-realtime, modes: [pull] }
   - { id: conn.maximo_oslc, type: Maximo OSLC REST, protocol: HTTPS JSON (OSLC), auth: OAuth2 / Basic, typicalSources: [IBM Maximo APM, IBM Maximo EAM], latency: near-realtime, modes: [pull, push] }
   - { id: conn.augury_rest, type: Augury Machine Health REST, protocol: HTTPS, auth: API key, typicalSources: [Augury], latency: realtime, modes: [pull, push] }
