@@ -62,6 +62,9 @@ jobs:
       - name: pytest
         run: uv run pytest
 
+      - name: dbt build (refinery_operations, upstream_artificial_lift)
+        run: uv run --with dbt-duckdb python tools/dbt_oil_gas_check.py
+
   factory-to-field:
     name: Factory to Field — ontology, simulated plant, knowledge graph, agents
     runs-on: ubuntu-latest
