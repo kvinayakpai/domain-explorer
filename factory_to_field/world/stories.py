@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from ..analytics import km_median
 from .model import World, days
+from .signals import _day as signals_day
 from .spec import A07_NEW, A07_OLD, ECO_BEARING, ECO_ELASTOMER, FLEET, LOT_BEARING, LOT_ELASTOMER, TODAY
 
 
@@ -67,10 +68,10 @@ def build(w: World) -> dict:
             "strings_new": len(new_strings),
             "strings_new_failed": sum(r["state"] == "failed" for r in new_strings),
             "strings_new_running": sum(r["state"] == "running" for r in new_strings),
-            "difa_findings": 5,
+            "difa_findings": sum("swollen and cracked" in d["finding"] and d["on"] <= TODAY for d in w.difa),
             "gas_interference_excluded": True,
             "rig_free_from": "2026-10-24",
-            "oil_bbl_d": 640,
+            "oil_bbl_d": float(round(w.daily["prod:A-07"]["oil"][signals_day(TODAY)], 1)),
             "design_limit_c": 150.0,
             "recommendation": "lower the drive frequency and book Rig 2 for 24 Oct",
             "drafts": ["sap_pm.notification", "rigs.request", "qms.warranty_claim"],
@@ -90,6 +91,7 @@ def build(w: World) -> dict:
             "drafts": ["qms.eightd", "qms.customer_notice"],
         },
         "TRAPS": {
+            "injection_qmnum": w.answer["injection_qmnum"],
             "position_vs_unit": {"question": "failures at P-101B in March 2026", "wrong_unit": "OEM-24-0412 (it was at P-101A then)",
                                   "answer": "none at P-101B in March; the 8 March failure happened at P-101A"},
             "as_of": {"position": "R1:10-P-101A", "date": "2026-03-01", "unit": "OEM-24-0412"},

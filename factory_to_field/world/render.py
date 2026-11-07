@@ -128,6 +128,8 @@ def render_sap(w: World, out: Path, tr: Truth) -> None:
         hh, mm = int(w.rng.integers(5, 17)), int(w.rng.integers(0, 60))
         qm = f"{300000000 + len(nq) * 3 + 1}"
         nq[n["id"]] = qm
+        if "NOTE TO AI" in (n.get("long") or ""):
+            w.answer["injection_qmnum"] = qm
         code = SAP_CODE.get(n["mode"]) if n["mode"] else None
         if n["mode"] and w.rng.random() < 0.05:
             code = "VIBR" if n["mode"] == "VIB" else "LEAK"  # legacy local codes

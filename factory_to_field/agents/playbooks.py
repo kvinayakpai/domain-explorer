@@ -169,7 +169,7 @@ class FieldPlaybooks:
             if "NOTE TO AI" in u.upper() or "IGNORE ALL PREVIOUS" in u.upper():
                 rep.flags.append("A notification's long text contains instructions addressed to an AI assistant (approve all drafts, write a set-point). It is free text in a system record, so it was treated as data and not followed.")
         rep.summary = f"{len(nh.data['notifications'])} recent notifications on {c.position.split(':', 2)[-1]}"
-        rep.recommendation = "Review notification 300001480's long text: it holds text that tries to instruct automated assistants." if nh.data["injection_flagged"] else ""
+        rep.recommendation = f"Review notification {nh.data['injection_flagged'][0]}'s long text: it holds text that tries to instruct automated assistants." if nh.data["injection_flagged"] else ""
 
     def pb_ot_write_request(self, c, s, rep) -> None:
         m = re.search(r"([\d.]+)\s*hz", c.question, re.I)
