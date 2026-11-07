@@ -106,7 +106,10 @@ def refinery_series(w: World) -> None:
     eps = rng.normal(0, 0.02, N)
     for k in range(1, N):
         ar[k] = 0.95 * ar[k - 1] + eps[k]  # slow process drift, so consecutive days resemble each other
-    load = 1 + 0.03 * season + 0.015 * np.sin(2 * np.pi * np.arange(N) / 7.0) + ar
+    # Operating and condition effects multiply vibration rather than add to it, so the drift acts in
+    # log space (a lognormal process, mean-corrected). An additive drift was symmetric and held each
+    # pump's skew at 0.29; this keeps the same persistence and gives the right skew vibration shows.
+    load = (1 + 0.03 * season + 0.015 * np.sin(2 * np.pi * np.arange(N) / 7.0)) * np.exp(ar - ar.var() / 2)
     amb = 22 + 10 * season
     pairs: dict[tuple, tuple[str, str]] = {}
     for pid, pos in w.positions.items():
