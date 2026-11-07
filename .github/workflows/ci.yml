@@ -11,15 +11,15 @@ jobs:
     name: Node — lint + typecheck + vitest
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4  # version comes from "packageManager" in package.json
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Install
@@ -38,23 +38,20 @@ jobs:
     name: Python — ruff + mypy + pytest
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v6
         with:
           version: "latest"
 
-      - name: uv sync
-        run: uv sync --all-extras --dev
-
-      - name: Install test deps
-        run: uv pip install pytest networkx pyarrow faker mimesis
+      - name: uv sync (every workspace package, its extras and the dev tools)
+        run: uv sync --all-packages --all-extras --dev
 
       - name: ruff check
         run: uv run ruff check .
@@ -69,10 +66,10 @@ jobs:
     name: Factory to Field — ontology, simulated plant, knowledge graph, agents
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip

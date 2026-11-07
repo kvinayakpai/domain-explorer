@@ -1,0 +1,63 @@
+version: 2
+
+sources:
+  - name: refinery_operations
+    description: >
+      Refinery operations (rotating equipment) exported from the Factory to Field world by synthetic-data/refinery_operations/generate.py: three refineries' SAP PM functional locations, pumps, dated installations, ISO 14224 failures, notifications and orders, PI historian tags with daily aggregates, and the pump maker's lots, engineering changes and as-built genealogy.
+      All data is synthetic.
+    schema: refinery_operations
+    tables:
+      - name: site
+        description: "One row per refinery."
+        columns:
+          - name: site_id
+            tests: [unique, not_null]
+      - name: functional_location
+        description: "Pump positions (SAP PM functional locations)."
+        columns:
+          - name: functional_location_id
+            tests: [unique, not_null]
+      - name: equipment
+        description: "Physical pumps by maker's serial."
+        columns:
+          - name: equipment_id
+            tests: [unique, not_null]
+      - name: installation
+        description: "Dated installation of a pump in a position."
+        columns:
+          - name: installation_id
+            tests: [unique, not_null]
+      - name: failure_event
+        description: "Functional failures with ISO 14224 failure mode."
+        columns:
+          - name: failure_event_id
+            tests: [unique, not_null]
+      - name: notification
+        description: "SAP PM notifications (M1/M2)."
+        columns:
+          - name: notification_id
+            tests: [unique, not_null]
+      - name: work_order
+        description: "SAP PM orders (PM01/PM02/PM03)."
+        columns:
+          - name: work_order_id
+            tests: [unique, not_null]
+      - name: signal
+        description: "PI historian tags."
+        columns:
+          - name: signal_id
+            tests: [unique, not_null]
+      - name: signal_daily
+        description: "Daily aggregates per tag (mean, min, max, count)."
+      - name: material_lot
+        description: "Component lots at the pump maker."
+        columns:
+          - name: lot_id
+            tests: [unique, not_null]
+      - name: engineering_change
+        description: "Engineering changes; expedited ones may waive qualification."
+        columns:
+          - name: engineering_change_id
+            tests: [unique, not_null]
+      - name: component_genealogy
+        description: "As-built record: lots in each pump serial."

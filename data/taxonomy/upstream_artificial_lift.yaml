@@ -1,0 +1,243 @@
+id: upstream_artificial_lift
+name: Upstream Production — Artificial Lift (ESP)
+vertical: Energy
+oneLiner: Keeping producing wells on stream with electrical submersible pumps and gas lift — run life, failures, teardowns, workovers and the production deferred while a well is down.
+
+# Deep tier since Nov 2026. The synthetic data is exported from the Factory to Field world
+# (factory_to_field/world): Field A with 22 wells (12 on ESP, 10 on gas lift), 37 ESP runs,
+# DIFA teardown reports, SCADA signals and daily allocated production. Generator:
+# synthetic-data/upstream_artificial_lift/generate.py. Working demo of the same field:
+# https://kvinayakpai.github.io/domain-explorer/factory-to-field/
+#
+# Sources used for the model:
+#   API RP 11S1 Recommended Practice for Electrical Submersible Pump Teardown Report (DIFA)
+#   API RP 11S Recommended Practice for the Operation, Maintenance and Troubleshooting of ESP
+#     installations
+#   ISO 14224:2016 (equipment class ESP, failure modes), https://www.iso.org/standard/64076.html
+#   OSDU Data Platform well and wellbore master data, https://osduforum.org/
+#   Kaplan and Meier (1958) for run-life estimates with censored (still running) strings
+
+personas:
+  - { name: Production Engineer, title: Senior Production Engineer, level: IC }
+  - { name: Artificial Lift Engineer, title: Artificial Lift Engineer (ESP), level: IC }
+  - { name: Production Operations Supervisor, title: Field Operations Supervisor, level: Manager }
+  - { name: SCADA Operator, title: Production Control Room Operator, level: IC }
+  - { name: Well Intervention Planner, title: Workover and Rig Scheduler, level: IC }
+  - { name: Reservoir Engineer, title: Reservoir Engineer, level: IC }
+  - { name: Asset Manager, title: "Asset Manager, Field A", level: Director }
+  - { name: Supplier Quality Engineer, title: ESP Vendor Quality Lead, level: Manager }
+
+decisions:
+  - { id: ual.d.slow_or_pull, statement: "Lower the drive frequency to protect an overheating ESP, or pull the string now?" }
+  - { id: ual.d.book_rig, statement: "Which well gets the next free workover rig, given deferred oil per day and failure risk?" }
+  - { id: ual.d.replace_design, statement: "Replace the string like for like, or change the design (seal elastomer, motor, stages) for this well's fluid?" }
+  - { id: ual.d.lot_containment, statement: "Which running strings carry the suspect seal lot, and should they be pulled early or watched?" }
+  - { id: ual.d.warranty_claim, statement: "Do the teardown (DIFA) findings put this failure on the ESP maker?" }
+  - { id: ual.d.real_or_gas, statement: "Is the alarm a pump problem, or gas interference, low inflow or a sensor fault?" }
+
+kpis:
+  - id: ual.kpi.esp_run_life_median
+    name: ESP Run Life (Kaplan-Meier median)
+    formula: median of the Kaplan-Meier survival curve over string runs, running strings censored
+    unit: days
+    direction: higher_is_better
+    decisionsSupported: [ual.d.replace_design, ual.d.lot_containment]
+  - id: ual.kpi.esp_failures_per_well_year
+    name: ESP Failures per Well-Year
+    formula: count(failed runs) / (sum(run_days) / 365)
+    unit: failures/well-year
+    direction: lower_is_better
+    decisionsSupported: [ual.d.replace_design, ual.d.book_rig]
+  - id: ual.kpi.deferred_production
+    name: Deferred Production
+    formula: sum(expected_oil_bbl_d - actual_oil_bbl_d) over days a well is down or restricted
+    unit: bbl
+    direction: lower_is_better
+    decisionsSupported: [ual.d.book_rig, ual.d.slow_or_pull]
+  - id: ual.kpi.well_uptime
+    name: Well Uptime
+    formula: producing well-days / calendar well-days
+    unit: "%"
+    direction: higher_is_better
+    decisionsSupported: [ual.d.book_rig]
+  - id: ual.kpi.workover_wait_days
+    name: Days Waiting on a Rig
+    formula: avg(rig_start - failure_date)
+    unit: days
+    direction: lower_is_better
+    decisionsSupported: [ual.d.book_rig]
+  - id: ual.kpi.difa_vendor_attributable
+    name: Vendor-Attributable Failures (DIFA)
+    formula: DIFA reports with a manufacturing or material finding / all DIFA reports
+    unit: "%"
+    direction: lower_is_better
+    decisionsSupported: [ual.d.warranty_claim, ual.d.lot_containment]
+  - id: ual.kpi.motor_temp_margin
+    name: Motor Temperature Margin
+    formula: motor design limit - daily max motor temperature
+    unit: degC
+    direction: higher_is_better
+    decisionsSupported: [ual.d.slow_or_pull, ual.d.real_or_gas]
+
+dataModel:
+  entities:
+    - name: well
+      description: A producing well and its artificial-lift position. The well stays; ESP strings are installed and pulled.
+      keys: [well_id]
+      attributes:
+        - { name: well_id, type: varchar(8), isPrimaryKey: true, description: "Well name, e.g. A-07" }
+        - { name: functional_location_id, type: varchar(32) }
+        - { name: floc_code, type: varchar(24) }
+        - { name: field_id, type: varchar(16) }
+        - { name: pad, type: varchar(8) }
+        - { name: lift_method, type: varchar(12), description: "esp | gas_lift" }
+        - { name: esp_position_id, type: varchar(32) }
+        - { name: esp_setting_depth_m, type: "decimal(8,1)" }
+    - name: esp_string
+      description: One ESP string (pump, intake, seal section, motor, cable) identified by the maker's serial.
+      keys: [esp_string_id]
+      attributes:
+        - { name: esp_string_id, type: varchar(16), isPrimaryKey: true }
+        - { name: model, type: varchar(24) }
+        - { name: maker_id, type: varchar(24) }
+        - { name: built_on, type: date }
+        - { name: shipped_on, type: date }
+    - name: esp_component
+      description: A component of a string, with the material lots it was built from (for example the seal section's elastomer lot).
+      keys: [component_id]
+      attributes:
+        - { name: component_id, type: varchar(16), isPrimaryKey: true }
+        - { name: esp_string_id, type: varchar(16), isForeignKey: true, references: esp_string.esp_string_id }
+        - { name: component_kind, type: varchar(12), description: "pump | intake | seal | motor | cable" }
+        - { name: built_on, type: date }
+        - { name: material_lots, type: varchar(64), description: "Semicolon-separated lot ids" }
+    - name: esp_run
+      description: One string's time in one well, from start-up to pull. Running strings are censored observations for run-life estimates.
+      keys: [run_id]
+      attributes:
+        - { name: run_id, type: varchar(16), isPrimaryKey: true }
+        - { name: well_id, type: varchar(8), isForeignKey: true, references: well.well_id }
+        - { name: esp_string_id, type: varchar(16), isForeignKey: true, references: esp_string.esp_string_id }
+        - { name: run_start, type: date }
+        - { name: run_end, type: date }
+        - { name: run_days, type: integer }
+        - { name: run_state, type: varchar(8), description: "running | failed" }
+        - { name: censored, type: boolean }
+        - { name: pull_reason, type: varchar(48) }
+        - { name: seal_built_since_aug_2025, type: boolean }
+    - name: failure_event
+      description: ESP or well failure with an ISO 14224 failure mode.
+      keys: [failure_event_id]
+      attributes:
+        - { name: failure_event_id, type: varchar(16), isPrimaryKey: true }
+        - { name: functional_location_id, type: varchar(32) }
+        - { name: esp_string_id, type: varchar(16), isForeignKey: true, references: esp_string.esp_string_id }
+        - { name: failed_on, type: date }
+        - { name: iso14224_failure_mode, type: varchar(4) }
+        - { name: description, type: varchar(160) }
+        - { name: repair_days, type: integer }
+    - name: difa_report
+      description: Dismantle inspection and failure analysis of a pulled string (API RP 11S1).
+      keys: [difa_report_id]
+      attributes:
+        - { name: difa_report_id, type: varchar(16), isPrimaryKey: true }
+        - { name: well_id, type: varchar(8), isForeignKey: true, references: well.well_id }
+        - { name: esp_string_id, type: varchar(16), isForeignKey: true, references: esp_string.esp_string_id }
+        - { name: reported_on, type: date }
+        - { name: standard, type: varchar(16) }
+        - { name: finding, type: text }
+    - name: signal
+      description: SCADA tag at a well pad (motor temperature, intake pressure, motor current, drive frequency, leakage current, tubing head pressure, gas-lift rate).
+      keys: [signal_id]
+      attributes:
+        - { name: signal_id, type: varchar(48), isPrimaryKey: true }
+        - { name: tag, type: varchar(32) }
+        - { name: functional_location_id, type: varchar(32) }
+        - { name: quantity, type: varchar(24) }
+        - { name: eng_unit, type: varchar(12) }
+        - { name: alarm_high, type: "decimal(10,3)" }
+        - { name: source_system, type: varchar(12) }
+        - { name: sample_seconds, type: integer }
+        - { name: description, type: varchar(64) }
+    - name: signal_daily
+      description: Daily aggregates of each SCADA tag.
+      keys: [signal_id, day]
+      attributes:
+        - { name: signal_id, type: varchar(48), isPrimaryKey: true, isForeignKey: true, references: signal.signal_id }
+        - { name: day, type: date, isPrimaryKey: true }
+        - { name: mean_value, type: "decimal(12,4)" }
+        - { name: min_value, type: "decimal(12,4)" }
+        - { name: max_value, type: "decimal(12,4)" }
+        - { name: sample_count, type: integer }
+    - name: production_daily
+      description: Daily allocated oil per well from production accounting.
+      keys: [well_id, day]
+      attributes:
+        - { name: well_id, type: varchar(8), isPrimaryKey: true, isForeignKey: true, references: well.well_id }
+        - { name: day, type: date, isPrimaryKey: true }
+        - { name: oil_bbl_d, type: "decimal(10,2)" }
+    - name: workover_rig
+      description: Workover rigs in the field and the first day each is free.
+      keys: [rig_id]
+      attributes:
+        - { name: rig_id, type: varchar(8), isPrimaryKey: true }
+        - { name: field_id, type: varchar(16) }
+        - { name: free_from, type: date }
+        - { name: note, type: varchar(80) }
+  relationships:
+    - { from: esp_component, to: esp_string, kind: many_to_one }
+    - { from: esp_run, to: well, kind: many_to_one }
+    - { from: esp_run, to: esp_string, kind: many_to_one }
+    - { from: failure_event, to: esp_string, kind: many_to_one }
+    - { from: difa_report, to: esp_string, kind: many_to_one }
+    - { from: difa_report, to: well, kind: many_to_one }
+    - { from: signal_daily, to: signal, kind: many_to_one }
+    - { from: production_daily, to: well, kind: many_to_one }
+
+dataModelArtifacts:
+  threeNF: modeling/ddl/upstream_artificial_lift_3nf.sql
+  vault: modeling/ddl/upstream_artificial_lift_vault.sql
+  dimensional: modeling/ddl/upstream_artificial_lift_dim.sql
+
+sourceSystems:
+  - { vendor: OSDU Forum, product: OSDU Data Platform (well master data), category: Subsurface Data Platform }
+  - { vendor: SAP, product: S/4HANA Asset Management (PM), category: EAM/CMMS }
+  - { vendor: AVEVA, product: PI System, category: Historian }
+  - { vendor: Emerson, product: OpenEnterprise SCADA, category: SCADA }
+  - { vendor: SLB, product: ESP surveillance and DIFA records, category: Artificial Lift Vendor }
+  - { vendor: Baker Hughes, product: ESP surveillance and DIFA records, category: Artificial Lift Vendor }
+  - { vendor: Cognite, product: Cognite Data Fusion, category: Industrial DataOps }
+
+connectors:
+  - { type: OSDU Search and Storage APIs, protocol: HTTPS JSON, auth: OAuth2 (OIDC) + data-partition-id }
+  - { type: PI Web API, protocol: HTTPS, auth: Kerberos / OIDC }
+  - { type: SAP OData (maintenance notification and order APIs), protocol: HTTPS, auth: OAuth2 / X.509 }
+  - { type: Sparkplug B, protocol: MQTT, auth: TLS + cred }
+  - { type: Modbus TCP (well pad RTUs), protocol: TCP, auth: VPN }
+
+ingestionChallenges:
+  - Run life belongs to the string, not the well; averaging under the well hides an early failure when a new string replaces an old one.
+  - Strings still in the hole are censored; dropping them, or counting them as failures, both bias run life.
+  - DIFA findings are free text from the vendor's teardown shop and arrive weeks after the pull.
+  - Production is allocated back to wells from a shared separator, so a well's daily oil is an estimate, not a meter reading.
+
+integrationChallenges:
+  - name: The seal lot lives at the ESP maker
+    description: The well's records stop at the string serial. The seal section's elastomer lot and the engineering change behind it are in the maker's MES and PLM.
+  - name: Drive set-points are an operator action
+    description: Lowering the drive frequency goes through the control room under management of change; an agent can only raise the request.
+
+standards:
+  - { id: api_rp_11s1, name: "API RP 11S1 Electrical Submersible Pump Teardown Report" }
+  - { id: api_rp_11s, name: "API RP 11S Operation, Maintenance and Troubleshooting of ESP Installations" }
+  - { id: iso_14224, name: "ISO 14224 Reliability and maintenance data", version: "2016", url: "https://www.iso.org/standard/64076.html" }
+  - { id: osdu, name: "OSDU Data Platform", url: "https://osduforum.org/" }
+  - { id: isa_95, name: "ISA-95 (IEC 62264) Enterprise-Control System Integration", url: "https://www.isa.org/standards-and-publications/isa-standards/isa-standards-committees/isa95" }
+
+glossaryTerms:
+  - Electrical Submersible Pump (ESP)
+  - ESP Run Life
+  - DIFA
+  - Workover
+  - Kaplan-Meier Estimate
+  - MTBF

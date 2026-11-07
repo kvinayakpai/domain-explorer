@@ -14,6 +14,15 @@
 Credentials are bearer tokens. `ro-agent` can read everything and write nothing. Writes need the `release` token plus
 X-Approved-By and X-Draft-Id headers: that is the path a human approval takes (see agents/release.py). PI and SCADA refuse every write.
 The simulators never see the answer key.
+
+With an identity provider configured (pilot/idp.py), the simulators also accept RS256 tokens verified against its JWKS:
+the agent's client-credentials token reads (scope plant.read), and a write needs the token of a named person whose roles
+include the role that route requires; with `require_identity` the static release token is refused.
+
+Behaviour that real systems have and a client must handle (see pilot/connectors.py and agents/sources.py):
+SAP rejects writes without a CSRF token fetched first (x-csrf-token: fetch), SAP pages large OData results with __next,
+PI Web API pages points with Links.Next (maxCount, startIndex), OSDU requires a data-partition-id header, and POST
+/sim/faults can make every n-th request answer 429 with Retry-After.
 """
 from __future__ import annotations
 
@@ -28,8 +37,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from ..agents.core import DEFAULT_WORLD
+from ..agents.drafts import APPROVER_ROLES
+from ..agents.release import TARGETS
 
 TOKENS = {"ro-agent": "read", "release": "release", "ops-readonly": "read"}
+# the role a signed approver must hold to write to each target, from the draft kinds that write there
+ROUTE_ROLES = {path: APPROVER_ROLES[kind] for kind, path in TARGETS.items()}
 
 
 # ----------------------------------------------------------------------------------- mini OData engine
@@ -69,6 +82,8 @@ def odata_response(rows: list[dict], q: dict) -> dict:
     if q.get("$orderby"):
         f, _, d = q["$orderby"].partition(" ")
         rows = sorted(rows, key=lambda r: r.get(f) or "", reverse=d.strip().lower() == "desc")
+    if q.get("$skip"):
+        rows = rows[int(q["$skip"]):]
     if q.get("$top"):
         rows = rows[: int(q["$top"])]
     return {"d": {"results": rows}}
@@ -78,6 +93,9 @@ def odata_response(rows: list[dict], q: dict) -> dict:
 class State:
     def __init__(self, world: Path) -> None:
         self.w = Path(world)
+        self.faults: dict = {}
+        self.requests = 0
+        self.csrf: set[str] = set()
         self.writes: list[dict] = []
         self.lock = threading.Lock()
 
@@ -156,22 +174,80 @@ def daily_rows(c: sqlite3.Connection, tid: int, start: str, end: str) -> list[sq
 class Handler(BaseHTTPRequestHandler):
     state: State
     server_version = "PlantSim/1.0"
+    verifier = None              # pilot.idp.JwksVerifier when an identity provider is configured
+    require_identity = False     # writes need a signed approver token; the static release token is refused
+    odata_page_size: int | None = None   # server-driven paging of SAP OData results (__next)
+    pi_page_size = 1000          # PI Web API default maxCount
 
     def log_message(self, *a):  # quiet
         pass
 
     # -- plumbing
-    def _send(self, code: int, body) -> None:
+    def _send(self, code: int, body, headers: dict | None = None) -> None:
         raw = json.dumps(body, default=str).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(raw)))
+        for k, v in (headers or {}).items():
+            self.send_header(k, v)
         self.end_headers()
         self.wfile.write(raw)
 
-    def _auth(self) -> str | None:
+    def _ident(self) -> tuple[str | None, dict | None]:
+        """('read' | 'release' | 'person' | None, verified claims for signed tokens)."""
         h = self.headers.get("Authorization", "")
-        return TOKENS.get(h[7:]) if h.startswith("Bearer ") else None
+        if not h.startswith("Bearer "):
+            return None, None
+        tok = h[7:]
+        if tok in TOKENS:
+            return TOKENS[tok], None
+        if self.verifier is not None and tok.count(".") == 2:
+            try:
+                claims = self.verifier.verify(tok)
+            except PermissionError:
+                return None, None
+            if "plant.read" in (claims.get("scope") or "").split():
+                return "read", claims
+            if claims.get("roles"):
+                return "person", claims
+        return None, None
+
+    def _auth(self) -> str | None:
+        return self._ident()[0]
+
+    def _rate_limited(self) -> bool:
+        n = self.state.faults.get("rate_limit_every")
+        if not n:
+            return False
+        with self.state.lock:
+            self.state.requests += 1
+            hit = self.state.requests % int(n) == 0
+        if hit:
+            self._send(429, {"error": "too many requests"}, {"Retry-After": "0"})
+        return hit
+
+    def _page(self, path: str, q: dict, body):
+        """Server-driven paging the way SAP Gateway and PI Web API do it."""
+        if not isinstance(body, dict):
+            return body
+        if path.startswith("/sap/") and self.odata_page_size and isinstance(body.get("d"), dict):
+            rows = body["d"].get("results", [])
+            if len(rows) > self.odata_page_size:
+                skip = int(q.get("$skip") or 0) + self.odata_page_size
+                nq = dict(q, **{"$skip": str(skip)})
+                if q.get("$top"):
+                    nq["$top"] = str(int(q["$top"]) - self.odata_page_size)
+                    nq["$skip"] = str(skip)
+                nxt = path + "?" + urllib.parse.urlencode(nq, quote_via=urllib.parse.quote)
+                return {"d": {"results": rows[: self.odata_page_size], "__next": nxt}}
+        if path == "/piwebapi/points" and isinstance(body.get("Items"), list):
+            start, size = int(q.get("startIndex") or 0), int(q.get("maxCount") or self.pi_page_size)
+            items = body["Items"]
+            page = {"Items": items[start:start + size]}
+            if start + size < len(items):
+                page["Links"] = {"Next": path + "?" + urllib.parse.urlencode(dict(q, startIndex=str(start + size), maxCount=str(size)), quote_via=urllib.parse.quote)}
+            return page
+        return body
 
     def do_GET(self):
         u = urllib.parse.urlparse(self.path)
@@ -180,33 +256,66 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, {"ok": True, "systems": ["PI Web API", "OPC UA gateway", "CMS", "SAP PM OData", "OSDU", "PLM", "MES", "QMS", "Production planning"], "writes": len(self.state.writes)})
         if self._auth() is None:
             return self._send(401, {"error": "bearer token required"})
+        if self._rate_limited():
+            return None
+        path = urllib.parse.unquote(u.path)
+        if path.startswith("/osdu/") and not self.headers.get("data-partition-id"):
+            return self._send(400, {"error": "data-partition-id header is required"})
+        extra = {}
+        if path.startswith("/sap/") and self.headers.get("x-csrf-token", "").lower() == "fetch":
+            tok = f"csrf-{len(self.state.csrf) + 1:06d}"
+            with self.state.lock:
+                self.state.csrf.add(tok)
+            extra["x-csrf-token"] = tok
         try:
-            code, body = self.route_get(urllib.parse.unquote(u.path), q)
+            code, body = self.route_get(path, q)
+            body = self._page(path, q, body) if code == 200 else body
         except ValueError as e:
             code, body = 400, {"error": str(e)}
-        self._send(code, body)
+        self._send(code, body, extra)
 
     def do_POST(self):
         u = urllib.parse.urlparse(self.path)
         n = int(self.headers.get("Content-Length") or 0)
         body = json.loads(self.rfile.read(n) or b"{}")
-        role = self._auth()
+        path = urllib.parse.unquote(u.path)
+        if path == "/sim/faults":  # local housekeeping, like /sim/health
+            self.state.faults = {k: v for k, v in body.items() if k == "rate_limit_every" and v}
+            self.state.requests = 0
+            return self._send(200, {"faults": self.state.faults})
+        role, claims = self._ident()
         if role is None:
             return self._send(401, {"error": "bearer token required"})
-        path = urllib.parse.unquote(u.path)
+        if self._rate_limited():
+            return None
+        if path.startswith("/osdu/") and not self.headers.get("data-partition-id"):
+            return self._send(400, {"error": "data-partition-id header is required"})
         if path == "/osdu/api/search/v2/query":  # a read, even though it is a POST
             return self._send(*self.osdu_search(body))
         if path.startswith("/piwebapi/") or path.startswith("/scada/"):
             return self._send(403, {"error": "this service account is read-only; OT writes go through the control room"})
         if path in WRITE_ROUTES:
-            if role != "release":
+            if path.startswith("/sap/") and self.headers.get("x-csrf-token") not in self.state.csrf:
+                return self._send(403, {"error": "CSRF token validation failed"}, {"x-csrf-token": "Required"})
+            draft = self.headers.get("X-Draft-Id", "").strip()
+            if role == "person" and claims is not None:
+                need = ROUTE_ROLES[path]
+                if need not in claims.get("roles", []):
+                    return self._send(403, {"error": f"write refused: {claims.get('name')} does not hold the {need} role this write needs"})
+                who, subject = f"{claims.get('name')} ({need})", claims.get("sub")
+            elif role == "release" and not self.require_identity:
+                who, subject = self.headers.get("X-Approved-By", "").strip(), None
+            elif role == "release":
+                return self._send(403, {"error": "write refused: a signed approver identity is required"})
+            else:
                 return self._send(403, {"error": "write refused: this credential is read-only"})
-            who, draft = self.headers.get("X-Approved-By", "").strip(), self.headers.get("X-Draft-Id", "").strip()
             if not who or not draft:
                 return self._send(403, {"error": "write refused: X-Approved-By and X-Draft-Id are required"})
             with self.state.lock:
                 rec = {"id": f"{WRITE_ROUTES[path].split()[0]}-{len(self.state.writes) + 1:05d}", "system": WRITE_ROUTES[path], "path": path, "approved_by": who, "draft": draft, "body": body,
                        "at": datetime.now(UTC).isoformat(timespec="seconds")}
+                if subject:
+                    rec["subject"] = subject
                 self.state.writes.append(rec)
             return self._send(201, rec)
         self._send(404, {"error": "no such endpoint"})
@@ -325,16 +434,17 @@ class Handler(BaseHTTPRequestHandler):
         return 200, {"results": hits, "totalCount": len(hits)}
 
 
-def make_server(world: Path = DEFAULT_WORLD, port: int = 0, host: str = "127.0.0.1") -> ThreadingHTTPServer:
+def make_server(world: Path = DEFAULT_WORLD, port: int = 0, host: str = "127.0.0.1", verifier=None, require_identity: bool = False,
+                odata_page_size: int | None = None) -> ThreadingHTTPServer:
     st = State(world)
-    handler = type("H", (Handler,), {"state": st})
+    handler = type("H", (Handler,), {"state": st, "verifier": verifier, "require_identity": require_identity, "odata_page_size": odata_page_size})
     srv = ThreadingHTTPServer((host, port), handler)
     srv.state = st  # type: ignore[attr-defined]
     return srv
 
 
-def serve_in_thread(world: Path = DEFAULT_WORLD, port: int = 0) -> tuple[ThreadingHTTPServer, str]:
-    srv = make_server(world, port)
+def serve_in_thread(world: Path = DEFAULT_WORLD, port: int = 0, **kw) -> tuple[ThreadingHTTPServer, str]:
+    srv = make_server(world, port, **kw)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     return srv, f"http://127.0.0.1:{srv.server_address[1]}"
 

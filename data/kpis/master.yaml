@@ -2864,3 +2864,149 @@ kpis:
     subdomains: [procurement_spend_analytics]
     related_personas: [Sourcing Director, Category Manager (Indirect)]
     decisionsSupported: [psa.d.tail_spend_strategy, psa.d.consolidate_suppliers]
+
+  # ============================================================
+  # Energy: refinery rotating-equipment reliability and upstream artificial lift (Nov 2026).
+  # Computed in dbt (modeling/dbt/models/refinery_operations, upstream_artificial_lift) over
+  # data exported from the Factory to Field world.
+  # ============================================================
+  - id: ref.kpi.pump_mtbf
+    name: Pump MTBF (installed time per failure)
+    formula: sum(days each unit was installed in the period) / count(failures in the period)
+    unit: days
+    direction: higher_is_better
+    definition: Installed pump-days divided by failures, counted per physical pump through its dated installations, so a pump that moves between positions keeps its own record. ISO 14224 counts only functional failures.
+    vertical: Energy
+    subdomains: [refinery_operations]
+    related_personas: [Reliability Engineer, Maintenance Planner]
+    decisionsSupported: [ref.d.bad_actor_fix, ref.d.containment]
+  - id: ref.kpi.failures_per_pump_year
+    name: Failures per Pump-Year
+    formula: count(failures) / (sum(installed_days) / 365)
+    unit: failures/pump-year
+    direction: lower_is_better
+    definition: Failure rate per year of installed pump time. Comparable across fleets of different size, and the base for the suspect-lot ratio.
+    vertical: Energy
+    subdomains: [refinery_operations]
+    related_personas: [Reliability Engineer]
+    decisionsSupported: [ref.d.bad_actor_fix, ref.d.turnaround_scope]
+  - id: ref.kpi.mechanical_availability
+    name: Mechanical Availability (pumps)
+    formula: 1 - sum(repair_days) / sum(position_days)
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of position-days when a pump position was not under repair. High numbers can hide repeat failures on one position, so read it with the bad-actor count.
+    vertical: Energy
+    subdomains: [refinery_operations]
+    related_personas: [Unit Operations Manager, Reliability Engineer]
+    decisionsSupported: [ref.d.repair_window, ref.d.switch_to_spare]
+  - id: ref.kpi.bad_actor_count
+    name: Bad-Actor Positions
+    formula: count(positions with >= 2 failures in the last 365 days)
+    unit: positions
+    direction: lower_is_better
+    definition: Positions that failed twice or more in a year, whichever pump was installed. A position-level view that catches service or design problems a per-pump view misses.
+    vertical: Energy
+    subdomains: [refinery_operations]
+    related_personas: [Reliability Engineer]
+    decisionsSupported: [ref.d.bad_actor_fix]
+  - id: ref.kpi.lot_failure_ratio
+    name: Suspect-Lot Failure Ratio
+    formula: failures per pump-year for units built with the lot / failures per pump-year for the fleet
+    unit: ratio
+    direction: lower_is_better
+    definition: How much more often pumps built with one component lot fail than the fleet. Needs the maker's as-built genealogy joined on serial number; read it only with several pump-years of exposure.
+    vertical: Energy
+    subdomains: [refinery_operations]
+    related_personas: [Reliability Engineer, OT/IT Integration Engineer]
+    decisionsSupported: [ref.d.containment, ref.d.warranty_claim]
+  - id: ref.kpi.reactive_work_share
+    name: Reactive Work Share
+    formula: corrective orders / all maintenance orders
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of maintenance orders raised after a malfunction (PM02) rather than planned (PM01) or inspection (PM03).
+    vertical: Energy
+    subdomains: [refinery_operations]
+    related_personas: [Maintenance Planner]
+    decisionsSupported: [ref.d.repair_window, ref.d.turnaround_scope]
+  - id: ref.kpi.time_in_alarm
+    name: Vibration Days Above Alarm
+    formula: count(pump-days where daily max vibration > alarm limit)
+    unit: pump-days
+    direction: lower_is_better
+    definition: Pump-days whose maximum drive-end vibration exceeded the tag's alarm limit. A flat-lining sensor never shows up here, which is why stuck-sensor checks sit beside it.
+    vertical: Energy
+    subdomains: [refinery_operations]
+    related_personas: [Console Operator, Reliability Engineer]
+    decisionsSupported: [ref.d.real_or_instrument, ref.d.switch_to_spare]
+  - id: ual.kpi.esp_run_life_median
+    name: ESP Run Life (Kaplan-Meier median)
+    formula: median of the Kaplan-Meier survival curve over string runs, running strings censored
+    unit: days
+    direction: higher_is_better
+    definition: Median days an ESP string runs before failing, estimated with Kaplan-Meier so strings still in the hole count as censored rather than being dropped or counted as failures.
+    vertical: Energy
+    subdomains: [upstream_artificial_lift]
+    related_personas: [Artificial Lift Engineer, Production Engineer]
+    decisionsSupported: [ual.d.replace_design, ual.d.lot_containment]
+  - id: ual.kpi.esp_failures_per_well_year
+    name: ESP Failures per Well-Year
+    formula: count(failed runs) / (sum(run_days) / 365)
+    unit: failures/well-year
+    direction: lower_is_better
+    definition: ESP failures per year of string run time across the field.
+    vertical: Energy
+    subdomains: [upstream_artificial_lift]
+    related_personas: [Artificial Lift Engineer]
+    decisionsSupported: [ual.d.replace_design, ual.d.book_rig]
+  - id: ual.kpi.deferred_production
+    name: Deferred Production
+    formula: sum(expected_oil_bbl_d - actual_oil_bbl_d) over days a well is down or restricted
+    unit: bbl
+    direction: lower_is_better
+    definition: Oil not produced while a well waits for a rig or runs restricted, against its expected rate. Drives the order in which failed wells get rigs.
+    vertical: Energy
+    subdomains: [upstream_artificial_lift]
+    related_personas: [Production Engineer, Asset Manager]
+    decisionsSupported: [ual.d.book_rig, ual.d.slow_or_pull]
+  - id: ual.kpi.well_uptime
+    name: Well Uptime
+    formula: producing well-days / calendar well-days
+    unit: "%"
+    direction: higher_is_better
+    definition: Share of calendar days a well produced, from daily allocated production.
+    vertical: Energy
+    subdomains: [upstream_artificial_lift]
+    related_personas: [Production Operations Supervisor]
+    decisionsSupported: [ual.d.book_rig]
+  - id: ual.kpi.workover_wait_days
+    name: Days Waiting on a Rig
+    formula: avg(rig_start - failure_date)
+    unit: days
+    direction: lower_is_better
+    definition: Average days between an ESP failure and the workover rig arriving on the well.
+    vertical: Energy
+    subdomains: [upstream_artificial_lift]
+    related_personas: [Well Intervention Planner]
+    decisionsSupported: [ual.d.book_rig]
+  - id: ual.kpi.difa_vendor_attributable
+    name: Vendor-Attributable Failures (DIFA)
+    formula: DIFA reports with a manufacturing or material finding / all DIFA reports
+    unit: "%"
+    direction: lower_is_better
+    definition: Share of teardowns (API RP 11S1) whose finding points at manufacturing or material rather than well conditions or operation; the evidence base for warranty claims.
+    vertical: Energy
+    subdomains: [upstream_artificial_lift]
+    related_personas: [Artificial Lift Engineer, Supplier Quality Engineer]
+    decisionsSupported: [ual.d.warranty_claim, ual.d.lot_containment]
+  - id: ual.kpi.motor_temp_margin
+    name: Motor Temperature Margin
+    formula: motor design limit - daily max motor temperature
+    unit: degC
+    direction: higher_is_better
+    definition: Headroom between the ESP motor's design temperature limit and its hottest reading of the day; shrinking margin is the early sign the Field A story starts from.
+    vertical: Energy
+    subdomains: [upstream_artificial_lift]
+    related_personas: [SCADA Operator, Artificial Lift Engineer]
+    decisionsSupported: [ual.d.slow_or_pull, ual.d.real_or_gas]

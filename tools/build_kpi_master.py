@@ -10,14 +10,12 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
 import yaml
-
 
 REPO = Path(__file__).resolve().parent.parent
 TAXO_DIR = REPO / "data" / "taxonomy"
@@ -38,7 +36,7 @@ def _id_to_default_definition(name: str, formula: str, unit: str, sub: str) -> s
 
 
 def build_master(taxo_dir: Path) -> list[dict[str, Any]]:
-    by_id: "OrderedDict[str, dict[str, Any]]" = OrderedDict()
+    by_id: OrderedDict[str, dict[str, Any]] = OrderedDict()
     for f in sorted(taxo_dir.glob("*.yaml")):
         sub = _read_yaml(f)
         sub_id = sub.get("id", f.stem)

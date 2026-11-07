@@ -487,7 +487,7 @@ const mesQuality: LineageGraph = {
   nodes: [
     { id: "src.siemens", label: "Siemens Opcenter", sub: "MES", layer: 0, row: 0, kind: "source" },
     { id: "src.rock", label: "Rockwell FactoryTalk PC", sub: "MES", layer: 0, row: 1, kind: "source" },
-    { id: "src.ge", label: "GE Proficy Plant Apps", sub: "MES", layer: 0, row: 2, kind: "source" },
+    { id: "src.ge", label: "Proficy Plant Applications", sub: "MES", layer: 0, row: 2, kind: "source" },
     { id: "src.sapdm", label: "SAP Digital Manufacturing", sub: "MES", layer: 0, row: 3, kind: "source" },
     { id: "src.pi", label: "AVEVA PI System", sub: "Historian", layer: 0, row: 4, kind: "source" },
     { id: "stg.wo", label: "stg_work_orders", sub: "view", layer: 1, row: 0, kind: "stage" },
@@ -1561,18 +1561,18 @@ const pricingAndPromotions: LineageGraph = {
 };
 
 // ---------------------------------------------------------------------------
-// predictive_maintenance  (PTC ThingWorx / Siemens MindSphere / GE APM / Aveva PI / IBM Maximo / Augury / Uptake / SparkCognition)
+// predictive_maintenance  (PTC ThingWorx / Siemens Insights Hub / GE Vernova APM / AVEVA PI / IBM Maximo / Augury / Uptake / Avathon)
 // ---------------------------------------------------------------------------
 
 const predictiveMaintenance: LineageGraph = {
   title: "Predictive Maintenance",
   vertical: "Manufacturing",
   oneLiner:
-    "Sensor-driven failure prediction, RUL, and condition-based maintenance — OPC UA / MQTT telemetry through ThingWorx + MindSphere + PI System + APM, advisories routed to Maximo / SAP PM.",
+    "Sensor-driven failure prediction, RUL, and condition-based maintenance — OPC UA / MQTT telemetry through ThingWorx + Insights Hub + PI System + APM, advisories routed to Maximo / SAP PM.",
   nodes: [
     // sources
     { id: "src.thingworx", label: "PTC ThingWorx", sub: "IIoT Platform", layer: 0, row: 0, kind: "source" },
-    { id: "src.mindsphere", label: "Siemens MindSphere / Senseye", sub: "IIoT + PdM SaaS", layer: 0, row: 1, kind: "source" },
+    { id: "src.insightshub", label: "Siemens Insights Hub / Senseye", sub: "IIoT + PdM SaaS", layer: 0, row: 1, kind: "source" },
     { id: "src.pi", label: "Aveva PI System", sub: "Process Historian", layer: 0, row: 2, kind: "source" },
     { id: "src.maximo", label: "IBM Maximo APM + EAM", sub: "APM + CMMS", layer: 0, row: 3, kind: "source" },
     { id: "src.augury", label: "Augury / SKF / Emerson AMS", sub: "Vibration Analytics", layer: 0, row: 4, kind: "source" },
@@ -1613,8 +1613,8 @@ const predictiveMaintenance: LineageGraph = {
   ],
   edges: [
     { from: "src.thingworx", to: "stg.reading" },
-    { from: "src.mindsphere", to: "stg.reading" },
-    { from: "src.mindsphere", to: "stg.pred" },
+    { from: "src.insightshub", to: "stg.reading" },
+    { from: "src.insightshub", to: "stg.pred" },
     { from: "src.pi", to: "stg.reading" },
     { from: "src.maximo", to: "stg.wo" },
     { from: "src.maximo", to: "stg.asset" },

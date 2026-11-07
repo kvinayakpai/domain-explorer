@@ -30,7 +30,8 @@ function readBody(raw: unknown): ChatBody {
         const r = (h as Record<string, unknown>).role;
         const c = (h as Record<string, unknown>).content;
         if ((r === "user" || r === "assistant") && typeof c === "string") {
-          return [{ role: r, content: c }];
+          const turn: { role: "user" | "assistant"; content: string } = { role: r, content: c };
+          return [turn];
         }
         return [];
       })

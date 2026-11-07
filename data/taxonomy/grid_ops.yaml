@@ -24,7 +24,7 @@ dataModel:
     - { name: Telemetry, description: 'SCADA telemetry' }
 
 sourceSystems:
-  - { vendor: GE Digital, product: ADMS, category: ADMS }
+  - { vendor: GE Vernova, product: GridOS ADMS, category: ADMS }
   - { vendor: Schneider Electric, product: EcoStruxure ADMS, category: ADMS }
   - { vendor: OSI, product: monarch SCADA, category: SCADA }
   - { vendor: Siemens, product: Spectrum Power, category: EMS }

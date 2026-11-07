@@ -29,18 +29,11 @@ from __future__ import annotations
 
 import copy
 import time
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Iterator,
-    List,
-    Mapping,
-    Optional,
-    Tuple,
 )
-
 
 # -- exceptions ---------------------------------------------------------------
 
@@ -63,7 +56,7 @@ class RestResponse:
     """Returned from every HTTP-method call. Mirrors httpx.Response shape."""
 
     status: int
-    headers: Dict[str, str]
+    headers: dict[str, str]
     body: Any
     url: str = ""
 
@@ -92,8 +85,8 @@ class OAuth2ClientCredentials:
     token_url: str
     client_id: str
     client_secret: str = field(repr=False)
-    scope: Optional[str] = None
-    _token: Optional[str] = field(default=None, init=False, repr=False)
+    scope: str | None = None
+    _token: str | None = field(default=None, init=False, repr=False)
     _expires_at: float = field(default=0.0, init=False, repr=False)
     _refresh_counter: int = field(default=0, init=False, repr=False)
 
@@ -108,7 +101,7 @@ class OAuth2ClientCredentials:
             self._expires_at = time.time() + 3600
         return self._token
 
-    def auth_header(self) -> Dict[str, str]:
+    def auth_header(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self.access_token()}"}
 
 
@@ -122,12 +115,12 @@ class RetryPolicy:
     max_attempts: int = 3
     initial_delay_s: float = 0.0
     backoff_factor: float = 2.0
-    retry_on: Tuple[int, ...] = (429, 500, 502, 503, 504)
+    retry_on: tuple[int, ...] = (429, 500, 502, 503, 504)
 
     def __call__(self, fn: Callable[..., RestResponse]) -> Callable[..., RestResponse]:
         def wrapper(*args: Any, **kwargs: Any) -> RestResponse:
             delay = self.initial_delay_s
-            last_error: Optional[BaseException] = None
+            last_error: BaseException | None = None
             for attempt in range(1, self.max_attempts + 1):
                 try:
                     response = fn(*args, **kwargs)
@@ -149,14 +142,14 @@ class RetryPolicy:
 # -- JSON Schema validation (tiny subset) ------------------------------------
 
 
-def validate_json_schema(payload: Any, schema: Mapping[str, Any]) -> List[str]:
+def validate_json_schema(payload: Any, schema: Mapping[str, Any]) -> list[str]:
     """Return a list of validation errors. Empty list = valid.
 
     Supports just enough of JSON Schema (Draft 2020-12) to demonstrate
     the integration shape: ``type``, ``required``, ``properties``,
     ``items``. Real production code should call out to ``jsonschema``.
     """
-    errors: List[str] = []
+    errors: list[str] = []
     _walk(payload, schema, "", errors)
     return errors
 
@@ -172,7 +165,7 @@ _TYPE_MAP = {
 }
 
 
-def _walk(value: Any, schema: Mapping[str, Any], path: str, errors: List[str]) -> None:
+def _walk(value: Any, schema: Mapping[str, Any], path: str, errors: list[str]) -> None:
     expected = schema.get("type")
     if expected is not None:
         py = _TYPE_MAP.get(expected)
@@ -209,7 +202,7 @@ _CUSTOMERS = [
 ]
 
 
-def _route_get_customer(path: str, query: Dict[str, str]) -> RestResponse:
+def _route_get_customer(path: str, query: dict[str, str]) -> RestResponse:
     parts = path.split("/")
     if len(parts) >= 3 and parts[1] == "customers":
         if len(parts) == 2 or (len(parts) == 3 and parts[2] == ""):
@@ -254,14 +247,14 @@ class RestJsonClient:
     """
 
     base_url: str
-    oauth2: Optional[OAuth2ClientCredentials] = None
-    default_headers: Dict[str, str] = field(default_factory=dict)
-    retry: Optional[RetryPolicy] = None
+    oauth2: OAuth2ClientCredentials | None = None
+    default_headers: dict[str, str] = field(default_factory=dict)
+    retry: RetryPolicy | None = None
     timeout_s: float = 10.0
 
     # --- low-level helpers ---
 
-    def _request_headers(self, extra: Optional[Mapping[str, str]] = None) -> Dict[str, str]:
+    def _request_headers(self, extra: Mapping[str, str] | None = None) -> dict[str, str]:
         h = {"Accept": "application/json", "User-Agent": "domain-explorer-stub/0.1"}
         if self.oauth2:
             h.update(self.oauth2.auth_header())
@@ -279,9 +272,9 @@ class RestJsonClient:
         self,
         method: str,
         path: str,
-        query: Optional[Mapping[str, Any]] = None,
-        body: Optional[Any] = None,
-        headers: Optional[Mapping[str, str]] = None,
+        query: Mapping[str, Any] | None = None,
+        body: Any | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> RestResponse:
         url = self._absolute(path)
         # Force header build so the auth path is exercised.
@@ -310,27 +303,27 @@ class RestJsonClient:
 
     # --- public API ---
 
-    def get(self, path: str, query: Optional[Mapping[str, Any]] = None,
-            headers: Optional[Mapping[str, str]] = None) -> RestResponse:
+    def get(self, path: str, query: Mapping[str, Any] | None = None,
+            headers: Mapping[str, str] | None = None) -> RestResponse:
         fn = self._dispatch
         if self.retry is not None:
             fn = self.retry(fn)
         return fn("GET", path, query=query, headers=headers)
 
     def post(self, path: str, body: Any,
-             headers: Optional[Mapping[str, str]] = None) -> RestResponse:
+             headers: Mapping[str, str] | None = None) -> RestResponse:
         return self._dispatch("POST", path, body=body, headers=headers)
 
     def put(self, path: str, body: Any,
-            headers: Optional[Mapping[str, str]] = None) -> RestResponse:
+            headers: Mapping[str, str] | None = None) -> RestResponse:
         return self._dispatch("PUT", path, body=body, headers=headers)
 
     def patch(self, path: str, body: Any,
-              headers: Optional[Mapping[str, str]] = None) -> RestResponse:
+              headers: Mapping[str, str] | None = None) -> RestResponse:
         return self._dispatch("PATCH", path, body=body, headers=headers)
 
     def delete(self, path: str,
-               headers: Optional[Mapping[str, str]] = None) -> RestResponse:
+               headers: Mapping[str, str] | None = None) -> RestResponse:
         return self._dispatch("DELETE", path, headers=headers)
 
     # --- pagination ---
@@ -338,12 +331,12 @@ class RestJsonClient:
     def paginate(
         self,
         path: str,
-        query: Optional[Mapping[str, Any]] = None,
+        query: Mapping[str, Any] | None = None,
         items_key: str = "items",
         next_key: str = "next_page",
         page_param: str = "page",
         max_pages: int = 100,
-    ) -> Iterator[Dict[str, Any]]:
+    ) -> Iterator[dict[str, Any]]:
         """Yield items across pages until ``next_page`` is null or
         ``max_pages`` is reached. Honours either cursor-style or numeric
         page-style pagination depending on what the server returns."""
@@ -354,8 +347,7 @@ class RestJsonClient:
             r = self.get(path, query=q)
             r.raise_for_status()
             payload = r.body if isinstance(r.body, dict) else {}
-            for item in payload.get(items_key, []):
-                yield item
+            yield from payload.get(items_key, [])
             nxt = payload.get(next_key)
             if nxt is None:
                 return

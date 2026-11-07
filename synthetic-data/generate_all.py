@@ -72,6 +72,8 @@ SUBDOMAINS = [
     "sop_supply_chain_planning",
     "predictive_maintenance",
     "procurement_spend_analytics",
+    "refinery_operations",
+    "upstream_artificial_lift",
     # Story world: one Bengaluru store, its DC and dairy route (Why Domain Matters series).
     "india_grocery",
 ]

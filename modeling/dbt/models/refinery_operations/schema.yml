@@ -1,0 +1,68 @@
+version: 2
+
+models:
+  - name: int_refinery_operations__link_installation
+    description: Data Vault link between a position hub and a pump hub, one row per installation.
+    columns:
+      - name: hk_installation
+        tests: [unique, not_null]
+
+  - name: dim_functional_location_ro
+    description: Pump positions (SAP PM functional locations) with their refinery.
+    columns:
+      - name: functional_location_key
+        tests: [unique, not_null]
+      - name: train_letter
+        tests:
+          - accepted_values: { values: ['A', 'B'] }
+
+  - name: dim_equipment_ro
+    description: Pumps by serial with the bearing and seal lots they were built with.
+    columns:
+      - name: equipment_key
+        tests: [unique, not_null]
+
+  - name: fct_installation_ro
+    description: One row per installation; installed days to the as-of date while in place.
+    columns:
+      - name: installation_id
+        tests: [unique, not_null]
+      - name: functional_location_key
+        tests:
+          - not_null
+          - relationships: { to: ref('dim_functional_location_ro'), field: functional_location_key }
+      - name: equipment_key
+        tests:
+          - not_null
+          - relationships: { to: ref('dim_equipment_ro'), field: equipment_key }
+      - name: installed_days
+        tests: [not_null]
+
+  - name: fct_failure_ro
+    description: One row per functional failure with ISO 14224 mode and the pump's lots.
+    columns:
+      - name: failure_event_id
+        tests: [unique, not_null]
+      - name: iso14224_failure_mode
+        tests: [not_null]
+      - name: equipment_key
+        tests:
+          - relationships: { to: ref('dim_equipment_ro'), field: equipment_key }
+
+  - name: kpi_pump_reliability_by_lot_ro
+    description: Pump MTBF, failures per pump-year and the lot failure ratio per bearing lot.
+    columns:
+      - name: bearing_lot_id
+        tests: [unique, not_null]
+
+  - name: kpi_bad_actor_positions_ro
+    description: Positions with two or more failures in the year before the as-of date.
+
+  - name: fct_vibration_day_ro
+    description: Drive-end vibration per tag per day with an above-alarm flag.
+
+  - name: kpi_mechanical_availability_ro
+    description: Mechanical availability per refinery over the historian period.
+    columns:
+      - name: site_id
+        tests: [unique, not_null]

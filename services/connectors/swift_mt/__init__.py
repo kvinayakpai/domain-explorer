@@ -5,6 +5,6 @@ runnable demonstrations against MT103 and MT202 messages. Registry id:
 ``conn.swift_iso20022``.
 """
 
-from .parser import SwiftMtParser, SwiftMtParseError
+from .parser import SwiftMtParseError, SwiftMtParser
 
-__all__ = ["SwiftMtParser", "SwiftMtParseError"]
+__all__ = ["SwiftMtParseError", "SwiftMtParser"]

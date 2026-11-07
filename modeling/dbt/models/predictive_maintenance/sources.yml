@@ -6,7 +6,7 @@ sources:
       Synthetic Predictive Maintenance source schema produced by
       synthetic-data/predictive_maintenance/generate.py and loaded into the
       populated DuckDB. Mirrors what an industrial plant with PTC ThingWorx,
-      Siemens MindSphere, GE Predix, Aveva PI System, IBM Maximo APM, Augury,
+      Siemens Insights Hub, GE Vernova APM, AVEVA PI System, IBM Maximo APM, Augury,
       and Uptake would land after OPC UA / MQTT / Sparkplug B ingest plus
       CMMS CDC.
     schema: predictive_maintenance

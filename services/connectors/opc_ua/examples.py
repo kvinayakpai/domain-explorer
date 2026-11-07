@@ -10,7 +10,7 @@ with a 250 ms sample interval for 5 samples.
 
 from __future__ import annotations
 
-from .client import OpcUaClient, NodeValue
+from .client import NodeValue, OpcUaClient
 
 
 def _banner(title: str) -> None:

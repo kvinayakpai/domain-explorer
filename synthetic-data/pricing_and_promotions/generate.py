@@ -118,7 +118,7 @@ def _products(ctx, n=10_000):
         "gtin": [f"{rng.integers(10**13, 10**14):014d}" for _ in range(n)],
         "sku": [f"SKU{i:07d}" for i in range(1, n + 1)],
         "name": [f"{rng.choice(BRANDS)} {CATEGORIES[i][1]} Item {idx:05d}"
-                 for idx, i in zip(range(1, n + 1), cat_idx)],
+                 for idx, i in zip(range(1, n + 1), cat_idx, strict=True)],
         "brand": rng.choice(BRANDS, size=n),
         "category_id": categories,
         "subcategory_id": rng.choice(SUBCATEGORIES, size=n),

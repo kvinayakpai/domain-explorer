@@ -9,6 +9,7 @@ import csv
 import json
 import re
 import sqlite3
+import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -140,33 +141,106 @@ class FileSource:
 
 # ======================================================================================= HTTP
 class HttpSource:
-    """Talks to the simulators. `token` is a read-only credential: the simulators refuse writes made with it."""
-    kind = "http"
+    """Talks to the simulators, and is written for the real systems' behaviour.
 
-    def __init__(self, base: str, token: str = "ro-agent") -> None:
-        self.base, self.token = base.rstrip("/"), token
+    `token` is a read-only credential: a static bearer string, or a token provider with `token()` and `refresh()`
+    (pilot.connectors.ClientCredentials, an OAuth2 client-credentials client). The simulators refuse writes made with it.
+    The client retries 429 and 5xx answers with back-off (Retry-After first), refreshes an expired token once on 401,
+    follows server-driven paging (SAP OData `__next`, PI Web API `Links.Next`), fetches a CSRF token before SAP writes,
+    and sends OSDU's `data-partition-id` header.
+    """
+    kind = "http"
+    RETRY_CODES = (429, 502, 503, 504)
+
+    def __init__(self, base: str, token="ro-agent", partition: str = "aurelia", retries: int = 4, backoff_s: float = 0.2) -> None:
+        self.base, self.auth = base.rstrip("/"), token
+        self.partition, self.retries, self.backoff_s = partition, retries, backoff_s
         self._wid: dict[str, dict] = {}
+        self._csrf: str | None = None
+        self.retried = 0          # how many times a request was retried (observability for tests and the console)
+
+    @property
+    def token(self) -> str:
+        return self.auth.token() if hasattr(self.auth, "token") else self.auth
+
+    def _headers(self, path: str, token: str | None) -> dict:
+        h = {"Authorization": f"Bearer {token or self.token}", "Accept": "application/json"}
+        if path.startswith("/osdu/"):
+            h["data-partition-id"] = self.partition
+        return h
+
+    def _open(self, make_req, path: str):
+        """Send with retries on 429/5xx and one token refresh on 401. `make_req()` builds a fresh request each attempt."""
+        refreshed = False
+        for attempt in range(self.retries + 1):
+            try:
+                return urllib.request.urlopen(make_req(), timeout=30)
+            except urllib.error.HTTPError as e:
+                if e.code in self.RETRY_CODES and attempt < self.retries:
+                    wait = e.headers.get("Retry-After")
+                    time.sleep(min(float(wait) if wait else self.backoff_s * 2 ** attempt, 2.0))
+                    self.retried += 1
+                    continue
+                if e.code == 401 and not refreshed and hasattr(self.auth, "refresh"):
+                    self.auth.refresh()
+                    refreshed = True
+                    continue
+                raise
+        raise SourceError(f"gave up on {path} after {self.retries} retries")
 
     # -- plumbing
     def get(self, path: str, **params) -> dict:
         qs = urllib.parse.urlencode({k: v for k, v in params.items() if v is not None}, quote_via=urllib.parse.quote)
-        req = urllib.request.Request(f"{self.base}{path}" + (f"?{qs}" if qs else ""), headers={"Authorization": f"Bearer {self.token}", "Accept": "application/json"})
-        try:
-            with urllib.request.urlopen(req, timeout=30) as r:
-                return json.loads(r.read())
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                return {}
-            raise SourceError(f"{e.code} {path}: {e.read()[:200]!r}") from e
+        url = f"{self.base}{path}" + (f"?{qs}" if qs else "")
+        out: dict | None = None
+        while url:
+            try:
+                with self._open(lambda u=url: urllib.request.Request(u, headers=self._headers(path, None)), path) as r:
+                    page = json.loads(r.read())
+            except urllib.error.HTTPError as e:
+                if e.code == 404:
+                    return {}
+                raise SourceError(f"{e.code} {path}: {e.read()[:200]!r}") from e
+            url = None
+            if isinstance(page.get("d"), dict) and "results" in page["d"]:          # SAP OData v2 paging
+                if out is None:
+                    out = {"d": {"results": []}}
+                out["d"]["results"].extend(page["d"]["results"])
+                nxt = page["d"].get("__next")
+                url = (nxt if nxt.startswith("http") else f"{self.base}{nxt}") if nxt else None
+            elif isinstance(page.get("Items"), list) and (isinstance(page.get("Links"), dict) or out is not None):   # PI Web API paging
+                if out is None:
+                    out = {k: v for k, v in page.items() if k != "Links"} | {"Items": []}
+                out["Items"].extend(page["Items"])
+                nxt = (page.get("Links") or {}).get("Next")
+                url = (nxt if nxt.startswith("http") else f"{self.base}{nxt}") if nxt else None
+            else:
+                return page if out is None else out
+        return out if out is not None else {}
+
+    def csrf_token(self, path: str, token: str | None = None) -> str:
+        """SAP Gateway: fetch a CSRF token with a GET before any modifying request."""
+        h = self._headers(path, token) | {"x-csrf-token": "fetch"}
+        with self._open(lambda: urllib.request.Request(f"{self.base}{path}?$top=0", headers=h), path) as r:
+            self._csrf = r.headers.get("x-csrf-token")
+        return self._csrf or ""
 
     def post(self, path: str, body: dict, token: str | None = None, headers: dict | None = None) -> dict:
-        req = urllib.request.Request(f"{self.base}{path}", data=json.dumps(body).encode(), method="POST",
-                                     headers={"Authorization": f"Bearer {token or self.token}", "Content-Type": "application/json", **(headers or {})})
-        try:
-            with urllib.request.urlopen(req, timeout=30) as r:
-                return json.loads(r.read())
-        except urllib.error.HTTPError as e:
-            raise SourceError(f"{e.code} {path}: {e.read()[:300].decode(errors='replace')}") from e
+        extra = dict(headers or {})
+        for attempt in range(2):
+            if path.startswith("/sap/"):
+                extra["x-csrf-token"] = self._csrf if (self._csrf and attempt == 0) else self.csrf_token(path, token)
+            def make(extra=extra):
+                return urllib.request.Request(f"{self.base}{path}", data=json.dumps(body).encode(), method="POST",
+                                              headers=self._headers(path, token) | {"Content-Type": "application/json", **extra})
+            try:
+                with self._open(make, path) as r:
+                    return json.loads(r.read())
+            except urllib.error.HTTPError as e:
+                if e.code == 403 and e.headers.get("x-csrf-token") == "Required" and attempt == 0:
+                    continue     # stale CSRF token: fetch a new one once
+                raise SourceError(f"{e.code} {path}: {e.read()[:300].decode(errors='replace')}") from e
+        raise SourceError(f"403 {path}: CSRF token validation failed twice")
 
     @staticmethod
     def odata(resp: dict) -> list[dict]:

@@ -75,7 +75,7 @@ def _calendar(ctx, n=12_000):
         "date": days.date,
         "iso_week": [d.isocalendar()[1] for d in days],
         "fiscal_quarter": [(d.month - 1) // 3 + 1 for d in days],
-        "is_weekend": np.isin(days.dayofweek, [5, 6]),
+        "is_weekend": np.isin(days.day_of_week, [5, 6]),
         "is_holiday": rng.random(n) < 0.03,
     })
 

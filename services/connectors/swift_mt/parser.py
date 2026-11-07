@@ -29,7 +29,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
 
 
 class SwiftMtParseError(ValueError):
@@ -54,7 +53,7 @@ class SwiftMtParser:
 
     # -- public API ---------------------------------------------------
 
-    def parse(self, raw: str) -> Dict[str, object]:
+    def parse(self, raw: str) -> dict[str, object]:
         """Parse a raw MT message into a dict of named blocks.
 
         The returned dict has these top-level keys when present:
@@ -82,7 +81,7 @@ class SwiftMtParser:
                 f"{sorted(blocks)}"
             )
 
-        out: Dict[str, object] = {
+        out: dict[str, object] = {
             "basic_header": self._parse_basic_header(blocks[1]),
             "application_header": self._parse_application_header(blocks[2]),
         }
@@ -102,10 +101,10 @@ class SwiftMtParser:
 
     # -- block splitting ---------------------------------------------
 
-    def _split_blocks(self, raw: str) -> Dict[int, str]:
+    def _split_blocks(self, raw: str) -> dict[int, str]:
         """Return a dict mapping block id -> body. Handles nested ``{...}``
         in block 3 (sub-tags) and block 4's ``-}`` close marker."""
-        blocks: Dict[int, str] = {}
+        blocks: dict[int, str] = {}
         i = 0
         n = len(raw)
         while i < n:
@@ -155,7 +154,7 @@ class SwiftMtParser:
     # -- block 1: basic header --------------------------------------
 
     @staticmethod
-    def _parse_basic_header(body: str) -> Dict[str, str]:
+    def _parse_basic_header(body: str) -> dict[str, str]:
         """Block 1 is fixed-width: F01BANKBEBBAXXX0000000000."""
         b = body.strip()
         if len(b) < 25:
@@ -172,7 +171,7 @@ class SwiftMtParser:
     # -- block 2: application header --------------------------------
 
     @staticmethod
-    def _parse_application_header(body: str) -> Dict[str, str]:
+    def _parse_application_header(body: str) -> dict[str, str]:
         """Block 2 has Input/Output variants:
 
         * Input  : ``I`` MTtype DestinationLT [Priority] [DeliveryMonitoring] [Obsolescence]
@@ -183,7 +182,7 @@ class SwiftMtParser:
             return {"raw": b}
         io = b[0]
         message_type = b[1:4]
-        out: Dict[str, str] = {
+        out: dict[str, str] = {
             "input_output": io,
             "message_type": message_type,
             "raw": b,
@@ -210,22 +209,22 @@ class SwiftMtParser:
     # -- generic { tag : value } sub-block parser -------------------
 
     @staticmethod
-    def _parse_subtags(body: str) -> Dict[str, str]:
+    def _parse_subtags(body: str) -> dict[str, str]:
         """Used for block 3 (user header) and block 5 (trailer). Sub-tags
         look like ``{108:REF12345}{121:uuid}``."""
-        out: Dict[str, str] = {}
+        out: dict[str, str] = {}
         for m in re.finditer(r"\{(\d{3}):([^}]*)\}", body):
             out[m.group(1)] = m.group(2)
         return out
 
     # -- block 4: text block ----------------------------------------
 
-    def _parse_text_block(self, body: str) -> Dict[str, object]:
+    def _parse_text_block(self, body: str) -> dict[str, object]:
         """Extract ``:tag:`` fields from block 4. Values that span
         multiple lines (e.g. ``:50K:`` ordering customer with name and
         address) are kept as multi-line strings."""
         b = body.strip("\n").strip()
-        out: Dict[str, object] = {}
+        out: dict[str, object] = {}
         for m in _TAG_RE.finditer(b):
             tag = m.group("tag")
             value = m.group("value").rstrip("\n").rstrip()
@@ -238,7 +237,7 @@ class SwiftMtParser:
         return out
 
     @staticmethod
-    def _parse_32a(value: str) -> Optional[Dict[str, object]]:
+    def _parse_32a(value: str) -> dict[str, object] | None:
         """``:32A:YYMMDDCCCN,NN`` — value date (6), ISO currency (3),
         amount with comma decimal."""
         s = value.strip().replace("\n", "")
@@ -262,12 +261,12 @@ def _yymmdd_to_iso(s: str) -> str:
 # Convenience helpers ---------------------------------------------------------
 
 
-def parse_message(raw: str, *, strict: bool = True) -> Dict[str, object]:
+def parse_message(raw: str, *, strict: bool = True) -> dict[str, object]:
     """Module-level helper: ``SwiftMtParser(strict=strict).parse(raw)``."""
     return SwiftMtParser(strict=strict).parse(raw)
 
 
-def list_block_4_tags(parsed: Dict[str, object]) -> List[Tuple[str, str]]:
+def list_block_4_tags(parsed: dict[str, object]) -> list[tuple[str, str]]:
     """Return a flat ``[(tag, value), ...]`` list from the parsed text
     block, in declaration order."""
     text = parsed.get("text")

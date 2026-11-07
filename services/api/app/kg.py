@@ -75,7 +75,8 @@ def _load_snapshot() -> dict[str, Any]:
             status_code=503,
             detail="KG snapshot missing — run `python kg/build_graph.py`.",
         )
-    return json.loads(j.read_text(encoding="utf-8"))
+    data: dict[str, Any] = json.loads(j.read_text(encoding="utf-8"))
+    return data
 
 
 def _graph_from_snapshot(snap: dict[str, Any]) -> nx.MultiDiGraph:

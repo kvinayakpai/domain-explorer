@@ -339,6 +339,8 @@ function viewSub(m) {
     h('div', { class: 'crumbs' }, link('', null, 'Atlas'), ' / ', link('v.' + v.id, null, v.label), ' / ', h('span', { text: s.name })),
     h('div', { class: 'page-h' }, h('h1', { text: s.name }), h('div', { class: 'pill-row' }, badges(s))),
     h('p', { class: 'lede', text: s.one }));
+  if (s.demo) m.append(h('p', { class: 'lede' }, h('strong', { text: 'Working demo: ' }),
+    h('a', { href: s.demo.url, target: '_blank', rel: 'noopener', text: s.demo.title }), ' \u2014 ' + s.demo.blurb));
   var tb = h('div', { class: 'tabs', role: 'tablist' });
   tabs.forEach(function (t) {
     tb.append(h('button', { role: 'tab', type: 'button', 'aria-selected': String(state.tab === t[0]), 'data-go': 's.' + s.id + '.' + t[0] },
