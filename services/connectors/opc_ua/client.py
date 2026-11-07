@@ -30,9 +30,9 @@ from __future__ import annotations
 
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Tuple
-
+from typing import Any
 
 # -- exceptions ---------------------------------------------------------------
 
@@ -81,7 +81,7 @@ def _osc(base: float, amp: float, period_s: float) -> Callable[[int], float]:
     return f
 
 
-_ADDRESS_SPACE: Dict[str, Dict[str, Any]] = {
+_ADDRESS_SPACE: dict[str, dict[str, Any]] = {
     "ns=2;s=Boiler.Temp":     {"type": "Double",  "unit": "degC",  "gen": _osc(78.0, 4.0, 30)},
     "ns=2;s=Boiler.Pressure": {"type": "Double",  "unit": "bar",   "gen": _osc(2.4, 0.3, 60)},
     "ns=2;s=ConveyorSpeed":   {"type": "Double",  "unit": "m/s",   "gen": _osc(1.2, 0.1, 15)},
@@ -101,7 +101,7 @@ class _Subscription:
     node_id: str
     interval_ms: int
     callback: Callable[[NodeValue], None]
-    _thread: Optional[threading.Thread] = field(default=None, init=False, repr=False)
+    _thread: threading.Thread | None = field(default=None, init=False, repr=False)
     _stop: threading.Event = field(default_factory=threading.Event, init=False, repr=False)
 
     def start(self, max_samples: int) -> None:
@@ -138,8 +138,8 @@ class OpcUaClient:
 
     endpoint_url: str
     security_policy: str = "Basic256Sha256"
-    username: Optional[str] = None
-    password: Optional[str] = field(default=None, repr=False)
+    username: str | None = None
+    password: str | None = field(default=None, repr=False)
     application_uri: str = "urn:domain-explorer:stub-client"
     _connected: bool = field(default=False, init=False, repr=False)
     _counter: int = field(default=0, init=False, repr=False)
@@ -153,7 +153,7 @@ class OpcUaClient:
 
     # --- lifecycle ---
 
-    def connect(self) -> "OpcUaClient":
+    def connect(self) -> OpcUaClient:
         if not self.endpoint_url.startswith(("opc.tcp://", "opc.https://")):
             raise OpcUaError(
                 f"invalid endpoint_url={self.endpoint_url!r}; expected opc.tcp:// scheme"
@@ -164,7 +164,7 @@ class OpcUaClient:
     def disconnect(self) -> None:
         self._connected = False
 
-    def __enter__(self) -> "OpcUaClient":
+    def __enter__(self) -> OpcUaClient:
         return self.connect()
 
     def __exit__(self, *exc: Any) -> None:
@@ -172,7 +172,7 @@ class OpcUaClient:
 
     # --- public API ---
 
-    def browse_namespace(self) -> List[Tuple[str, str, str]]:
+    def browse_namespace(self) -> list[tuple[str, str, str]]:
         """Return ``[(node_id, data_type, unit)]`` for every node in the
         canned namespace. Mirrors asyncua's ``Node.get_children()``
         recursive walk."""

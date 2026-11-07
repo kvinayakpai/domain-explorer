@@ -11,6 +11,7 @@ group ``finops-aggregator-1`` with explicit offset commits.
 from __future__ import annotations
 
 import json
+
 from .client import KafkaConsumer, KafkaProducer
 
 

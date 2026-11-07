@@ -29,7 +29,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import yaml
 from fastapi import APIRouter, HTTPException
@@ -146,7 +146,9 @@ def _load_rules() -> list[DqRule]:
     return [DqRule.model_validate(r) for r in raw.get("rules", [])]
 
 
-def _aggregate(results: list[DqResult]) -> tuple[dict, dict]:
+def _aggregate(
+    results: list[DqResult],
+) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]]]:
     by_sev: dict[str, dict[str, int]] = defaultdict(lambda: {"passed": 0, "failed": 0, "errored": 0})
     by_sub: dict[str, dict[str, int]] = defaultdict(lambda: {"passed": 0, "failed": 0, "errored": 0})
     for r in results:
@@ -174,7 +176,7 @@ def _run_rules_duckdb(rules: list[DqRule]) -> tuple[list[DqResult], bool]:
         return results, duckdb_available
 
     try:
-        import duckdb  # type: ignore
+        import duckdb
     except ImportError as exc:  # pragma: no cover
         raise HTTPException(status_code=500, detail=f"duckdb not available: {exc}") from exc
 
@@ -207,7 +209,7 @@ def _run_rules_postgres(rules: list[DqRule]) -> tuple[list[DqResult], bool]:
     """Execute rules against Postgres via psycopg. Returns (results, available)."""
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
-        results = [
+        unavailable = [
             DqResult(
                 id=r.id, subdomain=r.subdomain, table=r.table, column=r.column,
                 rule_type=r.rule_type, severity=r.severity, expectation=r.expectation,
@@ -216,10 +218,10 @@ def _run_rules_postgres(rules: list[DqRule]) -> tuple[list[DqResult], bool]:
             )
             for r in rules
         ]
-        return results, False
+        return unavailable, False
 
     try:
-        import psycopg  # type: ignore
+        import psycopg
     except ImportError as exc:  # pragma: no cover
         raise HTTPException(
             status_code=500,
@@ -321,7 +323,7 @@ def run() -> DqRunReport:
 
 
 @router.get("/summary")
-def summary() -> dict:
+def summary() -> dict[str, Any]:
     """Lightweight summary suitable for the governance tile."""
     report = run_rules()
     return {
@@ -339,8 +341,9 @@ def summary() -> dict:
 
 
 @router.get("/snapshot")
-def snapshot() -> dict:
+def snapshot() -> dict[str, Any]:
     path = _snapshot_path()
     if not path.exists():
         raise HTTPException(status_code=404, detail="snapshot not generated yet")
-    return json.loads(path.read_text(encoding="utf-8"))
+    data: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+    return data

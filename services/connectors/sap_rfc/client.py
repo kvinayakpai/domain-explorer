@@ -22,8 +22,7 @@ changing their code.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-
+from typing import Any
 
 # -- canned data --------------------------------------------------------------
 
@@ -31,7 +30,7 @@ from typing import Any, Dict, List, Optional
 # the ABAP DDIC structure types referenced by each BAPI so callers see
 # the right keys when iterating on real systems later.
 
-_MATERIAL_MASTER: Dict[str, Dict[str, Any]] = {
+_MATERIAL_MASTER: dict[str, dict[str, Any]] = {
     "000000000000000123": {
         "MATERIAL_GENERAL_DATA": {
             "MATERIAL": "000000000000000123",
@@ -80,7 +79,7 @@ _MATERIAL_MASTER: Dict[str, Dict[str, Any]] = {
     },
 }
 
-_CUSTOMER_LIST: List[Dict[str, Any]] = [
+_CUSTOMER_LIST: list[dict[str, Any]] = [
     {
         "CUSTOMER": "0000010001",
         "NAME": "Acme Industrial GmbH",
@@ -108,7 +107,7 @@ _CUSTOMER_LIST: List[Dict[str, Any]] = [
 ]
 
 # Tiny canned table for RFC_READ_TABLE demonstrations.
-_TABLES: Dict[str, Dict[str, Any]] = {
+_TABLES: dict[str, dict[str, Any]] = {
     "T001": {
         "FIELDS": [
             {"FIELDNAME": "BUKRS", "OFFSET": 0, "LENGTH": 4, "TYPE": "C"},
@@ -154,7 +153,7 @@ class SapRfcClient:
         """Close the RFC connection. No-op in the stub."""
         self._connected = False
 
-    def __enter__(self) -> "SapRfcClient":
+    def __enter__(self) -> SapRfcClient:
         self.connect()
         return self
 
@@ -167,7 +166,7 @@ class SapRfcClient:
 
     # --- BAPI dispatch ---
 
-    def call_function(self, fn_name: str, **params: Any) -> Dict[str, Any]:
+    def call_function(self, fn_name: str, **params: Any) -> dict[str, Any]:
         """Invoke a remote BAPI / RFC function.
 
         Three function modules are recognised:
@@ -201,7 +200,7 @@ class SapRfcClient:
 
     # --- handlers ---
 
-    def _bapi_material_get_detail(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _bapi_material_get_detail(self, params: dict[str, Any]) -> dict[str, Any]:
         material = str(params.get("MATERIAL", "")).rjust(18, "0")
         if material in _MATERIAL_MASTER:
             return _MATERIAL_MASTER[material]
@@ -216,8 +215,8 @@ class SapRfcClient:
             },
         }
 
-    def _bapi_customer_getlist(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        ids: Optional[List[str]] = params.get("CUSTOMER_IDS")
+    def _bapi_customer_getlist(self, params: dict[str, Any]) -> dict[str, Any]:
+        ids: list[str] | None = params.get("CUSTOMER_IDS")
         rows = (
             [c for c in _CUSTOMER_LIST if c["CUSTOMER"] in ids]
             if ids
@@ -235,7 +234,7 @@ class SapRfcClient:
             ],
         }
 
-    def _rfc_read_table(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _rfc_read_table(self, params: dict[str, Any]) -> dict[str, Any]:
         table_name = params.get("QUERY_TABLE", "")
         if table_name not in _TABLES:
             return {

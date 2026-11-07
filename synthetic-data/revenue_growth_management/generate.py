@@ -155,7 +155,7 @@ def _packs(ctx, products, packs_per_sku=1.4):
     rng = ctx.rng
     rows = []
     pack_seq = 1
-    for sku_id, cogs in zip(products["sku_id"].to_numpy(), products["cogs_cents"].to_numpy()):
+    for sku_id, cogs in zip(products["sku_id"].to_numpy(), products["cogs_cents"].to_numpy(), strict=True):
         n_packs = int(rng.choice([1, 2, 3], p=[0.40, 0.40, 0.20]))
         # Pick tiers without replacement among the canonical 5.
         tiers = list(rng.choice(PPA_TIERS, size=n_packs, replace=False))

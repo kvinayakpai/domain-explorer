@@ -29,10 +29,10 @@ from __future__ import annotations
 
 import copy
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Tuple
-
+from typing import Any
 
 # -- types --------------------------------------------------------------------
 
@@ -47,7 +47,7 @@ class FhirError(Exception):
         self.diagnostics = diagnostics
         super().__init__(f"FHIR {status} {code}: {diagnostics}")
 
-    def operation_outcome(self) -> Dict[str, Any]:
+    def operation_outcome(self) -> dict[str, Any]:
         return {
             "resourceType": "OperationOutcome",
             "issue": [
@@ -65,10 +65,10 @@ class FhirAuth:
     """Trivial bearer-token auth holder. Real clients add SMART on FHIR
     OAuth2, JWT-bearer, mTLS, etc."""
 
-    bearer_token: Optional[str] = None
-    headers: Dict[str, str] = field(default_factory=dict)
+    bearer_token: str | None = None
+    headers: dict[str, str] = field(default_factory=dict)
 
-    def apply(self, request_headers: Dict[str, str]) -> Dict[str, str]:
+    def apply(self, request_headers: dict[str, str]) -> dict[str, str]:
         h = dict(request_headers)
         if self.bearer_token:
             h["Authorization"] = f"Bearer {self.bearer_token}"
@@ -83,7 +83,7 @@ def _now_iso() -> str:
     return datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+00:00")
 
 
-def _patient_123() -> Dict[str, Any]:
+def _patient_123() -> dict[str, Any]:
     return {
         "resourceType": "Patient",
         "id": "123",
@@ -135,7 +135,7 @@ def _patient_123() -> Dict[str, Any]:
     }
 
 
-def _encounter_456() -> Dict[str, Any]:
+def _encounter_456() -> dict[str, Any]:
     return {
         "resourceType": "Encounter",
         "id": "456",
@@ -173,7 +173,7 @@ def _encounter_456() -> Dict[str, Any]:
     }
 
 
-def _observation_bp() -> Dict[str, Any]:
+def _observation_bp() -> dict[str, Any]:
     return {
         "resourceType": "Observation",
         "id": "obs-bp-1",
@@ -231,7 +231,7 @@ def _observation_bp() -> Dict[str, Any]:
     }
 
 
-def _observation_glucose() -> Dict[str, Any]:
+def _observation_glucose() -> dict[str, Any]:
     return {
         "resourceType": "Observation",
         "id": "obs-glu-1",
@@ -259,7 +259,7 @@ def _observation_glucose() -> Dict[str, Any]:
     }
 
 
-_CANNED: Dict[Tuple[str, str], Dict[str, Any]] = {
+_CANNED: dict[tuple[str, str], dict[str, Any]] = {
     ("Patient", "123"): _patient_123(),
     ("Encounter", "456"): _encounter_456(),
     ("Observation", "obs-bp-1"): _observation_bp(),
@@ -286,8 +286,8 @@ class FhirRestClient:
     """
 
     base_url: str
-    auth: Optional[FhirAuth] = None
-    _store: Dict[Tuple[str, str], Dict[str, Any]] = field(default_factory=dict, init=False, repr=False)
+    auth: FhirAuth | None = None
+    _store: dict[tuple[str, str], dict[str, Any]] = field(default_factory=dict, init=False, repr=False)
     _next_id: int = field(default=1000, init=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -298,13 +298,13 @@ class FhirRestClient:
 
     # --- low-level helpers ---
 
-    def _build_url(self, resource_type: str, id: Optional[str] = None) -> str:
+    def _build_url(self, resource_type: str, id: str | None = None) -> str:
         url = self.base_url.rstrip("/") + "/" + resource_type
         if id:
             url += "/" + id
         return url
 
-    def _request_headers(self, accept: str = "application/fhir+json") -> Dict[str, str]:
+    def _request_headers(self, accept: str = "application/fhir+json") -> dict[str, str]:
         h = {"Accept": accept, "User-Agent": "domain-explorer-stub/0.1"}
         if self.auth:
             h = self.auth.apply(h)
@@ -312,7 +312,7 @@ class FhirRestClient:
 
     # --- public API ---
 
-    def read(self, resource_type: str, id: str) -> Dict[str, Any]:
+    def read(self, resource_type: str, id: str) -> dict[str, Any]:
         """`read` interaction. Returns the resource or raises 404."""
         # Force a header build so we exercise the auth surface.
         _ = self._request_headers()
@@ -326,7 +326,7 @@ class FhirRestClient:
             diagnostics=f"Resource {resource_type}/{id} was not found.",
         )
 
-    def search(self, resource_type: str, **params: Any) -> Dict[str, Any]:
+    def search(self, resource_type: str, **params: Any) -> dict[str, Any]:
         """`search` interaction. Supports the most common search parameters
         used in payer/provider workflows: ``patient``, ``subject``,
         ``encounter``, ``_id``, ``code``, ``category``, ``status``.
@@ -365,7 +365,7 @@ class FhirRestClient:
         }
         return bundle
 
-    def create(self, resource: Dict[str, Any]) -> Dict[str, Any]:
+    def create(self, resource: dict[str, Any]) -> dict[str, Any]:
         """`create` interaction. Server assigns an id and versionId.
         Returns the created resource (mirrors the body of the
         ``201 Created`` response when ``Prefer: return=representation``
@@ -391,11 +391,11 @@ class FhirRestClient:
 # -- search helpers -----------------------------------------------------------
 
 
-def _search_predicate(params: Dict[str, Any]) -> Callable[[Dict[str, Any]], bool]:
+def _search_predicate(params: dict[str, Any]) -> Callable[[dict[str, Any]], bool]:
     """Build a predicate over canned resources for the given search
     parameters. Only a subset of the FHIR search grammar is implemented."""
 
-    def matches(resource: Dict[str, Any]) -> bool:
+    def matches(resource: dict[str, Any]) -> bool:
         for k, raw_v in params.items():
             if k.startswith("_") and k != "_id":
                 continue
@@ -412,12 +412,10 @@ def _search_predicate(params: Dict[str, Any]) -> Callable[[Dict[str, Any]], bool
                     return False
             if k == "status" and resource.get("status") != v:
                 return False
-            if k == "code":
-                if not _matches_token(resource, "code", v):
-                    return False
-            if k == "category":
-                if not _matches_token(resource, "category", v):
-                    return False
+            if k == "code" and not _matches_token(resource, "code", v):
+                return False
+            if k == "category" and not _matches_token(resource, "category", v):
+                return False
         return True
 
     return matches
@@ -428,13 +426,13 @@ def _matches_reference(reference: str, expected_type: str, target: str) -> bool:
     if not reference:
         return False
     expected = f"{expected_type}/{target}"
-    return reference == expected or reference == target
+    return reference in (expected, target)
 
 
 _TOKEN_RE = re.compile(r"^(?:(?P<system>[^|]+)\|)?(?P<code>.+)$")
 
 
-def _matches_token(resource: Dict[str, Any], field_name: str, raw: str) -> bool:
+def _matches_token(resource: dict[str, Any], field_name: str, raw: str) -> bool:
     """Token search like ``loinc.org|85354-9`` or ``85354-9``."""
     m = _TOKEN_RE.match(raw)
     if not m:
@@ -442,7 +440,7 @@ def _matches_token(resource: Dict[str, Any], field_name: str, raw: str) -> bool:
     target_system = (m.group("system") or "").strip()
     target_code = (m.group("code") or "").strip()
     field_value = resource.get(field_name)
-    candidates: List[Dict[str, Any]] = []
+    candidates: list[dict[str, Any]] = []
     if isinstance(field_value, dict):
         candidates.append(field_value)
     elif isinstance(field_value, list):
@@ -459,7 +457,7 @@ def _matches_token(resource: Dict[str, Any], field_name: str, raw: str) -> bool:
     return False
 
 
-def _format_search_url(base: str, rtype: str, params: Dict[str, Any]) -> str:
+def _format_search_url(base: str, rtype: str, params: dict[str, Any]) -> str:
     parts = [f"{k}={v}" for k, v in params.items()]
     suffix = ("?" + "&".join(parts)) if parts else ""
     return f"{base.rstrip('/')}/{rtype}{suffix}"

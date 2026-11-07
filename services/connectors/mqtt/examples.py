@@ -11,7 +11,6 @@ filter at QoS 1.
 from __future__ import annotations
 
 import time
-from typing import List
 
 from .client import (
     MqttClient,
@@ -27,7 +26,7 @@ def _banner(title: str) -> None:
 
 
 def main() -> None:
-    received: List[MqttMessage] = []
+    received: list[MqttMessage] = []
 
     def on_message(msg: MqttMessage) -> None:
         received.append(msg)

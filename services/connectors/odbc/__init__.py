@@ -4,6 +4,6 @@ See ``client.py`` for :class:`OdbcClient` and ``examples.py`` for a
 runnable demonstration.
 """
 
-from .client import OdbcClient, OdbcError, OdbcCursor
+from .client import OdbcClient, OdbcCursor, OdbcError
 
-__all__ = ["OdbcClient", "OdbcError", "OdbcCursor"]
+__all__ = ["OdbcClient", "OdbcCursor", "OdbcError"]

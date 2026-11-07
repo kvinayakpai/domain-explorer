@@ -4,9 +4,9 @@ from .loader import (
     get_kpi,
     get_source_system,
     get_subdomain,
-    load_registry,
     load_kpi_master,
     load_kpi_sql,
+    load_registry,
 )
 from .schema import (
     Connector,

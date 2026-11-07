@@ -33,7 +33,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from common import make_context, weighted_choice, write_table  # noqa: E402
+from common import make_context, weighted_choice, write_table
 
 SUBDOMAIN = "returns_reverse_logistics"
 TENANT_SALT = "rrl-tenant-salt-2026"
@@ -275,7 +275,7 @@ def _return_items(ctx, rmas, reason_codes, dispositions, n=60_000):
     grade = weighted_choice(rng, CONDITION_GRADES, CONDITION_W, n)
     disp = weighted_choice(rng, DISPOSITION_CODES, DISPOSITION_W, n)
     disp = np.where(sub["return_method"].to_numpy() == "returnless", "returnless", disp)
-    disp_id = pd.Series(disp).map(dict(zip(dispositions["disposition_code"], dispositions["disposition_id"]))).to_numpy()
+    disp_id = pd.Series(disp).map(dict(zip(dispositions["disposition_code"], dispositions["disposition_id"], strict=True))).to_numpy()
     reason_id = reason_codes["reason_code_id"].to_numpy()[rng.integers(0, len(reason_codes), size=n)]
     return pd.DataFrame({
         "return_item_id": [f"RI{i:010d}" for i in range(1, n + 1)],

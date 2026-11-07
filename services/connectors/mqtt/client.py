@@ -38,9 +38,9 @@ import json
 import re
 import threading
 import time
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Mapping, Optional
-
+from typing import Any
 
 # -- exceptions ---------------------------------------------------------------
 
@@ -60,7 +60,7 @@ class MqttMessage:
     payload: bytes
     qos: int = 0
     retain: bool = False
-    user_properties: Dict[str, str] = field(default_factory=dict)
+    user_properties: dict[str, str] = field(default_factory=dict)
     timestamp_ms: int = 0
 
     def payload_json(self) -> Any:
@@ -83,7 +83,7 @@ class SparkplugBPayload:
 
     seq: int
     timestamp_ms: int
-    metrics: List[Dict[str, Any]] = field(default_factory=list)
+    metrics: list[dict[str, Any]] = field(default_factory=list)
 
     def to_bytes(self) -> bytes:
         return json.dumps(
@@ -92,7 +92,7 @@ class SparkplugBPayload:
         ).encode("utf-8")
 
     @classmethod
-    def from_bytes(cls, raw: bytes) -> "SparkplugBPayload":
+    def from_bytes(cls, raw: bytes) -> SparkplugBPayload:
         body = json.loads(raw.decode("utf-8"))
         return cls(
             seq=int(body.get("seq", 0)),
@@ -106,7 +106,7 @@ def make_sparkplug_topic(
     group_id: str,
     message_type: str,
     edge_node: str,
-    device: Optional[str] = None,
+    device: str | None = None,
     namespace: str = "spBv1.0",
 ) -> str:
     """Build a Sparkplug B topic of the form
@@ -132,9 +132,9 @@ class _InMemoryBroker:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         # subs[address] = list[(topic_filter, callback)]
-        self._subs: Dict[str, List[tuple]] = collections.defaultdict(list)
+        self._subs: dict[str, list[tuple]] = collections.defaultdict(list)
         # retained[address][topic] = MqttMessage
-        self._retained: Dict[str, Dict[str, MqttMessage]] = collections.defaultdict(dict)
+        self._retained: dict[str, dict[str, MqttMessage]] = collections.defaultdict(dict)
 
     def subscribe(self, address: str, topic_filter: str,
                   callback: Callable[[MqttMessage], None]) -> None:
@@ -196,8 +196,8 @@ class MqttClient:
     broker_host: str
     broker_port: int = 8883
     client_id: str = "domain-explorer-stub-client"
-    username: Optional[str] = None
-    password: Optional[str] = field(default=None, repr=False)
+    username: str | None = None
+    password: str | None = field(default=None, repr=False)
     use_tls: bool = True
     keepalive_s: int = 60
     protocol_version: int = 5  # MQTT 5
@@ -210,7 +210,7 @@ class MqttClient:
 
     # --- lifecycle ---
 
-    def connect(self) -> "MqttClient":
+    def connect(self) -> MqttClient:
         if self.protocol_version not in (3, 4, 5):
             raise MqttError(f"unsupported protocol_version={self.protocol_version}")
         self._connected = True
@@ -219,7 +219,7 @@ class MqttClient:
     def disconnect(self) -> None:
         self._connected = False
 
-    def __enter__(self) -> "MqttClient":
+    def __enter__(self) -> MqttClient:
         return self.connect()
 
     def __exit__(self, *exc: Any) -> None:
@@ -233,7 +233,7 @@ class MqttClient:
         payload: Any,
         qos: int = 0,
         retain: bool = False,
-        user_properties: Optional[Mapping[str, str]] = None,
+        user_properties: Mapping[str, str] | None = None,
     ) -> None:
         """Publish a message. ``payload`` may be bytes, str, or a JSON-
         serialisable Python value."""

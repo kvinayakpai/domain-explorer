@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LineageDiagram } from "@/components/lineage-diagram";
+import { anchorLineages } from "@/lib/lineage-data";
 import {
   getDemoFlow,
   kpisWithLineage,
@@ -220,7 +221,7 @@ function ScreenKpiAnswer({ flow }: { flow: ReturnType<typeof getDemoFlow> & obje
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <LineageDiagram />
+            <LineageDiagram graph={anchorLineages.payments} />
           </CardContent>
         </Card>
       )}
