@@ -1,0 +1,11 @@
+# ASSUMPTIONS, not measurements. Nobody has timed a real refinery reliability team for this project.
+# The owner (Vinayak) asked on 2026-11-08 for these to be clearly labelled and easy to overwrite:
+#   python -m factory_to_field.eval.value --assumptions my_numbers.yaml
+# Every figure the report derives from these is printed next to the assumption it used.
+human_minutes_triage_real_alarm: 90        # ASSUMPTION: engineer pulls history, serials, lot, open work, spares, windows from SAP/historian/EDMS
+human_minutes_screen_false_alarm: 30       # ASSUMPTION: engineer checks the trend, finds the transmitter flat-lined, closes the alarm
+human_minutes_draft_work_order: 25         # ASSUMPTION: writing the notification and stock reservation by hand
+reviewer_minutes_per_agent_draft: 10       # ASSUMPTION: a planner reads the agent's cited draft and approves or edits it
+vibration_alarms_per_month: 40             # ASSUMPTION: for one refinery unit area; owner to replace with the site's alarm log
+false_alarm_share: 0.30                    # ASSUMPTION: share of those alarms that are instrument faults or process upsets
+loaded_cost_per_hour: 60                   # ASSUMPTION, USD per engineer hour
