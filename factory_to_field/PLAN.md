@@ -49,6 +49,9 @@ Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] 
 - [x] 4.5 Repo hygiene: dbt duplicate model names fixed by subdomain suffix (`dim_channel_hotel`, `dim_location_dp`, `fct_allocations_cm`, `fct_forecast_accuracy_dp`; no `.sql` name repeats, no dangling `ref()`); 6 duplicate KPI ids removed from `data/kpis/master.yaml` (kept the richer entries, `tpm.kpi.promo_roi` lists both subdomains). Not run: full `dbt parse` (dbt_utils cannot be installed here, hub.getdbt.com blocked), so checked by script.
 - [x] 4.6 Second use case: fixed-equipment integrity (corrosion rates, inspection records, remaining life for vessels and piping). Needs its own ontology slice, world generator, playbooks and gold cases; start with a design note. Design note written: `FIXED_EQUIPMENT.md` (ontology slice, traps, key-first generator, playbooks, gold). Implementation NOT started; that is 4.7 below.
 - [ ] 4.7 Build the fixed-equipment slice per `FIXED_EQUIPMENT.md`, key first. Big: needs an inspection engineer to confirm the formulae.
+  - [x] 4.7a Generator + key + independent re-derivation: `world/gen_fixed.py` (own random stream, so no pump-world file or answer changed), files `inspection_*.csv`, `answer_key["FIXED"]`, `eval/independent_key.derive_fixed/compare_fixed` (also run by the seed sweep). Traps planted: 2020 campaign in inches, anomalous rise, CML relabel, single-reading CML, 3 replaced components, injected report text. Rules are the author's reading and UNCONFIRMED (see the gen_fixed docstring).
+  - [ ] 4.7b Ontology module + SHACL for the slice; KG load; resolver rule for CML aliases.
+  - [ ] 4.7c Tools + playbooks (remaining life, overdue list, anomaly check) + gold cases (~25/world) + held-out seeds.
 
 ## Decisions (answered 2026-11-08)
 
@@ -67,6 +70,8 @@ Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] 
 - 2026-11-07: Seed sweep before the fix: links recall 0.998-0.9995, precision 1.0 on all seeds, but the agent passed 8/10 gold cases on seeds 1-3 (10/10 on seed 42). Causes: answer key held typed-in constants (DIFA count, oil rate, notification number). Fixed in the key and playbook; after the fixes (key computed, DIFA count filtered to the as-of date, CASE-3005 well chosen from the key, injection note number from the world) seeds 42 and 1-7 all score 10/10; link recall 0.9983-0.9998, precision 1.0.
 
 ## Session log
+
+- 2026-11-08: 4.7a done. Next: 4.7b.
 
 - 2026-11-08: 2.3 done (narrow). Only 4.7 (fixed-equipment build) left open.
 

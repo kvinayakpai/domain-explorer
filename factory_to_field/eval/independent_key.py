@@ -100,3 +100,63 @@ def compare_containment(wd: Path) -> list[str]:
     got = {"lot_pumps": exposure(k["bearing_lot"]), "lot_sections": exposure(k["elastomer_lot"])}
     want = {"lot_pumps": (k["lot_pumps"], k["lot_pump_customers"]), "lot_sections": (k["lot_sections"], k["lot_section_operators"])}
     return [f"{n}: key {want[n]} vs files {got[n]}" for n in want if want[n] != got[n]]
+
+
+# ---------------------------------------------------------------------------------------------- fixed equipment (plan 4.7)
+def derive_fixed(world: Path) -> dict:
+    """Remaining life and next due date per component, re-derived from the rendered inspection CSVs only, from the rules in
+    world/gen_fixed.py's docstring. Separate code from the generator on purpose; the rules themselves are unconfirmed (see there)."""
+    import csv
+    from datetime import date, timedelta
+
+    def rd(name):
+        with (world / name).open(newline="") as f:
+            return list(csv.DictReader(f))
+    comps = {r["component"]: r for r in rd("inspection_components.csv")}
+    alias = {r["old"]: r["new"] for r in rd("inspection_cml_alias.csv")}
+    by: dict[str, dict[str, list]] = {}
+    for r in rd("inspection_readings.csv"):
+        d = date.fromisoformat(r["date"])
+        c = comps[r["component"]]
+        if d < date.fromisoformat(c["installed"]):
+            continue
+        v = float(r["value"]) * (25.4 if r["unit"] == "in" else 1.0)
+        by.setdefault(r["component"], {}).setdefault(alias.get(r["cml"], r["cml"]), []).append((d, v))
+    today = date(2026, 10, 17)   # the world clock (world.spec.TODAY), restated so this file stays independent of the generator
+    out = {}
+    for name, c in comps.items():
+        best, flagged = None, set()
+        for cml, pts in by.get(name, {}).items():
+            pts.sort()
+            ok: list = []
+            for d, v in pts:
+                if ok and v - ok[-1][1] > 0.15:
+                    flagged.add(cml)
+                else:
+                    ok.append((d, v))
+            if len(ok) < 2:
+                continue
+            yrs = lambda a, b: (b - a).days / 365.25  # noqa: E731
+            gov = max((ok[-2][1] - ok[-1][1]) / yrs(ok[-2][0], ok[-1][0]), (ok[0][1] - ok[-1][1]) / yrs(ok[0][0], ok[-1][0]))
+            if gov <= 0:
+                continue
+            life = (ok[-1][1] - float(c["required_min_mm"])) / gov
+            if best is None or round(life, 2) < best[1]:
+                best = (cml, round(life, 2), round(gov, 4), ok[-1][0])
+        e = {"worst_cml": None, "remaining_life_y": None, "next_due": None, "overdue": None, "flagged_remeasure": sorted(flagged)}
+        if best:
+            due = best[3] + timedelta(days=int(min(best[1] / 2, 10.0) * 365.25))
+            e.update(worst_cml=best[0], remaining_life_y=best[1], rate_mm_y=best[2], next_due=due.isoformat(), overdue=due < today)
+        out[name] = e
+    return out
+
+
+def compare_fixed(world: Path) -> list[str]:
+    key = json.loads((world / "answer_key.json").read_text())["FIXED"]["components"]
+    got = derive_fixed(world)
+    bad = []
+    for name, k in key.items():
+        for f in ("worst_cml", "remaining_life_y", "next_due", "overdue", "flagged_remeasure"):
+            if got[name][f] != k[f]:
+                bad.append(f"fixed {name}.{f}: key {k[f]!r} vs files {got[name][f]!r}")
+    return bad

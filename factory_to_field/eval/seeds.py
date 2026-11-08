@@ -33,6 +33,8 @@ def run_seed(seed: int, agent: bool = True, noise: str = "base") -> dict:
             return r
         from .independent_key import compare
         r["key_mismatch"] = compare(wd)
+        from .independent_key import compare_fixed
+        r["key_mismatch"] += compare_fixed(wd)      # inspection files carry no noise, so this holds for every preset
         if noise == "base":  # noise damages the files these counts are read from, so only a clean world is a fair independent check
             from .independent_key import compare_containment, compare_extra
             r["key_mismatch"] += compare_extra(wd) + compare_containment(wd)

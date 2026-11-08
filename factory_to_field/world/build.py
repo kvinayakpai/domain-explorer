@@ -9,7 +9,7 @@ import json
 import time
 from pathlib import Path
 
-from . import gen_factory, gen_field, gen_refinery, render, signals, stories
+from . import gen_factory, gen_field, gen_fixed, gen_refinery, render, signals, stories
 from .model import World
 from .spec import NOISE, SEED
 
@@ -33,6 +33,7 @@ def build(out: Path = DEFAULT_OUT, seed: int = SEED, noise: str = "base") -> Wor
     w = make_world(seed, noise)
     tr = render.render_all(w, out)
     key = stories.build(w)
+    key["FIXED"] = gen_fixed.render(seed, out)       # own random stream: no pump-world file or answer changes
     (out / "truth.json").write_text(json.dumps([list(r) for r in tr.rows]))
     (out / "answer_key.json").write_text(json.dumps(key, indent=1, default=str))
     (out / "MANIFEST.json").write_text(json.dumps({"seed": seed, "noise": noise, "files": sorted(p.name for p in out.iterdir()),
