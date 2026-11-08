@@ -162,14 +162,15 @@ def make_handler(app: App):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8800)
+    ap.add_argument("--host", default="127.0.0.1", help="use 0.0.0.0 inside a container")
     a = ap.parse_args()
     from ..demo import ensure_built
     ensure_built()
     _isrv, idp_url, idp = idp_mod.serve_in_thread()
     srv, url = serve_in_thread(verifier=idp_mod.JwksVerifier(idp_url, idp.issuer), require_identity=True)
     app = App(url, idp_url, idp)
-    print(f"simulated plant systems at {url}\nidentity provider at {idp_url}\nlive console at http://127.0.0.1:{a.port}", flush=True)
-    ThreadingHTTPServer(("127.0.0.1", a.port), make_handler(app)).serve_forever()
+    print(f"simulated plant systems at {url}\nidentity provider at {idp_url}\nlive console at http://{a.host}:{a.port}", flush=True)
+    ThreadingHTTPServer((a.host, a.port), make_handler(app)).serve_forever()
 
 
 if __name__ == "__main__":

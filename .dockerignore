@@ -1,0 +1,7 @@
+.git
+node_modules
+**/__pycache__
+factory_to_field/build
+factory_to_field/video
+modeling
+web

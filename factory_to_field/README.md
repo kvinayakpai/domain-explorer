@@ -13,6 +13,14 @@ pilot ◄── identity provider (RS256 JWT) · hash-chained audit log · revie
 
 ## Run it
 
+One command with Docker (builds the world and graph into the image, then serves the live console on http://localhost:8800):
+
+```bash
+docker compose -f factory_to_field/docker-compose.yml up --build
+```
+
+Or step by step:
+
 ```bash
 pip install -r factory_to_field/requirements.txt
 python -m factory_to_field.ontology.build          # regenerate OWL/SHACL/Pydantic/TS (add --check in CI)
