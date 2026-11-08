@@ -16,6 +16,9 @@ from .spec import A07_NEW, A07_OLD, ECO_BEARING, ECO_ELASTOMER, FLEET, LOT_BEARI
 def build(w: World) -> dict:
     u = w.units
     fleet = sorted(FLEET)
+    # a pump whose installation the CMMS never recorded has no position, so its state cannot be read: it is not in the expected lists
+    lost = {w.units[u]["serial"] for u, _ in w.answer.get("dropped_equz", [])}
+    keep = lambda xs: [x for x in xs if x not in lost]
     runs_old = [(r["days"], r["state"] == "failed") for r in w.runs if not r["new_seal"]]
     runs_new = [(r["days"], r["state"] == "failed") for r in w.runs if r["new_seal"]]
     new_strings = [r for r in w.runs if r["new_seal"]]
@@ -39,10 +42,10 @@ def build(w: World) -> dict:
                 {"unit": "OEM-24-0412", "mode": "ELP", "on": "2026-09-21", "position": "R1:10-P-101B"},
             ],
             "fleet": fleet,
-            "fleet_failed": ["OEM-24-0412", "OEM-24-0455"],
-            "fleet_alarm": ["OEM-25-1187"],
-            "fleet_peaks": ["OEM-24-0398", "OEM-25-1150"],
-            "fleet_normal": ["OEM-25-1203"],
+            "fleet_failed": keep(["OEM-24-0412", "OEM-24-0455"]),
+            "fleet_alarm": keep(["OEM-25-1187"]),
+            "fleet_peaks": keep(["OEM-24-0398", "OEM-25-1150"]),
+            "fleet_normal": keep(["OEM-25-1203"]),
             "bearing_lot": LOT_BEARING,
             "eco": ECO_BEARING,
             "diagnosis": "bearing outer race defect",
