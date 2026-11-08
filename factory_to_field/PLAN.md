@@ -4,7 +4,7 @@ Source: "Oil and gas solution: critical review and improvement plan"
 (https://claude.ai/artifact/G9kHxBybGHU4cfPZPvHcpu). This file is the working copy.
 **Every session: read this first, do the next unchecked item, tick it, add a log line at the bottom, commit.**
 
-Status key: [x] done, [~] partly, [ ] not started, [!] blocked on the owner (see Decisions).
+Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] blocked on the owner.
 
 ## How to run things
 
@@ -26,36 +26,36 @@ Status key: [x] done, [~] partly, [ ] not started, [!] blocked on the owner (see
 - [x] 1.7 `eval/seeds.py` prints and saves held-out mean and worst case (a crashed agent run counts as 10 failed cases). First 8-world base sweep (seeds 11-18): recall mean 0.9993, min 0.9989; precision 1.0; gold 80/80 after the fix below.
 - [~] 1.8 More cases: about 37 per world (10 hand-written + about 27 generated: 12 as-of-unit cases incl. hand-over days and "no record" gaps, 3 OT-write refusals at different set-points, one lot-exposure case per ESP well with a running string). Seeds 1-5 pass 182/182. Target 30+ gold and 15 adversarial: still to template position_vs_unit (any month), containment per lot, alarm triage on other pumps, more injection variants.
 
-## Phase 2: prove the agent (weeks 3-6)  [!] needs an API key and budget (Decision 2)
+## Phase 2: prove the agent offline (weeks 3-6)  (no API key: live model runs dropped)
 
-- [ ] 2.1 Run the model planner (not FakeClient) on the gold set; report pass rate, tool calls, cost, refusals.
-- [ ] 2.2 Baselines: playbook-only vs model planner vs a plain RAG baseline on the same cases.
+- [-] 2.1 DROPPED (no API key): live model planner runs. Keep the LLMAgent wired and tested with FakeClient; say in the README that no live-model result exists.
+- [ ] 2.2 Offline baselines: playbook agent vs a naive keyword-lookup baseline (no graph, no as-of logic) on the same gold cases, to show what the graph and temporal logic buy.
 - [ ] 2.3 Wire agent tools to read through the `/v/<slug>/` mocks, with per-mock faults (timeouts, paging, 401 refresh, stale data).
-- [ ] 2.4 Real public data: attach Volve (production) and CWRU (bearing) files; run one case on each. [!] Decision 3 (hosts were unreachable from the sandbox; owner uploads files).
+- [-] 2.4 DROPPED (Decision 3): real public data validation.
 
-## Phase 3: choose the buyer and the company line (weeks 4-9)  [!] Decision 1
+## Phase 3: build for the refinery reliability team (weeks 4-9)
 
-- [ ] 3.1 Pick the buyer (recommended: pump maker's fleet-quality team).
-- [ ] 3.2 Split identity and agents: operator-side and maker-side get separate agents and separate IdP tenants.
-- [ ] 3.3 Value case: hours saved per case, escapes caught, containment sizing time. Measured on the sweep, not asserted.
+- [x] 3.1 Buyer chosen: refinery reliability team.
+- [ ] 3.2 Split identity and agents: the operator agent is primary and sees only operator systems; the maker view becomes a separate, clearly secondary agent and IdP tenant (containment sizing needs maker data the operator would not hold).
+- [ ] 3.3 Value case for a refinery reliability team: time to a reviewed work-order draft per alarm, false alarms screened out, spares/window conflicts caught. Measured on the sweep, not asserted. Needs a baseline (how long a person takes) that must come from the owner or be labelled an assumption.
 - [ ] 3.4 Fix failure mix in the generator to match field data (ESP: electrical about 60%, seals about 22%; vary pull reasons).
 
 ## Phase 4: pilot depth (weeks 9-14)
 
 - [ ] 4.1 Make the world busier (more alarms, more positions) so false-alarm handling is exercised.
 - [ ] 4.2 Ontology: external mappings (ISO 14224, CFIHOS, OSDU) for the 36 classes.
-- [ ] 4.3 Deepen 5-6 mocks (real auth flows, rate limits, paging quirks); label or retire the 22 renamed copies. [!] Decision 4
+- [ ] 4.3 Deepen 5-6 refinery-relevant mocks (e.g. PI System, Maximo or SAP PM, a vibration CM system, a DCS historian, an APM health system) with real auth flows, rate limits and paging quirks; delete the renamed copies (22 of 41) and update tests/test_vendors.py and the README catalogue.
 - [ ] 4.4 Deployable: Dockerfile, docker compose, one-command demo.
 - [ ] 4.5 Repo hygiene: fix the `dim_channel` clash and the 6 duplicate KPI ids in the explorer.
-- [ ] 4.6 Second use case. [!] Decision 5 (production deferment or fixed-equipment integrity).
+- [ ] 4.6 Second use case: fixed-equipment integrity (corrosion rates, inspection records, remaining life for vessels and piping). Needs its own ontology slice, world generator, playbooks and gold cases; start with a design note.
 
-## Decisions waiting on the owner
+## Decisions (answered 2026-11-08)
 
-1. Who is the product for? (recommended: pump maker's fleet-quality team)
-2. API key and monthly budget for live model runs (owner earlier said no key in the blog context; confirm for this work).
-3. Upload Volve and CWRU files, or drop real-data validation.
-4. Which 5-6 mocks to deepen; confirm labelling or retiring the rest.
-5. Next use case after pump reliability.
+1. Buyer: **refinery reliability team** (operator side). Pump-maker (OEM) features stay as the secondary, containment story; they are not the lead.
+2. API key: **none**. No live model runs. Phase 2 is reduced to offline work (see below).
+3. Real public data (Volve, CWRU): **dropped**. Synthetic worlds only; say so plainly in any write-up.
+4. Mocks: **deepen 5-6, retire the rest** (delete the renamed copies).
+5. Second use case: **fixed-equipment integrity** (corrosion and inspection records for vessels and pipes).
 
 ## Findings log (newest first)
 
@@ -66,6 +66,8 @@ Status key: [x] done, [~] partly, [ ] not started, [!] blocked on the owner (see
 - 2026-11-07: Seed sweep before the fix: links recall 0.998-0.9995, precision 1.0 on all seeds, but the agent passed 8/10 gold cases on seeds 1-3 (10/10 on seed 42). Causes: answer key held typed-in constants (DIFA count, oil rate, notification number). Fixed in the key and playbook; after the fixes (key computed, DIFA count filtered to the as-of date, CASE-3005 well chosen from the key, injection note number from the world) seeds 42 and 1-7 all score 10/10; link recall 0.9983-0.9998, precision 1.0.
 
 ## Session log
+
+- 2026-11-08 (cont.): owner answered the five decisions (see Decisions). Consequences: Phase 2 is offline-only, real-data validation dropped, buyer is the refinery reliability team, mocks to be cut to 5-6 deep ones, second use case is fixed-equipment integrity. Next: finish Phase 1 leftovers (1.5 free-text, 1.6, 1.8), then 2.2 (naive baseline) and 4.3 (mock cut).
 
 - 2026-11-08 (cont.): 1.5 swapped locations done; 1.8 at about 37 cases/world, all pass on seeds 1-5. Caution: the agent under test is the deterministic playbook agent, so high pass rates here show the data pipeline and key are sound, not that a model planner works; that is Phase 2 and needs the API key (Decision 2).
 
