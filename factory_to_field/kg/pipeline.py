@@ -208,6 +208,8 @@ class Pipeline:
     def units(self) -> None:
         sap, mes, erp = self.db("sap_pm.sqlite"), self.db("kestrel_mes.sqlite"), self.db("kestrel_erp.sqlite")
         builds = {r["serial"]: r for r in _rows(mes, "SELECT * FROM build_records")}
+        with open(self.src / "reliability_runlife.csv") as f:
+            other_serials = {norm_serial(r["string_serial"]) for r in csv.DictReader(f)}  # serials known from another system
         ships = defaultdict(list)
         cust = {r["customer_no"]: r["name"] for r in _rows(erp, "SELECT * FROM customers")}
         for r in _rows(erp, "SELECT * FROM shipments"):
@@ -233,6 +235,9 @@ class Pipeline:
                 damaged = bool(re.match(r"^(OEM|ES|SS|PM|IN|MT|CB)-", n)) and not SERIAL_RE.match(n)  # our own family, malformed
                 ucanon = f"unit:{n}" if n and not damaged else f"unit:SAP-{eq}"  # a damaged serial must not mint a phantom unit
                 m, c, ev = "exact_key", 1.0, "no maker record in this graph; keyed by CMMS serial"
+                near = [s for s in other_serials if n not in other_serials and lev(n, s) <= 1]
+                if len(near) == 1:  # a one-edit neighbour in another system is a better explanation than a new unit
+                    ucanon, m, c, ev = f"unit:{near[0]}", "fuzzy", 0.91, f"edit distance 1 from '{raw}' to string serial {near[0]} in the run-life records"
             else:
                 ucanon = f"unit:{canon}"
                 matched_mes[canon] = eq
