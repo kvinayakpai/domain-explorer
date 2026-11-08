@@ -60,6 +60,7 @@ def test_generated_and_containment_keys_agree_with_files(world_dir):
 def test_esp_pull_reasons_are_not_all_the_same():
     """Ordinary pulls carry a cause (electrical, pump wear, ...); only the planted new-seal strings keep the surface label 'motor failure'."""
     import collections
+
     from factory_to_field.world.build import make_world
     w = make_world(7)
     c = collections.Counter(r["pull_reason"] for r in w.runs if r["state"] == "failed")

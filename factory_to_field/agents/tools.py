@@ -152,6 +152,18 @@ def trend(ctx: Ctx, tag: str, days: int = 30) -> Result:
 
 
 @tool("historian")
+def alarm_history(ctx: Ctx, tag: str, since: str, until: str) -> Result:
+    """High-alarm events raised on a tag between two dates (inclusive), as the historian recorded them."""
+    p = ctx.src.point(tag)
+    if p is None:
+        return Result({"tag": tag, "error": "unknown tag"}, [])
+    upto = min(until, ctx.as_of.date().isoformat())
+    rows = [a for a in ctx.src.alarms(p["name"], f"{upto} 23:59:59Z") if a["ts"][:10] >= since]
+    return Result({"tag": p["name"], "since": since, "until": upto, "count": len(rows), "events": [{"ts": a["ts"], "value": a["value"], "limit": a["limit_value"]} for a in rows]},
+                  [f"hist:{p['name']}:alarms:{since}:{upto}"])
+
+
+@tool("historian")
 def sensor_health(ctx: Ctx, tag: str, days: int = 14) -> Result:
     """Is the tag alive? Flat-lined (zero variance) samples, or mostly bad quality, mean a stuck or failed sensor."""
     p = ctx.src.point(tag)

@@ -164,6 +164,15 @@ class FieldPlaybooks:
         self._add(rep, "quality", f"Lot {lot}: {r.data['units']} units built with it, owned by {r.data['customers']} customers.", r.evidence, units=r.data["units"], customers=r.data["customers"])
         rep.summary = f"Lot {lot} is in {r.data['units']} units across {r.data['customers']} customers"
 
+    def pb_alarm_history(self, c, s, rep) -> None:
+        tag = re.search(r"\b(\d\d[A-Z]+\d+[A-Z]?\.[A-Z_]+)\b", c.question).group(1)
+        a, b = re.findall(r"\d{4}-\d\d-\d\d", c.question)[:2]
+        r = s.call("historian.alarm_history", tag=tag, since=a, until=b)
+        rep.answer.update(tag=tag, alarm_count=r.data.get("count"), alarm_times=[e["ts"] for e in r.data.get("events", [])])
+        self._add(rep, "reliability", f"{r.data.get('count')} high alarm(s) on {tag} between {a} and {b}.", r.evidence, count=r.data.get("count"))
+        rep.summary = f"{r.data.get('count')} alarm(s) on {tag} from {a} to {b}"
+        rep.recommendation = "An alarm count says nothing about cause; check the spectrum and work history before acting." if r.data.get("count") else ""
+
     def pb_as_of_unit(self, c, s, rep) -> None:
         on = re.search(r"(\d{4}-\d{2}-\d{2})", c.question).group(1)
         r = s.call("kg.unit_at", position=c.position, on=on)

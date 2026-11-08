@@ -285,6 +285,7 @@ def _hist_db(w: World, out: Path, name: str, site_filter, tr: Truth, system: str
             lim = a["limit"] / 25.4 if (s["site"] == "site:R3" and s["quantity"].startswith("vibration")) else a["limit"]
             val = a["value"] / 25.4 if (s["site"] == "site:R3" and s["quantity"].startswith("vibration")) else a["value"]
             con.execute("INSERT INTO alarms VALUES(?,?,?,?,?)", (ids[a["sig"]], a["ts"].strftime("%Y-%m-%d %H:%M:%SZ"), round(val, 4), round(lim, 4), a["state"]))
+            w.answer.setdefault("alarm_log", []).append([s["tag"], a["ts"].strftime("%Y-%m-%d %H:%M:%SZ")])
     if system == "SCADA":
         con.executescript("CREATE TABLE drive_events(well TEXT, ts TEXT, type TEXT, value REAL, note TEXT);")
         for e in drive_events(w):

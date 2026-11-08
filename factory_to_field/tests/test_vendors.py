@@ -108,14 +108,16 @@ def test_pi_af_history_matches_the_world_and_pages_by_link(sim, world_dir):
     assert len(got) == len(everything["Items"]) > 100 and len({x["WebId"] for x in got}) == len(got)
 
 
-def test_deltav_names_points_its_own_way_and_has_all_the_alarms(sim):
+def test_deltav_names_points_its_own_way_and_has_all_the_alarms(sim, world_dir):
+    import sqlite3
     tok = login(sim, "deltav")
     _, b = get(sim, "/v/deltav/tags?filter=P101A&limit=50", session=tok)
     assert any(t["tag"] == "P101A/VIB_DE/PV" for t in b["tags"])
     code, one = get(sim, "/v/deltav/read?tag=P101A/VIB_DE/PV", session=tok)
     assert code == 200 and one["unit"] == "mm/s"
     _, al = get(sim, "/v/deltav/alarms", session=tok)
-    assert len(al["alarms"]) == 24  # 21 refinery + 3 field alarms
+    want = sum(sqlite3.connect(world_dir / f"{db}.sqlite").execute("SELECT COUNT(*) FROM alarms").fetchone()[0] for db in ("historian_pi", "scada_fielda"))
+    assert len(al["alarms"]) == want > 24  # every alarm the world holds, refinery and field
     _, dv = get(sim, "/v/deltav/alarms?since=2026-10-16T00:00:00Z", session=tok)
     assert any("P101A" in a["Module"] and a["Time"].startswith("2026-10-16") for a in dv["alarms"])
 

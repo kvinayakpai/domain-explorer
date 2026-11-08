@@ -65,6 +65,12 @@ def derive_extra(wd: Path) -> dict:
     for c in key["failures"]:
         sis = c["position"][:-1] + ("B" if c["position"][-1] == "A" else "A")
         out["failures"].append({"position": c["position"], "here": count(c["position"], c["month"], c["year"]), "sister": count(sis, c["month"], c["year"])})
+    pi = sqlite3.connect(wd / "historian_pi.sqlite")
+    out["alarms"] = []
+    for c in key.get("alarms", []):
+        row = pi.execute("SELECT tag_id FROM tags WHERE name=? OR name LIKE ?", (c["tag"], "%" + c["tag"])).fetchone()
+        n = pi.execute("SELECT COUNT(*) FROM alarms WHERE tag_id=? AND substr(ts,1,10) BETWEEN ? AND ?", (row[0], c["since"], c["until"])).fetchone()[0] if row else None
+        out["alarms"].append({"tag": c["tag"], "count": n})
     return out
 
 
@@ -73,6 +79,7 @@ def compare_extra(wd: Path) -> list[str]:
     mine = derive_extra(wd)
     bad = [f"lot {k['lot']}: key {k['units']}/{k['customers']} vs files {m['units']}/{m['customers']}" for k, m in zip(key["lots"], mine["lots"], strict=True) if (k["units"], k["customers"]) != (m["units"], m["customers"])]
     bad += [f"failures {k['position']} {k['month']} {k['year']}: key {k['here']}/{k['sister']} vs files {m['here']}/{m['sister']}" for k, m in zip(key["failures"], mine["failures"], strict=True) if (k["here"], k["sister"]) != (m["here"], m["sister"])]
+    bad += [f"alarms {k['tag']}: key {k['count']} vs files {m['count']}" for k, m in zip(key.get("alarms", []), mine["alarms"], strict=True) if k["count"] != m["count"]]
     return bad
 
 
