@@ -44,3 +44,9 @@ def test_deterministic(tmp_path):
     build(tmp_path / "b")
     for name in ("truth.json", "answer_key.json"):
         assert (tmp_path / "a" / name).read_bytes() == (tmp_path / "b" / name).read_bytes()
+
+
+def test_answer_key_agrees_with_files(world_dir):
+    """The key is re-derived from the rendered files alone; a bug shared by generator and key would show up here."""
+    from factory_to_field.eval.independent_key import compare
+    assert compare(world_dir) == []

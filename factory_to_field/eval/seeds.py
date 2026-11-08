@@ -33,6 +33,8 @@ def run_seed(seed: int, agent: bool = True, noise: str = "base") -> dict:
         except Exception as e:  # a world that cannot be built is a result, not a crash
             r["error"] = f"world: {type(e).__name__}: {e}"
             return r
+        from .independent_key import compare
+        r["key_mismatch"] = compare(wd)
         try:
             res = Pipeline(wd, None).build()
             sc = evaluate.score(res, wd / "truth.json")

@@ -14,6 +14,7 @@ def test_heldout_seed(seed):
     r = run_seed(seed)
     assert "error" not in r, r
     assert r["links"]["recall"] >= FLOOR_RECALL and r["links"]["precision"] >= FLOOR_PRECISION, r["links"]
+    assert r["key_mismatch"] == [], r["key_mismatch"]
     a = r["agent"]
     assert a.get("cases_ok") == a.get("cases_total"), a.get("failed") or a
 
