@@ -53,15 +53,22 @@ class FieldPlaybooks:
                   f"{new['km_median_days']} days for them against {old['km_median_days']} days for earlier builds. Running strings are counted as censored, not dropped.",
                   rl.evidence, new_n=new["n"], failed=new["failed"], running=new["running"], km_new=new["km_median_days"], km_old=old["km_median_days"])
         df = s.call("maker.difa")
-        self._add(rep, "quality", f"DIFA reports: {df.data['elastomer_findings']} of {df.data['reports']} show swollen and cracked seal elastomers with well fluid in the motor oil and no pump-stage damage.",
-                  df.evidence[:6], elastomer_findings=df.data["elastomer_findings"], reports=df.data["reports"])
-        rep.answer["difa_findings"] = df.data["elastomer_findings"]
+        if df.refused:
+            self._blind(rep, df, "the pump maker's failure-analysis (DIFA) reports")
+        else:
+            self._add(rep, "quality", f"DIFA reports: {df.data['elastomer_findings']} of {df.data['reports']} show swollen and cracked seal elastomers with well fluid in the motor oil and no pump-stage damage.",
+                      df.evidence[:6], elastomer_findings=df.data["elastomer_findings"], reports=df.data["reports"])
+            rep.answer["difa_findings"] = df.data["elastomer_findings"]
         if elot:
             lc = s.call("maker.lot_change", lot=elot.split(":", 1)[1])
             lu = s.call("kg.lot_units", lot=elot)
-            rep.answer.update(eco=lc.data.get("eco_no"), lot_sections=lu.data["units"], lot_section_operators=lu.data["customers"])
-            self._add(rep, "quality", f"Lot {elot.split(':')[1]} came in under {lc.data['eco_no']} ({lc.data['title']}): route {lc.data['route']}, qualification test waived = {lc.data['qualification_test_waived']}. "
-                      f"It went into {lu.data['units']} seal sections for {lu.data['customers']} operators.", lc.evidence + lu.evidence, eco=lc.data["eco_no"], sections=lu.data["units"], operators=lu.data["customers"])
+            if lc.refused:
+                self._blind(rep, lc, "the engineering change behind this lot")
+                rep.answer.update(lot_sections=lu.data["units"], lot_section_operators=lu.data["customers"])
+            else:
+                rep.answer.update(eco=lc.data.get("eco_no"), lot_sections=lu.data["units"], lot_section_operators=lu.data["customers"])
+                self._add(rep, "quality", f"Lot {elot.split(':')[1]} came in under {lc.data['eco_no']} ({lc.data['title']}): route {lc.data['route']}, qualification test waived = {lc.data['qualification_test_waived']}. "
+                          f"It went into {lu.data['units']} seal sections for {lu.data['customers']} operators.", lc.evidence + lu.evidence, eco=lc.data["eco_no"], sections=lu.data["units"], operators=lu.data["customers"])
         wm = s.call("osdu.well_master", well=well)
         if wm.data.get("LiftMethod"):
             self._add(rep, "asset", f"OSDU master data: {well} is an {wm.data['LiftMethod']} well on {wm.data['Pad']} in {wm.data['Field']}, spud {wm.data['Spud']}.", wm.evidence, lift=wm.data["LiftMethod"], pad=wm.data["Pad"], spud=wm.data["Spud"])
@@ -103,7 +110,9 @@ class FieldPlaybooks:
         if earlier:
             self._add(rep, "reliability", f"An earlier string at {well} did come from the suspect lot: " + ", ".join(f"{m['string']} ({m['state']} after {m['days']} days)" for m in earlier) + ".", rl.evidence, string=earlier[0]["string"])
         df = s.call("maker.difa", well=well)
-        for r in df.data["items"][-2:]:
+        if df.refused:
+            self._blind(rep, df, "the pump maker's failure-analysis (DIFA) reports")
+        for r in df.data.get("items", [])[-2:]:
             self._add(rep, "quality", f"{r['difa']} ({r['date']}): {r['finding']}", [f"difa:{r['difa']}"], finding=r["finding"])
         rep.summary = f"The string now running in {well} is {'' if in_lot else 'not '}from lot E-25-031"
         rep.recommendation = ("Include it in the containment list and plan its pull." if in_lot else
@@ -117,6 +126,8 @@ class FieldPlaybooks:
         b = s.call("kg.lot_units", lot="lot:B-24-117")
         e = s.call("kg.lot_units", lot="lot:E-25-031")
         pf = s.call("maker.lot_tests", lot="B-24-117", test_kind="press_fit_force")
+        if pf.refused:
+            self._blind(rep, pf, "the pump maker's factory test records")
         rep.answer.update(bearing_lot="B-24-117", elastomer_lot="E-25-031", lot_pumps=b.data["units"], lot_pump_customers=b.data["customers"],
                           lot_sections=e.data["units"], lot_section_operators=e.data["customers"], waived_expedited=ecos,
                           press_fit_deficit_pct=pf.data.get("deficit_pct"), ecos=["ECO-24-1147", "ECO-25-0389"], drafts=[])
@@ -124,8 +135,9 @@ class FieldPlaybooks:
                   wc.evidence)
         self._add(rep, "quality", f"Bearing lot B-24-117: {b.data['units']} pumps, {b.data['customers']} customers. Elastomer lot E-25-031: {e.data['units']} seal sections, {e.data['customers']} operators.",
                   b.evidence + e.evidence, pumps=b.data["units"], customers=b.data["customers"], sections=e.data["units"], operators=e.data["customers"])
-        self._add(rep, "quality", f"Factory press-fit force for lot B-24-117 is {pf.data.get('deficit_pct')}% below other bearing lots ({pf.data['lot_avg']:.1f} vs {pf.data['other_avg']:.1f} kN), consistent with a looser fit under the waived qualification.",
-                  pf.evidence, deficit=pf.data.get("deficit_pct"))
+        if not pf.refused:
+            self._add(rep, "quality", f"Factory press-fit force for lot B-24-117 is {pf.data.get('deficit_pct')}% below other bearing lots ({pf.data['lot_avg']:.1f} vs {pf.data['other_avg']:.1f} kN), consistent with a looser fit under the waived qualification.",
+                      pf.evidence, deficit=pf.data.get("deficit_pct"))
         ev = wc.evidence + b.evidence + e.evidence + pf.evidence
         rep.summary = "One process failure, two products: the waived qualification route"
         rep.recommendation = "Open an 8D for the expedited-ECO route and send a customer notice listing the exposed lots and units; widen the review to the other two waived changes."

@@ -39,8 +39,8 @@ class App:
     def __init__(self, sim_url: str, idp_url: str, idp: idp_mod.IdentityProvider, audit: AuditLog | None = None,
                  review: ReviewStore | None = None) -> None:
         self.url, self.idp_url, self.idp = sim_url, idp_url, idp
-        agent_cred = ClientCredentials(f"{idp_url}/oauth2/token", "ftf-agent", idp_mod.CLIENTS["ftf-agent"]["secret"])
-        self.src = HttpSource(sim_url, token=agent_cred)          # the agent's own identity: read scope only
+        agent_cred = ClientCredentials(f"{idp_url}/oauth2/token", "ftf-operator-agent", idp_mod.CLIENTS["ftf-operator-agent"]["secret"], scope="operator.read")
+        self.src = HttpSource(sim_url, token=agent_cred)          # the operator tenant agent (primary): reads the operator systems only, never the pump maker QMS/MES/PLM
         self.writer = HttpSource(sim_url, token="none")            # used only with a person's token for releases
         self.agent = Agent(kg=KG(DEFAULT_KG, read_only=True), src=self.src)
         self.audit = audit or AuditLog()

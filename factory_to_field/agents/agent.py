@@ -121,6 +121,11 @@ class Agent(FieldPlaybooks):
     def _add(self, rep: Report, who: str, text: str, ev: list[str], **facts) -> None:
         rep.findings.append(Finding(who, text, sorted(set(ev)), facts))
 
+    def _blind(self, rep: Report, res, what: str) -> None:
+        """This agent's identity may not read another organisation's system. Say what is missing and who holds it; never fill the gap."""
+        rep.answer.setdefault("not_visible", []).append(what)
+        self._add(rep, "quality", f"Not visible to this agent: {what}. Those records belong to the pump maker; ask the maker's quality team (or its own agent) for them.", res.evidence)
+
     def _site_of(self, pos: str) -> str:
         return self.kg.props(pos)["site"][0].split(":")[-1]
 
@@ -217,8 +222,12 @@ class Agent(FieldPlaybooks):
             lu = s.call("kg.lot_units", lot=blot)
             eco = lc.data.get("eco_no")
             rep.answer.update(eco=eco, lot_pumps=lu.data["units"], lot_pump_customers=lu.data["customers"])
-            self._add(rep, "quality", f"The bearing set in {unit.split(':')[1]} is from lot {blot.split(':')[1]}, introduced by {eco} ({lc.data.get('title')}): route {lc.data.get('route')}, "
-                      f"qualification test waived = {lc.data.get('qualification_test_waived')}.", lc.evidence, lot=blot.split(":")[1], eco=eco, route=lc.data["route"])
+            if lc.refused:
+                self._blind(rep, lc, "the engineering change behind this bearing lot")
+                self._add(rep, "quality", f"The bearing set in {unit.split(':')[1]} is from lot {blot.split(':')[1]}.", lu.evidence, lot=blot.split(":")[1])
+            else:
+                self._add(rep, "quality", f"The bearing set in {unit.split(':')[1]} is from lot {blot.split(':')[1]}, introduced by {eco} ({lc.data.get('title')}): route {lc.data.get('route')}, "
+                          f"qualification test waived = {lc.data.get('qualification_test_waived')}.", lc.evidence, lot=blot.split(":")[1], eco=eco, route=lc.data["route"])
             self._add(rep, "quality", f"Lot {blot.split(':')[1]} went into {lu.data['units']} pumps shipped to {lu.data['customers']} customers.", lu.evidence, units=lu.data["units"], customers=lu.data["customers"])
             fleet = self._fleet(s, lu, ut, site)
             rep.answer.update(fleet={k: sorted(v) for k, v in fleet.items()})

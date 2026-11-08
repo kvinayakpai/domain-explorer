@@ -32,19 +32,25 @@ class Person:
     name: str
     roles: tuple[str, ...]
     password: str
+    tenant: str = "operator"     # which organisation employs them: the refinery/field operator (primary) or the pump maker (secondary)
 
 
 DIRECTORY: dict[str, Person] = {
     "a.rao": Person("A. Rao", ("maintenance_planner",), "demo-a.rao"),
     "s.iyer": Person("S. Iyer", ("materials_planner",), "demo-s.iyer"),
-    "m.das": Person("M. Das", ("quality_engineer",), "demo-m.das"),
-    "r.menon": Person("R. Menon", ("quality_manager", "quality_engineer"), "demo-r.menon"),
+    "m.das": Person("M. Das", ("quality_engineer",), "demo-m.das", tenant="maker"),
+    "r.menon": Person("R. Menon", ("quality_manager", "quality_engineer"), "demo-r.menon", tenant="maker"),
     "k.nair": Person("K. Nair", ("production_engineer",), "demo-k.nair"),
     "t.fernandes": Person("T. Fernandes", ("shift_supervisor",), "demo-t.fernandes"),
     "p.kulkarni": Person("P. Kulkarni", ("data_steward",), "demo-p.kulkarni"),
 }
 CLIENTS: dict[str, dict[str, Any]] = {
-    "ftf-agent": {"secret": "demo-agent-secret", "scopes": ("plant.read",)},
+    # legacy all-systems reader, kept for older tests and demos; new work should use one of the two tenant agents
+    "ftf-agent": {"secret": "demo-agent-secret", "scopes": ("plant.read",), "tenant": "operator"},
+    # primary: the operator's agent reads the operator's systems (SAP PM, historian, SCADA, OSDU, P&ID, production) and nothing of the maker's
+    "ftf-operator-agent": {"secret": "demo-operator-agent-secret", "scopes": ("operator.read",), "tenant": "operator"},
+    # secondary: the pump maker's own agent reads the maker's systems (PLM, MES, QMS) and nothing of the operator's
+    "ftf-maker-agent": {"secret": "demo-maker-agent-secret", "scopes": ("maker.read",), "tenant": "maker"},
 }
 
 
@@ -69,7 +75,7 @@ class IdentityProvider:
         p = self.directory.get(username)
         if p is None or password != p.password:
             raise PermissionError("unknown user or wrong password")
-        return self._sign({"sub": username, "name": p.name, "roles": list(p.roles), "scope": "drafts.decide"})
+        return self._sign({"sub": username, "name": p.name, "roles": list(p.roles), "scope": "drafts.decide", "tenant": p.tenant})
 
     def client_credentials(self, client_id: str, secret: str, scope: str = "plant.read") -> str:
         c = self.clients.get(client_id)
@@ -78,7 +84,7 @@ class IdentityProvider:
         wanted = set(scope.split())
         if not wanted <= set(c["scopes"]):
             raise PermissionError(f"client {client_id} may not request {sorted(wanted - set(c['scopes']))}")
-        return self._sign({"sub": client_id, "client_id": client_id, "scope": " ".join(sorted(wanted))})
+        return self._sign({"sub": client_id, "client_id": client_id, "scope": " ".join(sorted(wanted)), "tenant": c.get("tenant", "operator")})
 
     # -- verifying (resource servers do the same with the JWKS)
     def jwks(self) -> dict[str, Any]:
