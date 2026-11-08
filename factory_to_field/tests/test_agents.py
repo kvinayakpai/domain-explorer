@@ -26,7 +26,7 @@ def scored(agent, world_dir):
 def test_all_gold_cases_pass(scored):
     bad = [(c["case"], [k for k, v in c["checks"].items() if not v], c["problems"]) for c in scored["cases"] if not c["ok"]]
     assert not bad, bad
-    assert scored["cases_total"] == 10
+    assert scored["cases_total"] >= 10  # 10 hand-written plus those generated from the world
 
 
 def test_nothing_is_approved_by_the_agent(scored):

@@ -70,6 +70,8 @@ def _p(x: str) -> str:
 
 class Agent(FieldPlaybooks):
     def __init__(self, kg: KG | None = None, world: Path | None = None, planner: str = "playbook", src=None) -> None:
+        if kg is None and world is not None and Path(world).resolve() != Path(DEFAULT_WORLD).resolve():
+            raise ValueError("a world other than the default needs a knowledge graph built from it: pass kg=")  # else answers come from another world's graph
         self.kg = kg or KG(DEFAULT_KG, read_only=True)
         self.world = world or DEFAULT_WORLD
         self.src = src  # FileSource by default; pass an HttpSource to work through the system simulators
@@ -162,14 +164,16 @@ class Agent(FieldPlaybooks):
         sigs = s.call("kg.signals", position=pos)
         other = self._tag(sigs.data, "vibration_nde")
         extra = []
+        o = None
         if other:
             o = s.call("historian.trend", tag=other, days=14)
             extra = o.evidence
+        if o is not None and "last_max" in o.data:  # a tag with no history is left out, not a crash
             self._add(rep, "signal", f"The other bearing on the same pump, {other}, is normal at {o.data['last_max']} {o.data['unit']} (limit {o.data['alarm_high']}).", extra,
                       last_max=o.data["last_max"])
         bt = self._tag(sigs.data, "bearing_temp")
-        if bt:
-            b = s.call("historian.trend", tag=bt, days=14)
+        b = s.call("historian.trend", tag=bt, days=14) if bt else None
+        if b is not None and "last_max" in b.data:
             self._add(rep, "signal", f"Bearing temperature {bt} is steady at {b.data['last_max']} {b.data['unit']}.", b.evidence, last_max=b.data["last_max"])
         d = s.call("drafts.create_draft", kind="sap_pm.notification", title=f"Instrument check: {trig} transmitter stuck at {tr.data['last_max']}",
                    payload={"notification_type": "M1", "functional_location": pos.split(":", 2)[-1], "work_center": "I&C", "priority": 3}, rationale="stuck vibration transmitter",

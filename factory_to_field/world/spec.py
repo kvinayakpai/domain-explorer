@@ -4,6 +4,13 @@ from __future__ import annotations
 from datetime import UTC, date, datetime
 
 SEED = 42
+# Data-quality rates the renderer applies. "base" is what the dev world always used; "dirty" is a held-out condition.
+NOISE = {
+    "base": {"equz_missing": 0.02, "legacy_code": 0.05, "asset_path_missing": 0.10, "extra_dup": 0.01},
+    "dirty": {"equz_missing": 0.06, "legacy_code": 0.15, "asset_path_missing": 0.30, "extra_dup": 0.03},
+    # dirty plus kinds of serial damage the resolver was not written against (transposed digits, O for 0, I for 1, suffixes)
+    "hostile": {"equz_missing": 0.06, "legacy_code": 0.15, "asset_path_missing": 0.30, "extra_dup": 0.03, "serial_hostile": 0.08, "tag_variant": 0.06, "pos_swap": 0.04},
+}
 TODAY = date(2026, 10, 17)
 NOW = datetime(2026, 10, 17, 6, 0, tzinfo=UTC)  # newest sample in any historian
 HIST_START = date(2024, 1, 1)  # operating history held in the historians

@@ -7,7 +7,7 @@ from typing import Any
 
 import numpy as np
 
-from .spec import SEED
+from .spec import NOISE, SEED
 
 
 def d(s: str | date) -> date:
@@ -21,6 +21,7 @@ def days(a: date, b: date) -> int:
 @dataclass
 class World:
     seed: int = SEED
+    noise: dict = field(default_factory=lambda: dict(NOISE["base"]))
     rng: np.random.Generator = field(default_factory=lambda: np.random.default_rng(SEED))
     orgs: dict[str, dict] = field(default_factory=dict)
     sites: dict[str, dict] = field(default_factory=dict)

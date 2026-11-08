@@ -33,19 +33,31 @@ def norm_serial(s: str | None) -> str:
     if not s:
         return ""
     t = re.sub(r"[\s_]+", "-", s.strip().upper())
+    t = re.sub(r"-?REV-?[A-Z]$", "", t)  # trailing label text
     t = re.sub(r"^0EM", "OEM", t)
     m = SERIAL_RE.match(t)
-    return f"{m.group(1)}-{m.group(2)}-{int(m.group(3)):04d}" if m else t
+    if not m:  # separators lost ("OEM180516") or letters read for digits ("OEM-20-OO2I")
+        m = re.match(r"^(OEM|ES|SS|PM|IN|MT|CB)-?([0-9OIL]{2})-?([0-9OIL]{1,4})$", t)
+        if m:
+            fix = str.maketrans("OIL", "011")
+            return f"{m.group(1)}-{m.group(2).translate(fix)}-{int(m.group(3).translate(fix)):04d}"
+        return t
+    return f"{m.group(1)}-{m.group(2)}-{int(m.group(3)):04d}"
 
 
 def lev(a: str, b: str) -> int:
-    prev = list(range(len(b) + 1))
-    for i, ca in enumerate(a, 1):
-        cur = [i]
-        for j, cb in enumerate(b, 1):
-            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
-        prev = cur
-    return prev[-1]
+    """Edit distance where swapping two neighbouring characters counts as one edit."""
+    d = [[0] * (len(b) + 1) for _ in range(len(a) + 1)]
+    for i in range(len(a) + 1):
+        d[i][0] = i
+    for j in range(len(b) + 1):
+        d[0][j] = j
+    for i in range(1, len(a) + 1):
+        for j in range(1, len(b) + 1):
+            d[i][j] = min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] != b[j - 1]))
+            if i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]:
+                d[i][j] = min(d[i][j], d[i - 2][j - 2] + 1)
+    return d[-1][-1]
 
 
 @dataclass
@@ -196,6 +208,8 @@ class Pipeline:
     def units(self) -> None:
         sap, mes, erp = self.db("sap_pm.sqlite"), self.db("kestrel_mes.sqlite"), self.db("kestrel_erp.sqlite")
         builds = {r["serial"]: r for r in _rows(mes, "SELECT * FROM build_records")}
+        with open(self.src / "reliability_runlife.csv") as f:
+            other_serials = {norm_serial(r["string_serial"]) for r in csv.DictReader(f)}  # serials known from another system
         ships = defaultdict(list)
         cust = {r["customer_no"]: r["name"] for r in _rows(erp, "SELECT * FROM customers")}
         for r in _rows(erp, "SELECT * FROM shipments"):
@@ -218,8 +232,12 @@ class Pipeline:
         def settle(eq: int, canon: str | None, m: str, c: float, ev: str, raw: str) -> None:
             if canon is None:
                 n = norm_serial(raw)
-                ucanon = f"unit:{n}" if n else f"unit:SAP-{eq}"
+                damaged = bool(re.match(r"^(OEM|ES|SS|PM|IN|MT|CB)-", n)) and not SERIAL_RE.match(n)  # our own family, malformed
+                ucanon = f"unit:{n}" if n and not damaged else f"unit:SAP-{eq}"  # a damaged serial must not mint a phantom unit
                 m, c, ev = "exact_key", 1.0, "no maker record in this graph; keyed by CMMS serial"
+                near = [s for s in other_serials if n not in other_serials and lev(n, s) <= 1]
+                if len(near) == 1:  # a one-edit neighbour in another system is a better explanation than a new unit
+                    ucanon, m, c, ev = f"unit:{near[0]}", "fuzzy", 0.91, f"edit distance 1 from '{raw}' to string serial {near[0]} in the run-life records"
             else:
                 ucanon = f"unit:{canon}"
                 matched_mes[canon] = eq
@@ -392,14 +410,15 @@ class Pipeline:
             alias = pi.execute("SELECT current_name FROM tag_alias WHERE legacy_name=?", (name,)).fetchone()
             if alias:
                 canon_name, method, conf, ev = alias[0], "alias_table", 1.0, f"retired tag {name}, renamed {alias[0]} on migration"
-            m = re.match(r"^(\d\d)P(\d{3})([AB])[._](VIB_DE|VIB_NDE|BRG_T|RUN)$", canon_name)
+            norm_name = re.sub(r"(?<=\d[AB])[-.]", "_", canon_name.upper()).replace("-", "_")  # lower case and hyphen variants of the grammar
+            m = re.match(r"^(\d\d)P(\d{3})([AB])[._](VIB_DE|VIB_NDE|BRG_T|RUN)$", norm_name)
             sfx = None
             if m:
                 tag = f"{m.group(1)}-P-{m.group(2)}{m.group(3)}"
                 pos, sfx = self.pos_by_tag.get(tag), m.group(4)
                 if pos and not alias:
                     method, conf, ev = "tag_rule", 0.98, f"tag grammar AAPNNNL.SUFFIX -> {tag}"
-            mi = re.match(r"^(\d\d)PI(\d{4})\.PV$", canon_name)
+            mi = re.match(r"^(\d\d)PI(\d{4})[._]PV$", norm_name)
             multi: list[str] = []
             if mi:
                 multi = self.instrument_pumps.get(f"{mi.group(1)}-PI-{mi.group(2)}", [])
@@ -474,10 +493,20 @@ class Pipeline:
         n_failures = 0
         for r in _rows(sap, "SELECT * FROM QMEL ORDER BY qmdat, qmnum"):
             pos = self.pos_by_floc.get(r["tplnr"])
+            named = re.search(r"\b(\d\d-P-\d{3}[AB])\b", r["qmtxt"] or "")
+            text_pos = self.pos_by_tag.get(named.group(1)) if named else None
+            if text_pos and pos and text_pos != pos and text_pos[:-1] == pos[:-1]:
+                pos = text_pos  # the short text names the sister pump: the functional location was mis-keyed
             on = d(r["qmdat"])
             unit = self.unit_by_equnr.get(r["equnr"]) if r["equnr"] else None
             how = "equipment number on the notification"
             conf = 1.0
+            if unit and pos:  # the unit on the notification was installed at the sister pump on that date: the location was mis-keyed
+                here = any(frm <= on and (to is None or on < to) and u == unit for frm, to, u, ic in self.installs.get(pos, []))
+                sister = pos[:-1] + ("B" if pos[-1] == "A" else "A")
+                there = any(frm <= on and (to is None or on < to) and u == unit for frm, to, u, ic in self.installs.get(sister, []))
+                if not here and there and pos[-1] in "AB":
+                    pos = sister
             if unit is None and pos:
                 for frm, to, u, ic in self.installs.get(pos, []):
                     if frm <= on and (to is None or on < to):

@@ -87,8 +87,10 @@ jobs:
       - name: Generated ontology artefacts are current
         run: python -m factory_to_field.ontology.build --check
 
-      - name: pytest (world, knowledge graph with SHACL gate, agents)
+      - name: pytest (world, knowledge graph with SHACL gate, agents, held-out seeds)
         shell: bash
+        env:
+          FTF_SEEDS: "1 2 3"
         run: |
           set +e
           python -m pytest -c factory_to_field/pytest.ini factory_to_field/tests --tb=short -rfE 2>&1 | tee pytest.log
