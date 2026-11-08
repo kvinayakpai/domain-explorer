@@ -42,6 +42,7 @@ from ..agents.drafts import APPROVER_ROLES
 from ..agents.release import TARGETS
 from . import vendors
 
+MAKER_PREFIXES = ("/plm/", "/mes/", "/qms/")
 TOKENS = {"ro-agent": "read", "release": "release", "ops-readonly": "read"}
 # the role a signed approver must hold to write to each target, from the draft kinds that write there
 ROUTE_ROLES = {path: APPROVER_ROLES[kind] for kind, path in TARGETS.items()}
@@ -208,11 +209,26 @@ class Handler(BaseHTTPRequestHandler):
                 claims = self.verifier.verify(tok)
             except PermissionError:
                 return None, None
-            if "plant.read" in (claims.get("scope") or "").split():
+            if {"plant.read", "operator.read", "maker.read"} & set((claims.get("scope") or "").split()):
                 return "read", claims
             if claims.get("roles"):
                 return "person", claims
         return None, None
+
+    def _tenant_denied(self, path: str) -> str | None:
+        """Signed agent tokens read only their own tenant's systems: operator.read the operator's, maker.read the pump maker's.
+        `plant.read` (legacy) and the static dev tokens read both."""
+        kind, claims = self._ident()
+        if kind != "read" or claims is None:
+            return None
+        scopes = set((claims.get("scope") or "").split())
+        if "plant.read" in scopes:
+            return None
+        maker_side = path.startswith(MAKER_PREFIXES)
+        need = "maker.read" if maker_side else "operator.read"
+        if need in scopes:
+            return None
+        return f"scope {need} is required for {path.split('/')[1]} (this token is tenant '{claims.get('tenant', '?')}' with {sorted(scopes)})"
 
     def _auth(self) -> str | None:
         return self._ident()[0]
@@ -261,6 +277,9 @@ class Handler(BaseHTTPRequestHandler):
         if self._rate_limited():
             return None
         path = urllib.parse.unquote(u.path)
+        denied = self._tenant_denied(path)
+        if denied:
+            return self._send(403, {"error": denied})
         if path.startswith("/osdu/") and not self.headers.get("data-partition-id"):
             return self._send(400, {"error": "data-partition-id header is required"})
         extra = {}
@@ -429,6 +448,11 @@ class Handler(BaseHTTPRequestHandler):
             c = st.c("kestrel_qms.sqlite")
             cur = c.execute("SELECT w.* FROM warranty_claims w JOIN claim_units u ON u.claim_no=w.claim_no WHERE u.serial_no=?", (q["serial"],)) if q.get("serial") else c.execute("SELECT * FROM warranty_claims")
             return 200, {"claims": [dict(r) for r in cur]}
+        m = re.fullmatch(r"/inspect/api/components(?:/([^/]+))?", p)
+        if m:
+            from ..agents.sources import FileSource
+            r = FileSource(st.w).inspection(m.group(1))
+            return (200, r) if r else (404, {"error": "unknown component"})
         if p == "/qms/api/difa":
             import csv
             with open(st.w / "difa_reports.csv", newline="") as f:

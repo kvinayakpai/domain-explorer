@@ -65,3 +65,17 @@ def test_esp_pull_reasons_are_not_all_the_same():
     w = make_world(7)
     c = collections.Counter(r["pull_reason"] for r in w.runs if r["state"] == "failed")
     assert len(c) >= 3 and c["electrical"] > c["motor failure"] * 0.9, c
+
+
+def test_fixed_equipment_key_agrees_with_independent_rederivation_and_traps_are_planted(world_dir):
+    import json
+
+    from factory_to_field.eval.independent_key import compare_fixed
+    key = json.loads((world_dir / "answer_key.json").read_text())["FIXED"]
+    assert compare_fixed(world_dir) == []
+    t = key["TRAPS"]
+    comps = key["components"]
+    assert comps["EQ-0101"]["flagged_remeasure"] == [t["anomaly_cml"]]           # a reading that rose is flagged, not turned into a negative rate
+    assert any(e["overdue"] for e in comps.values()) and any(not e["overdue"] for e in comps.values())
+    assert all(e["remaining_life_y"] is not None for e in comps.values())
+    assert t["single_reading_cml"] and len(t["replaced_components"]) == 3

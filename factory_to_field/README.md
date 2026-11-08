@@ -13,6 +13,14 @@ pilot ◄── identity provider (RS256 JWT) · hash-chained audit log · revie
 
 ## Run it
 
+One command with Docker (builds the world and graph into the image, then serves the live console on http://localhost:8800):
+
+```bash
+docker compose -f factory_to_field/docker-compose.yml up --build
+```
+
+Or step by step:
+
 ```bash
 pip install -r factory_to_field/requirements.txt
 python -m factory_to_field.ontology.build          # regenerate OWL/SHACL/Pydantic/TS (add --check in CI)
@@ -22,6 +30,7 @@ python -m factory_to_field.agents.gold             # 10 gold cases, scored again
 python -m factory_to_field.sim.server --port 8765  # the plant's systems as local REST services (no real systems needed)
 python -m factory_to_field.demo                    # end to end: agents work through the simulators, humans approve, drafts are released to simulated SAP/QMS
 FTF_SIM_URL=http://127.0.0.1:8765 python -m factory_to_field.agents.gold   # gold cases through the simulators
+FTF_SIM_URL=http://127.0.0.1:8765 FTF_VENDOR=1 python -m factory_to_field.agents.gold   # same, with work orders and DIFA read through the Maximo and ESP/DIFA mocks
 python -m factory_to_field.ui.build_ui             # ui/case_viewer.html (one self-contained page)
 python -m pytest -c factory_to_field/pytest.ini factory_to_field/tests
 python -m factory_to_field.agents.mcp_servers kg   # any of: kg historian eam plant maker drafts ot
@@ -30,6 +39,10 @@ python -m factory_to_field.pilot.uns               # replay the plant's UNS over
 python -m factory_to_field.pilot.review list       # identity-resolution review queue (decide, then apply)
 python -m factory_to_field.agents.eval_live        # gold + adversarial cases; --planner model needs ANTHROPIC_API_KEY
 ```
+
+## Second use case: fixed-equipment integrity
+
+Thickness readings, corrosion rate, remaining life and next inspection due for vessels and piping, with traps (replaced spools, inch/mm campaigns, a reading that rises, relabelled CMLs, a single reading, injected report text). Design in `FIXED_EQUIPMENT.md`; generator `world/gen_fixed.py`; agent `inspect.*` tools and the `remaining_life` / `overdue_inspections` playbooks. The formulae are the author's reading of common practice and have not been confirmed by an inspection engineer; it is decision support, not an integrity sign-off.
 
 ## The ideas that matter
 
@@ -54,6 +67,7 @@ There are no real SAP, PI, OSDU or PLM/MES systems in this project, so `sim/serv
 `pilot/` holds what a pilot needs that does not depend on real plant systems:
 
 - **Signed identities.** `pilot/idp.py` is an OIDC-style identity provider: people sign in and get RS256 tokens carrying their name and roles; the agent gets a client-credentials token with read scope only. The simulators verify tokens against the provider's JWKS. With `require_identity`, a write needs the token of a named person holding the role that route requires, and the static `release` token is refused. The console uses this path.
+- **Two tenants.** The refinery/field operator is the primary side; the pump maker is secondary. `ftf-operator-agent` (scope `operator.read`) cannot read the maker's PLM, MES or QMS, and `ftf-maker-agent` (`maker.read`) cannot read the operator's systems; the simulators answer 403. When the operator agent needs a maker fact (ECO route, DIFA, factory test), the report says it is not visible and who holds it. The live console runs as the operator agent.
 - **Audit log.** `pilot/audit.py` writes every sign-in, approval, refusal, release and review decision as hash-chained JSON lines under `build/audit/`; editing or deleting a line breaks the chain and `verify()` says where.
 - **Review workflow.** `pilot/review.py` lets a data steward link or dismiss each item in the identity-resolution queue, records who decided and how long it took, and rebuilds the graph with the decisions (queue 3 -> 0 in the tests).
 - **UNS over MQTT.** `pilot/uns.py` starts an MQTT broker, publishes `uns_replay.jsonl` on its ISA-95 topics and runs an alarm listener: the first value above a tag's alarm limit opens an agent case with the alarm's own timestamp as the clock (both alarms in the replay open the right cases).

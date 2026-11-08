@@ -1,0 +1,52 @@
+# External mappings for the 36 ontology classes (plan 4.2).
+# STATUS: DRAFT, NOT VERIFIED AGAINST THE STANDARDS. ISO 14224 is paywalled and no authoritative CFIHOS or OSDU
+# schema files were available when this was written, so every term below comes from the author's working knowledge.
+# `confidence: high` = a well-known concept with an obvious counterpart; `medium` = plausible, check the exact term;
+# `low` = judgement call. A domain expert (reliability engineer for 14224, data manager for CFIHOS/OSDU) should review before
+# anyone relies on these. `relation` uses SKOS meaning: exact | close | broad | narrow | related | none.
+# Standards: iso14224 = ISO 14224 (reliability and maintenance data), cfihos = CFIHOS (capital project handover data),
+#            osdu = OSDU data definitions (kind names as osdu:wks:<group-type>--<Name>), dexpi = DEXPI (P&ID exchange), api610 = API 610 pumps.
+version: 0.1
+status: draft-unverified
+classes:
+  Entity:            {note: "abstract base; no external counterpart"}
+  SourceIdentifier:  {note: "the identity crosswalk is this project's own construct; closest idea is OSDU 'NameAliases' on master data", osdu: {term: "NameAliases (property)", relation: related, confidence: low}}
+  Organization:      {osdu: {term: "osdu:wks:master-data--Organisation", relation: close, confidence: high}, cfihos: {term: "Company", relation: close, confidence: medium}}
+  Site:              {iso14224: {term: "Installation / plant (taxonomy level 1-2)", relation: close, confidence: medium}, cfihos: {term: "Site / Plant", relation: close, confidence: medium}}
+  FunctionalLocation: {iso14224: {term: "Equipment unit as tagged item (location in taxonomy level 6)", relation: close, confidence: medium}, cfihos: {term: "Tag", relation: close, confidence: high}, dexpi: {term: "PlantItem (tagged)", relation: close, confidence: medium}}
+  PhysicalEquipment: {iso14224: {term: "Equipment unit (serialised item)", relation: close, confidence: medium}, cfihos: {term: "Equipment / Physical item", relation: close, confidence: medium}}
+  Installation:      {note: "dated tag-to-serial installation; ISO 14224 and CFIHOS record the relation but not its history as a first-class class", iso14224: {term: "Installation data (equipment unit installed at tag)", relation: related, confidence: low}}
+  Signal:            {osdu: {term: "osdu:wks:work-product-component--WellLog (curves) / time series", relation: related, confidence: low}, dexpi: {term: "ProcessInstrumentationFunction / signal", relation: related, confidence: low}}
+  Document:          {cfihos: {term: "Document (document type and number)", relation: close, confidence: high}, osdu: {term: "osdu:wks:work-product-component--Document", relation: close, confidence: medium}}
+  Event:             {note: "abstract-ish parent of failures, notifications; no single counterpart"}
+  FailureEvent:      {iso14224: {term: "Failure event record (failure mode, cause, detection method)", relation: close, confidence: high}}
+  Notification:      {iso14224: {term: "Maintenance record (corrective/preventive)", relation: broad, confidence: medium}}
+  MaterialLot:       {cfihos: {term: "Material / batch (manufacturing data)", relation: related, confidence: low}}
+  EngineeringChange: {note: "ECO/MOC; no clean counterpart in the three standards", cfihos: {term: "Change / revision of tag data", relation: related, confidence: low}}
+  WarrantyClaim:     {note: "commercial QMS record; outside the three standards"}
+  Case:              {note: "project construct for an agent investigation"}
+  Draft:             {note: "project construct for an agent proposal awaiting approval"}
+  LinkAssertion:     {note: "project construct: provenance of an identity link", osdu: {term: "lineage / source (Meta, Source properties)", relation: related, confidence: low}}
+  BuildRecord:       {cfihos: {term: "Manufacturing data (as-built)", relation: related, confidence: low}}
+  TestRecord:        {cfihos: {term: "Test / inspection record (factory acceptance test)", relation: related, confidence: medium}}
+  Shipment:          {note: "logistics record; outside the three standards"}
+  NonConformance:    {note: "QMS record; outside the three standards"}
+  EightD:            {note: "QMS corrective-action report; outside the three standards"}
+  KpiDefinition:     {iso14224: {term: "Reliability indicators (Annex E, e.g. MTTF)", relation: related, confidence: low}}
+  OilField:          {osdu: {term: "osdu:wks:master-data--Field", relation: close, confidence: high}}
+  Well:              {osdu: {term: "osdu:wks:master-data--Well", relation: close, confidence: high}, iso14224: {term: "Subsea/wellhead equipment class (not the well itself)", relation: none, confidence: low}}
+  ESPPosition:       {osdu: {term: "osdu:wks:master-data--Wellbore (completion position)", relation: related, confidence: low}, iso14224: {term: "Artificial lift equipment class (taxonomy level 6 location)", relation: related, confidence: medium}}
+  ESPString:         {iso14224: {term: "Equipment class: submersible pump assembly", relation: close, confidence: medium}, osdu: {term: "osdu:wks:master-data--Completion... (check)", relation: related, confidence: low, verify: true}}
+  ESPComponent:      {iso14224: {term: "Sub-unit / maintainable item of artificial lift unit", relation: close, confidence: medium}}
+  RunRecord:         {note: "run life of a string in a well; API RP 11S/ISO 14224 describe run-life data but have no class of this shape", iso14224: {term: "Failure/survival data with running time", relation: related, confidence: low}}
+  Workover:          {osdu: {term: "intervention / workover (check exact kind name)", relation: related, confidence: low, verify: true}}
+  Deferment:         {note: "production deferment; no counterpart in the three standards (OSDU production data kinds are the nearest, unchecked)"}
+  ProcessUnit:       {iso14224: {term: "Process/ plant unit (taxonomy level 3-4)", relation: close, confidence: medium}, cfihos: {term: "System / Unit", relation: close, confidence: medium}, dexpi: {term: "PlantStructureItem", relation: close, confidence: medium}}
+  PumpPosition:      {cfihos: {term: "Tag with equipment class 'pump'", relation: close, confidence: medium}, api610: {term: "pump type code (e.g. BB2 between-bearings)", relation: related, confidence: high}, iso14224: {term: "Equipment class: pumps", relation: broad, confidence: high}}
+  Stream:            {dexpi: {term: "PipingNetworkSystem / stream", relation: close, confidence: low}}
+  ManagementOfChange: {cfihos: {term: "(none; handled in project change management)", relation: none, confidence: low}}
+  Circuit:           {iso14224: {term: "(none; corrosion loop is an RBI/API 570 concept)", relation: none, confidence: low}, note: "corrosion circuit / injection point loop from API 570 and API 580 practice"}
+  PressureComponent: {iso14224: {term: "Equipment class: piping / pressure vessel", relation: broad, confidence: medium}, cfihos: {term: "Tag with equipment class 'vessel' or 'piping'", relation: close, confidence: medium}}
+  ThicknessLocation: {note: "CML / TML in API 510 and 570 practice; no ISO 14224 counterpart", cfihos: {term: "(none)", relation: none, confidence: low}}
+  ThicknessReading:  {note: "inspection measurement; no counterpart in the three standards"}
+  InspectionRecord:  {cfihos: {term: "Inspection record / document", relation: related, confidence: low}, iso14224: {term: "Inspection (maintenance record type)", relation: broad, confidence: medium}}

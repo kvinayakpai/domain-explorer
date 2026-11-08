@@ -1,0 +1,14 @@
+# From the repo root:  docker compose -f factory_to_field/docker-compose.yml up --build
+# Then open http://localhost:8800 (live console: sign in, approve, release, review queue, audit log).
+services:
+  console:
+    build:
+      context: ..
+      dockerfile: factory_to_field/Dockerfile
+    ports: ["8800:8800"]
+  gold:   # optional: docker compose -f factory_to_field/docker-compose.yml run --rm gold
+    build:
+      context: ..
+      dockerfile: factory_to_field/Dockerfile
+    command: ["python", "-m", "factory_to_field.agents.gold"]
+    profiles: ["tools"]

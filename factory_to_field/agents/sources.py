@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import re
 import sqlite3
 import time
@@ -131,6 +132,20 @@ class FileSource:
     def difa(self, well: str | None, upto_day: str) -> list[dict]:
         with open(self.w / "difa_reports.csv", newline="") as f:
             return [r for r in csv.DictReader(f) if r["report_date"] <= upto_day and (well is None or r["well"] == well)]
+
+    def inspection(self, component: str | None) -> dict:
+        """Inspection data for one component (or the list of all components when None): component row, raw readings, CML aliases, report texts."""
+        def rd(name):
+            with open(self.w / name, newline="") as f:
+                return list(csv.DictReader(f))
+        comps = rd("inspection_components.csv")
+        if component is None:
+            return {"components": comps}
+        c = next((x for x in comps if x["component"] == component), None)
+        if c is None:
+            return {}
+        return {"component": c, "readings": [r for r in rd("inspection_readings.csv") if r["component"] == component],
+                "aliases": rd("inspection_cml_alias.csv"), "reports": [r for r in rd("inspection_reports.csv") if r["component"] == component]}
 
     def well_master(self, well: str) -> dict | None:
         for r in json.loads((self.w / "osdu_wells.json").read_text())["results"]:
@@ -376,13 +391,42 @@ class HttpSource:
     def difa(self, well: str | None, upto_day: str) -> list[dict]:
         return self.get("/qms/api/difa", well=well, to=upto_day).get("reports", [])
 
+    def inspection(self, component: str | None) -> dict:
+        return self.get(f"/inspect/api/components/{component}" if component else "/inspect/api/components")
+
     def well_master(self, well: str) -> dict | None:
         r = self.post("/osdu/api/search/v2/query", {"kind": "osdu:wks:master-data--Well:1.0.0", "query": f'data.FacilityName:"Well {well}"', "limit": 1})
         return (r.get("results") or [None])[0]
 
 
-def make_source(world: Path, base_url: str | None = None):
-    return HttpSource(base_url) if base_url else FileSource(world)
+class VendorSource(HttpSource):
+    """Reads work orders through the Maximo mock (OSLC where + pageno paging) and DIFA reports through the ESP/DIFA mock;
+    everything else goes through the original simulators. Maximo names things its own way, so this maps them back."""
+    MX_OPEN_NOT = ("COMP", "CLOSE", "CLSD")      # Maximo statuses that mean finished
+
+    def open_orders(self, flocs: list[str], upto_day: str) -> list[dict]:
+        out = []
+        for fl in flocs:
+            path, params = "/v/maximo/oslc/os/mxwo", {"oslc.where": f'spi:location="{fl}"', "oslc.pageSize": 5, "pageno": 1}
+            while path:
+                r = self.get(path, **params)
+                for x in r.get("rdfs:member", []):
+                    if x["spi:status"] not in self.MX_OPEN_NOT and (x["spi:schedstart"] or "") <= upto_day:
+                        out.append({"aufnr": x["spi:wonum"], "ktext": x["spi:description"], "istat": {"APPR": "REL"}.get(x["spi:status"], x["spi:status"]), "gstrp": x["spi:schedstart"]})
+                nxt = (r.get("responseInfo", {}).get("nextPage") or {}).get("href")
+                path, params = (nxt, {}) if nxt else (None, {})
+        return out
+
+    def difa(self, well: str | None, upto_day: str) -> list[dict]:
+        rows = self.get("/v/esp_difa/difa").get("reports", [])
+        return [r for r in rows if r["report_date"] <= upto_day and (well is None or r["well"] == well)]
+
+
+def make_source(world: Path, base_url: str | None = None, vendor: bool = False):
+    vendor = vendor or os.environ.get("FTF_VENDOR") == "1"     # FTF_VENDOR=1 with FTF_SIM_URL: read work orders and DIFA through the vendor mocks
+    if base_url:
+        return VendorSource(base_url) if vendor else HttpSource(base_url)
+    return FileSource(world)
 
 
 _ = re  # keep import for callers that build filters

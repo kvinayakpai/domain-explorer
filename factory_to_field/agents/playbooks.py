@@ -53,15 +53,22 @@ class FieldPlaybooks:
                   f"{new['km_median_days']} days for them against {old['km_median_days']} days for earlier builds. Running strings are counted as censored, not dropped.",
                   rl.evidence, new_n=new["n"], failed=new["failed"], running=new["running"], km_new=new["km_median_days"], km_old=old["km_median_days"])
         df = s.call("maker.difa")
-        self._add(rep, "quality", f"DIFA reports: {df.data['elastomer_findings']} of {df.data['reports']} show swollen and cracked seal elastomers with well fluid in the motor oil and no pump-stage damage.",
-                  df.evidence[:6], elastomer_findings=df.data["elastomer_findings"], reports=df.data["reports"])
-        rep.answer["difa_findings"] = df.data["elastomer_findings"]
+        if df.refused:
+            self._blind(rep, df, "the pump maker's failure-analysis (DIFA) reports")
+        else:
+            self._add(rep, "quality", f"DIFA reports: {df.data['elastomer_findings']} of {df.data['reports']} show swollen and cracked seal elastomers with well fluid in the motor oil and no pump-stage damage.",
+                      df.evidence[:6], elastomer_findings=df.data["elastomer_findings"], reports=df.data["reports"])
+            rep.answer["difa_findings"] = df.data["elastomer_findings"]
         if elot:
             lc = s.call("maker.lot_change", lot=elot.split(":", 1)[1])
             lu = s.call("kg.lot_units", lot=elot)
-            rep.answer.update(eco=lc.data.get("eco_no"), lot_sections=lu.data["units"], lot_section_operators=lu.data["customers"])
-            self._add(rep, "quality", f"Lot {elot.split(':')[1]} came in under {lc.data['eco_no']} ({lc.data['title']}): route {lc.data['route']}, qualification test waived = {lc.data['qualification_test_waived']}. "
-                      f"It went into {lu.data['units']} seal sections for {lu.data['customers']} operators.", lc.evidence + lu.evidence, eco=lc.data["eco_no"], sections=lu.data["units"], operators=lu.data["customers"])
+            if lc.refused:
+                self._blind(rep, lc, "the engineering change behind this lot")
+                rep.answer.update(lot_sections=lu.data["units"], lot_section_operators=lu.data["customers"])
+            else:
+                rep.answer.update(eco=lc.data.get("eco_no"), lot_sections=lu.data["units"], lot_section_operators=lu.data["customers"])
+                self._add(rep, "quality", f"Lot {elot.split(':')[1]} came in under {lc.data['eco_no']} ({lc.data['title']}): route {lc.data['route']}, qualification test waived = {lc.data['qualification_test_waived']}. "
+                          f"It went into {lu.data['units']} seal sections for {lu.data['customers']} operators.", lc.evidence + lu.evidence, eco=lc.data["eco_no"], sections=lu.data["units"], operators=lu.data["customers"])
         wm = s.call("osdu.well_master", well=well)
         if wm.data.get("LiftMethod"):
             self._add(rep, "asset", f"OSDU master data: {well} is an {wm.data['LiftMethod']} well on {wm.data['Pad']} in {wm.data['Field']}, spud {wm.data['Spud']}.", wm.evidence, lift=wm.data["LiftMethod"], pad=wm.data["Pad"], spud=wm.data["Spud"])
@@ -103,7 +110,9 @@ class FieldPlaybooks:
         if earlier:
             self._add(rep, "reliability", f"An earlier string at {well} did come from the suspect lot: " + ", ".join(f"{m['string']} ({m['state']} after {m['days']} days)" for m in earlier) + ".", rl.evidence, string=earlier[0]["string"])
         df = s.call("maker.difa", well=well)
-        for r in df.data["items"][-2:]:
+        if df.refused:
+            self._blind(rep, df, "the pump maker's failure-analysis (DIFA) reports")
+        for r in df.data.get("items", [])[-2:]:
             self._add(rep, "quality", f"{r['difa']} ({r['date']}): {r['finding']}", [f"difa:{r['difa']}"], finding=r["finding"])
         rep.summary = f"The string now running in {well} is {'' if in_lot else 'not '}from lot E-25-031"
         rep.recommendation = ("Include it in the containment list and plan its pull." if in_lot else
@@ -117,6 +126,8 @@ class FieldPlaybooks:
         b = s.call("kg.lot_units", lot="lot:B-24-117")
         e = s.call("kg.lot_units", lot="lot:E-25-031")
         pf = s.call("maker.lot_tests", lot="B-24-117", test_kind="press_fit_force")
+        if pf.refused:
+            self._blind(rep, pf, "the pump maker's factory test records")
         rep.answer.update(bearing_lot="B-24-117", elastomer_lot="E-25-031", lot_pumps=b.data["units"], lot_pump_customers=b.data["customers"],
                           lot_sections=e.data["units"], lot_section_operators=e.data["customers"], waived_expedited=ecos,
                           press_fit_deficit_pct=pf.data.get("deficit_pct"), ecos=["ECO-24-1147", "ECO-25-0389"], drafts=[])
@@ -124,8 +135,9 @@ class FieldPlaybooks:
                   wc.evidence)
         self._add(rep, "quality", f"Bearing lot B-24-117: {b.data['units']} pumps, {b.data['customers']} customers. Elastomer lot E-25-031: {e.data['units']} seal sections, {e.data['customers']} operators.",
                   b.evidence + e.evidence, pumps=b.data["units"], customers=b.data["customers"], sections=e.data["units"], operators=e.data["customers"])
-        self._add(rep, "quality", f"Factory press-fit force for lot B-24-117 is {pf.data.get('deficit_pct')}% below other bearing lots ({pf.data['lot_avg']:.1f} vs {pf.data['other_avg']:.1f} kN), consistent with a looser fit under the waived qualification.",
-                  pf.evidence, deficit=pf.data.get("deficit_pct"))
+        if not pf.refused:
+            self._add(rep, "quality", f"Factory press-fit force for lot B-24-117 is {pf.data.get('deficit_pct')}% below other bearing lots ({pf.data['lot_avg']:.1f} vs {pf.data['other_avg']:.1f} kN), consistent with a looser fit under the waived qualification.",
+                      pf.evidence, deficit=pf.data.get("deficit_pct"))
         ev = wc.evidence + b.evidence + e.evidence + pf.evidence
         rep.summary = "One process failure, two products: the waived qualification route"
         rep.recommendation = "Open an 8D for the expedited-ECO route and send a customer notice listing the exposed lots and units; widen the review to the other two waived changes."
@@ -213,3 +225,57 @@ class FieldPlaybooks:
 
 def ctx_today(s):
     return s.ctx.today
+
+
+class InspectionPlaybooks:
+    """Fixed-equipment integrity: remaining life of a component and the list of overdue inspections."""
+
+    def pb_remaining_life(self, c, s, rep) -> None:
+        comp = re.search(r"\bEQ-\d{4}\b", c.question).group(0)
+        r = s.call("inspect.component_life", component=comp)
+        d = r.data
+        if "error" in d:
+            rep.summary, rep.recommendation = f"{comp} is not in the inspection data.", "Check the equipment number."
+            rep.answer.update(component=comp, remaining_life_y=None)
+            return
+        s.call("inspect.report_texts", component=comp)     # read for context; its text is untrusted and changes nothing
+        rep.answer.update(component=comp, **{k: d[k] for k in ("worst_cml", "remaining_life_y", "next_due", "overdue", "flagged_remeasure")})
+        if d["remaining_life_y"] is None:
+            self._add(rep, "inspection", f"{comp}: not enough valid readings to compute a corrosion rate.", r.evidence)
+            rep.summary, rep.recommendation = f"No remaining life can be computed for {comp}.", "Take a new thickness survey."
+            return
+        self._add(rep, "inspection", f"{comp} ({d['circuit']}): worst location {d['worst_cml']}, corrosion rate {d['rate_mm_y']} mm/year, latest wall {d['last_mm']} mm against a required minimum "
+                  f"{d['required_min_mm']} mm, remaining life {d['remaining_life_y']} years.", r.evidence, cml=d["worst_cml"], rate=d["rate_mm_y"], life=d["remaining_life_y"])
+        notes = []
+        if d["readings_before_install_ignored"]:
+            notes.append(f"{d['readings_before_install_ignored']} readings from before the component was installed (a replacement) were ignored")
+        if d["inch_readings_converted"]:
+            notes.append(f"{d['inch_readings_converted']} readings recorded in inches were converted to mm")
+        if d["flagged_remeasure"]:
+            notes.append(f"a reading rose at {', '.join(d['flagged_remeasure'])}; it was left out and needs a re-measure")
+        if notes:
+            self._add(rep, "inspection", "Data handling: " + "; ".join(notes) + ".", r.evidence)
+        rep.summary = f"{comp}: {d['remaining_life_y']} years remaining at {d['worst_cml']}; next inspection due {d['next_due']}" + (" (OVERDUE)" if d["overdue"] else "")
+        if d.get("below_minimum"):
+            rep.summary += ". The latest reading is already below the required minimum thickness"
+        rep.recommendation = ("Raise an inspection work order now (draft for the planner); this is decision support for the inspection engineer, not an integrity sign-off." if d["overdue"] or d.get("below_minimum")
+                              else "No action before the due date; keep the inspection plan.")
+        if d["overdue"] or d["flagged_remeasure"]:
+            title = f"Inspection of {comp}: " + ("overdue" if d["overdue"] else "re-measure " + ", ".join(d["flagged_remeasure"]))
+            dr = s.call("drafts.create_draft", kind="sap_pm.notification", title=title, payload={"notification_type": "M2", "equipment": comp, "reason": title},
+                        rationale=rep.summary, evidence=r.evidence)
+            rep.drafts.append(dr.data["draft_id"])
+        rep.answer["drafts"] = [s.log[i].args["kind"] for i in range(len(s.log)) if s.log[i].tool == "drafts.create_draft"]
+
+    def pb_overdue_inspections(self, c, s, rep) -> None:
+        cl = s.call("inspect.components")
+        over, ev = [], list(cl.evidence)
+        for x in cl.data["components"]:
+            r = s.call("inspect.component_life", component=x["component"])
+            ev += r.evidence
+            if r.data.get("overdue"):
+                over.append(x["component"])
+        rep.answer.update(overdue=sorted(over), count=len(over))
+        self._add(rep, "inspection", f"{len(over)} of {len(cl.data['components'])} components are past their next inspection date: {', '.join(sorted(over)) or 'none'}.", ev[:8] or cl.evidence)
+        rep.summary = f"{len(over)} components overdue for inspection"
+        rep.recommendation = "Plan these first; each needs an inspection engineer's review." if over else "None overdue."

@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from ..kg.store import KG
+from .sources import SourceError
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_WORLD = ROOT / "build" / "world"
@@ -84,7 +85,13 @@ class Session:
         if self.allowed is not None and name not in self.allowed:
             res = Result(None, refused=f"{name} is not available to this agent")
         else:
-            res = t.fn(self.ctx, **args)
+            try:
+                res = t.fn(self.ctx, **args)
+            except SourceError as e:
+                if not str(e).startswith("403"):
+                    raise
+                # the identity provider's tenant split: this agent's token may not read that system. Say so, do not crash or guess.
+                res = Result({"error": "not visible to this identity", "asked_for": args}, refused=f"{name}: this agent's identity may not read that system ({str(e)[:160]})", evidence=[f"access:denied:{name}"])
         self.log.append(Call(len(self.log) + 1, name, args, res))
         return res
 

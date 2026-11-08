@@ -181,3 +181,36 @@ def test_uns_replay_over_mqtt_opens_cases_for_both_alarms(world_dir, kg):
     assert "B-24-117" in by_tag["10P101A.VIB_DE"].summary
     assert by_tag["A07_MTR_T"].answer.get("elastomer_lot") in ("E-25-031", "lot:E-25-031")
     assert all(o.drafts for o in opened)                     # drafts only: nothing was written
+
+
+# ------------------------------------------------------------------------------------------------ tenants (plan 3.2)
+def _agent_src(url, strict_sim, client, scope):
+    return HttpSource(strict_sim, token=ClientCredentials(f"{url}/oauth2/token", client, idp_mod.CLIENTS[client]["secret"], scope=scope))
+
+
+def test_operator_and_maker_agents_each_read_only_their_own_systems(idp, strict_sim):
+    url, _p = idp
+    op = _agent_src(url, strict_sim, "ftf-operator-agent", "operator.read")
+    mk = _agent_src(url, strict_sim, "ftf-maker-agent", "maker.read")
+    assert op.point("10P101A.VIB_DE")["alarm_high"] == 4.5          # operator: historian yes
+    assert mk.claims(None) is not None                              # maker: its own QMS yes
+    with pytest.raises(SourceError, match="403.*maker.read"):
+        op.claims(None)                                             # operator may not read the maker's QMS
+    with pytest.raises(SourceError, match="403.*operator.read"):
+        mk.point("10P101A.VIB_DE")                                  # maker may not read the operator's historian
+    with pytest.raises(PermissionError):                            # and neither can ask the identity provider for the other's scope
+        _p.client_credentials("ftf-operator-agent", idp_mod.CLIENTS["ftf-operator-agent"]["secret"], scope="maker.read")
+    assert _p.verify(_p.client_credentials("ftf-maker-agent", idp_mod.CLIENTS["ftf-maker-agent"]["secret"], scope="maker.read"))["tenant"] == "maker"
+
+
+def test_operator_agent_says_what_it_cannot_see_and_does_not_guess(idp, strict_sim, kg):
+    from factory_to_field.agents.gold import GOLD
+    from factory_to_field.agents.verifier import verify
+    url, _p = idp
+    agent = Agent(kg=kg, src=_agent_src(url, strict_sim, "ftf-operator-agent", "operator.read"))
+    g = next(x for x in GOLD if x.case.id == "CASE-2077")
+    rep, s = agent.run(g.case)
+    assert verify(rep, s) == []                                      # every claim it does make is backed by a tool result
+    assert rep.answer["not_visible"] and not rep.answer.get("eco")
+    assert any("Not visible to this agent" in f.text for f in rep.findings)
+    assert rep.answer["oil_bbl_d"] and rep.answer["rig_free_from"]   # the operator's own facts are still answered

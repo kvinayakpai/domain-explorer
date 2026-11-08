@@ -30,24 +30,28 @@ Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] 
 
 - [-] 2.1 DROPPED (no API key): live model planner runs. Keep the LLMAgent wired and tested with FakeClient; say in the README that no live-model result exists.
 - [x] 2.2 Offline baseline: `agents/baseline.py` (NaiveAgent: answers from the current state of each record, same tools and graph, no time logic) and `eval/baseline.py`. Seeds 1-4, generated cases: unit on a past date 16/48 (33%) vs playbook agent 48/48; failures at a position in a month 15/24 (62%) vs 24/24; lot exposure of the string now running 20/46 (44%) vs 46/46. Read with care: the baseline is a strawman I wrote, not a competitor; its 62% on failures is inflated because two of six cases per world ask about months before any history, where 'nothing' is right by luck; the as-of number (right only when the unit has not changed since the date) is the honest measure of what time-aware lookup buys on this data.
-- [ ] 2.3 (optional) Wire agent tools to read through the six `/v/<slug>/` mocks, exercising session refresh and vendor paging.
+- [x] 2.3 (optional) Wire agent tools to read through the six `/v/<slug>/` mocks, exercising session refresh and vendor paging. Done (narrow): `VendorSource` reads work orders via the Maximo mock (OSLC where + pageno paging) and DIFA via the ESP/DIFA mock; equals the file source in a test, and all 59 gold cases pass with `FTF_SIM_URL=... FTF_VENDOR=1`. Not wired: historian/DCS/APM mocks (their session expiry is still only exercised by test_vendors, not by an agent).
 - [-] 2.4 DROPPED (Decision 3): real public data validation.
 
 ## Phase 3: build for the refinery reliability team (weeks 4-9)
 
 - [x] 3.1 Buyer chosen: refinery reliability team.
-- [ ] 3.2 Split identity and agents: the operator agent is primary and sees only operator systems; the maker view becomes a separate, clearly secondary agent and IdP tenant (containment sizing needs maker data the operator would not hold).
-- [ ] 3.3 Value case for a refinery reliability team: time to a reviewed work-order draft per alarm, false alarms screened out, spares/window conflicts caught. Measured on the sweep, not asserted. The human baseline (how long a person takes today) is not measured: use clearly labelled ASSUMPTIONS (owner's instruction 2026-11-08), state them next to every number, and make them parameters so the owner can overwrite them.
+- [x] 3.2 Split identity and agents: the operator agent is primary and sees only operator systems; the maker view becomes a separate, clearly secondary agent and IdP tenant (containment sizing needs maker data the operator would not hold). Done: IdP clients `ftf-operator-agent` (scope `operator.read`, tenant operator) and `ftf-maker-agent` (`maker.read`, tenant maker); signed tokens carry `tenant`; sim refuses cross-tenant reads with 403 (`/plm /mes /qms` need maker.read, everything else operator.read; legacy `ftf-agent` plant.read and static dev tokens still read both). Agents turn a 403 into a cited 'not visible to this agent' finding instead of guessing. Live console now runs as the operator agent. Measured: operator-only agent passes 56/59 gold cases with every report verifying; the 3 it fails (CASE-1042, 2077, 3001) are the ones whose answer is a maker fact (ECO/waiver, DIFA, press-fit). Not built: a maker-side playbook set (the maker agent can read its systems but has no playbooks of its own yet).
+- [x] 3.3 Value case for a refinery reliability team: time to a reviewed work-order draft per alarm, false alarms screened out, spares/window conflicts caught. Measured on the sweep, not asserted. The human baseline (how long a person takes today) is not measured: use clearly labelled ASSUMPTIONS (owner's instruction 2026-11-08), state them next to every number, and make them parameters so the owner can overwrite them. Done: `eval/value.py` + `eval/value_assumptions.yaml`; measured part (3 held-out worlds: real bearing alarm and stuck-sensor false alarm both correct vs key, 44 tool calls, 4/4 constraints surfaced, 3 drafts) is kept apart from the ASSUMED part (human minutes, alarm volume, cost), each printed next to the figures derived from it. Output `build/eval/value-case.md`.
 - [x] 3.4 Failure mix: ordinary ESP failures are now drawn from a weighted list (12 electrical, 4 pump wear, 2 mechanical, 4 gas/overheating of 22) and their pulls carry that cause instead of a blanket "motor failure". The planted new-seal strings keep the surface label on purpose (that is the story: seal-ingress pulls recorded as motor failure). Result on seeds 42/1/2: electrical 32-44%, 'motor failure' 32% (the story strings), rest spread. Seals are still over-represented by design (7 of 25 failed strings); say so in any write-up.
 
 ## Phase 4: pilot depth (weeks 9-14)
 
 - [x] 4.1 Busier world: 16 process upsets on ordinary pumps per world (2-4 days at 2.1-2.8x vibration, no bearing signature, no repair), drawn from their own generator so nothing else shifted. Refinery alarms on seed 42 went from 21 to 30 (33 with field alarms). New gold family: alarm history by tag and window (3 windows with alarms, 3 quiet), re-derived independently from the historian alarm table. Still thin by comparison with a real plant (about 0.03 alarms per pump-month); realism of alarm floods, nuisance alarms and shelving is not modelled.
-- [ ] 4.2 Ontology: external mappings (ISO 14224, CFIHOS, OSDU) for the 36 classes.
+- [x] 4.2 Ontology: external mappings (ISO 14224, CFIHOS, OSDU) for the 36 classes. Done as `ontology/mappings.yaml`: all 36 classes mapped or given a stated reason for no mapping; status **draft-unverified** (ISO 14224 is paywalled, no CFIHOS/OSDU files to check against; confidence per entry, `verify: true` where unsure). Kept out of the LinkML modules so generated OWL/SHACL did not change. Needs expert review.
 - [x] 4.3 Mocks cut from 41 to 6 deep ones (pi_af, deltav, maximo, system1, ge_apm, esp_difa): vendor paging (Links.Next, nextCursor, OData nextLink, OSLC), session expiry for deltav/system1/ge_apm; 35 renamed copies deleted and listed in `vendors.RETIRED`. Still no consumer in the agents: they read through the file source and the original simulators (see 2.3, now optional).
-- [ ] 4.4 Deployable: Dockerfile, docker compose, one-command demo.
+- [x] 4.4 Deployable: Dockerfile, docker compose, one-command demo. Done: `Dockerfile`, `docker-compose.yml`, root `.dockerignore`, `live_app --host`. NOT built: no Docker daemon in this sandbox; the same commands and the `--host 0.0.0.0` console were run directly (HTTP 200).
 - [x] 4.5 Repo hygiene: dbt duplicate model names fixed by subdomain suffix (`dim_channel_hotel`, `dim_location_dp`, `fct_allocations_cm`, `fct_forecast_accuracy_dp`; no `.sql` name repeats, no dangling `ref()`); 6 duplicate KPI ids removed from `data/kpis/master.yaml` (kept the richer entries, `tpm.kpi.promo_roi` lists both subdomains). Not run: full `dbt parse` (dbt_utils cannot be installed here, hub.getdbt.com blocked), so checked by script.
-- [ ] 4.6 Second use case: fixed-equipment integrity (corrosion rates, inspection records, remaining life for vessels and piping). Needs its own ontology slice, world generator, playbooks and gold cases; start with a design note.
+- [x] 4.6 Second use case: fixed-equipment integrity (corrosion rates, inspection records, remaining life for vessels and piping). Needs its own ontology slice, world generator, playbooks and gold cases; start with a design note. Design note written: `FIXED_EQUIPMENT.md` (ontology slice, traps, key-first generator, playbooks, gold). Implementation NOT started; that is 4.7 below.
+- [ ] 4.7 Build the fixed-equipment slice per `FIXED_EQUIPMENT.md`, key first. Big: needs an inspection engineer to confirm the formulae.
+  - [x] 4.7a Generator + key + independent re-derivation: `world/gen_fixed.py` (own random stream, so no pump-world file or answer changed), files `inspection_*.csv`, `answer_key["FIXED"]`, `eval/independent_key.derive_fixed/compare_fixed` (also run by the seed sweep). Traps planted: 2020 campaign in inches, anomalous rise, CML relabel, single-reading CML, 3 replaced components, injected report text. Rules are the author's reading and UNCONFIRMED (see the gen_fixed docstring).
+  - [x] 4.7b Ontology module `fixed_equipment.yaml` (5 classes, imported by ftf.yaml, OWL/SHACL/Pydantic/TS regenerated, mappings added). NOT done: loading inspection data into the knowledge graph, and a resolver rule for CML aliases (the agent applies the alias table itself in `agents/inspect_calc.py`, reading files/HTTP directly).
+  - [x] 4.7c Tools (`inspect.*`, new MCP server), playbooks (`remaining_life`, `overdue_inspections`), sim route `/inspect/api/components`, gold cases (one per component + overdue list, ~36 per world; 92 on seed 42), held-out seeds 1-3 pass. Found and fixed on the way: the replacement trap did not bite (no old-metal readings were generated), and the verifier rejected an unsourced count. Rules still unconfirmed by an inspection engineer.
 
 ## Decisions (answered 2026-11-08)
 
@@ -66,6 +70,22 @@ Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] 
 - 2026-11-07: Seed sweep before the fix: links recall 0.998-0.9995, precision 1.0 on all seeds, but the agent passed 8/10 gold cases on seeds 1-3 (10/10 on seed 42). Causes: answer key held typed-in constants (DIFA count, oil rate, notification number). Fixed in the key and playbook; after the fixes (key computed, DIFA count filtered to the as-of date, CASE-3005 well chosen from the key, injection note number from the world) seeds 42 and 1-7 all score 10/10; link recall 0.9983-0.9998, precision 1.0.
 
 ## Session log
+
+- 2026-11-08: 4.7b/c done (see item). All plan items are now ticked except the expert review of the fixed-equipment rules and the 4.7b KG-load gap.
+
+- 2026-11-08: 4.7a done. Next: 4.7b.
+
+- 2026-11-08: 2.3 done (narrow). Only 4.7 (fixed-equipment build) left open.
+
+- 2026-11-08: 4.6 design note done. Next: 2.3 (optional mock wiring); then 4.7 if wanted.
+
+- 2026-11-08: 4.2 done (draft mappings). Next: 4.6 design note, then 2.3.
+
+- 2026-11-08: 3.3 done. Next: 4.2 ontology external mappings, then 4.6 design note, then 2.3.
+
+- 2026-11-08: 3.2 done on branch ftf-docker/PR #14 (stacked with 4.4). Next: 3.3 value case with labelled assumptions.
+
+- 2026-11-08: PR #13 merged. 4.4 done (Docker, untested build). Next: 3.2 split operator/maker agents and IdP tenants.
 
 - 2026-11-08: 4.5 done (see item). Next: 4.4 Docker one-command demo.
 

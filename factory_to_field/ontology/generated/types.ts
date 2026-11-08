@@ -31,6 +31,11 @@ export type ShipmentId = string;
 export type NonConformanceId = string;
 export type EightDId = string;
 export type KpiDefinitionId = string;
+export type CircuitId = string;
+export type PressureComponentId = string;
+export type ThicknessLocationId = string;
+export type ThicknessReadingId = string;
+export type InspectionRecordId = string;
 /**
 * Which of the three data worlds a record comes from (OT / IT / ET).
 */
@@ -495,6 +500,56 @@ export interface KpiDefinition extends Entity {
     standard?: string,
     /** Name of the SPARQL file that computes it */
     query?: string,
+}
+
+
+/**
+ * A corrosion loop - components in the same service with the same expected damage mechanisms.
+ */
+export interface Circuit extends Entity {
+    service?: string,
+}
+
+
+/**
+ * A vessel shell, pipe spool or fitting. Serialised like any other unit; thickness limits live here.
+ */
+export interface PressureComponent extends PhysicalEquipment {
+    circuit?: CircuitId,
+    nominal_mm?: number,
+    required_min_mm?: number,
+}
+
+
+/**
+ * A condition monitoring location (CML) on a component. It can be relabelled after a re-survey; the alias table links old and new ids.
+ */
+export interface ThicknessLocation extends Entity {
+    component?: PressureComponentId,
+}
+
+
+
+export interface ThicknessReading extends Entity {
+    location: ThicknessLocationId,
+    read_on?: date,
+    value?: number,
+    /** mm or in; always convert before use */
+    engineering_unit?: string,
+    /** UT | RT */
+    method?: string,
+    /** Higher than the reading before it by more than the tolerance; excluded from rates and flagged for re-measure */
+    anomaly?: boolean,
+}
+
+
+
+export interface InspectionRecord extends Entity {
+    component?: PressureComponentId,
+    done_on?: date,
+    next_due?: date,
+    /** Free text from a report; untrusted, never changes behaviour */
+    summary?: string,
 }
 
 
