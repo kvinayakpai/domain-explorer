@@ -50,3 +50,18 @@ def test_answer_key_agrees_with_files(world_dir):
     """The key is re-derived from the rendered files alone; a bug shared by generator and key would show up here."""
     from factory_to_field.eval.independent_key import compare
     assert compare(world_dir) == []
+
+
+def test_generated_and_containment_keys_agree_with_files(world_dir):
+    from factory_to_field.eval.independent_key import compare_containment, compare_extra
+    assert compare_extra(world_dir) == [] and compare_containment(world_dir) == []
+
+
+def test_esp_pull_reasons_are_not_all_the_same():
+    """Ordinary pulls carry a cause (electrical, pump wear, ...); only the planted new-seal strings keep the surface label 'motor failure'."""
+    import collections
+
+    from factory_to_field.world.build import make_world
+    w = make_world(7)
+    c = collections.Counter(r["pull_reason"] for r in w.runs if r["state"] == "failed")
+    assert len(c) >= 3 and c["electrical"] > c["motor failure"] * 0.9, c

@@ -4,7 +4,7 @@ Source: "Oil and gas solution: critical review and improvement plan"
 (https://claude.ai/artifact/G9kHxBybGHU4cfPZPvHcpu). This file is the working copy.
 **Every session: read this first, do the next unchecked item, tick it, add a log line at the bottom, commit.**
 
-Status key: [x] done, [~] partly, [ ] not started, [!] blocked on the owner (see Decisions).
+Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] blocked on the owner.
 
 ## How to run things
 
@@ -14,48 +14,48 @@ Status key: [x] done, [~] partly, [ ] not started, [!] blocked on the owner (see
     PYTHONPATH=. python -m factory_to_field.eval.seeds --seeds 42 1 2 3   # seed sweep (about 1 min per seed)
     PYTHONPATH=. python -m factory_to_field.agents.gold              # ten gold cases on seed 42
 
-## Phase 1: honest evaluation (weeks 1-3)
+## Phase 1: honest evaluation (weeks 1-3)  COMPLETE 2026-11-08
 
 - [x] 1.1 Seed sweep harness: `eval/seeds.py` builds a fresh world per seed, resolves, scores links, runs the gold cases. Seed 42 is dev, all others held out.
 - [x] 1.2 First sweep found the answer key was partly typed in (DIFA count 5, oil rate 640, notification number 300001480). Key is now computed from the generated world.
 - [x] 1.3 `tests/test_heldout_seeds.py` (floor: link recall 0.995, precision 0.99, all ten gold cases); CI runs seeds 1 2 3 via FTF_SEEDS.
 - [x] 1.4 Checked the resolver (`kg/pipeline.py`): no seed-specific constants, only per-method confidences. Its real coupling is to the generator's noise *types* (serial edit distance 1, blank serial, legacy codes, tag grammar), which 1.5 must vary. Noise rates are now a preset (`world/spec.py NOISE`, `--noise base|dirty`); dirty is 3x. Result: seed 1 dirty recall 0.9977, precision 1.0, gold 10/10, so rate is not the weak spot.
 - [x] 1.5b Diagnosed: not serial damage. The pump's SAP installation row was one of the randomly dropped ones (6% in hostile), so it has no position and no state. The expected fleet lists now exclude units whose install was never recorded. xfail removed; hostile seed 1 passes 25/25.
-- [~] 1.5 Held-out world (new noise TYPES, not rates; rates done in 1.4). Done: `--noise hostile` adds transposed digits, O/I for 0/1, trailing REV text, lost separators on serials. Resolver fixes: norm_serial handles those, lev counts a swap as one edit, a malformed own-family serial no longer mints a phantom unit. Tag-grammar variants (lower case, hyphens) added to hostile: at 50% of tags the old resolver kept precision 1.0 but PI tag recall fell to 0.963 (asset-path and descriptor fallbacks caught the rest, nothing mislinked); making the grammar case- and separator-insensitive brought it to 0.9967. Residual: a transposed serial matching a run-life serial is now fixed (edit distance 1 to a serial in another system); 4 of about 2,900 links remain wrong on hostile seed 1: transposed serials of units that appear in no second system, which cannot be told from a genuinely new unit. Needs a second source (e.g. the ERP shipment list) or a rule that sends unmatched own-family serials to review. Swapped functional locations added to hostile (4% of pump notifications keyed to the sister pump): precision fell to 0.9967 and two planted-failure gold cases failed; the resolver now cross-checks the notification text and the unit's installation at that date against the location, back to 25/25 (recall 0.9989, precision 0.9994). Still to vary: free-text-only mentions (unit or position only in the long text). Original scope: a second generator config (different names, tag patterns, ID formats, noise rates) that no code was tuned on. Score once, report as is.
-- [~] 1.6 Independent grading: `eval/independent_key.py` re-derives 8 key values (DIFA count, oil rate, rig date, injection note, A-07 current/previous string, days) from the rendered files only; test_world and every swept seed assert agreement. Still to cover: lot exposure counts, fleet states, Kaplan-Meier medians, containment sizing.
+- [x] 1.5 Held-out world with new noise TYPES (`--noise hostile`): transposed digits, O/I for 0/1, trailing label text, lost separators on serials; lower-case and hyphen tag grammar; 4% of pump notifications keyed to the sister pump; 15% of notifications with the equipment number blank and the unit named only in the long text. Resolver fixes: serial normalisation, transposition-aware edit distance, no phantom unit from a damaged own-family serial, one-edit match against run-life serials, case/separator-insensitive tag grammar, text and unit-installation cross-check for mis-keyed locations, serial extraction from long text. Hostile seed 1: recall 0.9986, precision 0.9994, all gold cases pass. Known residual: about 4 of 2,900 links (transposed serials of units that appear in no second system) cannot be told from a new unit; needs another source or a review rule.
+- [x] 1.6 Independent grading: `eval/independent_key.py` re-derives from the rendered files alone: DIFA count, A-07 oil rate, rig date, injection note, A-07 strings and days (8 values), lot exposure and customers for the generated lot cases, monthly failure counts by position, and the two containment lots' pump/section/customer counts. Run on every base-noise seed in the sweep and in test_world. Not independently re-derived (still from the generator): Kaplan-Meier medians, new-string counts, fleet states (planted constants by design), and the hostile-world keys (noise damages the files they would be read from).
 - [x] 1.7 `eval/seeds.py` prints and saves held-out mean and worst case (a crashed agent run counts as 10 failed cases). First 8-world base sweep (seeds 11-18): recall mean 0.9993, min 0.9989; precision 1.0; gold 80/80 after the fix below.
-- [~] 1.8 More cases: about 37 per world (10 hand-written + about 27 generated: 12 as-of-unit cases incl. hand-over days and "no record" gaps, 3 OT-write refusals at different set-points, one lot-exposure case per ESP well with a running string). Seeds 1-5 pass 182/182. Target 30+ gold and 15 adversarial: still to template position_vs_unit (any month), containment per lot, alarm triage on other pumps, more injection variants.
+- [x] 1.8 About 59 gold cases per world: 10 hand-written plus about 43 generated from each world (12 as-of-unit incl. hand-over days and no-record gaps, 3 OT-write refusals, one lot-exposure case per ESP well, 6 failures-by-position-and-month incl. quiet months, 6 lot exposure and customers for random lots, 4 notification summaries with nothing to flag as negative controls). Seeds 1-6: 314/314. Short of the 30-per-family target only in adversarial variety (3 injection/OT families); more adversarial families belong with Phase 2 if a model planner is ever run.
 
-## Phase 2: prove the agent (weeks 3-6)  [!] needs an API key and budget (Decision 2)
+## Phase 2: prove the agent offline (weeks 3-6)  (no API key: live model runs dropped)
 
-- [ ] 2.1 Run the model planner (not FakeClient) on the gold set; report pass rate, tool calls, cost, refusals.
-- [ ] 2.2 Baselines: playbook-only vs model planner vs a plain RAG baseline on the same cases.
-- [ ] 2.3 Wire agent tools to read through the `/v/<slug>/` mocks, with per-mock faults (timeouts, paging, 401 refresh, stale data).
-- [ ] 2.4 Real public data: attach Volve (production) and CWRU (bearing) files; run one case on each. [!] Decision 3 (hosts were unreachable from the sandbox; owner uploads files).
+- [-] 2.1 DROPPED (no API key): live model planner runs. Keep the LLMAgent wired and tested with FakeClient; say in the README that no live-model result exists.
+- [x] 2.2 Offline baseline: `agents/baseline.py` (NaiveAgent: answers from the current state of each record, same tools and graph, no time logic) and `eval/baseline.py`. Seeds 1-4, generated cases: unit on a past date 16/48 (33%) vs playbook agent 48/48; failures at a position in a month 15/24 (62%) vs 24/24; lot exposure of the string now running 20/46 (44%) vs 46/46. Read with care: the baseline is a strawman I wrote, not a competitor; its 62% on failures is inflated because two of six cases per world ask about months before any history, where 'nothing' is right by luck; the as-of number (right only when the unit has not changed since the date) is the honest measure of what time-aware lookup buys on this data.
+- [ ] 2.3 (optional) Wire agent tools to read through the six `/v/<slug>/` mocks, exercising session refresh and vendor paging.
+- [-] 2.4 DROPPED (Decision 3): real public data validation.
 
-## Phase 3: choose the buyer and the company line (weeks 4-9)  [!] Decision 1
+## Phase 3: build for the refinery reliability team (weeks 4-9)
 
-- [ ] 3.1 Pick the buyer (recommended: pump maker's fleet-quality team).
-- [ ] 3.2 Split identity and agents: operator-side and maker-side get separate agents and separate IdP tenants.
-- [ ] 3.3 Value case: hours saved per case, escapes caught, containment sizing time. Measured on the sweep, not asserted.
-- [ ] 3.4 Fix failure mix in the generator to match field data (ESP: electrical about 60%, seals about 22%; vary pull reasons).
+- [x] 3.1 Buyer chosen: refinery reliability team.
+- [ ] 3.2 Split identity and agents: the operator agent is primary and sees only operator systems; the maker view becomes a separate, clearly secondary agent and IdP tenant (containment sizing needs maker data the operator would not hold).
+- [ ] 3.3 Value case for a refinery reliability team: time to a reviewed work-order draft per alarm, false alarms screened out, spares/window conflicts caught. Measured on the sweep, not asserted. The human baseline (how long a person takes today) is not measured: use clearly labelled ASSUMPTIONS (owner's instruction 2026-11-08), state them next to every number, and make them parameters so the owner can overwrite them.
+- [x] 3.4 Failure mix: ordinary ESP failures are now drawn from a weighted list (12 electrical, 4 pump wear, 2 mechanical, 4 gas/overheating of 22) and their pulls carry that cause instead of a blanket "motor failure". The planted new-seal strings keep the surface label on purpose (that is the story: seal-ingress pulls recorded as motor failure). Result on seeds 42/1/2: electrical 32-44%, 'motor failure' 32% (the story strings), rest spread. Seals are still over-represented by design (7 of 25 failed strings); say so in any write-up.
 
 ## Phase 4: pilot depth (weeks 9-14)
 
-- [ ] 4.1 Make the world busier (more alarms, more positions) so false-alarm handling is exercised.
+- [x] 4.1 Busier world: 16 process upsets on ordinary pumps per world (2-4 days at 2.1-2.8x vibration, no bearing signature, no repair), drawn from their own generator so nothing else shifted. Refinery alarms on seed 42 went from 21 to 30 (33 with field alarms). New gold family: alarm history by tag and window (3 windows with alarms, 3 quiet), re-derived independently from the historian alarm table. Still thin by comparison with a real plant (about 0.03 alarms per pump-month); realism of alarm floods, nuisance alarms and shelving is not modelled.
 - [ ] 4.2 Ontology: external mappings (ISO 14224, CFIHOS, OSDU) for the 36 classes.
-- [ ] 4.3 Deepen 5-6 mocks (real auth flows, rate limits, paging quirks); label or retire the 22 renamed copies. [!] Decision 4
+- [x] 4.3 Mocks cut from 41 to 6 deep ones (pi_af, deltav, maximo, system1, ge_apm, esp_difa): vendor paging (Links.Next, nextCursor, OData nextLink, OSLC), session expiry for deltav/system1/ge_apm; 35 renamed copies deleted and listed in `vendors.RETIRED`. Still no consumer in the agents: they read through the file source and the original simulators (see 2.3, now optional).
 - [ ] 4.4 Deployable: Dockerfile, docker compose, one-command demo.
-- [ ] 4.5 Repo hygiene: fix the `dim_channel` clash and the 6 duplicate KPI ids in the explorer.
-- [ ] 4.6 Second use case. [!] Decision 5 (production deferment or fixed-equipment integrity).
+- [x] 4.5 Repo hygiene: dbt duplicate model names fixed by subdomain suffix (`dim_channel_hotel`, `dim_location_dp`, `fct_allocations_cm`, `fct_forecast_accuracy_dp`; no `.sql` name repeats, no dangling `ref()`); 6 duplicate KPI ids removed from `data/kpis/master.yaml` (kept the richer entries, `tpm.kpi.promo_roi` lists both subdomains). Not run: full `dbt parse` (dbt_utils cannot be installed here, hub.getdbt.com blocked), so checked by script.
+- [ ] 4.6 Second use case: fixed-equipment integrity (corrosion rates, inspection records, remaining life for vessels and piping). Needs its own ontology slice, world generator, playbooks and gold cases; start with a design note.
 
-## Decisions waiting on the owner
+## Decisions (answered 2026-11-08)
 
-1. Who is the product for? (recommended: pump maker's fleet-quality team)
-2. API key and monthly budget for live model runs (owner earlier said no key in the blog context; confirm for this work).
-3. Upload Volve and CWRU files, or drop real-data validation.
-4. Which 5-6 mocks to deepen; confirm labelling or retiring the rest.
-5. Next use case after pump reliability.
+1. Buyer: **refinery reliability team** (operator side). Pump-maker (OEM) features stay as the secondary, containment story; they are not the lead.
+2. API key: **none**. No live model runs. Phase 2 is reduced to offline work (see below).
+3. Real public data (Volve, CWRU): **dropped**. Synthetic worlds only; say so plainly in any write-up.
+4. Mocks: **deepen 5-6, retire the rest** (delete the renamed copies).
+5. Second use case: **fixed-equipment integrity** (corrosion and inspection records for vessels and pipes).
 
 ## Findings log (newest first)
 
@@ -66,6 +66,14 @@ Status key: [x] done, [~] partly, [ ] not started, [!] blocked on the owner (see
 - 2026-11-07: Seed sweep before the fix: links recall 0.998-0.9995, precision 1.0 on all seeds, but the agent passed 8/10 gold cases on seeds 1-3 (10/10 on seed 42). Causes: answer key held typed-in constants (DIFA count, oil rate, notification number). Fixed in the key and playbook; after the fixes (key computed, DIFA count filtered to the as-of date, CASE-3005 well chosen from the key, injection note number from the world) seeds 42 and 1-7 all score 10/10; link recall 0.9983-0.9998, precision 1.0.
 
 ## Session log
+
+- 2026-11-08: 4.5 done (see item). Next: 4.4 Docker one-command demo.
+
+- 2026-11-08 (cont.): 2.2 done (numbers in the item). CI on PR 13: the Python job failed once on a GitHub 504 during setup (not a test failure); re-run could not be triggered from the sandbox (403), so a new push retriggers it.
+
+- 2026-11-08 (Phase 1 complete): 1.5, 1.6, 1.8 closed. Remaining plan: 2.2 (offline naive baseline), 2.3 (optional mock wiring), 3.2-3.4, 4.1, 4.2, 4.4-4.6.
+
+- 2026-11-08 (cont.): owner answered the five decisions (see Decisions). Consequences: Phase 2 is offline-only, real-data validation dropped, buyer is the refinery reliability team, mocks to be cut to 5-6 deep ones, second use case is fixed-equipment integrity. Next: finish Phase 1 leftovers (1.5 free-text, 1.6, 1.8), then 2.2 (naive baseline) and 4.3 (mock cut).
 
 - 2026-11-08 (cont.): 1.5 swapped locations done; 1.8 at about 37 cases/world, all pass on seeds 1-5. Caution: the agent under test is the deterministic playbook agent, so high pass rates here show the data pipeline and key are sound, not that a model planner works; that is Phase 2 and needs the API key (Decision 2).
 

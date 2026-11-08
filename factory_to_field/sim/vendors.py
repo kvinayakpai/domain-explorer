@@ -1,23 +1,20 @@
-"""Mock source systems: one dialect per vendor product, all backed by the same simulated plant.
+"""Mock source systems: six deep mocks, one per product a refinery reliability team is likely to connect, backed by the same simulated plant.
 
 The simulators in server.py cover the systems the agents read today (PI Web API, OPC UA gateway, SAP PM, OSDU, the pump
-maker's PLM/MES/QMS, production planning). This module adds a mock for every other source system the oil and gas and plant
-subdomains name (data/taxonomy/*.yaml: sourceSystems), so a connector can be written and tested against each one without a
-real installation. Each mock lives under /v/<slug>/ and answers with that product's naming and response shapes:
+maker's PLM/MES/QMS, production planning). This module adds six vendor mocks under /v/<slug>/, each with its product's names,
+response shapes and paging, and for three of them a session that expires:
 
-  historians     proficy_historian aspenone aws_sitewise insights_hub cognite thingworx openenterprise pi_af
-  control        deltav experion centum controllogix s7 wincc factorytalk
-  EAM / CMMS     maximo maximo_eam eam (Infor)   [PM/EAM is SAP: the SAP simulator in server.py]
-  vibration CM   system1 skf_observer ams senseye augury ecostruxure ft_analytics
-  APM            apm ge_apm maximo_apm mas_apm aspen_mtell uptake asset_performance asset_intelligence_network assetwise
-                 industrial_ai forge
-  MES / MOM      opcenter ft_productioncentre proficy_pa digital_manufacturing
-  ESP records    esp_difa
+  pi_af      PI System / AF (AVEVA)           WebIds, startIndex/maxCount with Links.Next
+  deltav     DeltaV (Emerson)                 session, expires after SESSION_REQUESTS requests
+  maximo     Maximo (IBM)                     OSLC where and pageno paging
+  system1    Bently Nevada System 1           session, opaque nextCursor paging
+  ge_apm     APM (GE Vernova)                 session, OData $top/$skip with @odata.nextLink
+  esp_difa   ESP surveillance and DIFA        the maker-side teardown feed
 
-GET /v/ lists them. The data is the world's own (same tags, same alarms, same work orders and lots), renamed the way each
-product names it, so the same fact can be found through several systems with different identifiers: that is the point.
-These are interpretations of each product's API, not vendor-certified, and read-only. The health scores and alerts the
-CM/APM mocks return are simple rules over the world's vibration data (see _health), not a vendor's model.
+35 earlier mocks that were renamed copies of these dialects were retired on 2026-11-08 (see RETIRED and PLAN.md 4.3).
+GET /v/ lists the six. The data is the world's own (same tags, alarms, work orders and lots), named the way each product names
+it. These are interpretations of each product's API, not vendor-certified, and read-only. The health scores and alerts the
+APM mock returns are simple rules over the world's vibration data (see _health), not a vendor's model.
 """
 from __future__ import annotations
 
@@ -33,48 +30,52 @@ ASOF = "2026-10-17"
 HIST, FIELD = "historian_pi.sqlite", "scada_fielda.sqlite"
 
 # slug -> (name as the taxonomies write it, vendor, family, what it mirrors)
+# Six deep mocks (session expiry, vendor paging, vendor field names). The other source systems in the taxonomies are
+# not mocked: 35 earlier mocks were renamed copies of these dialects and were retired on 2026-11-08 (PLAN.md 4.3).
 SYSTEMS: dict[str, tuple[str, str, str, str]] = {
-    "proficy_historian": ("Proficy Historian / Plant Applications", "Proficy (GE Vernova, sold to TPG 2 Mar 2026)", "historian", "plant historian points"),
-    "aspenone": ("aspenONE", "Aspen Technology", "historian", "IP.21 tags"),
-    "aws_sitewise": ("SiteWise", "Amazon Web Services", "historian", "asset property aliases"),
-    "insights_hub": ("Insights Hub (formerly MindSphere) / Industrial Edge", "Siemens", "historian", "asset aspects and time series"),
-    "cognite": ("Cognite Data Fusion", "Cognite", "historian", "assets and time series"),
-    "thingworx": ("ThingWorx (IIoT Platform)", "PTC", "historian", "things and property history"),
-    "openenterprise": ("OpenEnterprise SCADA", "Emerson", "historian", "field SCADA points"),
     "pi_af": ("PI System / PI Asset Framework", "AVEVA", "historian", "AF elements and attributes"),
     "deltav": ("DeltaV", "Emerson", "control", "DCS modules"),
-    "experion": ("Experion PKS", "Honeywell", "control", "DCS points"),
-    "centum": ("CENTUM VP", "Yokogawa", "control", "DCS tags"),
-    "controllogix": ("ControlLogix PLC", "Rockwell Automation", "control", "controller tags"),
-    "s7": ("SIMATIC S7 PLC", "Siemens", "control", "data block addresses"),
-    "wincc": ("WinCC", "Siemens", "control", "HMI tags"),
-    "factorytalk": ("FactoryTalk", "Rockwell", "control", "FactoryTalk View tags"),
     "maximo": ("Maximo", "IBM", "eam", "work orders, assets, service requests"),
-    "maximo_eam": ("Maximo EAM", "IBM", "eam", "work orders, assets, service requests"),
-    "eam": ("EAM", "Infor", "eam", "work orders, equipment, requests"),
     "system1": ("Bently Nevada System 1", "Baker Hughes", "cm", "vibration measurements and alerts"),
-    "skf_observer": ("SKF @ptitude Observer", "SKF", "cm", "vibration measurements and alerts"),
-    "ams": ("AMS Machine Works", "Emerson", "cm", "vibration measurements and alerts"),
-    "senseye": ("Senseye Predictive Maintenance", "Siemens", "cm", "vibration measurements and alerts"),
-    "augury": ("Augury Machine Health", "Augury", "cm", "vibration measurements and alerts"),
-    "ecostruxure": ("EcoStruxure Asset Advisor", "Schneider Electric", "cm", "vibration measurements and alerts"),
-    "ft_analytics": ("FactoryTalk Analytics for Devices", "Rockwell Automation", "cm", "vibration measurements and alerts"),
-    "apm": ("APM", "GE Vernova", "apm", "asset health and alerts"),
     "ge_apm": ("APM (Meridium, SmartSignal)", "GE Vernova", "apm", "asset health and alerts"),
-    "maximo_apm": ("Maximo APM", "IBM", "apm", "asset health and alerts"),
-    "mas_apm": ("Maximo Application Suite — APM", "IBM", "apm", "asset health and alerts"),
-    "aspen_mtell": ("Aspen Mtell", "AspenTech", "apm", "asset health and alerts"),
-    "uptake": ("Uptake APM", "Uptake", "apm", "asset health and alerts"),
-    "asset_performance": ("Asset Performance", "AVEVA", "apm", "asset health and alerts"),
-    "asset_intelligence_network": ("Asset Intelligence Network", "SAP", "apm", "asset health and alerts"),
-    "assetwise": ("AssetWise", "Bentley", "apm", "asset health and alerts"),
-    "industrial_ai": ("Industrial AI Platform", "Avathon (formerly SparkCognition)", "apm", "asset health and alerts"),
-    "forge": ("Forge for Industrial", "Honeywell", "apm", "asset health and alerts"),
-    "opcenter": ("Opcenter Execution", "Siemens", "mom", "work orders, lots, test results"),
-    "ft_productioncentre": ("FactoryTalk ProductionCentre", "Rockwell Automation", "mom", "work orders, lots, test results"),
-    "proficy_pa": ("Proficy Plant Applications", "Proficy (GE Vernova, sold to TPG 2 Mar 2026)", "mom", "work orders, lots, test results"),
-    "digital_manufacturing": ("Digital Manufacturing", "SAP", "mom", "work orders, lots, test results"),
     "esp_difa": ("ESP surveillance and DIFA records", "Baker Hughes / SLB", "esp", "drive events and teardown reports"),
+}
+RETIRED: dict[str, str] = {
+    'proficy_historian': 'Proficy Historian / Plant Applications',
+    'aspenone': 'aspenONE',
+    'aws_sitewise': 'SiteWise',
+    'insights_hub': 'Insights Hub (formerly MindSphere) / Industrial Edge',
+    'cognite': 'Cognite Data Fusion',
+    'thingworx': 'ThingWorx (IIoT Platform)',
+    'openenterprise': 'OpenEnterprise SCADA',
+    'experion': 'Experion PKS',
+    'centum': 'CENTUM VP',
+    'controllogix': 'ControlLogix PLC',
+    's7': 'SIMATIC S7 PLC',
+    'wincc': 'WinCC',
+    'factorytalk': 'FactoryTalk',
+    'maximo_eam': 'Maximo EAM',
+    'eam': 'EAM',
+    'skf_observer': 'SKF @ptitude Observer',
+    'ams': 'AMS Machine Works',
+    'senseye': 'Senseye Predictive Maintenance',
+    'augury': 'Augury Machine Health',
+    'ecostruxure': 'EcoStruxure Asset Advisor',
+    'ft_analytics': 'FactoryTalk Analytics for Devices',
+    'apm': 'APM',
+    'maximo_apm': 'Maximo APM',
+    'mas_apm': 'Maximo Application Suite — APM',
+    'aspen_mtell': 'Aspen Mtell',
+    'uptake': 'Uptake APM',
+    'asset_performance': 'Asset Performance',
+    'asset_intelligence_network': 'Asset Intelligence Network',
+    'assetwise': 'AssetWise',
+    'industrial_ai': 'Industrial AI Platform',
+    'forge': 'Forge for Industrial',
+    'opcenter': 'Opcenter Execution',
+    'ft_productioncentre': 'FactoryTalk ProductionCentre',
+    'proficy_pa': 'Proficy Plant Applications',
+    'digital_manufacturing': 'Digital Manufacturing',
 }
 
 
@@ -137,64 +138,30 @@ def _epoch(ts: str) -> int:
 def _hist_name(slug: str) -> Callable[[dict], str]:
     def n(t: dict) -> str:
         eq, ms = _split(t["name"])
-        return {
-            "proficy_historian": f"{t['site']}.{eq}.{ms}",
-            "aspenone": f"{eq}_{ms}",
-            "aws_sitewise": f"/{t['site']}/{eq}/{ms.lower()}",
-            "insights_hub": f"{_uid('asset', eq)}/{ms}",
-            "cognite": f"{'pi' if t['site'] == 'CDU1' else 'scada'}:{t['name']}",
-            "thingworx": f"{eq}.{ms}",
-            "openenterprise": f"{eq}:{ms}",
-            "pi_af": f"\\\\AF\\{t['site']}\\{eq}|{ms}",
-        }[slug]
+        return f"\\\\AF\\{t['site']}\\{eq}|{ms}"
     return n
 
 
 def _hist_point(slug: str, t: dict, native: str) -> dict:
-    eq, ms = _split(t["name"])
-    base = {"name": native, "description": t["descriptor"], "unit": t["engunits"], "alarmHigh": t["alarm_high"]}
-    if slug == "proficy_historian":
-        return {"TagName": native, "Description": t["descriptor"], "EngineeringUnits": t["engunits"], "DataType": "Float", "Collector": t["site"]}
-    if slug == "aws_sitewise":
-        return {"propertyAlias": native, "assetId": _uid("sw", eq), "dataType": "DOUBLE", "unit": t["engunits"], "notification": {"state": "DISABLED"}}
-    if slug == "insights_hub":
-        return {"assetId": native.split("/")[0], "aspectName": ms.split("_")[0].title(), "variableName": ms, "unit": t["engunits"], "dataType": "DOUBLE"}
-    if slug == "cognite":
-        return {"id": int(hashlib.sha1(native.encode()).hexdigest()[:8], 16), "externalId": native, "name": t["descriptor"], "unit": t["engunits"], "isString": False, "assetId": int(hashlib.sha1(eq.encode()).hexdigest()[:7], 16)}
-    if slug == "thingworx":
-        return {"name": ms, "thing": eq, "baseType": "NUMBER", "description": t["descriptor"], "isPersistent": True, "logged": True}
-    if slug == "pi_af":
-        return {"Path": native, "Name": ms, "DefaultUnitsName": t["engunits"], "DataReferencePlugIn": "PI Point", "PointName": t["name"]}
-    return base
+    _eq, ms = _split(t["name"])
+    return {"WebId": "F1DP" + _uid("pt", t["name"])[:12], "Path": native, "Name": ms, "DefaultUnitsName": t["engunits"], "DataReferencePlugIn": "PI Point", "PointName": t["name"]}
 
 
 def _hist_values(slug: str, native: str, t: dict, rows: list[tuple[str, float, bool]]) -> dict:
-    if slug == "proficy_historian":
-        return {"Data": {"Tag": {"TagName": native, "Samples": [{"TimeStamp": ts, "Value": v, "Quality": 192 if g else 0} for ts, v, g in rows]}}}
-    if slug == "aspenone":
-        return {"data": [{"name": native, "samples": [{"t": ts, "x": v, "l": "Good" if g else "Bad"} for ts, v, g in rows]}]}
-    if slug == "aws_sitewise":
-        return {"assetPropertyValueHistory": [{"value": {"doubleValue": v}, "timestamp": {"timeInSeconds": _epoch(ts), "offsetInNanos": 0}, "quality": "GOOD" if g else "BAD"} for ts, v, g in rows]}
-    if slug == "insights_hub":
-        return [{"_time": ts, t["name"].split(".")[-1]: v, "qualitycode": 0 if g else 1} for ts, v, g in rows]
-    if slug == "cognite":
-        return {"items": [{"id": _hist_point(slug, t, native)["id"], "externalId": native, "isString": False, "datapoints": [{"timestamp": _epoch(ts) * 1000, "value": v} for ts, v, _ in rows]}]}
-    if slug == "thingworx":
-        return {"dataShape": {"fieldDefinitions": {"timestamp": {"baseType": "DATETIME"}, "value": {"baseType": "NUMBER"}}}, "rows": [{"timestamp": _epoch(ts) * 1000, "value": v, "quality": "GOOD" if g else "BAD"} for ts, v, g in rows]}
-    if slug == "openenterprise":
-        return {"point": native, "history": [[ts, v, 0 if g else 192] for ts, v, g in rows]}
-    return {"Path": native, "Items": [{"Timestamp": ts, "Value": v, "Good": g} for ts, v, g in rows]}
+    return {"Path": native, "Items": [{"Timestamp": ts, "Value": v, "Good": g, "Questionable": not g, "Substituted": False} for ts, v, g in rows]}
 
 
 def _historian(st, slug: str, rest: str, q: dict):
-    tags = [t for t in _tags(st) if slug != "openenterprise" or t["db"] == FIELD]
+    tags = _tags(st)
     native = _hist_name(slug)
     if rest in ("tags", ""):
         pat = q.get("filter", "")
         items = [_hist_point(slug, t, native(t)) for t in tags if pat.lower() in (native(t) + t["descriptor"]).lower()]
-        lim, off = int(q.get("limit", 200)), int(q.get("offset", 0))
-        key = {"cognite": "items", "proficy_historian": "Tags", "pi_af": "Items", "aspenone": "data"}.get(slug, "items")
-        return 200, {key: items[off:off + lim], "total": len(items), "offset": off}
+        size, start = int(q.get("maxCount", 100)), int(q.get("startIndex", 0))
+        body: dict = {"Items": items[start:start + size]}
+        if start + size < len(items):  # PI Web API style: a Links.Next URL, no total
+            body["Links"] = {"Next": f"/v/{slug}/tags?" + urllib.parse.urlencode({**q, "startIndex": start + size, "maxCount": size})}
+        return 200, body
     if rest == "history":
         t = _find_tag(tags, q.get("tag", ""), native)
         if not t:
@@ -207,26 +174,10 @@ def _historian(st, slug: str, rest: str, q: dict):
 # ------------------------------------------------------------------------------------------------ control systems
 def _ctrl_name(slug: str, i: int, t: dict) -> str:
     eq, ms = _split(t["name"])
-    return {
-        "deltav": f"{eq}/{ms}/PV",
-        "experion": f"{eq}_{ms.replace('_', '')}.PV",
-        "centum": f"{eq}-{ms.replace('_', '-')}.PV",
-        "controllogix": f"Program:Main.{eq}_{ms.title().replace('_', '')}",
-        "s7": f"DB{100 + i // 40}.DBD{4 * (i % 40)}",
-        "wincc": f"{t['site']}_{eq}_{ms}",
-        "factorytalk": f"[{t['site']}]{eq}_{ms}",
-    }[slug]
+    return f"{eq}/{ms}/PV"
 
 
-_ALARM_KEYS = {
-    "deltav": ("EventType", "Module", "Level", "Time"),
-    "experion": ("AlarmType", "Point", "Priority", "AlarmTime"),
-    "centum": ("MessageType", "TagName", "AlarmStatus", "OccurredAt"),
-    "controllogix": ("Type", "Tag", "Severity", "Timestamp"),
-    "s7": ("AlarmClass", "Address", "State", "Time"),
-    "wincc": ("Class", "Tag", "State", "DateTime"),
-    "factorytalk": ("AlarmClass", "Source", "Severity", "TimeIn"),
-}
+_ALARM_KEYS = {"deltav": ("EventType", "Module", "Level", "Time")}
 
 
 def _control(st, slug: str, rest: str, q: dict):
@@ -234,7 +185,7 @@ def _control(st, slug: str, rest: str, q: dict):
     named = [(_ctrl_name(slug, i, t), t) for i, t in enumerate(tags)]
     if rest in ("tags", ""):
         pat = q.get("filter", "").lower()
-        items = [{"tag": n, "description": t["descriptor"], "unit": t["engunits"], "area": t["site"], **({"symbol": t["name"]} if slug == "s7" else {})} for n, t in named if pat in (n + t["descriptor"]).lower()]
+        items = [{"tag": n, "description": t["descriptor"], "unit": t["engunits"], "area": t["site"]} for n, t in named if pat in (n + t["descriptor"]).lower()]
         lim, off = int(q.get("limit", 200)), int(q.get("offset", 0))
         return 200, {"tags": items[off:off + lim], "total": len(items), "offset": off}
     if rest == "read":
@@ -282,19 +233,7 @@ def _mx_rows(st, kind: str) -> list[dict]:
     return []
 
 
-def _infor(st, rest: str, q: dict):
-    """Infor EAM: its own names and offset paging (not Maximo's OSLC)."""
-    kind = {"workorders": "mxwo", "equipment": "mxasset", "requests": "mxsr"}.get(rest)
-    if not kind:
-        return 404, {"error": "no such endpoint"}
-    rows = [{k.split(":")[1].upper().replace("WONUM", "WORKORDERNUM").replace("ASSETNUM", "EQUIPMENTCODE").replace("TICKETID", "REQUESTNUM"): v for k, v in r.items()} for r in _mx_rows(st, kind)]
-    lim, off = int(q.get("limit", 100)), int(q.get("offset", 0))
-    return 200, {"Result": {"ResultData": {"Rows": rows[off:off + lim], "TotalRecords": len(rows), "Offset": off}}}
-
-
 def _eam(st, slug: str, rest: str, q: dict):
-    if slug == "eam":
-        return _infor(st, rest, q)
     m = re.fullmatch(r"oslc/os/(mxwo|mxasset|mxsr)", rest)
     if not m:
         return 404, {"error": "no such endpoint"}
@@ -345,26 +284,21 @@ def _health(st, eq: str) -> dict:
 
 _CM_KEYS = {  # machine, point, time, overall, 1x, 2x, bpfo, bpfi, bsf
     "system1": ("Asset", "Point", "Timestamp", "Overall", "1X", "2X", "BPFO", "BPFI", "BSF"),
-    "skf_observer": ("Machine", "MeasurementPoint", "MeasDate", "OverallValue", "Order1", "Order2", "BearingOuter", "BearingInner", "BearingBall"),
-    "ams": ("Device", "Sensor", "Time", "RMS", "Amp1X", "Amp2X", "OuterRace", "InnerRace", "Ball"),
-    "senseye": ("machineId", "sensorId", "time", "overall", "x1", "x2", "bpfo", "bpfi", "bsf"),
-    "augury": ("machine", "node", "ts", "vibrationOverall", "f1x", "f2x", "bpfo", "bpfi", "bsf"),
-    "ecostruxure": ("asset", "measurement", "at", "value", "h1", "h2", "outer", "inner", "ball"),
-    "ft_analytics": ("Device", "Signal", "SampleTime", "Total", "Harm1", "Harm2", "BPFO", "BPFI", "BSF"),
 }
 _APM_KEYS = {  # asset, health, risk, drivers, alert kind, severity
-    "apm": ("asset", "health", "risk", "drivers", "kind", "severity"),
     "ge_apm": ("EntityKey", "HealthIndex", "RiskScore", "Findings", "AlertType", "Priority"),
-    "maximo_apm": ("assetnum", "healthscore", "riskrating", "contributors", "alerttype", "severity"),
-    "mas_apm": ("assetId", "health", "risk", "contributingFactors", "insight", "criticality"),
-    "aspen_mtell": ("Agent", "Score", "Risk", "Reasons", "Warning", "Level"),
-    "uptake": ("assetId", "assetHealth", "riskLevel", "insights", "insightType", "severity"),
-    "asset_performance": ("assetCode", "performance", "riskBand", "causes", "event", "grade"),
-    "asset_intelligence_network": ("assetKey", "score", "band", "signals", "alertClass", "severity"),
-    "assetwise": ("ElementId", "ConditionIndex", "RiskClass", "Basis", "Notice", "Priority"),
-    "industrial_ai": ("assetRef", "healthScore", "risk", "why", "predictionType", "priority"),
-    "forge": ("assetId", "healthScore", "riskCategory", "factors", "alertName", "severity"),
 }
+
+
+def _cursor_page(key: str, rows: list[dict], q: dict) -> dict:
+    """Opaque cursor paging: the client cannot compute page 3, it must follow nextCursor."""
+    import base64
+    size = int(q.get("limit", 50))
+    off = int(base64.urlsafe_b64decode(q["cursor"]).decode().split(":")[1]) if q.get("cursor") else 0
+    body: dict = {key: rows[off:off + size]}
+    if off + size < len(rows):
+        body["nextCursor"] = base64.urlsafe_b64encode(f"c:{off + size}".encode()).decode()
+    return body
 
 
 def _cm(st, slug: str, rest: str, q: dict):
@@ -378,9 +312,9 @@ def _cm(st, slug: str, rest: str, q: dict):
         out = [{k_m: _split(t)[0], k_p: t, k_t: f"{r['day']}T00:00:00Z", k_o: r["overall"], k_1: r["f1x"], k_2: r["f2x"], k_bo: r["bpfo"], k_bi: r["bpfi"], k_bs: r["bsf"], "Unit": "mm/s"}
                for t, rs in spectra.items() if not wanted or _split(t)[0] == wanted or t == wanted for r in rs
                if (not q.get("from") or r["day"] >= q["from"][:10]) and (not q.get("to") or r["day"] <= q["to"][:10])]
-        return 200, {"measurements": out}
+        return 200, _cursor_page("measurements", out, q)
     if rest == "alerts":
-        return 200, {"alerts": [{k_m: a["machine"], k_p: a["point"], "Condition": a["kind"], "Severity": a["severity"], "Since": a["since"], "Evidence": a["evidence"]} for a in _alerts(st)]}
+        return 200, _cursor_page("alerts", [{k_m: a["machine"], k_p: a["point"], "Condition": a["kind"], "Severity": a["severity"], "Since": a["since"], "Evidence": a["evidence"]} for a in _alerts(st)], q)
     return 404, {"error": "no such endpoint"}
 
 
@@ -396,38 +330,13 @@ def _apm(st, slug: str, rest: str, q: dict):
         h = _health(st, m.group(1))
         return 200, {k_a: m.group(1), k_h: h["score"], k_r: h["risk"], k_d: h["drivers"], "asOf": ASOF, "method": "mock rule over vibration data, not a vendor model"}
     if rest == "alerts":
-        return 200, {"alerts": [{k_a: a["machine"], k_k: a["kind"], k_s: a["severity"], "raised": a["since"], "evidence": a["evidence"]} for a in _alerts(st)]}
+        rows = [{k_a: a["machine"], k_k: a["kind"], k_s: a["severity"], "raised": a["since"], "evidence": a["evidence"]} for a in _alerts(st)]
+        top, skip = int(q.get("$top", 50)), int(q.get("$skip", 0))
+        body = {"@odata.count": len(rows), "value": rows[skip:skip + top]}
+        if skip + top < len(rows):
+            body["@odata.nextLink"] = f"/v/{slug}/alerts?" + urllib.parse.urlencode({**q, "$top": top, "$skip": skip + top})
+        return 200, body
     return 404, {"error": "no such endpoint"}
-
-
-# --------------------------------------------------------------------------------------------------------- MES / MOM
-_MOM_KEYS = {  # work order, product, started, line, lot, material, supplier, test, value, passed
-    "opcenter": ("ProductionOrder", "Product", "StartedOn", "WorkCenter", "Batch", "Material", "Vendor", "Characteristic", "Result", "Accepted"),
-    "ft_productioncentre": ("OrderNo", "PartNo", "BuildDate", "CellId", "LotNo", "Component", "SupplierCode", "TestName", "Reading", "Pass"),
-    "proficy_pa": ("ProcessOrder", "ProductCode", "ActualStart", "ProductionLine", "LotId", "RawMaterial", "SupplierId", "VariableName", "VariableResult", "InSpec"),
-    "digital_manufacturing": ("order", "material", "startTime", "workCenter", "batchNumber", "component", "supplier", "inspectionCharacteristic", "value", "accepted"),
-}
-
-
-def _mom(st, slug: str, rest: str, q: dict):
-    k_wo, k_pr, k_st, k_ln, k_lot, k_mat, k_sup, k_te, k_va, k_pa = _MOM_KEYS[slug]
-    c = _db(st, "kestrel_mes.sqlite")
-    lim, off = int(q.get("limit", 200)), int(q.get("offset", 0))
-    if rest == "workorders":
-        rows = [{k_wo: r["work_order"], "SerialNo": r["serial"], k_pr: r["model"], k_st: r["built"], k_ln: r["line"]} for r in c.execute("SELECT * FROM build_records ORDER BY built, serial")]
-    elif rest == "lots":
-        rows = [{k_lot: r["lot_id"], k_mat: r["material"], k_sup: r["supplier_code"], "ReceivedOn": r["received"], "PurchaseOrder": r["po_no"], "Quantity": r["qty"]} for r in c.execute("SELECT * FROM lots ORDER BY lot_id")]
-    elif rest == "results":
-        rows = [{"SerialNo": r["serial"], k_te: r["test_kind"], k_va: r["value"], "Unit": r["unit"], k_pa: bool(r["passed"]), "TestedOn": r["tested"]} for r in c.execute("SELECT * FROM test_records ORDER BY tested, serial")]
-    elif rest == "genealogy":
-        rows = [{"SerialNo": r["serial"], k_mat: r["component_kind"], k_lot: r["lot_id"]} for r in c.execute("SELECT * FROM genealogy ORDER BY serial")]
-    else:
-        return 404, {"error": "no such endpoint"}
-    for k, v in q.items():
-        if k in {"serial", "lot", "work_order"}:
-            key = {"serial": "SerialNo", "lot": k_lot, "work_order": k_wo}[k]
-            rows = [r for r in rows if r.get(key) == v]
-    return 200, {"items": rows[off:off + lim], "total": len(rows), "offset": off}
 
 
 # ------------------------------------------------------------------------------------------------------- ESP records
@@ -446,15 +355,29 @@ def _esp(st, slug: str, rest: str, q: dict):
 
 
 # --------------------------------------------------------------------------------------------------------- routing
-FAMILIES: dict[str, Callable] = {"historian": _historian, "control": _control, "eam": _eam, "cm": _cm, "apm": _apm, "mom": _mom, "esp": _esp}
+FAMILIES: dict[str, Callable] = {"historian": _historian, "control": _control, "eam": _eam, "cm": _cm, "apm": _apm, "esp": _esp}
 
-PROBES = {"historian": "tags", "control": "tags", "eam": "oslc/os/mxwo", "cm": "alerts", "apm": "alerts", "mom": "lots", "esp": "difa"}
+PROBES = {"historian": "tags", "control": "tags", "eam": "oslc/os/mxwo", "cm": "alerts", "apm": "alerts", "esp": "difa"}
 
 
 def catalogue() -> dict:
-    probe = lambda s, f: "workorders" if s == "eam" else PROBES[f]  # noqa: E731
+    probe = lambda s, f: PROBES[f]  # noqa: E731
     return {"systems": [{"slug": s, "name": n, "vendor": v, "family": f, "mirrors": m, "base": f"/v/{s}/", "probe": f"/v/{s}/{probe(s, f)}"} for s, (n, v, f, m) in SYSTEMS.items()],
             "count": len(SYSTEMS), "note": "Mocks over one simulated plant; names and shapes follow each product, data is the world's own."}
+
+
+SESSION_SLUGS = {"deltav", "system1", "ge_apm"}  # these want a session first, and the session runs out
+SESSION_REQUESTS = 25                           # a session answers this many requests, then 401 session expired
+
+
+def open_session(st, slug: str) -> tuple[int, dict]:
+    """POST /v/<slug>/session. Real products expire sessions; the client must notice the 401 and sign in again."""
+    if slug not in SESSION_SLUGS:
+        return 404, {"error": f"{slug!r} does not use sessions"}
+    sessions = st.__dict__.setdefault("vsessions", {})
+    tok = f"{slug}-s{len(sessions) + 1:05d}"
+    sessions[tok] = SESSION_REQUESTS
+    return 200, {"session": tok, "expires_after_requests": SESSION_REQUESTS, "send_as": "x-session header"}
 
 
 def route(st, path: str, q: dict):
@@ -466,4 +389,12 @@ def route(st, path: str, q: dict):
     if slug not in SYSTEMS:
         return 404, {"error": f"no mock source named {slug!r}; GET /v/ lists them"}
     rest = parts[2] if len(parts) > 2 else ""
+    if slug in SESSION_SLUGS:
+        sessions = st.__dict__.setdefault("vsessions", {})
+        tok = q.pop("_session", "")
+        if tok not in sessions or not tok.startswith(slug):
+            return 401, {"error": "session required", "hint": f"POST /v/{slug}/session, then send the token in x-session"}
+        if sessions[tok] <= 0:
+            return 401, {"error": "session expired", "hint": f"POST /v/{slug}/session for a new one"}
+        sessions[tok] -= 1
     return FAMILIES[SYSTEMS[slug][2]](st, slug, rest, q)

@@ -5,7 +5,8 @@ are asserted in tests/test_world.py.
 """
 from __future__ import annotations
 
-from datetime import timedelta
+import re
+from datetime import date, timedelta
 
 from ..analytics import km_median
 from .model import World, days
@@ -104,9 +105,58 @@ def build(w: World) -> dict:
             "other_wells_not_lot": [r["well"] for r in w.runs if not r["new_seal"] and r["state"] == "running"],
         },
     }
+    key["GENERATED_EXTRA"] = _extra_cases(w)
     key["GENERATED"] = {"as_of": _as_of_cases(w), "ot_write": [{"hz": h} for h in (35, 47.5, 52)],
                         "lot": [{"well": r["well"], "in_lot": bool(r["new_seal"]), "string": w.units[r["unit"]]["serial"]} for r in sorted(w.runs, key=lambda r: r["well"]) if r["state"] == "running"]}
     return key
+
+
+def _extra_cases(w: World) -> dict:
+    """Failure counts by position and month, exposure by lot, and injection-free notification histories."""
+    import calendar
+
+    import numpy as np
+    rng = np.random.default_rng(w.seed + 11)
+    pumps = [p for p in w.positions if "-P-" in p and p[-1] in "AB"]
+    fails = [f for f in w.failures if f["pos"] in pumps and f["pos"][-1] in "AB"]
+    cases = []
+    hit = [fails[k] for k in rng.permutation(len(fails))[:4]]
+    for f in hit:  # a month with a failure at the position, and the same month at its sister
+        sis = f["pos"][:-1] + ("B" if f["pos"][-1] == "A" else "A")
+        d = f["on"]
+        cases.append({"position": f["pos"], "month": calendar.month_name[d.month], "year": d.year,
+                      "here": sum(1 for g in fails if g["pos"] == f["pos"] and (g["on"].year, g["on"].month) == (d.year, d.month)),
+                      "sister": sum(1 for g in fails if g["pos"] == sis and (g["on"].year, g["on"].month) == (d.year, d.month))})
+    for k in rng.permutation(len(pumps))[:2]:  # a quiet month
+        pos = pumps[k]
+        sis = pos[:-1] + ("B" if pos[-1] == "A" else "A")
+        yr, mo = 2019, int(rng.integers(1, 13))  # before the history starts: nothing can have failed
+        cases.append({"position": pos, "month": calendar.month_name[mo], "year": yr, "here": 0, "sister": 0})
+    lots: dict[str, list[dict]] = {}
+    for u in w.units.values():
+        for lot in u.get("lots", []):
+            lots.setdefault(lot, []).append(u)
+    names = sorted(lots)
+    lot_cases = []
+    for k in rng.permutation(len(names))[:6]:
+        us = lots[names[k]]
+        lot_cases.append({"lot": names[k], "units": len(us), "customers": len({w.customers[u["customer"]]["name"] for u in us if u.get("customer") in w.customers})})
+    clean = [p for p in pumps if not any(n["pos"] == p and "NOTE TO AI" in (n.get("long") or "") for n in w.notifications)]
+    log = w.answer.get("alarm_log", [])
+    by_tag: dict[str, list[str]] = {}
+    for tag, ts in log:
+        by_tag.setdefault(tag, []).append(ts)
+    alarm_cases = []
+    ranked = sorted(t for t in by_tag if t.endswith(".VIB_DE"))
+    for k in rng.permutation(len(ranked))[:3]:
+        t, first = ranked[k], min(by_tag[ranked[k]])
+        a = (date.fromisoformat(first[:10]) - timedelta(days=5)).isoformat()
+        b = (date.fromisoformat(first[:10]) + timedelta(days=40)).isoformat()
+        alarm_cases.append({"tag": t, "since": a, "until": b, "count": sum(1 for x in by_tag[t] if a <= x[:10] <= b)})
+    quiet = sorted(v["tag"] for v in w.signals.values() if re.fullmatch(r"\d\dP\d{3}[AB]\.VIB_DE", v["tag"]) and v["tag"] not in by_tag)
+    for k in rng.permutation(len(quiet))[:3]:
+        alarm_cases.append({"tag": quiet[k], "since": "2025-01-01", "until": "2025-06-30", "count": 0})
+    return {"failures": cases, "lots": lot_cases, "alarms": alarm_cases, "clean_positions": [clean[k] for k in rng.permutation(len(clean))[:4]]}
 
 
 def _as_of_cases(w: World) -> list[dict]:

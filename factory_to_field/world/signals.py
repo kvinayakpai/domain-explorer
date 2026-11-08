@@ -89,6 +89,8 @@ def _health(w: World, unit: str | None, i: int) -> tuple[float, str]:
                 s = (i - i0) / max(i1 - i0, 1)
                 if ep["kind"] == "bpfo":
                     return 1 + 2.2 * s ** 2.5, "bpfo"
+                if ep["kind"] == "upset":  # a process upset: overall vibration jumps for a few days with no bearing signature
+                    return ep["factor"], "generic"
                 return 1 + 1.8 * s ** 2, "generic"
         else:
             if i >= i0:

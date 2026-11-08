@@ -61,7 +61,7 @@ models:
         tests:
           - accepted_values:
               values: [first_stay, occasional, regular, frequent, super_frequent, unknown]
-  - name: dim_channel
+  - name: dim_channel_hotel
     description: Distribution channel dimension with commission band.
     columns:
       - name: channel_key

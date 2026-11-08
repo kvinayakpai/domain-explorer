@@ -258,6 +258,20 @@ def _cmms(w: World) -> None:
                          "unit": "unit:OEM-25-1203", "text": "21-P-215B oil change", "notif": None, "open": True})
 
 
+def _upsets(w: World, n: int = 16) -> None:
+    """Process upsets on ordinary pumps: a few days of high vibration (low flow, a trip and restart) that clear without a repair.
+    They make the world busier and give alarm triage cases that are not a bearing fault. Drawn from their own generator so
+    the rest of the world is unchanged."""
+    import numpy as np
+    rng = np.random.default_rng(w.seed + 99)
+    planted = {"OEM-24-0412", "OEM-24-0455", "OEM-24-0398", "OEM-25-1150", "OEM-25-1187", "OEM-25-1203"}
+    pool = sorted(k for k, u in w.units.items() if u.get("serial") and u["serial"].startswith("OEM-") and u["serial"] not in planted and u.get("customer") is not None)
+    for k in rng.permutation(len(pool))[:n]:
+        onset = date(2024, 1, 1) + timedelta(days=int(rng.integers(0, 1000)))
+        w.units[pool[k]].setdefault("episodes", []).append({"onset": onset, "fail": onset + timedelta(days=int(rng.integers(2, 5))), "kind": "upset",
+                                                          "factor": float(rng.uniform(2.1, 2.8))})
+
+
 def generate(w: World) -> None:
     _positions(w)
     _planted(w)
@@ -266,6 +280,7 @@ def generate(w: World) -> None:
     _cmms(w)
     for u in w.units.values():
         u.setdefault("episodes", [])
+    _upsets(w)
     for serial, onset, fail in (("OEM-24-0412", date(2025, 12, 2), P101_FAIL_VIB), ("OEM-24-0455", date(2026, 4, 20), P301A_FAIL)):
         w.units[f"unit:{serial}"]["episodes"].append({"onset": onset, "fail": fail, "kind": "bpfo"})
     for serial, onset, kind in (("OEM-24-0398", date(2026, 6, 15), "bpfo_mild"), ("OEM-25-1150", date(2026, 7, 10), "bpfo_mild"),
