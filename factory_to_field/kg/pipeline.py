@@ -507,6 +507,10 @@ class Pipeline:
                 there = any(frm <= on and (to is None or on < to) and u == unit for frm, to, u, ic in self.installs.get(sister, []))
                 if not here and there and pos[-1] in "AB":
                     pos = sister
+            if unit is None and r["ltxt"]:  # the long text names the unit when the equipment number was left blank
+                mt = re.search(r"\b((?:OEM|ES|SS|PM|IN|MT|CB)-\d\d-\d{4})\b", r["ltxt"])
+                if mt and f"unit:{norm_serial(mt.group(1))}" in self.b.nodes:
+                    unit, how, conf = f"unit:{norm_serial(mt.group(1))}", "serial named in the notification long text", 0.93
             if unit is None and pos:
                 for frm, to, u, ic in self.installs.get(pos, []):
                     if frm <= on and (to is None or on < to):

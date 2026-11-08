@@ -137,21 +137,32 @@ class FieldPlaybooks:
 
     # ------------------------------------------------------------------ traps
     def pb_position_vs_unit(self, c, s, rep) -> None:
+        import calendar
+        mm = re.search(r"in ([A-Za-z]+) (\d{4})", c.question)
+        month = list(calendar.month_name).index(mm.group(1).title()) if mm and mm.group(1).title() in calendar.month_name else 3
+        prefix, label = (f"{mm.group(2)}-{month:02d}", f"{calendar.month_name[month]} {mm.group(2)}") if mm else ("2026-03", "March 2026")
         pos = c.position
         fa = s.call("kg.failures_at", position=pos)
-        mar = [f for f in fa.data if f["on"].startswith("2026-03")]
+        mar = [f for f in fa.data if f["on"].startswith(prefix)]
         sister = pos[:-1] + ("A" if pos.endswith("B") else "B")
         fs = s.call("kg.failures_at", position=sister)
-        elsewhere = [f for f in fs.data if f["on"].startswith("2026-03")]
-        rep.answer.update(failures_in_march_at_position=len(mar), where_it_happened=sister.split(":", 1)[1] if elsewhere else None,
-                          unit=elsewhere[0]["serial"] if elsewhere else None)
-        self._add(rep, "asset", f"No failure was recorded at {pos.split(':', 2)[-1]} in March 2026." if not mar else f"{len(mar)} failure(s) at {pos.split(':', 2)[-1]} in March.", fa.evidence)
+        elsewhere = [f for f in fs.data if f["on"].startswith(prefix)]
+        rep.answer.update(failures_in_march_at_position=len(mar), failures_in_month_at_position=len(mar), failures_in_month_at_sister=len(elsewhere),
+                          where_it_happened=sister.split(":", 1)[1] if elsewhere else None, unit=elsewhere[0]["serial"] if elsewhere else None)
+        self._add(rep, "asset", f"No failure was recorded at {pos.split(':', 2)[-1]} in {label}." if not mar else f"{len(mar)} failure(s) at {pos.split(':', 2)[-1]} in {label}.", fa.evidence)
         if elsewhere:
             f = elsewhere[0]
             self._add(rep, "asset", f"The {f['on']} {f['mode']} failure on {f['serial']} happened at {sister.split(':', 2)[-1]}, where that unit was installed at the time. The unit later moved to {pos.split(':', 2)[-1]}, which is why a search by serial misattributes it.",
                       fs.evidence, serial=f["serial"], on=f["on"], mode=f["mode"])
         rep.summary = "None at that position in March; the failure belongs to the other position"
         rep.recommendation = "Count failures by the position or unit installed at the time of failure, never by where the unit sits today."
+
+    def pb_lot_exposure(self, c, s, rep) -> None:
+        lot = re.search(r"\b([A-Z]-\d\d-\w+)\b", c.question).group(1)
+        r = s.call("kg.lot_units", lot=f"lot:{lot}")
+        rep.answer.update(lot=lot, lot_units=r.data["units"], lot_customers=r.data["customers"])
+        self._add(rep, "quality", f"Lot {lot}: {r.data['units']} units built with it, owned by {r.data['customers']} customers.", r.evidence, units=r.data["units"], customers=r.data["customers"])
+        rep.summary = f"Lot {lot} is in {r.data['units']} units across {r.data['customers']} customers"
 
     def pb_as_of_unit(self, c, s, rep) -> None:
         on = re.search(r"(\d{4}-\d{2}-\d{2})", c.question).group(1)

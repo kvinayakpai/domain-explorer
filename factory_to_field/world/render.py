@@ -151,9 +151,13 @@ def render_sap(w: World, out: Path, tr: Truth) -> None:
             code = "VIBR" if n["mode"] == "VIB" else "LEAK"  # legacy local codes
         eq = equnr.get(n["unit"]) if n["unit"] else None
         floc = pos["floc"]
+        long_text = n.get("long") or None
+        if w.noise.get("unit_text_only") and n["unit"] and not long_text and n["unit"] in equnr and w.rng.random() < w.noise["unit_text_only"]:
+            long_text = f"Unit {w.units[n['unit']]['serial']} attended."  # the equipment number is left blank; only the free text names the unit
+            eq = None
         if w.noise.get("pos_swap") and "-P-" in floc and floc[-1] in "AB" and n["id"] != "x" and not n.get("long") and w.rng.random() < w.noise["pos_swap"]:
             floc = floc[:-1] + ("B" if floc[-1] == "A" else "A")  # keyed to the sister pump; the text still names the real one
-        con.execute("INSERT INTO QMEL VALUES(?,?,?,?,?,?,?,?,?,?,?)", (qm, n["type"], n["text"][:40], n.get("long") or None, n["on"].isoformat(),
+        con.execute("INSERT INTO QMEL VALUES(?,?,?,?,?,?,?,?,?,?,?)", (qm, n["type"], n["text"][:40], long_text, n["on"].isoformat(),
                                                                          f"{hh:02d}:{mm:02d}:00", floc, eq, code, n["prio"], "NOCO" if n["status"] == "closed" else "OSNO"))
         tr.add("SAP-PM", "QMEL", qm, n["pos"])
         true_unit = next((f["unit"] for f in w.failures if f["id"] == n["fail"]), None) if n["fail"] else w.unit_at(n["pos"], n["on"])
