@@ -27,9 +27,14 @@ GL_WELLS = [f"B-{i:02d}" for i in range(1, 11)]
 PAD_OF = {w: f"P{(i // 3) + 1}" for i, w in enumerate(ESP_WELLS)}
 PAD_OF.update({w: f"P{(i % 4) + 1}" for i, w in enumerate(GL_WELLS)})
 
-OLD_FAIL_TEXT = [("BRD", "Motor burnout, scale on housing"), ("BRD", "Cable splice failure at 900 m"), ("OHE", "Motor overheating, sand cut"),
-                 ("PDE", "Pump worn, loss of head"), ("BRD", "Thrust bearing failure"), ("BRD", "Shaft break at coupling"),
-                 ("OHE", "Gas lock, motor overheated"), ("BRD", "Motor insulation breakdown")]
+# Ordinary (non-story) ESP failures. Field surveys put electrical causes (motor, cable, insulation) at roughly 55-60% of pulls,
+# so the draw is weighted that way; the planted new-seal failures are a deliberate story and sit on top of this mix.
+_ELEC = [("BRD", "Motor burnout, scale on housing"), ("BRD", "Cable splice failure at 900 m"), ("BRD", "Motor insulation breakdown"), ("BRD", "Cable armour damage at wellhead")]
+_PUMP = [("PDE", "Pump worn, loss of head"), ("PDE", "Sand erosion of stages")]
+_MECH = [("BRD", "Thrust bearing failure"), ("BRD", "Shaft break at coupling")]
+_GAS = [("OHE", "Gas lock, motor overheated"), ("OHE", "Motor overheating, sand cut")]
+OLD_FAIL_TEXT = _ELEC * 3 + _PUMP * 2 + _MECH + _GAS * 2          # 12 electrical, 4 pump, 2 mechanical, 4 gas/heat of 22 draws
+CAUSE_OF = {**{d: "electrical" for _, d in _ELEC}, **{d: "pump wear" for _, d in _PUMP}, **{d: "mechanical" for _, d in _MECH}, **{d: "gas or overheating" for _, d in _GAS}}
 
 
 def _floc(well: str, esp: bool = False) -> str:
@@ -134,7 +139,7 @@ def generate(w: World) -> None:
             new_seal = (not run["old"])
             w.runs.append({"id": w.nid("run:"), "well": wl, "unit": u, "start": run["start"], "end": run["end"], "state": end_state,
                            "days": ((run["end"] or TODAY) - run["start"]).days, "new_seal": new_seal,
-                           "pull_reason": ("motor failure" if ended else None)})
+                           "pull_reason": ("motor failure" if ended else None)})  # refined below once the cause is drawn
             if ended:
                 if new_seal:
                     mode, desc = "BRD", "Motor failure, well fluid in motor oil"
@@ -142,6 +147,8 @@ def generate(w: World) -> None:
                     mode, desc = OLD_FAIL_TEXT[int(rng.integers(0, len(OLD_FAIL_TEXT)))]
                 if wl == "A-07" and run["life"] == 688:
                     mode, desc = "BRD", "Motor failure"
+                elif not new_seal:
+                    w.runs[-1]["pull_reason"] = CAUSE_OF.get(desc, "motor failure")  # the story's strings keep the surface label "motor failure"
                 fe = {"id": w.nid("fe:"), "unit": u, "pos": pid, "inst": inst["id"], "on": run["end"], "mode": mode, "desc": desc,
                       "planted": new_seal, "repair_days": 0, "swapped": True}
                 w.failures.append(fe)

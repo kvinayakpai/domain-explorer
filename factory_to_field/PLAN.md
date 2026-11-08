@@ -38,7 +38,7 @@ Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] 
 - [x] 3.1 Buyer chosen: refinery reliability team.
 - [ ] 3.2 Split identity and agents: the operator agent is primary and sees only operator systems; the maker view becomes a separate, clearly secondary agent and IdP tenant (containment sizing needs maker data the operator would not hold).
 - [ ] 3.3 Value case for a refinery reliability team: time to a reviewed work-order draft per alarm, false alarms screened out, spares/window conflicts caught. Measured on the sweep, not asserted. The human baseline (how long a person takes today) is not measured: use clearly labelled ASSUMPTIONS (owner's instruction 2026-11-08), state them next to every number, and make them parameters so the owner can overwrite them.
-- [ ] 3.4 Fix failure mix in the generator to match field data (ESP: electrical about 60%, seals about 22%; vary pull reasons).
+- [x] 3.4 Failure mix: ordinary ESP failures are now drawn from a weighted list (12 electrical, 4 pump wear, 2 mechanical, 4 gas/overheating of 22) and their pulls carry that cause instead of a blanket "motor failure". The planted new-seal strings keep the surface label on purpose (that is the story: seal-ingress pulls recorded as motor failure). Result on seeds 42/1/2: electrical 32-44%, 'motor failure' 32% (the story strings), rest spread. Seals are still over-represented by design (7 of 25 failed strings); say so in any write-up.
 
 ## Phase 4: pilot depth (weeks 9-14)
 
