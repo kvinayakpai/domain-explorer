@@ -23,9 +23,9 @@ systems:
     token_url: http://127.0.0.1:8766/oauth2/token
     client_id: ftf-agent
     secret_env: FTF_AGENT_SECRET
-# Every other source system has a mock under /v/<slug>/ on the same simulator host (GET /v/ lists them), for example:
+# Six deep mocks live under /v/<slug>/ on the same simulator host (GET /v/ lists them), for example:
 #   maximo:    base_url http://127.0.0.1:8765/v/maximo      (IBM Maximo OSLC: oslc/os/mxwo, mxasset, mxsr)
-#   cognite:   base_url http://127.0.0.1:8765/v/cognite     (history?tag=pi:<name>)
-#   deltav:    base_url http://127.0.0.1:8765/v/deltav      (tags, read, alarms)
-#   system1:   base_url http://127.0.0.1:8765/v/system1     (machines, measurements, alerts)
+#   pi_af:     base_url http://127.0.0.1:8765/v/pi_af       (tags, history; Links.Next paging)
+#   deltav:    base_url http://127.0.0.1:8765/v/deltav      (tags, read, alarms; session expires, POST /session)
+#   system1:   base_url http://127.0.0.1:8765/v/system1     (machines, measurements, alerts; session, cursor paging)
 # Point a connector at one of these exactly as you would at the real system, then swap base_url and token_url at the pilot.

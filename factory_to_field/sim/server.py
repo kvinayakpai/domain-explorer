@@ -9,7 +9,7 @@
   /osdu/api/search/v2/query, /storage    OSDU search and storage (Well master data)
   /plm/api/..., /mes/api/..., /qms/api/...   the pump maker's PLM, MES and QMS
   /prod/api/...                          production planning (outage windows, rigs, allocation)
-  /v/<system>/...                        41 more mock source systems, one dialect per product (sim/vendors.py; GET /v/ lists them)
+  /v/<system>/...                        6 deep mock source systems (sessions, vendor paging) (sim/vendors.py; GET /v/ lists them)
   /sim/health, /sim/writes               simulator housekeeping
 
 Credentials are bearer tokens. `ro-agent` can read everything and write nothing. Writes need the `release` token plus
@@ -270,6 +270,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.state.csrf.add(tok)
             extra["x-csrf-token"] = tok
         try:
+            if path.startswith("/v/"):
+                q["_session"] = self.headers.get("x-session", "")  # the mocks that use sessions read it from here
             code, body = self.route_get(path, q)
             body = self._page(path, q, body) if code == 200 else body
         except ValueError as e:
@@ -290,6 +292,9 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(401, {"error": "bearer token required"})
         if self._rate_limited():
             return None
+        m = re.fullmatch(r"/v/(\w+)/session", path)
+        if m:
+            return self._send(*vendors.open_session(self.state, m.group(1)))
         if path.startswith("/osdu/") and not self.headers.get("data-partition-id"):
             return self._send(400, {"error": "data-partition-id header is required"})
         if path == "/osdu/api/search/v2/query":  # a read, even though it is a POST

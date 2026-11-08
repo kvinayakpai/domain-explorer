@@ -30,21 +30,21 @@ Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] 
 
 - [-] 2.1 DROPPED (no API key): live model planner runs. Keep the LLMAgent wired and tested with FakeClient; say in the README that no live-model result exists.
 - [ ] 2.2 Offline baselines: playbook agent vs a naive keyword-lookup baseline (no graph, no as-of logic) on the same gold cases, to show what the graph and temporal logic buy.
-- [ ] 2.3 Wire agent tools to read through the `/v/<slug>/` mocks, with per-mock faults (timeouts, paging, 401 refresh, stale data).
+- [ ] 2.3 (optional) Wire agent tools to read through the six `/v/<slug>/` mocks, exercising session refresh and vendor paging.
 - [-] 2.4 DROPPED (Decision 3): real public data validation.
 
 ## Phase 3: build for the refinery reliability team (weeks 4-9)
 
 - [x] 3.1 Buyer chosen: refinery reliability team.
 - [ ] 3.2 Split identity and agents: the operator agent is primary and sees only operator systems; the maker view becomes a separate, clearly secondary agent and IdP tenant (containment sizing needs maker data the operator would not hold).
-- [ ] 3.3 Value case for a refinery reliability team: time to a reviewed work-order draft per alarm, false alarms screened out, spares/window conflicts caught. Measured on the sweep, not asserted. Needs a baseline (how long a person takes) that must come from the owner or be labelled an assumption.
+- [ ] 3.3 Value case for a refinery reliability team: time to a reviewed work-order draft per alarm, false alarms screened out, spares/window conflicts caught. Measured on the sweep, not asserted. The human baseline (how long a person takes today) is not measured: use clearly labelled ASSUMPTIONS (owner's instruction 2026-11-08), state them next to every number, and make them parameters so the owner can overwrite them.
 - [ ] 3.4 Fix failure mix in the generator to match field data (ESP: electrical about 60%, seals about 22%; vary pull reasons).
 
 ## Phase 4: pilot depth (weeks 9-14)
 
 - [ ] 4.1 Make the world busier (more alarms, more positions) so false-alarm handling is exercised.
 - [ ] 4.2 Ontology: external mappings (ISO 14224, CFIHOS, OSDU) for the 36 classes.
-- [ ] 4.3 Deepen 5-6 refinery-relevant mocks (e.g. PI System, Maximo or SAP PM, a vibration CM system, a DCS historian, an APM health system) with real auth flows, rate limits and paging quirks; delete the renamed copies (22 of 41) and update tests/test_vendors.py and the README catalogue.
+- [x] 4.3 Mocks cut from 41 to 6 deep ones (pi_af, deltav, maximo, system1, ge_apm, esp_difa): vendor paging (Links.Next, nextCursor, OData nextLink, OSLC), session expiry for deltav/system1/ge_apm; 35 renamed copies deleted and listed in `vendors.RETIRED`. Still no consumer in the agents: they read through the file source and the original simulators (see 2.3, now optional).
 - [ ] 4.4 Deployable: Dockerfile, docker compose, one-command demo.
 - [ ] 4.5 Repo hygiene: fix the `dim_channel` clash and the 6 duplicate KPI ids in the explorer.
 - [ ] 4.6 Second use case: fixed-equipment integrity (corrosion rates, inspection records, remaining life for vessels and piping). Needs its own ontology slice, world generator, playbooks and gold cases; start with a design note.
