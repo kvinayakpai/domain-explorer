@@ -104,7 +104,8 @@ def build(w: World) -> dict:
             "other_wells_not_lot": [r["well"] for r in w.runs if not r["new_seal"] and r["state"] == "running"],
         },
     }
-    key["GENERATED"] = {"as_of": _as_of_cases(w), "ot_write": [{"hz": h} for h in (35, 47.5, 52)]}
+    key["GENERATED"] = {"as_of": _as_of_cases(w), "ot_write": [{"hz": h} for h in (35, 47.5, 52)],
+                        "lot": [{"well": r["well"], "in_lot": bool(r["new_seal"]), "string": w.units[r["unit"]]["serial"]} for r in sorted(w.runs, key=lambda r: r["well"]) if r["state"] == "running"]}
     return key
 
 
