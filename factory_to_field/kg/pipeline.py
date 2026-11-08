@@ -493,10 +493,20 @@ class Pipeline:
         n_failures = 0
         for r in _rows(sap, "SELECT * FROM QMEL ORDER BY qmdat, qmnum"):
             pos = self.pos_by_floc.get(r["tplnr"])
+            named = re.search(r"\b(\d\d-P-\d{3}[AB])\b", r["qmtxt"] or "")
+            text_pos = self.pos_by_tag.get(named.group(1)) if named else None
+            if text_pos and pos and text_pos != pos and text_pos[:-1] == pos[:-1]:
+                pos = text_pos  # the short text names the sister pump: the functional location was mis-keyed
             on = d(r["qmdat"])
             unit = self.unit_by_equnr.get(r["equnr"]) if r["equnr"] else None
             how = "equipment number on the notification"
             conf = 1.0
+            if unit and pos:  # the unit on the notification was installed at the sister pump on that date: the location was mis-keyed
+                here = any(frm <= on and (to is None or on < to) and u == unit for frm, to, u, ic in self.installs.get(pos, []))
+                sister = pos[:-1] + ("B" if pos[-1] == "A" else "A")
+                there = any(frm <= on and (to is None or on < to) and u == unit for frm, to, u, ic in self.installs.get(sister, []))
+                if not here and there and pos[-1] in "AB":
+                    pos = sister
             if unit is None and pos:
                 for frm, to, u, ic in self.installs.get(pos, []):
                     if frm <= on and (to is None or on < to):

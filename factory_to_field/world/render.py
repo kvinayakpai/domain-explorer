@@ -150,8 +150,11 @@ def render_sap(w: World, out: Path, tr: Truth) -> None:
         if n["mode"] and w.rng.random() < w.noise["legacy_code"]:
             code = "VIBR" if n["mode"] == "VIB" else "LEAK"  # legacy local codes
         eq = equnr.get(n["unit"]) if n["unit"] else None
+        floc = pos["floc"]
+        if w.noise.get("pos_swap") and "-P-" in floc and floc[-1] in "AB" and n["id"] != "x" and not n.get("long") and w.rng.random() < w.noise["pos_swap"]:
+            floc = floc[:-1] + ("B" if floc[-1] == "A" else "A")  # keyed to the sister pump; the text still names the real one
         con.execute("INSERT INTO QMEL VALUES(?,?,?,?,?,?,?,?,?,?,?)", (qm, n["type"], n["text"][:40], n.get("long") or None, n["on"].isoformat(),
-                                                                         f"{hh:02d}:{mm:02d}:00", pos["floc"], eq, code, n["prio"], "NOCO" if n["status"] == "closed" else "OSNO"))
+                                                                         f"{hh:02d}:{mm:02d}:00", floc, eq, code, n["prio"], "NOCO" if n["status"] == "closed" else "OSNO"))
         tr.add("SAP-PM", "QMEL", qm, n["pos"])
         true_unit = next((f["unit"] for f in w.failures if f["id"] == n["fail"]), None) if n["fail"] else w.unit_at(n["pos"], n["on"])
         if true_unit:
