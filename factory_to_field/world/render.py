@@ -40,11 +40,26 @@ def _db(path: Path) -> sqlite3.Connection:
     return sqlite3.connect(path)
 
 
+def _hostile(w: World, serial: str) -> str:
+    """Damage the base noise never produced. The right answer is still the original serial or a review item, never another unit."""
+    a, b, c = serial.split("-")
+    k = int(w.rng.integers(0, 4))
+    if k == 0 and len(c) >= 2:
+        return f"{a}-{b}-{c[:-2]}{c[-1]}{c[-2]}"  # last two digits transposed
+    if k == 1:
+        return f"{a}-{b}-{c.replace('0', 'O').replace('1', 'I')}"  # OCR-style letter for digit
+    if k == 2:
+        return f"{serial} REV B"  # trailing text from a label
+    return f"{a}{b}{c}"  # separators lost
+
+
 def _mess(w: World, serial: str, maker_is_kestrel: bool) -> str:
     if serial in MESSY:
         return MESSY[serial]
     if not maker_is_kestrel:
         return serial
+    if w.noise.get("serial_hostile") and w.rng.random() < w.noise["serial_hostile"]:
+        return _hostile(w, serial)
     r = w.rng.random()
     if r < 0.012:
         return serial.lower()

@@ -20,7 +20,7 @@ Status key: [x] done, [~] partly, [ ] not started, [!] blocked on the owner (see
 - [x] 1.2 First sweep found the answer key was partly typed in (DIFA count 5, oil rate 640, notification number 300001480). Key is now computed from the generated world.
 - [x] 1.3 `tests/test_heldout_seeds.py` (floor: link recall 0.995, precision 0.99, all ten gold cases); CI runs seeds 1 2 3 via FTF_SEEDS.
 - [x] 1.4 Checked the resolver (`kg/pipeline.py`): no seed-specific constants, only per-method confidences. Its real coupling is to the generator's noise *types* (serial edit distance 1, blank serial, legacy codes, tag grammar), which 1.5 must vary. Noise rates are now a preset (`world/spec.py NOISE`, `--noise base|dirty`); dirty is 3x. Result: seed 1 dirty recall 0.9977, precision 1.0, gold 10/10, so rate is not the weak spot.
-- [ ] 1.5 Held-out world (new noise TYPES, not rates; rates done in 1.4): a second generator config (different names, tag patterns, ID formats, noise rates) that no code was tuned on. Score once, report as is.
+- [~] 1.5 Held-out world (new noise TYPES, not rates; rates done in 1.4). Done: `--noise hostile` adds transposed digits, O/I for 0/1, trailing REV text, lost separators on serials. Resolver fixes: norm_serial handles those, lev counts a swap as one edit, a malformed own-family serial no longer mints a phantom unit. Still open: transposed serial on a unit with no maker record mints a wrong unit at confidence 1.0 (6 of about 2,900 links; fix = queue for review when a near-duplicate serial exists elsewhere in the graph). Also still to vary: swapped position tags, free-text-only mentions, a different tag grammar. Original scope: a second generator config (different names, tag patterns, ID formats, noise rates) that no code was tuned on. Score once, report as is.
 - [ ] 1.6 Independent grading: gold checks compare to a key built by a separate code path (SQL over the rendered files) rather than the generator's in-memory variables.
 - [ ] 1.7 Confidence intervals: with N seeds, report mean and worst case, not one number.
 - [ ] 1.8 More cases: at least 30 gold cases (5 per playbook family) and 15 adversarial, generated from templates across seeds.
@@ -58,9 +58,12 @@ Status key: [x] done, [~] partly, [ ] not started, [!] blocked on the owner (see
 
 ## Findings log (newest first)
 
+- 2026-11-08: Hostile serial noise exposed a resolver weakness the base noise never did: damaged own-family serials minted phantom units at confidence 1.0 (67 of about 2,900 links wrong). Fixed except 6 transposition cases.
 - 2026-11-07: Seed sweep before the fix: links recall 0.998-0.9995, precision 1.0 on all seeds, but the agent passed 8/10 gold cases on seeds 1-3 (10/10 on seed 42). Causes: answer key held typed-in constants (DIFA count, oil rate, notification number). Fixed in the key and playbook; after the fixes (key computed, DIFA count filtered to the as-of date, CASE-3005 well chosen from the key, injection note number from the world) seeds 42 and 1-7 all score 10/10; link recall 0.9983-0.9998, precision 1.0.
 
 ## Session log
+
+- 2026-11-08: hostile noise first run: precision 0.9896 (67 wrong links, all phantom units from damaged serials), recall 0.9886. After resolver fixes: seeds 42 and 1 hostile recall 0.998, precision 0.999, gold 10/10. Next: close the 6 residual wrong links, add hostile to the CI sweep, then 1.6.
 
 - 2026-11-07 (session 1, cont.): 1.4 done, noise presets added, `--noise dirty` works in the sweep. Next: 1.5 new noise types (e.g. serial transpositions, OCR confusions O/0 and I/1, swapped position tags, free-text-only mentions), then 1.6.
 

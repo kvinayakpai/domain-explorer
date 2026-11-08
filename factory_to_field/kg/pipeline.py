@@ -33,19 +33,31 @@ def norm_serial(s: str | None) -> str:
     if not s:
         return ""
     t = re.sub(r"[\s_]+", "-", s.strip().upper())
+    t = re.sub(r"-?REV-?[A-Z]$", "", t)  # trailing label text
     t = re.sub(r"^0EM", "OEM", t)
     m = SERIAL_RE.match(t)
-    return f"{m.group(1)}-{m.group(2)}-{int(m.group(3)):04d}" if m else t
+    if not m:  # separators lost ("OEM180516") or letters read for digits ("OEM-20-OO2I")
+        m = re.match(r"^(OEM|ES|SS|PM|IN|MT|CB)-?([0-9OIL]{2})-?([0-9OIL]{1,4})$", t)
+        if m:
+            fix = str.maketrans("OIL", "011")
+            return f"{m.group(1)}-{m.group(2).translate(fix)}-{int(m.group(3).translate(fix)):04d}"
+        return t
+    return f"{m.group(1)}-{m.group(2)}-{int(m.group(3)):04d}"
 
 
 def lev(a: str, b: str) -> int:
-    prev = list(range(len(b) + 1))
-    for i, ca in enumerate(a, 1):
-        cur = [i]
-        for j, cb in enumerate(b, 1):
-            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
-        prev = cur
-    return prev[-1]
+    """Edit distance where swapping two neighbouring characters counts as one edit."""
+    d = [[0] * (len(b) + 1) for _ in range(len(a) + 1)]
+    for i in range(len(a) + 1):
+        d[i][0] = i
+    for j in range(len(b) + 1):
+        d[0][j] = j
+    for i in range(1, len(a) + 1):
+        for j in range(1, len(b) + 1):
+            d[i][j] = min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] != b[j - 1]))
+            if i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]:
+                d[i][j] = min(d[i][j], d[i - 2][j - 2] + 1)
+    return d[-1][-1]
 
 
 @dataclass
@@ -218,7 +230,8 @@ class Pipeline:
         def settle(eq: int, canon: str | None, m: str, c: float, ev: str, raw: str) -> None:
             if canon is None:
                 n = norm_serial(raw)
-                ucanon = f"unit:{n}" if n else f"unit:SAP-{eq}"
+                damaged = bool(re.match(r"^(OEM|ES|SS|PM|IN|MT|CB)-", n)) and not SERIAL_RE.match(n)  # our own family, malformed
+                ucanon = f"unit:{n}" if n and not damaged else f"unit:SAP-{eq}"  # a damaged serial must not mint a phantom unit
                 m, c, ev = "exact_key", 1.0, "no maker record in this graph; keyed by CMMS serial"
             else:
                 ucanon = f"unit:{canon}"

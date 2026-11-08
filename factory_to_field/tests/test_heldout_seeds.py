@@ -16,3 +16,11 @@ def test_heldout_seed(seed):
     assert r["links"]["recall"] >= FLOOR_RECALL and r["links"]["precision"] >= FLOOR_PRECISION, r["links"]
     a = r["agent"]
     assert a.get("cases_ok") == a.get("cases_total"), a.get("failed") or a
+
+
+def test_hostile_noise_seed():
+    """Serial damage the base generator never produced: transposed digits, O for 0, lost separators, label text."""
+    r = run_seed(1, noise="hostile")
+    assert "error" not in r, r
+    assert r["links"]["recall"] >= 0.99 and r["links"]["precision"] >= 0.995, r["links"]
+    assert r["agent"]["cases_ok"] == r["agent"]["cases_total"], r["agent"].get("failed")
