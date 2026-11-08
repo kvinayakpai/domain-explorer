@@ -225,3 +225,57 @@ class FieldPlaybooks:
 
 def ctx_today(s):
     return s.ctx.today
+
+
+class InspectionPlaybooks:
+    """Fixed-equipment integrity: remaining life of a component and the list of overdue inspections."""
+
+    def pb_remaining_life(self, c, s, rep) -> None:
+        comp = re.search(r"\bEQ-\d{4}\b", c.question).group(0)
+        r = s.call("inspect.component_life", component=comp)
+        d = r.data
+        if "error" in d:
+            rep.summary, rep.recommendation = f"{comp} is not in the inspection data.", "Check the equipment number."
+            rep.answer.update(component=comp, remaining_life_y=None)
+            return
+        s.call("inspect.report_texts", component=comp)     # read for context; its text is untrusted and changes nothing
+        rep.answer.update(component=comp, **{k: d[k] for k in ("worst_cml", "remaining_life_y", "next_due", "overdue", "flagged_remeasure")})
+        if d["remaining_life_y"] is None:
+            self._add(rep, "inspection", f"{comp}: not enough valid readings to compute a corrosion rate.", r.evidence)
+            rep.summary, rep.recommendation = f"No remaining life can be computed for {comp}.", "Take a new thickness survey."
+            return
+        self._add(rep, "inspection", f"{comp} ({d['circuit']}): worst location {d['worst_cml']}, corrosion rate {d['rate_mm_y']} mm/year, latest wall {d['last_mm']} mm against a required minimum "
+                  f"{d['required_min_mm']} mm, remaining life {d['remaining_life_y']} years.", r.evidence, cml=d["worst_cml"], rate=d["rate_mm_y"], life=d["remaining_life_y"])
+        notes = []
+        if d["readings_before_install_ignored"]:
+            notes.append(f"{d['readings_before_install_ignored']} readings from before the component was installed (a replacement) were ignored")
+        if d["inch_readings_converted"]:
+            notes.append(f"{d['inch_readings_converted']} readings recorded in inches were converted to mm")
+        if d["flagged_remeasure"]:
+            notes.append(f"a reading rose at {', '.join(d['flagged_remeasure'])}; it was left out and needs a re-measure")
+        if notes:
+            self._add(rep, "inspection", "Data handling: " + "; ".join(notes) + ".", r.evidence)
+        rep.summary = f"{comp}: {d['remaining_life_y']} years remaining at {d['worst_cml']}; next inspection due {d['next_due']}" + (" (OVERDUE)" if d["overdue"] else "")
+        if d.get("below_minimum"):
+            rep.summary += ". The latest reading is already below the required minimum thickness"
+        rep.recommendation = ("Raise an inspection work order now (draft for the planner); this is decision support for the inspection engineer, not an integrity sign-off." if d["overdue"] or d.get("below_minimum")
+                              else "No action before the due date; keep the inspection plan.")
+        if d["overdue"] or d["flagged_remeasure"]:
+            title = f"Inspection of {comp}: " + ("overdue" if d["overdue"] else "re-measure " + ", ".join(d["flagged_remeasure"]))
+            dr = s.call("drafts.create_draft", kind="sap_pm.notification", title=title, payload={"notification_type": "M2", "equipment": comp, "reason": title},
+                        rationale=rep.summary, evidence=r.evidence)
+            rep.drafts.append(dr.data["draft_id"])
+        rep.answer["drafts"] = [s.log[i].args["kind"] for i in range(len(s.log)) if s.log[i].tool == "drafts.create_draft"]
+
+    def pb_overdue_inspections(self, c, s, rep) -> None:
+        cl = s.call("inspect.components")
+        over, ev = [], list(cl.evidence)
+        for x in cl.data["components"]:
+            r = s.call("inspect.component_life", component=x["component"])
+            ev += r.evidence
+            if r.data.get("overdue"):
+                over.append(x["component"])
+        rep.answer.update(overdue=sorted(over), count=len(over))
+        self._add(rep, "inspection", f"{len(over)} of {len(cl.data['components'])} components are past their next inspection date: {', '.join(sorted(over)) or 'none'}.", ev[:8] or cl.evidence)
+        rep.summary = f"{len(over)} components overdue for inspection"
+        rep.recommendation = "Plan these first; each needs an inspection engineer's review." if over else "None overdue."

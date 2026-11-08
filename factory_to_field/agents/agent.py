@@ -15,7 +15,7 @@ from pathlib import Path
 from ..kg.store import KG
 from . import tools as _tools  # noqa: F401  (registers the tools)
 from .core import DEFAULT_KG, DEFAULT_WORLD, Ctx, Session, parse_ts
-from .playbooks import FieldPlaybooks
+from .playbooks import FieldPlaybooks, InspectionPlaybooks
 
 
 @dataclass
@@ -68,7 +68,7 @@ def _p(x: str) -> str:
     return x  # canonical ids are already colon-separated
 
 
-class Agent(FieldPlaybooks):
+class Agent(FieldPlaybooks, InspectionPlaybooks):
     def __init__(self, kg: KG | None = None, world: Path | None = None, planner: str = "playbook", src=None) -> None:
         if kg is None and world is not None and Path(world).resolve() != Path(DEFAULT_WORLD).resolve():
             raise ValueError("a world other than the default needs a knowledge graph built from it: pass kg=")  # else answers come from another world's graph
@@ -83,6 +83,10 @@ class Agent(FieldPlaybooks):
         q = c.question.lower()
         if re.search(r"set[- ]?point|change the|write .* to|set .* hz|\bset\b.*\bto\b \d", q):
             return "ot_write_request"
+        if re.search(r"\beq-\d{4}\b", q):
+            return "remaining_life"
+        if "overdue" in q and "inspection" in q:
+            return "overdue_inspections"
         if "common cause" in q or "across" in q and "customer" in q or "exposure" in q or "containment" in q:
             return "containment"
         if "last notification" in q or "history of notif" in q or "summar" in q and "notif" in q:

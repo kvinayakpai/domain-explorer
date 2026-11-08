@@ -1,0 +1,52 @@
+id: https://domain-explorer.dev/ftf/fixed_equipment
+name: ftf_fixed_equipment
+title: Factory to Field — fixed-equipment integrity module
+description: >-
+  Vessels and piping whose wall thins with time. A ThicknessLocation (a condition monitoring location, CML) is where a
+  reading is taken; a PressureComponent is the physical spool or shell it sits on. History belongs to the location only
+  while the same component is installed: a replacement starts a new baseline. Draft design, rules unconfirmed by an
+  inspection engineer (see FIXED_EQUIPMENT.md).
+version: 0.1.0
+prefixes:
+  ftf: https://domain-explorer.dev/ftf#
+  linkml: https://w3id.org/linkml/
+default_prefix: ftf
+default_range: string
+imports:
+  - linkml:types
+  - core
+
+classes:
+  Circuit:
+    is_a: Entity
+    description: A corrosion loop - components in the same service with the same expected damage mechanisms.
+    attributes:
+      service: {}
+  PressureComponent:
+    is_a: PhysicalEquipment
+    description: A vessel shell, pipe spool or fitting. Serialised like any other unit; thickness limits live here.
+    attributes:
+      circuit: {range: Circuit}
+      nominal_mm: {range: float}
+      required_min_mm: {range: float}
+  ThicknessLocation:
+    is_a: Entity
+    description: A condition monitoring location (CML) on a component. It can be relabelled after a re-survey; the alias table links old and new ids.
+    attributes:
+      component: {range: PressureComponent}
+  ThicknessReading:
+    is_a: Entity
+    attributes:
+      location: {range: ThicknessLocation, required: true}
+      read_on: {range: date}
+      value: {range: float}
+      engineering_unit: {description: "mm or in; always convert before use"}
+      method: {description: "UT | RT"}
+      anomaly: {range: boolean, description: "Higher than the reading before it by more than the tolerance; excluded from rates and flagged for re-measure"}
+  InspectionRecord:
+    is_a: Entity
+    attributes:
+      component: {range: PressureComponent}
+      done_on: {range: date}
+      next_due: {range: date}
+      summary: {description: "Free text from a report; untrusted, never changes behaviour"}

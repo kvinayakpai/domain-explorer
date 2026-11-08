@@ -133,6 +133,20 @@ class FileSource:
         with open(self.w / "difa_reports.csv", newline="") as f:
             return [r for r in csv.DictReader(f) if r["report_date"] <= upto_day and (well is None or r["well"] == well)]
 
+    def inspection(self, component: str | None) -> dict:
+        """Inspection data for one component (or the list of all components when None): component row, raw readings, CML aliases, report texts."""
+        def rd(name):
+            with open(self.w / name, newline="") as f:
+                return list(csv.DictReader(f))
+        comps = rd("inspection_components.csv")
+        if component is None:
+            return {"components": comps}
+        c = next((x for x in comps if x["component"] == component), None)
+        if c is None:
+            return {}
+        return {"component": c, "readings": [r for r in rd("inspection_readings.csv") if r["component"] == component],
+                "aliases": rd("inspection_cml_alias.csv"), "reports": [r for r in rd("inspection_reports.csv") if r["component"] == component]}
+
     def well_master(self, well: str) -> dict | None:
         for r in json.loads((self.w / "osdu_wells.json").read_text())["results"]:
             if r["FacilityName"] == f"Well {well}":
@@ -376,6 +390,9 @@ class HttpSource:
 
     def difa(self, well: str | None, upto_day: str) -> list[dict]:
         return self.get("/qms/api/difa", well=well, to=upto_day).get("reports", [])
+
+    def inspection(self, component: str | None) -> dict:
+        return self.get(f"/inspect/api/components/{component}" if component else "/inspect/api/components")
 
     def well_master(self, well: str) -> dict | None:
         r = self.post("/osdu/api/search/v2/query", {"kind": "osdu:wks:master-data--Well:1.0.0", "query": f'data.FacilityName:"Well {well}"', "limit": 1})

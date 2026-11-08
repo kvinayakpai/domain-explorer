@@ -448,6 +448,11 @@ class Handler(BaseHTTPRequestHandler):
             c = st.c("kestrel_qms.sqlite")
             cur = c.execute("SELECT w.* FROM warranty_claims w JOIN claim_units u ON u.claim_no=w.claim_no WHERE u.serial_no=?", (q["serial"],)) if q.get("serial") else c.execute("SELECT * FROM warranty_claims")
             return 200, {"claims": [dict(r) for r in cur]}
+        m = re.fullmatch(r"/inspect/api/components(?:/([^/]+))?", p)
+        if m:
+            from ..agents.sources import FileSource
+            r = FileSource(st.w).inspection(m.group(1))
+            return (200, r) if r else (404, {"error": "unknown component"})
         if p == "/qms/api/difa":
             import csv
             with open(st.w / "difa_reports.csv", newline="") as f:

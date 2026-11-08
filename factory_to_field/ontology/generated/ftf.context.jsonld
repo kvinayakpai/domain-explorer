@@ -39,6 +39,9 @@
       "trigger": {
          "@id": "trigger"
       },
+      "service": {
+         "@id": "service"
+      },
       "barrels_per_day": {
          "@type": "xsd:float",
          "@id": "barrels_per_day"
@@ -183,6 +186,18 @@
          "@id": "site"
       },
       "id": "@id",
+      "component": {
+         "@type": "@id",
+         "@id": "component"
+      },
+      "done_on": {
+         "@type": "xsd:date",
+         "@id": "done_on"
+      },
+      "next_due": {
+         "@type": "xsd:date",
+         "@id": "next_due"
+      },
       "position": {
          "@type": "@id",
          "@id": "position"
@@ -191,11 +206,6 @@
          "@id": "grain"
       },
       "method": {
-         "@context": {
-            "text": "skos:notation",
-            "description": "skos:prefLabel",
-            "meaning": "@id"
-         },
          "@id": "method"
       },
       "query": {
@@ -273,6 +283,18 @@
       "serial": {
          "@id": "serial"
       },
+      "circuit": {
+         "@type": "@id",
+         "@id": "circuit"
+      },
+      "nominal_mm": {
+         "@type": "xsd:float",
+         "@id": "nominal_mm"
+      },
+      "required_min_mm": {
+         "@type": "xsd:float",
+         "@id": "required_min_mm"
+      },
       "capacity_bpd": {
          "@type": "xsd:integer",
          "@id": "capacity_bpd"
@@ -283,9 +305,6 @@
       "rated_flow_m3h": {
          "@type": "xsd:float",
          "@id": "rated_flow_m3h"
-      },
-      "service": {
-         "@id": "service"
       },
       "end": {
          "@type": "xsd:date",
@@ -376,6 +395,18 @@
       "test_kind": {
          "@id": "test_kind"
       },
+      "anomaly": {
+         "@type": "xsd:boolean",
+         "@id": "anomaly"
+      },
+      "location": {
+         "@type": "@id",
+         "@id": "location"
+      },
+      "read_on": {
+         "@type": "xsd:date",
+         "@id": "read_on"
+      },
       "to_date": {
          "@type": "xsd:date",
          "@id": "to_date"
@@ -415,6 +446,9 @@
       "Case": {
          "@id": "Case"
       },
+      "Circuit": {
+         "@id": "Circuit"
+      },
       "Deferment": {
          "@id": "Deferment"
       },
@@ -451,6 +485,9 @@
       "FunctionalLocation": {
          "@id": "FunctionalLocation"
       },
+      "InspectionRecord": {
+         "@id": "InspectionRecord"
+      },
       "Installation": {
          "@id": "Installation"
       },
@@ -481,6 +518,9 @@
       "PhysicalEquipment": {
          "@id": "PhysicalEquipment"
       },
+      "PressureComponent": {
+         "@id": "PressureComponent"
+      },
       "ProcessUnit": {
          "@id": "ProcessUnit"
       },
@@ -507,6 +547,12 @@
       },
       "TestRecord": {
          "@id": "TestRecord"
+      },
+      "ThicknessLocation": {
+         "@id": "ThicknessLocation"
+      },
+      "ThicknessReading": {
+         "@id": "ThicknessReading"
       },
       "WarrantyClaim": {
          "@id": "WarrantyClaim"

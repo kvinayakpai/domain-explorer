@@ -50,8 +50,8 @@ Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] 
 - [x] 4.6 Second use case: fixed-equipment integrity (corrosion rates, inspection records, remaining life for vessels and piping). Needs its own ontology slice, world generator, playbooks and gold cases; start with a design note. Design note written: `FIXED_EQUIPMENT.md` (ontology slice, traps, key-first generator, playbooks, gold). Implementation NOT started; that is 4.7 below.
 - [ ] 4.7 Build the fixed-equipment slice per `FIXED_EQUIPMENT.md`, key first. Big: needs an inspection engineer to confirm the formulae.
   - [x] 4.7a Generator + key + independent re-derivation: `world/gen_fixed.py` (own random stream, so no pump-world file or answer changed), files `inspection_*.csv`, `answer_key["FIXED"]`, `eval/independent_key.derive_fixed/compare_fixed` (also run by the seed sweep). Traps planted: 2020 campaign in inches, anomalous rise, CML relabel, single-reading CML, 3 replaced components, injected report text. Rules are the author's reading and UNCONFIRMED (see the gen_fixed docstring).
-  - [ ] 4.7b Ontology module + SHACL for the slice; KG load; resolver rule for CML aliases.
-  - [ ] 4.7c Tools + playbooks (remaining life, overdue list, anomaly check) + gold cases (~25/world) + held-out seeds.
+  - [x] 4.7b Ontology module `fixed_equipment.yaml` (5 classes, imported by ftf.yaml, OWL/SHACL/Pydantic/TS regenerated, mappings added). NOT done: loading inspection data into the knowledge graph, and a resolver rule for CML aliases (the agent applies the alias table itself in `agents/inspect_calc.py`, reading files/HTTP directly).
+  - [x] 4.7c Tools (`inspect.*`, new MCP server), playbooks (`remaining_life`, `overdue_inspections`), sim route `/inspect/api/components`, gold cases (one per component + overdue list, ~36 per world; 92 on seed 42), held-out seeds 1-3 pass. Found and fixed on the way: the replacement trap did not bite (no old-metal readings were generated), and the verifier rejected an unsourced count. Rules still unconfirmed by an inspection engineer.
 
 ## Decisions (answered 2026-11-08)
 
@@ -70,6 +70,8 @@ Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] 
 - 2026-11-07: Seed sweep before the fix: links recall 0.998-0.9995, precision 1.0 on all seeds, but the agent passed 8/10 gold cases on seeds 1-3 (10/10 on seed 42). Causes: answer key held typed-in constants (DIFA count, oil rate, notification number). Fixed in the key and playbook; after the fixes (key computed, DIFA count filtered to the as-of date, CASE-3005 well chosen from the key, injection note number from the world) seeds 42 and 1-7 all score 10/10; link recall 0.9983-0.9998, precision 1.0.
 
 ## Session log
+
+- 2026-11-08: 4.7b/c done (see item). All plan items are now ticked except the expert review of the fixed-equipment rules and the 4.7b KG-load gap.
 
 - 2026-11-08: 4.7a done. Next: 4.7b.
 

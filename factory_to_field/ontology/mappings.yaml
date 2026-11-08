@@ -45,3 +45,8 @@ classes:
   PumpPosition:      {cfihos: {term: "Tag with equipment class 'pump'", relation: close, confidence: medium}, api610: {term: "pump type code (e.g. BB2 between-bearings)", relation: related, confidence: high}, iso14224: {term: "Equipment class: pumps", relation: broad, confidence: high}}
   Stream:            {dexpi: {term: "PipingNetworkSystem / stream", relation: close, confidence: low}}
   ManagementOfChange: {cfihos: {term: "(none; handled in project change management)", relation: none, confidence: low}}
+  Circuit:           {iso14224: {term: "(none; corrosion loop is an RBI/API 570 concept)", relation: none, confidence: low}, note: "corrosion circuit / injection point loop from API 570 and API 580 practice"}
+  PressureComponent: {iso14224: {term: "Equipment class: piping / pressure vessel", relation: broad, confidence: medium}, cfihos: {term: "Tag with equipment class 'vessel' or 'piping'", relation: close, confidence: medium}}
+  ThicknessLocation: {note: "CML / TML in API 510 and 570 practice; no ISO 14224 counterpart", cfihos: {term: "(none)", relation: none, confidence: low}}
+  ThicknessReading:  {note: "inspection measurement; no counterpart in the three standards"}
+  InspectionRecord:  {cfihos: {term: "Inspection record / document", relation: related, confidence: low}, iso14224: {term: "Inspection (maintenance record type)", relation: broad, confidence: medium}}

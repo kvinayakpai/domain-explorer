@@ -40,6 +40,10 @@ python -m factory_to_field.pilot.review list       # identity-resolution review 
 python -m factory_to_field.agents.eval_live        # gold + adversarial cases; --planner model needs ANTHROPIC_API_KEY
 ```
 
+## Second use case: fixed-equipment integrity
+
+Thickness readings, corrosion rate, remaining life and next inspection due for vessels and piping, with traps (replaced spools, inch/mm campaigns, a reading that rises, relabelled CMLs, a single reading, injected report text). Design in `FIXED_EQUIPMENT.md`; generator `world/gen_fixed.py`; agent `inspect.*` tools and the `remaining_life` / `overdue_inspections` playbooks. The formulae are the author's reading of common practice and have not been confirmed by an inspection engineer; it is decision support, not an integrity sign-off.
+
 ## The ideas that matter
 
 - **Position versus unit.** A functional location (P-101A) and the serialised unit installed in it are different things joined by a dated installation. A failure belongs to the unit that was installed *then*. Searching by today's serial misattributes it (gold case CASE-3002).

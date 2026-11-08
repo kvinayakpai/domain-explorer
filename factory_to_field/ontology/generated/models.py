@@ -70,7 +70,13 @@ linkml_meta = LinkMLMeta({'default_prefix': 'ftf',
      'default_range': 'string',
      'description': 'Umbrella schema. Import this one to get every module.',
      'id': 'https://domain-explorer.dev/ftf',
-     'imports': ['linkml:types', 'core', 'refinery', 'oilfield', 'factory', 'kpi'],
+     'imports': ['linkml:types',
+                 'core',
+                 'refinery',
+                 'oilfield',
+                 'factory',
+                 'kpi',
+                 'fixed_equipment'],
      'name': 'ftf',
      'prefixes': {'ftf': {'prefix_prefix': 'ftf',
                           'prefix_reference': 'https://domain-explorer.dev/ftf#'},
@@ -241,7 +247,7 @@ class SourceIdentifier(ConfiguredBaseModel):
     system: str = Field(default=..., description="""Source system, e.g. SAP-PM, PI, P&ID, MES, PLM""", json_schema_extra = { "linkml_meta": {'domain_of': ['SourceIdentifier']} })
     world: World = Field(default=..., json_schema_extra = { "linkml_meta": {'domain_of': ['SourceIdentifier']} })
     kind: Optional[str] = Field(default=None, description="""What the key is: tag, serial, floc, equipment_no, document ...""", json_schema_extra = { "linkml_meta": {'domain_of': ['SourceIdentifier', 'ESPComponent']} })
-    value: str = Field(default=..., json_schema_extra = { "linkml_meta": {'domain_of': ['SourceIdentifier', 'TestRecord']} })
+    value: str = Field(default=..., json_schema_extra = { "linkml_meta": {'domain_of': ['SourceIdentifier', 'TestRecord', 'ThicknessReading']} })
 
 
 class Organization(Entity):
@@ -323,7 +329,7 @@ class Signal(Entity):
 
     measures_position: Optional[list[str]] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['Signal']} })
     quantity: Optional[str] = Field(default=None, description="""vibration_velocity | motor_temperature | intake_pressure ...""", json_schema_extra = { "linkml_meta": {'domain_of': ['Signal']} })
-    engineering_unit: Optional[str] = Field(default=None, description="""mm/s | degC | bar ...""", json_schema_extra = { "linkml_meta": {'domain_of': ['Signal', 'TestRecord']} })
+    engineering_unit: Optional[str] = Field(default=None, description="""mm/s | degC | bar ...""", json_schema_extra = { "linkml_meta": {'domain_of': ['Signal', 'TestRecord', 'ThicknessReading']} })
     alarm_high: Optional[float] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['Signal']} })
     sample_seconds: Optional[int] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['Signal']} })
     id: str = Field(default=..., description="""Stable graph identifier (a CURIE-like local name)""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
@@ -338,7 +344,7 @@ class Document(Entity):
     revision: Optional[str] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['Document']} })
     depicts: Optional[list[str]] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['Document']} })
     about_unit: Optional[list[str]] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['Document', 'Notification']} })
-    summary: Optional[str] = Field(default=None, description="""Findings or abstract, as written""", json_schema_extra = { "linkml_meta": {'domain_of': ['Document']} })
+    summary: Optional[str] = Field(default=None, description="""Findings or abstract, as written""", json_schema_extra = { "linkml_meta": {'domain_of': ['Document', 'InspectionRecord']} })
     issued_on: Optional[date] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['Document']} })
     id: str = Field(default=..., description="""Stable graph identifier (a CURIE-like local name)""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
     label: Optional[str] = Field(default=None, description="""Human-readable label""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
@@ -462,7 +468,7 @@ class LinkAssertion(ConfiguredBaseModel):
     subject: str = Field(default=..., json_schema_extra = { "linkml_meta": {'domain_of': ['LinkAssertion']} })
     predicate: str = Field(default=..., json_schema_extra = { "linkml_meta": {'domain_of': ['LinkAssertion']} })
     object: str = Field(default=..., json_schema_extra = { "linkml_meta": {'domain_of': ['LinkAssertion']} })
-    method: LinkMethod = Field(default=..., json_schema_extra = { "linkml_meta": {'domain_of': ['LinkAssertion', 'KpiDefinition']} })
+    method: LinkMethod = Field(default=..., json_schema_extra = { "linkml_meta": {'domain_of': ['LinkAssertion', 'KpiDefinition', 'ThicknessReading']} })
     confidence: float = Field(default=..., ge=0, le=1, json_schema_extra = { "linkml_meta": {'domain_of': ['LinkAssertion']} })
     evidence: Optional[str] = Field(default=None, description="""Rule name or the record pair the link came from""", json_schema_extra = { "linkml_meta": {'domain_of': ['LinkAssertion']} })
 
@@ -487,7 +493,7 @@ class ProcessUnit(FunctionalLocation):
 class PumpPosition(FunctionalLocation):
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://domain-explorer.dev/ftf/refinery'})
 
-    service: Optional[str] = Field(default=None, description="""Pumped service""", json_schema_extra = { "linkml_meta": {'domain_of': ['PumpPosition']} })
+    service: Optional[str] = Field(default=None, description="""Pumped service""", json_schema_extra = { "linkml_meta": {'domain_of': ['PumpPosition', 'Circuit']} })
     rated_flow_m3h: Optional[float] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['PumpPosition']} })
     api_type: Optional[str] = Field(default=None, description="""API 610 type, e.g. BB2""", json_schema_extra = { "linkml_meta": {'domain_of': ['PumpPosition']} })
     site: Optional[str] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['FunctionalLocation']} })
@@ -659,8 +665,8 @@ class TestRecord(Entity):
     unit: Optional[str] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['Installation', 'BuildRecord', 'TestRecord', 'Shipment']} })
     test_kind: Optional[str] = Field(default=None, description="""performance | leak | press_fit_force""", json_schema_extra = { "linkml_meta": {'domain_of': ['TestRecord']} })
     passed: Optional[bool] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['TestRecord']} })
-    value: Optional[float] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['SourceIdentifier', 'TestRecord']} })
-    engineering_unit: Optional[str] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['Signal', 'TestRecord']} })
+    value: Optional[float] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['SourceIdentifier', 'TestRecord', 'ThicknessReading']} })
+    engineering_unit: Optional[str] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['Signal', 'TestRecord', 'ThicknessReading']} })
     id: str = Field(default=..., description="""Stable graph identifier (a CURIE-like local name)""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
     label: Optional[str] = Field(default=None, description="""Human-readable label""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
     identifiers: Optional[list[SourceIdentifier]] = Field(default=None, description="""The names this thing has in each source system (the crosswalk).""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
@@ -707,9 +713,79 @@ class KpiDefinition(Entity):
 
     question: Optional[str] = Field(default=None, description="""The decision the KPI supports""", json_schema_extra = { "linkml_meta": {'domain_of': ['KpiDefinition']} })
     grain: Optional[str] = Field(default=None, description="""unit | position | fleet | lot""", json_schema_extra = { "linkml_meta": {'domain_of': ['KpiDefinition']} })
-    method: Optional[str] = Field(default=None, description="""How it is computed, in one sentence""", json_schema_extra = { "linkml_meta": {'domain_of': ['LinkAssertion', 'KpiDefinition']} })
+    method: Optional[str] = Field(default=None, description="""How it is computed, in one sentence""", json_schema_extra = { "linkml_meta": {'domain_of': ['LinkAssertion', 'KpiDefinition', 'ThicknessReading']} })
     standard: Optional[str] = Field(default=None, description="""Standard it follows, if any""", json_schema_extra = { "linkml_meta": {'domain_of': ['KpiDefinition']} })
     query: Optional[str] = Field(default=None, description="""Name of the SPARQL file that computes it""", json_schema_extra = { "linkml_meta": {'domain_of': ['KpiDefinition']} })
+    id: str = Field(default=..., description="""Stable graph identifier (a CURIE-like local name)""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
+    label: Optional[str] = Field(default=None, description="""Human-readable label""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
+    identifiers: Optional[list[SourceIdentifier]] = Field(default=None, description="""The names this thing has in each source system (the crosswalk).""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
+
+
+class Circuit(Entity):
+    """
+    A corrosion loop - components in the same service with the same expected damage mechanisms.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://domain-explorer.dev/ftf/fixed_equipment'})
+
+    service: Optional[str] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['PumpPosition', 'Circuit']} })
+    id: str = Field(default=..., description="""Stable graph identifier (a CURIE-like local name)""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
+    label: Optional[str] = Field(default=None, description="""Human-readable label""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
+    identifiers: Optional[list[SourceIdentifier]] = Field(default=None, description="""The names this thing has in each source system (the crosswalk).""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
+
+
+class PressureComponent(PhysicalEquipment):
+    """
+    A vessel shell, pipe spool or fitting. Serialised like any other unit; thickness limits live here.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://domain-explorer.dev/ftf/fixed_equipment'})
+
+    circuit: Optional[str] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['PressureComponent']} })
+    nominal_mm: Optional[float] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['PressureComponent']} })
+    required_min_mm: Optional[float] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['PressureComponent']} })
+    serial: str = Field(default=..., json_schema_extra = { "linkml_meta": {'domain_of': ['PhysicalEquipment']} })
+    model: Optional[str] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['PhysicalEquipment']} })
+    manufacturer: Optional[str] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['PhysicalEquipment']} })
+    built_on: Optional[date] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['PhysicalEquipment', 'BuildRecord']} })
+    parent_unit: Optional[str] = Field(default=None, description="""Set when this is a component of another unit""", json_schema_extra = { "linkml_meta": {'domain_of': ['PhysicalEquipment']} })
+    build_lots: Optional[list[str]] = Field(default=None, description="""Material lots built into this unit (maker genealogy)""", json_schema_extra = { "linkml_meta": {'domain_of': ['PhysicalEquipment']} })
+    id: str = Field(default=..., description="""Stable graph identifier (a CURIE-like local name)""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
+    label: Optional[str] = Field(default=None, description="""Human-readable label""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
+    identifiers: Optional[list[SourceIdentifier]] = Field(default=None, description="""The names this thing has in each source system (the crosswalk).""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
+
+
+class ThicknessLocation(Entity):
+    """
+    A condition monitoring location (CML) on a component. It can be relabelled after a re-survey; the alias table links old and new ids.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://domain-explorer.dev/ftf/fixed_equipment'})
+
+    component: Optional[str] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['ThicknessLocation', 'InspectionRecord']} })
+    id: str = Field(default=..., description="""Stable graph identifier (a CURIE-like local name)""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
+    label: Optional[str] = Field(default=None, description="""Human-readable label""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
+    identifiers: Optional[list[SourceIdentifier]] = Field(default=None, description="""The names this thing has in each source system (the crosswalk).""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
+
+
+class ThicknessReading(Entity):
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://domain-explorer.dev/ftf/fixed_equipment'})
+
+    location: str = Field(default=..., json_schema_extra = { "linkml_meta": {'domain_of': ['ThicknessReading']} })
+    read_on: Optional[date] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['ThicknessReading']} })
+    value: Optional[float] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['SourceIdentifier', 'TestRecord', 'ThicknessReading']} })
+    engineering_unit: Optional[str] = Field(default=None, description="""mm or in; always convert before use""", json_schema_extra = { "linkml_meta": {'domain_of': ['Signal', 'TestRecord', 'ThicknessReading']} })
+    method: Optional[str] = Field(default=None, description="""UT | RT""", json_schema_extra = { "linkml_meta": {'domain_of': ['LinkAssertion', 'KpiDefinition', 'ThicknessReading']} })
+    anomaly: Optional[bool] = Field(default=None, description="""Higher than the reading before it by more than the tolerance; excluded from rates and flagged for re-measure""", json_schema_extra = { "linkml_meta": {'domain_of': ['ThicknessReading']} })
+    id: str = Field(default=..., description="""Stable graph identifier (a CURIE-like local name)""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
+    label: Optional[str] = Field(default=None, description="""Human-readable label""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
+    identifiers: Optional[list[SourceIdentifier]] = Field(default=None, description="""The names this thing has in each source system (the crosswalk).""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
+
+
+class InspectionRecord(Entity):
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://domain-explorer.dev/ftf/fixed_equipment'})
+
+    component: Optional[str] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['ThicknessLocation', 'InspectionRecord']} })
+    done_on: Optional[date] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['InspectionRecord']} })
+    next_due: Optional[date] = Field(default=None, json_schema_extra = { "linkml_meta": {'domain_of': ['InspectionRecord']} })
+    summary: Optional[str] = Field(default=None, description="""Free text from a report; untrusted, never changes behaviour""", json_schema_extra = { "linkml_meta": {'domain_of': ['Document', 'InspectionRecord']} })
     id: str = Field(default=..., description="""Stable graph identifier (a CURIE-like local name)""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
     label: Optional[str] = Field(default=None, description="""Human-readable label""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
     identifiers: Optional[list[SourceIdentifier]] = Field(default=None, description="""The names this thing has in each source system (the crosswalk).""", json_schema_extra = { "linkml_meta": {'domain_of': ['Entity']} })
@@ -753,3 +829,8 @@ Shipment.model_rebuild()
 NonConformance.model_rebuild()
 EightD.model_rebuild()
 KpiDefinition.model_rebuild()
+Circuit.model_rebuild()
+PressureComponent.model_rebuild()
+ThicknessLocation.model_rebuild()
+ThicknessReading.model_rebuild()
+InspectionRecord.model_rebuild()

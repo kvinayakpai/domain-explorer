@@ -64,9 +64,11 @@ def build(seed: int) -> dict:
         for cml in cml_of[c["component"]]:
             local = r * float(rng.uniform(0.85, 1.25))
             for d in campaigns:
-                if d < c["installed"]:
+                # a replaced spool keeps its location ids: old-metal readings (much thinner by 2021) sit in the same file before the new baseline
+                base = date.fromisoformat(c["replaces"]) if c["replaces"] and d < c["installed"] else c["installed"]
+                if d < base:
                     continue
-                t = c["nominal_mm"] - local * _years(c["installed"], d) + float(rng.normal(0, 0.04))
+                t = c["nominal_mm"] - local * (1.6 if base is not c["installed"] else 1.0) * _years(base, d) + float(rng.normal(0, 0.04))
                 reads.append({"cml": cml, "component": c["component"], "date": d, "value": round(t, 2), "unit": "mm", "method": "UT", "gauge": "G-" + str(int(rng.integers(1, 5))), "inspector": "I-" + str(int(rng.integers(1, 6)))})
     # ---- planted traps (chosen deterministically so the key can name them)
     tr = {}
