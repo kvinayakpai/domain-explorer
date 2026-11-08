@@ -410,14 +410,15 @@ class Pipeline:
             alias = pi.execute("SELECT current_name FROM tag_alias WHERE legacy_name=?", (name,)).fetchone()
             if alias:
                 canon_name, method, conf, ev = alias[0], "alias_table", 1.0, f"retired tag {name}, renamed {alias[0]} on migration"
-            m = re.match(r"^(\d\d)P(\d{3})([AB])[._](VIB_DE|VIB_NDE|BRG_T|RUN)$", canon_name)
+            norm_name = re.sub(r"(?<=\d[AB])[-.]", "_", canon_name.upper()).replace("-", "_")  # lower case and hyphen variants of the grammar
+            m = re.match(r"^(\d\d)P(\d{3})([AB])[._](VIB_DE|VIB_NDE|BRG_T|RUN)$", norm_name)
             sfx = None
             if m:
                 tag = f"{m.group(1)}-P-{m.group(2)}{m.group(3)}"
                 pos, sfx = self.pos_by_tag.get(tag), m.group(4)
                 if pos and not alias:
                     method, conf, ev = "tag_rule", 0.98, f"tag grammar AAPNNNL.SUFFIX -> {tag}"
-            mi = re.match(r"^(\d\d)PI(\d{4})\.PV$", canon_name)
+            mi = re.match(r"^(\d\d)PI(\d{4})[._]PV$", norm_name)
             multi: list[str] = []
             if mi:
                 multi = self.instrument_pumps.get(f"{mi.group(1)}-PI-{mi.group(2)}", [])

@@ -219,6 +219,9 @@ def _hist_db(w: World, out: Path, name: str, site_filter, tr: Truth, system: str
                 name = name[2:].replace(".", "_")
             elif r < 0.04:  # an orphan point with no usable description
                 name, desc = f"PT{tid:04d}", ""
+        if system == "PI" and w.noise.get("tag_variant") and not pinned and s["site"] != "site:R2" and name == s["tag"] and w.rng.random() < w.noise["tag_variant"]:
+            # a grammar the resolver was not written against; descriptor and asset path still identify the position
+            name = name.lower() if w.rng.random() < 0.5 else name.replace(".", "-").replace("_", "-")
         s = dict(s, tag=name, desc=desc)
         unit = s["eng_unit"]
         alarm = s["alarm_high"]
