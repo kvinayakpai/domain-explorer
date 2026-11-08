@@ -57,6 +57,15 @@ def run_seed(seed: int, agent: bool = True, noise: str = "base") -> dict:
     return r
 
 
+def summary(rows: list[dict]) -> dict:
+    """Mean and worst case over held-out worlds: the worst case is the number to quote, not the dev seed."""
+    rec = [r["links"]["recall"] for r in rows]
+    pre = [r["links"]["precision"] for r in rows]
+    ag = [r["agent"] if "cases_ok" in r.get("agent", {}) else {"cases_ok": 0, "cases_total": 10} for r in rows]  # a crash is a failure, not a missing row
+    return {"worlds": len(rows), "recall_mean": round(sum(rec) / len(rec), 4), "recall_min": min(rec), "precision_mean": round(sum(pre) / len(pre), 4), "precision_min": min(pre),
+            "cases_ok": sum(a["cases_ok"] for a in ag), "cases_total": sum(a["cases_total"] for a in ag), "worlds_with_failure": sum(a["cases_ok"] < a["cases_total"] for a in ag)}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--seeds", type=int, nargs="*", default=[DEV_SEED, 1, 2, 3, 4])
@@ -74,8 +83,13 @@ def main() -> None:
               + (f" | agent {g.get('cases_ok')}/{g.get('cases_total')}" if "cases_ok" in g else (f" | agent {g.get('error')}" if g else "")), flush=True)
         for c, why in g.get("failed", {}).items():
             print(f"      {c}: {'; '.join(why)[:160]}")
+    held = [r for r in rows if not r["dev"] and "links" in r]
+    if held:
+        s = summary(held)
+        print(f"held-out ({len(held)} worlds, {a.noise}): recall mean {s['recall_mean']} min {s['recall_min']} | precision mean {s['precision_mean']} min {s['precision_min']} "
+              f"| gold cases passed {s['cases_ok']}/{s['cases_total']} | worlds with a failure {s['worlds_with_failure']}")
     a.out.parent.mkdir(parents=True, exist_ok=True)
-    a.out.write_text(json.dumps(rows, indent=1))
+    a.out.write_text(json.dumps({"rows": rows, "held_out": summary(held) if held else None}, indent=1))
 
 
 if __name__ == "__main__":

@@ -22,7 +22,7 @@ Status key: [x] done, [~] partly, [ ] not started, [!] blocked on the owner (see
 - [x] 1.4 Checked the resolver (`kg/pipeline.py`): no seed-specific constants, only per-method confidences. Its real coupling is to the generator's noise *types* (serial edit distance 1, blank serial, legacy codes, tag grammar), which 1.5 must vary. Noise rates are now a preset (`world/spec.py NOISE`, `--noise base|dirty`); dirty is 3x. Result: seed 1 dirty recall 0.9977, precision 1.0, gold 10/10, so rate is not the weak spot.
 - [~] 1.5 Held-out world (new noise TYPES, not rates; rates done in 1.4). Done: `--noise hostile` adds transposed digits, O/I for 0/1, trailing REV text, lost separators on serials. Resolver fixes: norm_serial handles those, lev counts a swap as one edit, a malformed own-family serial no longer mints a phantom unit. Residual: a transposed serial matching a run-life serial is now fixed (edit distance 1 to a serial in another system); 4 of about 2,900 links remain wrong on hostile seed 1: transposed serials of units that appear in no second system, which cannot be told from a genuinely new unit. Needs a second source (e.g. the ERP shipment list) or a rule that sends unmatched own-family serials to review. Also still to vary: swapped position tags, free-text-only mentions, a different tag grammar. Original scope: a second generator config (different names, tag patterns, ID formats, noise rates) that no code was tuned on. Score once, report as is.
 - [~] 1.6 Independent grading: `eval/independent_key.py` re-derives 8 key values (DIFA count, oil rate, rig date, injection note, A-07 current/previous string, days) from the rendered files only; test_world and every swept seed assert agreement. Still to cover: lot exposure counts, fleet states, Kaplan-Meier medians, containment sizing.
-- [ ] 1.7 Confidence intervals: with N seeds, report mean and worst case, not one number.
+- [x] 1.7 `eval/seeds.py` prints and saves held-out mean and worst case (a crashed agent run counts as 10 failed cases). First 8-world base sweep (seeds 11-18): recall mean 0.9993, min 0.9989; precision 1.0; gold 80/80 after the fix below.
 - [ ] 1.8 More cases: at least 30 gold cases (5 per playbook family) and 15 adversarial, generated from templates across seeds.
 
 ## Phase 2: prove the agent (weeks 3-6)  [!] needs an API key and budget (Decision 2)
@@ -62,6 +62,8 @@ Status key: [x] done, [~] partly, [ ] not started, [!] blocked on the owner (see
 - 2026-11-07: Seed sweep before the fix: links recall 0.998-0.9995, precision 1.0 on all seeds, but the agent passed 8/10 gold cases on seeds 1-3 (10/10 on seed 42). Causes: answer key held typed-in constants (DIFA count, oil rate, notification number). Fixed in the key and playbook; after the fixes (key computed, DIFA count filtered to the as-of date, CASE-3005 well chosen from the key, injection note number from the world) seeds 42 and 1-7 all score 10/10; link recall 0.9983-0.9998, precision 1.0.
 
 ## Session log
+
+- 2026-11-08 (cont.): sweep of seeds 11-18 found a crash on seed 13 (bearing-temp tag with no history -> KeyError 'last_max' in the stuck-sensor playbook); the first summary hid it by skipping crashed worlds. Both fixed; seed 13 added to the CI seeds.
 
 - 2026-11-08 (cont.): 1.6 started: independent key agrees with the generator key on seed 42. Note: the old typed oil rate was 640, the files say 637.8 (it passed only through a 6 bbl/d tolerance).
 
