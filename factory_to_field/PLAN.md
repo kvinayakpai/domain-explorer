@@ -29,7 +29,7 @@ Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] 
 ## Phase 2: prove the agent offline (weeks 3-6)  (no API key: live model runs dropped)
 
 - [-] 2.1 DROPPED (no API key): live model planner runs. Keep the LLMAgent wired and tested with FakeClient; say in the README that no live-model result exists.
-- [ ] 2.2 Offline baselines: playbook agent vs a naive keyword-lookup baseline (no graph, no as-of logic) on the same gold cases, to show what the graph and temporal logic buy.
+- [x] 2.2 Offline baseline: `agents/baseline.py` (NaiveAgent: answers from the current state of each record, same tools and graph, no time logic) and `eval/baseline.py`. Seeds 1-4, generated cases: unit on a past date 16/48 (33%) vs playbook agent 48/48; failures at a position in a month 15/24 (62%) vs 24/24; lot exposure of the string now running 20/46 (44%) vs 46/46. Read with care: the baseline is a strawman I wrote, not a competitor; its 62% on failures is inflated because two of six cases per world ask about months before any history, where 'nothing' is right by luck; the as-of number (right only when the unit has not changed since the date) is the honest measure of what time-aware lookup buys on this data.
 - [ ] 2.3 (optional) Wire agent tools to read through the six `/v/<slug>/` mocks, exercising session refresh and vendor paging.
 - [-] 2.4 DROPPED (Decision 3): real public data validation.
 
@@ -66,6 +66,8 @@ Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] 
 - 2026-11-07: Seed sweep before the fix: links recall 0.998-0.9995, precision 1.0 on all seeds, but the agent passed 8/10 gold cases on seeds 1-3 (10/10 on seed 42). Causes: answer key held typed-in constants (DIFA count, oil rate, notification number). Fixed in the key and playbook; after the fixes (key computed, DIFA count filtered to the as-of date, CASE-3005 well chosen from the key, injection note number from the world) seeds 42 and 1-7 all score 10/10; link recall 0.9983-0.9998, precision 1.0.
 
 ## Session log
+
+- 2026-11-08 (cont.): 2.2 done (numbers in the item). CI on PR 13: the Python job failed once on a GitHub 504 during setup (not a test failure); re-run could not be triggered from the sandbox (403), so a new push retriggers it.
 
 - 2026-11-08 (Phase 1 complete): 1.5, 1.6, 1.8 closed. Remaining plan: 2.2 (offline naive baseline), 2.3 (optional mock wiring), 3.2-3.4, 4.1, 4.2, 4.4-4.6.
 
