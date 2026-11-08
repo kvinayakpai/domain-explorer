@@ -18,7 +18,7 @@ models:
         tests: [unique, not_null]
       - name: item_id
         tests: [unique, not_null]
-  - name: dim_location
+  - name: dim_location_dp
     description: Location dimension keyed by md5(location_id).
     columns:
       - name: location_key
@@ -47,7 +47,7 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('dim_location')
+              to: ref('dim_location_dp')
               field: location_id
   - name: fct_forecast
     description: Grain = one row per forecast prediction; surfaces forecast_qty and 80% prediction interval bands.
@@ -66,7 +66,7 @@ models:
         tests:
           - accepted_values:
               values: [tight, moderate, wide, unknown]
-  - name: fct_forecast_accuracy
+  - name: fct_forecast_accuracy_dp
     description: Grain = one row per forecast/error pair, with accuracy and PI hit-rate.
     columns:
       - name: accuracy_key

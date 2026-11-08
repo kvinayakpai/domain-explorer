@@ -46,7 +46,7 @@ Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] 
 - [ ] 4.2 Ontology: external mappings (ISO 14224, CFIHOS, OSDU) for the 36 classes.
 - [x] 4.3 Mocks cut from 41 to 6 deep ones (pi_af, deltav, maximo, system1, ge_apm, esp_difa): vendor paging (Links.Next, nextCursor, OData nextLink, OSLC), session expiry for deltav/system1/ge_apm; 35 renamed copies deleted and listed in `vendors.RETIRED`. Still no consumer in the agents: they read through the file source and the original simulators (see 2.3, now optional).
 - [ ] 4.4 Deployable: Dockerfile, docker compose, one-command demo.
-- [ ] 4.5 Repo hygiene: fix the `dim_channel` clash and the 6 duplicate KPI ids in the explorer.
+- [x] 4.5 Repo hygiene: dbt duplicate model names fixed by subdomain suffix (`dim_channel_hotel`, `dim_location_dp`, `fct_allocations_cm`, `fct_forecast_accuracy_dp`; no `.sql` name repeats, no dangling `ref()`); 6 duplicate KPI ids removed from `data/kpis/master.yaml` (kept the richer entries, `tpm.kpi.promo_roi` lists both subdomains). Not run: full `dbt parse` (dbt_utils cannot be installed here, hub.getdbt.com blocked), so checked by script.
 - [ ] 4.6 Second use case: fixed-equipment integrity (corrosion rates, inspection records, remaining life for vessels and piping). Needs its own ontology slice, world generator, playbooks and gold cases; start with a design note.
 
 ## Decisions (answered 2026-11-08)
@@ -66,6 +66,8 @@ Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] 
 - 2026-11-07: Seed sweep before the fix: links recall 0.998-0.9995, precision 1.0 on all seeds, but the agent passed 8/10 gold cases on seeds 1-3 (10/10 on seed 42). Causes: answer key held typed-in constants (DIFA count, oil rate, notification number). Fixed in the key and playbook; after the fixes (key computed, DIFA count filtered to the as-of date, CASE-3005 well chosen from the key, injection note number from the world) seeds 42 and 1-7 all score 10/10; link recall 0.9983-0.9998, precision 1.0.
 
 ## Session log
+
+- 2026-11-08: 4.5 done (see item). Next: 4.4 Docker one-command demo.
 
 - 2026-11-08 (cont.): 2.2 done (numbers in the item). CI on PR 13: the Python job failed once on a GitHub 504 during setup (not a test failure); re-run could not be triggered from the sandbox (403), so a new push retriggers it.
 

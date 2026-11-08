@@ -125,7 +125,7 @@ models:
       - name: instrument_key
         tests:
           - relationships: { to: ref('dim_instrument_capital_markets'), field: instrument_key }
-  - name: fct_allocations
+  - name: fct_allocations_cm
     description: Grain = one row per trade allocation.
     columns:
       - name: allocation_key

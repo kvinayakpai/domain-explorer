@@ -488,11 +488,6 @@ kpis:
   - { id: pp.kpi.activation_rate, name: Prepaid Activation Rate, formula: activated / issued, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [prepaid_cards] }
   - { id: pp.kpi.fraud_loss_bps, name: Prepaid Fraud Loss BPS, formula: fraud_loss / spend, unit: bps, direction: lower_is_better, vertical: BFSI, subdomains: [prepaid_cards] }
   - { id: pp.kpi.cards_in_force, name: Cards In Force, formula: count(active_cards), unit: cards, direction: higher_is_better, vertical: BFSI, subdomains: [prepaid_cards] }
-  - { id: stl.kpi.same_day_settle, name: Same-Day Settlement Rate, formula: same_day_settled / total_trades, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [settlement_clearing] }
-  - { id: stl.kpi.fail_rate, name: Settlement Fail Rate, formula: failed / total_settlements, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [settlement_clearing] }
-  - { id: stl.kpi.recon_break_count, name: Recon Break Count, formula: open_breaks_eod, unit: count, direction: lower_is_better, vertical: BFSI, subdomains: [settlement_clearing] }
-  - { id: stl.kpi.aging_breaks, name: Aging Breaks > 5d, formula: breaks_over_5d / total_breaks, unit: "%", direction: lower_is_better, vertical: BFSI, subdomains: [settlement_clearing] }
-  - { id: stl.kpi.intraday_liquidity_use, name: Intraday Liquidity Usage, formula: peak_intraday / committed_facility, unit: "%", direction: target_band, vertical: BFSI, subdomains: [settlement_clearing] }
   - { id: sl.kpi.utilization, name: Securities Lending Utilization, formula: on_loan_value / lendable_value, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [securities_lending] }
   - { id: sl.kpi.avg_fee, name: Average Lending Fee, formula: weighted_avg_fee_bps, unit: bps, direction: higher_is_better, vertical: BFSI, subdomains: [securities_lending] }
   - { id: tre.kpi.lcr, name: Liquidity Coverage Ratio, formula: hqla / net_outflows_30d, unit: "%", direction: higher_is_better, vertical: BFSI, subdomains: [treasury] }
@@ -534,7 +529,6 @@ kpis:
   - { id: bm.kpi.brand_awareness, name: Aided Brand Awareness, formula: aided / surveyed, unit: "%", direction: higher_is_better, vertical: CPG, subdomains: [brand_marketing] }
   - { id: bm.kpi.share_of_voice, name: Share of Voice, formula: brand_impressions / category, unit: "%", direction: higher_is_better, vertical: CPG, subdomains: [brand_marketing] }
   - { id: bm.kpi.media_roi, name: Media ROI, formula: incremental_sales / spend, unit: ratio, direction: higher_is_better, vertical: CPG, subdomains: [brand_marketing] }
-  - { id: tpm.kpi.promo_roi, name: Trade Promo ROI, formula: incremental_profit / promo_spend, unit: ratio, direction: higher_is_better, vertical: CPG, subdomains: [trade_promotion] }
   - { id: tpm.kpi.lift_pct, name: Trade Promo Lift, formula: (promo_volume - baseline_volume) / baseline_volume, unit: "%", direction: higher_is_better, vertical: CPG, subdomains: [trade_promotion] }
   - { id: tpm.kpi.deduction_aging, name: Deduction Aging > 60 days, formula: open_60d_deductions / total_deductions, unit: "%", direction: lower_is_better, vertical: CPG, subdomains: [trade_promotion] }
   - { id: ds.kpi.pick_rate, name: Picks per Hour, formula: picks / labor_hour, unit: picks/h, direction: higher_is_better, vertical: Retail, subdomains: [dark_stores] }
@@ -1703,7 +1697,7 @@ kpis:
     direction: higher_is_better
     definition: Net dollar return on every dollar of trade promotion spend, calculated as (incremental gross profit − trade spend) ÷ trade spend. The headline post-event scorecard — typical CPG target is ≥1.0; below 0 means the promo destroyed margin.
     vertical: CrossCutting
-    subdomains: [trade_promotion_management]
+    subdomains: [trade_promotion, trade_promotion_management]
     related_personas: [Trade Marketing Director, Revenue Growth Manager]
     decisionsSupported: [tpm.d.discount_depth, tpm.d.tactic_mix, tpm.d.promo_kill]
   - id: tpm.kpi.deduction_rate
