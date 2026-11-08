@@ -172,3 +172,21 @@ def test_esp_records(sim):
     assert d["total"] >= 1 and d["reports"][0]["difa_no"].startswith("DIFA-")
     _, s = get(sim, "/v/esp_difa/surveillance?well=A-01")
     assert s["events"] and all(e["well"] == "A-01" for e in s["events"])
+
+
+def test_vendor_source_reads_work_orders_and_difa_through_the_mocks_and_agrees_with_files(world_dir):
+    """Plan 2.3: the same questions asked through Maximo (OSLC paging) and the ESP/DIFA mock give the file source's answers."""
+    from factory_to_field.agents.sources import VendorSource
+    srv, base = serve_in_thread(world_dir)
+    try:
+        files, via = FileSource(world_dir), VendorSource(base)
+        flocs = files.flocs("")
+        assert len(flocs) > 5
+        for day in ("2026-10-17", "2026-06-01"):
+            f = sorted((o["aufnr"], o["istat"], o["gstrp"]) for o in files.open_orders(flocs, day))
+            v = sorted((o["aufnr"], o["istat"], o["gstrp"]) for o in via.open_orders(flocs, day))
+            assert f == v, day
+        assert [r["difa_no"] for r in files.difa(None, "2026-10-17")] == [r["difa_no"] for r in via.difa(None, "2026-10-17")]
+        assert [r["difa_no"] for r in files.difa("A-01", "2026-10-17")] == [r["difa_no"] for r in via.difa("A-01", "2026-10-17")]
+    finally:
+        srv.shutdown()

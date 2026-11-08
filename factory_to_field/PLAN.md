@@ -30,7 +30,7 @@ Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] 
 
 - [-] 2.1 DROPPED (no API key): live model planner runs. Keep the LLMAgent wired and tested with FakeClient; say in the README that no live-model result exists.
 - [x] 2.2 Offline baseline: `agents/baseline.py` (NaiveAgent: answers from the current state of each record, same tools and graph, no time logic) and `eval/baseline.py`. Seeds 1-4, generated cases: unit on a past date 16/48 (33%) vs playbook agent 48/48; failures at a position in a month 15/24 (62%) vs 24/24; lot exposure of the string now running 20/46 (44%) vs 46/46. Read with care: the baseline is a strawman I wrote, not a competitor; its 62% on failures is inflated because two of six cases per world ask about months before any history, where 'nothing' is right by luck; the as-of number (right only when the unit has not changed since the date) is the honest measure of what time-aware lookup buys on this data.
-- [ ] 2.3 (optional) Wire agent tools to read through the six `/v/<slug>/` mocks, exercising session refresh and vendor paging.
+- [x] 2.3 (optional) Wire agent tools to read through the six `/v/<slug>/` mocks, exercising session refresh and vendor paging. Done (narrow): `VendorSource` reads work orders via the Maximo mock (OSLC where + pageno paging) and DIFA via the ESP/DIFA mock; equals the file source in a test, and all 59 gold cases pass with `FTF_SIM_URL=... FTF_VENDOR=1`. Not wired: historian/DCS/APM mocks (their session expiry is still only exercised by test_vendors, not by an agent).
 - [-] 2.4 DROPPED (Decision 3): real public data validation.
 
 ## Phase 3: build for the refinery reliability team (weeks 4-9)
@@ -67,6 +67,8 @@ Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] 
 - 2026-11-07: Seed sweep before the fix: links recall 0.998-0.9995, precision 1.0 on all seeds, but the agent passed 8/10 gold cases on seeds 1-3 (10/10 on seed 42). Causes: answer key held typed-in constants (DIFA count, oil rate, notification number). Fixed in the key and playbook; after the fixes (key computed, DIFA count filtered to the as-of date, CASE-3005 well chosen from the key, injection note number from the world) seeds 42 and 1-7 all score 10/10; link recall 0.9983-0.9998, precision 1.0.
 
 ## Session log
+
+- 2026-11-08: 2.3 done (narrow). Only 4.7 (fixed-equipment build) left open.
 
 - 2026-11-08: 4.6 design note done. Next: 2.3 (optional mock wiring); then 4.7 if wanted.
 

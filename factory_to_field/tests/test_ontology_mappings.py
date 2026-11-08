@@ -11,7 +11,7 @@ def test_every_class_is_mapped_or_explained():
     for f in ONT.glob("*.yaml"):
         if f.name == "mappings.yaml":
             continue
-        classes |= set((yaml.safe_load(f.read_text()).get("classes") or {}))
+        classes |= set(yaml.safe_load(f.read_text()).get("classes") or {})
     m = yaml.safe_load((ONT / "mappings.yaml").read_text())
     assert m["status"] == "draft-unverified"
     assert set(m["classes"]) == classes and len(classes) == 36

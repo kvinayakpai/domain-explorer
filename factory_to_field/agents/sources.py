@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import re
 import sqlite3
 import time
@@ -381,8 +382,34 @@ class HttpSource:
         return (r.get("results") or [None])[0]
 
 
-def make_source(world: Path, base_url: str | None = None):
-    return HttpSource(base_url) if base_url else FileSource(world)
+class VendorSource(HttpSource):
+    """Reads work orders through the Maximo mock (OSLC where + pageno paging) and DIFA reports through the ESP/DIFA mock;
+    everything else goes through the original simulators. Maximo names things its own way, so this maps them back."""
+    MX_OPEN_NOT = ("COMP", "CLOSE", "CLSD")      # Maximo statuses that mean finished
+
+    def open_orders(self, flocs: list[str], upto_day: str) -> list[dict]:
+        out = []
+        for fl in flocs:
+            path, params = "/v/maximo/oslc/os/mxwo", {"oslc.where": f'spi:location="{fl}"', "oslc.pageSize": 5, "pageno": 1}
+            while path:
+                r = self.get(path, **params)
+                for x in r.get("rdfs:member", []):
+                    if x["spi:status"] not in self.MX_OPEN_NOT and (x["spi:schedstart"] or "") <= upto_day:
+                        out.append({"aufnr": x["spi:wonum"], "ktext": x["spi:description"], "istat": {"APPR": "REL"}.get(x["spi:status"], x["spi:status"]), "gstrp": x["spi:schedstart"]})
+                nxt = (r.get("responseInfo", {}).get("nextPage") or {}).get("href")
+                path, params = (nxt, {}) if nxt else (None, {})
+        return out
+
+    def difa(self, well: str | None, upto_day: str) -> list[dict]:
+        rows = self.get("/v/esp_difa/difa").get("reports", [])
+        return [r for r in rows if r["report_date"] <= upto_day and (well is None or r["well"] == well)]
+
+
+def make_source(world: Path, base_url: str | None = None, vendor: bool = False):
+    vendor = vendor or os.environ.get("FTF_VENDOR") == "1"     # FTF_VENDOR=1 with FTF_SIM_URL: read work orders and DIFA through the vendor mocks
+    if base_url:
+        return VendorSource(base_url) if vendor else HttpSource(base_url)
+    return FileSource(world)
 
 
 _ = re  # keep import for callers that build filters

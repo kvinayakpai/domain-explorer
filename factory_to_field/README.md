@@ -30,6 +30,7 @@ python -m factory_to_field.agents.gold             # 10 gold cases, scored again
 python -m factory_to_field.sim.server --port 8765  # the plant's systems as local REST services (no real systems needed)
 python -m factory_to_field.demo                    # end to end: agents work through the simulators, humans approve, drafts are released to simulated SAP/QMS
 FTF_SIM_URL=http://127.0.0.1:8765 python -m factory_to_field.agents.gold   # gold cases through the simulators
+FTF_SIM_URL=http://127.0.0.1:8765 FTF_VENDOR=1 python -m factory_to_field.agents.gold   # same, with work orders and DIFA read through the Maximo and ESP/DIFA mocks
 python -m factory_to_field.ui.build_ui             # ui/case_viewer.html (one self-contained page)
 python -m pytest -c factory_to_field/pytest.ini factory_to_field/tests
 python -m factory_to_field.agents.mcp_servers kg   # any of: kg historian eam plant maker drafts ot
