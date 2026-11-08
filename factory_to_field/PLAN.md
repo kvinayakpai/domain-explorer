@@ -47,7 +47,8 @@ Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] 
 - [x] 4.3 Mocks cut from 41 to 6 deep ones (pi_af, deltav, maximo, system1, ge_apm, esp_difa): vendor paging (Links.Next, nextCursor, OData nextLink, OSLC), session expiry for deltav/system1/ge_apm; 35 renamed copies deleted and listed in `vendors.RETIRED`. Still no consumer in the agents: they read through the file source and the original simulators (see 2.3, now optional).
 - [x] 4.4 Deployable: Dockerfile, docker compose, one-command demo. Done: `Dockerfile`, `docker-compose.yml`, root `.dockerignore`, `live_app --host`. NOT built: no Docker daemon in this sandbox; the same commands and the `--host 0.0.0.0` console were run directly (HTTP 200).
 - [x] 4.5 Repo hygiene: dbt duplicate model names fixed by subdomain suffix (`dim_channel_hotel`, `dim_location_dp`, `fct_allocations_cm`, `fct_forecast_accuracy_dp`; no `.sql` name repeats, no dangling `ref()`); 6 duplicate KPI ids removed from `data/kpis/master.yaml` (kept the richer entries, `tpm.kpi.promo_roi` lists both subdomains). Not run: full `dbt parse` (dbt_utils cannot be installed here, hub.getdbt.com blocked), so checked by script.
-- [ ] 4.6 Second use case: fixed-equipment integrity (corrosion rates, inspection records, remaining life for vessels and piping). Needs its own ontology slice, world generator, playbooks and gold cases; start with a design note.
+- [x] 4.6 Second use case: fixed-equipment integrity (corrosion rates, inspection records, remaining life for vessels and piping). Needs its own ontology slice, world generator, playbooks and gold cases; start with a design note. Design note written: `FIXED_EQUIPMENT.md` (ontology slice, traps, key-first generator, playbooks, gold). Implementation NOT started; that is 4.7 below.
+- [ ] 4.7 Build the fixed-equipment slice per `FIXED_EQUIPMENT.md`, key first. Big: needs an inspection engineer to confirm the formulae.
 
 ## Decisions (answered 2026-11-08)
 
@@ -66,6 +67,8 @@ Status key: [x] done, [~] partly, [ ] not started, [-] dropped by decision, [!] 
 - 2026-11-07: Seed sweep before the fix: links recall 0.998-0.9995, precision 1.0 on all seeds, but the agent passed 8/10 gold cases on seeds 1-3 (10/10 on seed 42). Causes: answer key held typed-in constants (DIFA count, oil rate, notification number). Fixed in the key and playbook; after the fixes (key computed, DIFA count filtered to the as-of date, CASE-3005 well chosen from the key, injection note number from the world) seeds 42 and 1-7 all score 10/10; link recall 0.9983-0.9998, precision 1.0.
 
 ## Session log
+
+- 2026-11-08: 4.6 design note done. Next: 2.3 (optional mock wiring); then 4.7 if wanted.
 
 - 2026-11-08: 4.2 done (draft mappings). Next: 4.6 design note, then 2.3.
 
