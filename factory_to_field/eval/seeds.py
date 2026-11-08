@@ -15,8 +15,6 @@ import time
 import traceback
 from pathlib import Path
 
-from ..kg import evaluate
-from ..kg.pipeline import Pipeline
 from ..world.build import build
 
 OUT = Path(__file__).resolve().parents[1] / "build" / "eval"
@@ -36,8 +34,8 @@ def run_seed(seed: int, agent: bool = True, noise: str = "base") -> dict:
         from .independent_key import compare
         r["key_mismatch"] = compare(wd)
         try:
-            res = Pipeline(wd, None).build()
-            sc = evaluate.score(res, wd / "truth.json")
+            from ..kg.build import build_kg
+            sc = build_kg(wd, Path(td) / "kg", skip_shacl=True)["resolution"]  # one build serves link scoring and the agent
             r["links"] = {k: sc[k] for k in ("links_truth", "recall", "precision")}
             r["worst_source"] = min(sc["by_source"].items(), key=lambda kv: kv[1]["recall"])[0] if sc["by_source"] else None
         except Exception as e:
@@ -47,7 +45,8 @@ def run_seed(seed: int, agent: bool = True, noise: str = "base") -> dict:
         if agent:
             try:
                 from ..agents import gold
-                g = gold.score(world=wd)
+                from ..kg.store import KG
+                g = gold.score(world=wd, kg=KG(Path(td) / "kg" / "store", read_only=True))
                 r["agent"] = {"cases_ok": g["cases_ok"], "cases_total": g["cases_total"], "passed": g["passed"], "checks": g["checks"],
                               "failed": {c["case"]: [k for k, v in c["checks"].items() if not v] + c["problems"][:2] for c in g["cases"] if not c["ok"]}}
             except Exception as e:
@@ -61,7 +60,7 @@ def summary(rows: list[dict]) -> dict:
     """Mean and worst case over held-out worlds: the worst case is the number to quote, not the dev seed."""
     rec = [r["links"]["recall"] for r in rows]
     pre = [r["links"]["precision"] for r in rows]
-    ag = [r["agent"] if "cases_ok" in r.get("agent", {}) else {"cases_ok": 0, "cases_total": 10} for r in rows]  # a crash is a failure, not a missing row
+    ag = [r["agent"] if "cases_ok" in r.get("agent", {}) else {"cases_ok": 0, "cases_total": max((r.get("agent", {}).get("cases_total", 0) for r in rows), default=10) or 25} for r in rows]  # a crash is a failure, not a missing row
     return {"worlds": len(rows), "recall_mean": round(sum(rec) / len(rec), 4), "recall_min": min(rec), "precision_mean": round(sum(pre) / len(pre), 4), "precision_min": min(pre),
             "cases_ok": sum(a["cases_ok"] for a in ag), "cases_total": sum(a["cases_total"] for a in ag), "worlds_with_failure": sum(a["cases_ok"] < a["cases_total"] for a in ag)}
 

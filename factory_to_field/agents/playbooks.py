@@ -157,6 +157,11 @@ class FieldPlaybooks:
         on = re.search(r"(\d{4}-\d{2}-\d{2})", c.question).group(1)
         r = s.call("kg.unit_at", position=c.position, on=on)
         rep.answer.update(position=c.position.split(":", 1)[1], date=on, unit=r.data["serial"])
+        if r.data["serial"] is None:  # no installation record covers that date: say so, do not guess
+            self._add(rep, "asset", f"No installation is recorded at {c.position.split(':', 2)[-1]} on {on}; the maintenance system has a gap for that date.", r.evidence)
+            rep.summary = f"No unit is recorded at {c.position.split(':', 2)[-1]} on {on}"
+            rep.recommendation = "Check the work-order and notification history around that date before relying on any answer."
+            return
         self._add(rep, "asset", f"On {on}, {c.position.split(':', 2)[-1]} held {r.data['serial']} (installed {r.data['since']}).", r.evidence, serial=r.data["serial"], since=r.data["since"])
         rep.summary = f"{r.data['serial']} was at {c.position.split(':', 2)[-1]} on {on}"
 

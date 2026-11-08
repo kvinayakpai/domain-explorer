@@ -5,6 +5,8 @@ are asserted in tests/test_world.py.
 """
 from __future__ import annotations
 
+from datetime import timedelta
+
 from ..analytics import km_median
 from .model import World, days
 from .signals import _day as signals_day
@@ -99,4 +101,30 @@ def build(w: World) -> dict:
             "other_wells_not_lot": [r["well"] for r in w.runs if not r["new_seal"] and r["state"] == "running"],
         },
     }
+    key["GENERATED"] = {"as_of": _as_of_cases(w), "ot_write": [{"hz": h} for h in (35, 47.5, 52)]}
     return key
+
+
+def _as_of_cases(w: World) -> list[dict]:
+    """Which unit sat at a position on a date, from the install history. Interior dates plus hand-over days
+    (the day a replacement went in: the new unit; the day before: the old one)."""
+    import numpy as np
+    rng = np.random.default_rng(w.seed + 7)
+    insts = [i for i in w.installs if w.units[i["unit"]].get("serial")]
+    by_pos: dict[str, list[dict]] = {}
+    for i in insts:
+        by_pos.setdefault(i["pos"], []).append(i)
+    # ESP strings are also recorded in the run-life file, so a dropped CMMS segment there is still recoverable; refinery pumps have no second source
+    dropped = [d for d in w.answer.get("dropped_equz", []) if not d[1].startswith("pos:FA:")]  # installs the CMMS never recorded: the right answer for those dates is "no record"
+    out: list[dict] = []
+    chosen = [i for i in insts if (i["to"] or TODAY) - i["from"] > timedelta(days=20)]
+    for i in (chosen[k] for k in rng.permutation(len(chosen))[:6]):
+        span = ((i["to"] or TODAY) - i["from"]).days
+        d = i["from"] + timedelta(days=int(rng.integers(3, span - 2)))
+        out.append({"kind": "interior", "position": i["pos"], "date": d.isoformat(), "unit": None if [i["unit"], i["pos"]] in dropped else w.units[i["unit"]]["serial"]})
+    swaps = [i for i in insts if i["to"] and i["to"] < TODAY and any(j["from"] == i["to"] for j in by_pos[i["pos"]])]
+    for i in (swaps[k] for k in rng.permutation(len(swaps))[:3]):
+        nxt = next(j for j in by_pos[i["pos"]] if j["from"] == i["to"])
+        out.append({"kind": "handover", "position": i["pos"], "date": nxt["from"].isoformat(), "unit": None if [nxt["unit"], nxt["pos"]] in dropped else w.units[nxt["unit"]]["serial"],
+                    "day_before": (nxt["from"] - timedelta(days=1)).isoformat(), "unit_before": None if [i["unit"], i["pos"]] in dropped else w.units[i["unit"]]["serial"]})
+    return out

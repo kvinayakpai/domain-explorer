@@ -26,6 +26,8 @@ class LLMAgent:
     def __init__(self, client, model: str = "claude-sonnet-5-5", kg: KG | None = None, world: Path | None = None, max_turns: int = 24, src=None) -> None:
         self.src = src
         self.client, self.model, self.max_turns = client, model, max_turns
+        if kg is None and world is not None and Path(world).resolve() != Path(DEFAULT_WORLD).resolve():
+            raise ValueError("a world other than the default needs a knowledge graph built from it: pass kg=")
         self.kg = kg or KG(DEFAULT_KG, read_only=True)
         self.world = world or DEFAULT_WORLD
 

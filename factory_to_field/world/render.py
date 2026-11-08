@@ -132,6 +132,7 @@ def render_sap(w: World, out: Path, tr: Truth) -> None:
         # SAP keeps time segments; a few are never closed or recorded (data-quality realism, not on planted units)
         planted = w.units[inst["unit"]]["serial"] in {"OEM-24-0412", "OEM-25-1187", "OEM-21-0090", "ES-25-0233", "ES-23-0117"}
         if not planted and w.rng.random() < w.noise["equz_missing"]:
+            w.answer.setdefault("dropped_equz", []).append([inst["unit"], inst["pos"]])
             continue
         con.execute("INSERT INTO EQUZ VALUES(?,?,?,?)", (equnr[inst["unit"]], w.positions[inst["pos"]]["floc"], inst["from"].isoformat(),
                                                          (inst["to"] - timedelta(days=1)).isoformat() if inst["to"] else "9999-12-31"))

@@ -70,6 +70,8 @@ def _p(x: str) -> str:
 
 class Agent(FieldPlaybooks):
     def __init__(self, kg: KG | None = None, world: Path | None = None, planner: str = "playbook", src=None) -> None:
+        if kg is None and world is not None and Path(world).resolve() != Path(DEFAULT_WORLD).resolve():
+            raise ValueError("a world other than the default needs a knowledge graph built from it: pass kg=")  # else answers come from another world's graph
         self.kg = kg or KG(DEFAULT_KG, read_only=True)
         self.world = world or DEFAULT_WORLD
         self.src = src  # FileSource by default; pass an HttpSource to work through the system simulators
