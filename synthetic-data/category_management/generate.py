@@ -187,7 +187,7 @@ def _planograms(ctx, categories, n=500):
         rng.integers(int(pd.Timestamp("2025-01-01").timestamp()),
                      int(pd.Timestamp("2026-04-01").timestamp()), size=n),
         unit="s").date
-    ef_to = pd.to_datetime(ef_from) + pd.to_timedelta(rng.integers(30, 365, size=n), unit="D")
+    ef_to = pd.Series(pd.to_datetime(ef_from)) + pd.to_timedelta(rng.integers(30, 365, size=n), unit="D")
     return pd.DataFrame({
         "planogram_id": [f"POG{i:07d}" for i in range(1, n + 1)],
         "category_id": cat_ids[cat_idx],
@@ -333,7 +333,7 @@ def _range_reviews(ctx, categories, n=5000):
         rng.integers(int(pd.Timestamp("2025-09-01").timestamp()),
                      int(pd.Timestamp("2026-06-01").timestamp()), size=n),
         unit="s").date
-    decision = pd.to_datetime(scheduled) + pd.to_timedelta(rng.integers(14, 90, size=n), unit="D")
+    decision = pd.Series(pd.to_datetime(scheduled)) + pd.to_timedelta(rng.integers(14, 90, size=n), unit="D")
     in_market = decision + pd.to_timedelta(rng.integers(30, 120, size=n), unit="D")
     sku_before = rng.integers(40, 250, size=n).astype(np.int64)
     sku_adds = rng.integers(0, 25, size=n).astype(np.int64)
@@ -373,7 +373,8 @@ def _range_review_decisions(ctx, range_reviews, skus):
         rr_id = rr["range_review_id"]
         cat_id = rr["category_id"]
         eligible = sku_by_cat.get(cat_id, list(all_skus))
-        n_dec = int(rng.integers(5, min(60, len(eligible)) + 1))
+        # a category can hold fewer than five SKUs; take them all then
+        n_dec = len(eligible) if len(eligible) <= 5 else int(rng.integers(5, min(60, len(eligible)) + 1))
         chosen = rng.choice(eligible, size=n_dec, replace=False) if len(eligible) >= n_dec else eligible
         for sku in chosen:
             counter += 1

@@ -80,6 +80,26 @@ def test_generator_produces_tables_at_seed_zero(subdomain: str):
         assert df.columns.size >= 2, f"{subdomain}.{name} has too few columns"
 
 
+# Too large for a CI runner at their default scale (50M, 21M and 11M rows); they need a small-scale switch first.
+HEAVY_SUBDOMAINS = {"predictive_maintenance", "direct_store_delivery", "customer_loyalty_cdp"}
+
+
+def _all_subdomains() -> list[str]:
+    import generate_all
+
+    return [s for s in generate_all.SUBDOMAINS if s not in HEAVY_SUBDOMAINS]
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("subdomain", _all_subdomains())
+def test_every_generator_runs(subdomain: str):
+    """Every generator the data build calls must run on the locked dependencies (CI runs this with -m slow)."""
+    pytest.importorskip("faker")
+    pytest.importorskip("mimesis")
+    tables = _load_generator(subdomain).generate(seed=42)
+    assert tables  # some worlds legitimately hold an empty table, so only a crash or no output fails
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize("subdomain", SUBDOMAINS)
 def test_generator_full_run_is_deterministic(subdomain: str):

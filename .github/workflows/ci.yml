@@ -62,6 +62,9 @@ jobs:
       - name: pytest
         run: uv run pytest
 
+      - name: every data generator runs (all but the three largest)
+        run: uv run pytest -m slow synthetic-data/tests/test_generators.py -k test_every_generator_runs
+
       - name: dbt build (refinery_operations, upstream_artificial_lift)
         run: uv run --with dbt-duckdb python tools/dbt_oil_gas_check.py
 

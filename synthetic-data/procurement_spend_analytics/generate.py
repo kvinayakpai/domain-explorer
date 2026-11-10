@@ -490,8 +490,10 @@ def _invoices(ctx, suppliers, pos, n):
     paid_ts = np.where(paid, due_date + pd.to_timedelta(paid_offset_d, unit="D"), pd.NaT)
     paid_amount = np.where(paid, total_amount, 0.0)
     now_ts = pd.Timestamp("2026-05-12")
+    # paid_ts is due_date + paid_offset_d, so the paid branch is the offset itself
+    # (subtracting through the NaT-padded paid_ts array cannot be cast to int).
     aging_days = np.where(paid,
-                          (pd.to_datetime(paid_ts) - due_date).days.astype("int64"),
+                          np.asarray(paid_offset_d, dtype="int64"),
                           (now_ts - due_date).days.astype("int64"))
     aging_days = aging_days.astype(np.int16)
     early_pay_disc = paid & (np.array(paid_offset_d) <= -2)

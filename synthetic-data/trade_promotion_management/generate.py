@@ -293,10 +293,10 @@ def _deductions(ctx, accounts, tactics, n=50_000):
     status = weighted_choice(rng, DEDUCTION_STATUS, DEDUCTION_STATUS_W, n)
     open_amount = np.where(np.isin(status, ["open", "matched", "disputed"]),
                            amount, 0).astype(np.int64)
-    opened = pd.to_datetime(
+    opened = pd.Series(pd.to_datetime(
         rng.integers(int(pd.Timestamp("2025-01-01").timestamp()),
                      int(pd.Timestamp("2026-05-01").timestamp()), size=n),
-        unit="s")
+        unit="s"))
     aging = ((pd.Timestamp("2026-05-09") - opened).dt.days).clip(lower=0).astype(int)
     resolved_mask = np.isin(status, ["paid", "written_off", "chargeback_lost"])
     resolved_at = np.where(
