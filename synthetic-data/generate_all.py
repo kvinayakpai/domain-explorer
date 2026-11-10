@@ -83,6 +83,9 @@ SYNTH_ROOT = Path(__file__).resolve().parent
 OUT_ROOT = SYNTH_ROOT / "output"
 DUCKDB_PATH = REPO_ROOT / "domain-explorer.duckdb"
 
+# subdomain -> error text for generators that raised in this run
+FAILED: dict[str, str] = {}
+
 
 def run_generators(seed: int) -> dict[str, dict]:
     results: dict[str, dict] = {}
@@ -100,7 +103,12 @@ def run_generators(seed: int) -> dict[str, dict]:
             print(f"[{sub}] generator module missing -- skipping.")
             continue
         t0 = time.time()
-        tables = module.generate(seed=seed)
+        try:
+            tables = module.generate(seed=seed)
+        except Exception as exc:  # one broken generator must not cost the other subdomains their data
+            FAILED[sub] = f"{type(exc).__name__}: {exc}"
+            print(f"[{sub}] FAILED -- {FAILED[sub]}")
+            continue
         elapsed = time.time() - t0
         results[sub] = {name: len(df) for name, df in tables.items()}
         results[sub]["__elapsed_s__"] = round(elapsed, 1)
@@ -248,6 +256,11 @@ def main() -> None:
         print(f"Loading into Postgres at {args.postgres_url}")
         load_into_postgres(args.postgres_url)
 
+    if FAILED:
+        print(f"done, but {len(FAILED)} generator(s) failed and their schemas were not refreshed:")
+        for sub, err in FAILED.items():
+            print(f"  {sub}: {err}")
+        raise SystemExit(1)
     print("done.")
 
 
